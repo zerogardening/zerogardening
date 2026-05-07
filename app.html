@@ -48,19 +48,11 @@ input,select,textarea{font-family:inherit;font-size:14px}
   padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,0.1);
 }
 .sidebar-header .brand{
-  display:flex;align-items:center;gap:10px;color:#fff;
+  display:flex;justify-content:center;color:#fff;
 }
-.sidebar-header .brand-icon{
-  width:42px;height:42px;flex-shrink:0;color:#fff;
-}
-.sidebar-header .brand-text{display:flex;flex-direction:column;line-height:1}
-.sidebar-header .brand-zero{
-  font-family:'Cormorant Garamond','Times New Roman',Georgia,serif;
-  font-size:24px;font-weight:500;letter-spacing:3px;color:#fff;
-}
-.sidebar-header .brand-gardening{
-  font-family:'Cormorant Garamond','Times New Roman',Georgia,serif;
-  font-size:10px;letter-spacing:4px;color:#fff;margin-top:3px;
+.sidebar-header .brand-logo{
+  max-width:140px;width:100%;height:auto;display:block;
+  filter:brightness(0) invert(1);  /* 검은 로고 → 흰색 (어두운 사이드바용) */
 }
 .sidebar-header .subtitle{font-size:11px;color:var(--accent);margin-top:8px}
 .nav{padding:12px 0;flex:1;overflow-y:auto}
@@ -1755,18 +1747,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="brand">
-        <svg class="brand-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Zero Gardening">
-          <!-- 자두/열매 원 -->
-          <circle cx="48" cy="55" r="40" fill="none" stroke="currentColor" stroke-width="2.2"/>
-          <!-- 줄기 -->
-          <path d="M 76 22 Q 82 12 90 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- 잎사귀 -->
-          <path d="M 90 8 Q 100 4 100 14 Q 96 20 90 8 Z" fill="currentColor"/>
-        </svg>
-        <div class="brand-text">
-          <div class="brand-zero">ZERO</div>
-          <div class="brand-gardening">GARDENING</div>
-        </div>
+        <img class="brand-logo" src="logo.png" alt="ZERO GARDENING">
       </div>
       <div class="subtitle">통합관리 프로그램</div>
     </div>
