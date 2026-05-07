@@ -602,18 +602,22 @@ table.data-table .has-missing td:first-child{box-shadow:inset 3px 0 0 var(--dang
 
 /* ─── 재고 관리 ─── */
 .inv-restock-dashboard{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;
+  background:#fff;border:1px solid #ffd54f;border-radius:8px;overflow:hidden;
 }
-.inv-restock-card{
-  background:#fff8e1;border:1px solid #ffd54f;border-radius:10px;padding:12px 14px;
-  display:flex;justify-content:space-between;align-items:center;
+.inv-restock-title{
+  background:#fff8e1;padding:8px 14px;font-size:13px;font-weight:600;color:#7a5b00;
+  border-bottom:1px solid #ffd54f;display:flex;align-items:center;gap:6px;
 }
-.inv-restock-card.urgent{background:#ffe5e5;border-color:#ef5350}
-.inv-restock-card .left .code{font-family:monospace;font-weight:700;color:var(--primary-dark);font-size:13px}
-.inv-restock-card .left .name{font-size:13px;margin-top:2px;color:#333}
-.inv-restock-card .right{text-align:right}
-.inv-restock-card .right .qty{font-size:18px;font-weight:700;color:#c33}
-.inv-restock-card .right .min{font-size:11px;color:#999}
+.inv-restock-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.inv-restock-table th{background:#fffaeb;padding:6px 10px;text-align:left;color:#7a5b00;font-weight:600;font-size:11.5px;border-bottom:1px solid #ffd54f}
+.inv-restock-table th.num{text-align:right}
+.inv-restock-table td{padding:6px 10px;border-bottom:1px solid #fef0c9;color:#333}
+.inv-restock-table td.num{text-align:right;font-weight:600}
+.inv-restock-table tr:last-child td{border-bottom:none}
+.inv-restock-table tr.urgent td{background:#ffe5e5}
+.inv-restock-table tr.urgent td.qty{color:#c33;font-weight:700}
+.inv-restock-table .code{font-family:monospace;font-weight:700;color:var(--primary-dark)}
+.inv-restock-more{padding:6px 14px;background:#fffaeb;text-align:center;color:#7a5b00;font-size:11.5px;border-top:1px dashed #ffd54f}
 .inv-empty-msg{padding:24px;text-align:center;color:var(--muted);background:#f5f7f5;border-radius:8px;font-size:13px}
 .inv-empty-msg.ok{background:#e0f7e9;color:#0a7}
 
@@ -11284,19 +11288,37 @@ function renderInventoryView(){
     if(restock.length === 0){
       dashEl.innerHTML = '<div class="inv-empty-msg ok">✓ 재입고 필요한 품목이 없습니다.</div>';
     } else {
-      dashEl.innerHTML = restock.slice(0, 20).map(it => {
+      const rowsHtml = restock.slice(0, 20).map(it => {
         const urgent = it.currentQty <= 0;
-        return `<div class="inv-restock-card ${urgent?'urgent':''}">
-          <div class="left">
-            <div class="code">${escapeHtml(it.key)}</div>
-            <div class="name">${escapeHtml(it.distName||'-')}</div>
-          </div>
-          <div class="right">
-            <div class="qty">${fmtNum(it.currentQty)}<span style="font-size:12px;color:#999;font-weight:400">/${fmtNum(it.minQty)}</span></div>
-            <div class="min">${urgent?'⚠ 재고 없음':'재입고 필요'}</div>
-          </div>
-        </div>`;
-      }).join('') + (restock.length > 20 ? `<div style="grid-column:1/-1;text-align:center;color:#666;font-size:12px;padding:6px">외 ${restock.length-20}건 더…</div>` : '');
+        const sizeText = it.specs.length > 0
+          ? it.specs.map(s => { const m = String(s).match(/(\d+)/); return m ? m[1]+'cm' : s; }).join(', ')
+          : '-';
+        return `<tr class="${urgent?'urgent':''}">
+          <td><span class="code">${escapeHtml(it.key)}</span></td>
+          <td>${escapeHtml(it.distName||'-')}</td>
+          <td>${escapeHtml(sizeText)}</td>
+          <td class="num qty">${fmtNum(it.currentQty)}</td>
+          <td class="num">/ ${fmtNum(it.minQty)}</td>
+          <td>${urgent?'⚠ 재고 없음':'재입고 필요'}</td>
+        </tr>`;
+      }).join('');
+      dashEl.innerHTML = `
+        <div class="inv-restock-title">⚠ 재입고 필요 — ${fmtNum(restock.length)}건</div>
+        <table class="inv-restock-table">
+          <thead>
+            <tr>
+              <th style="width:90px">품목코드</th>
+              <th>유통명</th>
+              <th style="width:120px">사이즈</th>
+              <th class="num" style="width:70px">현재</th>
+              <th class="num" style="width:70px">최소</th>
+              <th style="width:120px">상태</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+        ${restock.length > 20 ? `<div class="inv-restock-more">외 ${restock.length-20}건 더… (전체 목록은 아래 표에서 "재입고 필요" 필터로 확인)</div>` : ''}
+      `;
     }
   }
 
