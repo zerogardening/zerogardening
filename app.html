@@ -1053,6 +1053,65 @@ table.sku-table .sku-prefix-tag{
 .modal-title{font-size:16px;font-weight:600;color:var(--primary-dark)}
 .modal-close{font-size:22px;color:var(--muted);background:none;cursor:pointer}
 
+/* ─── 달력 모달 ─── */
+.calendar-modal-back{
+  position:fixed;inset:0;background:rgba(0,0,0,0.4);
+  display:flex;align-items:center;justify-content:center;z-index:200;
+}
+.calendar-modal-back.hidden{display:none}
+.calendar-modal-inner{
+  background:#fff;border-radius:12px;padding:22px 24px 20px;
+  width:92%;max-width:680px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+.calendar-controls{
+  display:flex;align-items:center;gap:8px;margin:8px 0 14px;
+}
+.calendar-controls #cal-month-label{
+  flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--primary-dark);
+}
+.calendar-controls .cal-nav{
+  background:#f0f4f0;border:none;width:32px;height:32px;border-radius:6px;
+  cursor:pointer;font-size:16px;color:var(--primary-dark);
+}
+.calendar-controls .cal-nav:hover{background:#e0e8e0}
+.calendar-controls .cal-today-btn{
+  padding:6px 12px;background:var(--primary);color:#fff;border:none;
+  border-radius:6px;cursor:pointer;font-size:12px;
+}
+.calendar-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:3px;
+}
+.cal-day-header{
+  font-weight:600;text-align:center;padding:6px 0;font-size:12px;color:#666;
+}
+.cal-day-header.sun{color:#c33}
+.cal-day-header.sat{color:#06c}
+.cal-day{
+  min-height:62px;padding:5px 5px 4px;border:1px solid #eaeaea;
+  border-radius:6px;cursor:pointer;transition:all .12s;background:#fff;
+  display:flex;flex-direction:column;
+}
+.cal-day:hover{background:#f5f7f5;border-color:var(--primary)}
+.cal-day.other-month{opacity:.3;cursor:default}
+.cal-day.other-month:hover{background:#fff;border-color:#eaeaea}
+.cal-day.today{border-color:var(--primary);border-width:2px}
+.cal-day.today .cal-day-num{color:var(--primary);font-weight:700}
+.cal-day-num{font-size:12px;color:#333}
+.cal-day-num.sun{color:#c33}
+.cal-day-num.sat{color:#06c}
+.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;padding-top:4px}
+.cal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-day-count{font-size:10px;color:var(--muted);margin-top:2px}
+.calendar-legend{
+  margin-top:14px;padding-top:12px;border-top:1px solid #eee;
+  display:flex;flex-wrap:wrap;gap:10px;font-size:12px;
+}
+.cal-legend-item{display:flex;align-items:center;gap:5px;color:#444}
+.cal-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.calendar-empty-msg{color:var(--muted);font-size:12px}
+
+
 /* ── Toast ── */
 .toast-wrap{
   position:fixed;bottom:20px;right:20px;z-index:200;
@@ -2015,6 +2074,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <option value="ok">정상</option>
               <option value="missing">누락 항목</option>
             </select>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력</button>
             <button type="button" class="btn btn-ghost btn-sm" id="btn-clear-filters" title="모든 필터 초기화">↺ 초기화</button>
           </div>
           <!-- 기간 직접지정 패널 (filter-period === 'custom' 일 때만 표시) -->
@@ -3337,6 +3397,23 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" id="btn-price-cancel">닫기</button>
     </div>
+  </div>
+</div>
+<!-- ============ 달력 모달 ============ -->
+<div id="calendar-modal" class="calendar-modal-back hidden">
+  <div class="calendar-modal-inner">
+    <div class="modal-head">
+      <div class="modal-title">📅 입고 달력</div>
+      <button class="modal-close" id="calendar-close">×</button>
+    </div>
+    <div class="calendar-controls">
+      <button class="cal-nav" id="cal-prev-month" title="이전 달">‹</button>
+      <span id="cal-month-label">2026년 5월</span>
+      <button class="cal-nav" id="cal-next-month" title="다음 달">›</button>
+      <button class="cal-today-btn" id="cal-today">오늘</button>
+    </div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+    <div class="calendar-legend" id="calendar-legend"></div>
   </div>
 </div>
 <div class="toast-wrap" id="toast-wrap"></div>
@@ -10501,6 +10578,174 @@ function setupPriceModal(){
     openPriceModal(sku);
   });
 }
+
+/* ════════════════════════════════════════════════════════════════
+   📅 입고 달력 (Calendar View)
+════════════════════════════════════════════════════════════════ */
+
+const _CAL_PALETTE = [
+  '#e57373','#f06292','#ba68c8','#9575cd','#7986cb',
+  '#64b5f6','#4fc3f7','#4db6ac','#81c784','#aed581',
+  '#ffd54f','#ffb74d','#ff8a65','#a1887f','#90a4ae',
+  '#dce775','#ff7043','#26a69a','#66bb6a','#42a5f5'
+];
+
+function _hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++){
+    h = ((h<<5)-h) + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function colorForSupplier(name){
+  if(!name) name = '미지정';
+  return _CAL_PALETTE[_hashStr(name) % _CAL_PALETTE.length];
+}
+
+let _calCurYear, _calCurMonth;
+
+function renderCalendar(year, month){
+  _calCurYear = year;
+  _calCurMonth = month;
+
+  const recs = Store.listReceivings();
+  const dayMap = {}; // 'YYYY-MM-DD' → { suppliers: Set, count: number }
+  recs.forEach(r => {
+    const d = r.receivedAt;
+    if(!d) return;
+    const date = String(d).split('T')[0];
+    if(!dayMap[date]) dayMap[date] = { suppliers: new Set(), count: 0 };
+    dayMap[date].suppliers.add(r.supplier || '미지정');
+    dayMap[date].count++;
+  });
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = lastDay.getDate();
+
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  let html = '';
+  ['일','월','화','수','목','금','토'].forEach((d, i) => {
+    const cls = i===0 ? 'sun' : (i===6 ? 'sat' : '');
+    html += `<div class="cal-day-header ${cls}">${d}</div>`;
+  });
+
+  // 이전 달 빈 셀
+  for(let i = 0; i < startWeekday; i++){
+    const prevDate = new Date(year, month, -startWeekday + i + 1);
+    html += `<div class="cal-day other-month"><span class="cal-day-num">${prevDate.getDate()}</span></div>`;
+  }
+
+  // 이번 달 날짜
+  for(let d = 1; d <= daysInMonth; d++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const info = dayMap[dateStr];
+    const weekday = (startWeekday + d - 1) % 7;
+    const wcls = weekday===0 ? 'sun' : (weekday===6 ? 'sat' : '');
+    const todayCls = dateStr === todayISO ? 'today' : '';
+
+    let dots = '';
+    let countLabel = '';
+    if(info){
+      const suppliers = Array.from(info.suppliers);
+      // 업체당 점 1개씩 (최대 6개까지 표시, 나머지는 +N)
+      const maxShow = 6;
+      suppliers.slice(0, maxShow).forEach(s => {
+        dots += `<span class="cal-dot" style="background:${colorForSupplier(s)}" title="${escapeHtml(s)}"></span>`;
+      });
+      if(suppliers.length > maxShow){
+        dots += `<span style="font-size:9px;color:var(--muted);align-self:center">+${suppliers.length-maxShow}</span>`;
+      }
+      countLabel = `<div class="cal-day-count">${info.count}건</div>`;
+    }
+
+    html += `<div class="cal-day ${todayCls}" data-date="${dateStr}">
+      <span class="cal-day-num ${wcls}">${d}</span>
+      <div class="cal-dots">${dots}</div>
+      ${countLabel}
+    </div>`;
+  }
+
+  document.getElementById('calendar-grid').innerHTML = html;
+  document.getElementById('cal-month-label').textContent = `${year}년 ${month+1}월`;
+
+  // 범례 (이번 달 입고된 업체들)
+  const monthSuppliers = new Set();
+  Object.keys(dayMap).forEach(date => {
+    if(date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)){
+      dayMap[date].suppliers.forEach(s => monthSuppliers.add(s));
+    }
+  });
+  let legendHtml = '';
+  if(monthSuppliers.size === 0){
+    legendHtml = '<span class="calendar-empty-msg">이번 달 입고 없음</span>';
+  } else {
+    Array.from(monthSuppliers).sort().forEach(s => {
+      legendHtml += `<span class="cal-legend-item">
+        <span class="cal-legend-dot" style="background:${colorForSupplier(s)}"></span>
+        ${escapeHtml(s)}
+      </span>`;
+    });
+  }
+  document.getElementById('calendar-legend').innerHTML = legendHtml;
+
+  // 날짜 클릭 → 입고 리스트 필터링
+  document.querySelectorAll('.cal-day[data-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const date = cell.getAttribute('data-date');
+      // 입고 리스트 / 검색 탭 활성화
+      document.querySelector('[data-tab="list"]').click();
+      // 기간 필터를 직접지정으로
+      const periodSel = document.getElementById('filter-period');
+      periodSel.value = 'custom';
+      document.getElementById('custom-date-from').value = date;
+      document.getElementById('custom-date-to').value = date;
+      // change 이벤트로 필터 적용
+      periodSel.dispatchEvent(new Event('change'));
+      // 모달 닫기
+      document.getElementById('calendar-modal').classList.add('hidden');
+    });
+  });
+}
+
+function setupCalendarModal(){
+  const btn = document.getElementById('btn-open-calendar');
+  const modal = document.getElementById('calendar-modal');
+  if(!btn || !modal) return;
+
+  btn.addEventListener('click', () => {
+    const today = new Date();
+    renderCalendar(today.getFullYear(), today.getMonth());
+    modal.classList.remove('hidden');
+  });
+  document.getElementById('calendar-close').addEventListener('click', () => {
+    modal.classList.add('hidden');
+  });
+  modal.addEventListener('click', e => {
+    if(e.target === modal) modal.classList.add('hidden');
+  });
+  document.getElementById('cal-prev-month').addEventListener('click', () => {
+    let m = _calCurMonth - 1, y = _calCurYear;
+    if(m < 0){ m = 11; y--; }
+    renderCalendar(y, m);
+  });
+  document.getElementById('cal-next-month').addEventListener('click', () => {
+    let m = _calCurMonth + 1, y = _calCurYear;
+    if(m > 11){ m = 0; y++; }
+    renderCalendar(y, m);
+  });
+  document.getElementById('cal-today').addEventListener('click', () => {
+    const t = new Date();
+    renderCalendar(t.getFullYear(), t.getMonth());
+  });
+}
+
+setupCalendarModal();
 
 setupPriceModal();
 
