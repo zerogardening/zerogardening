@@ -592,6 +592,13 @@ table.data-table .has-missing td:first-child{box-shadow:inset 3px 0 0 var(--dang
   border-radius:10px;font-size:11.5px;
 }
 .size-qty-badge strong{color:#1b4332;font-weight:700;margin-left:2px}
+.summary-card-period .label{display:flex;align-items:center;gap:6px}
+.summary-card-period select{
+  border:none;background:transparent;color:var(--primary);
+  font-weight:600;font-size:11.5px;cursor:pointer;
+  padding:1px 4px;border-radius:4px;
+}
+.summary-card-period select:hover{background:rgba(45,106,79,.08)}
 table.sku-table{
   width:100%;background:#fff;border-radius:8px;overflow:hidden;
   border-collapse:collapse;box-shadow:var(--shadow);font-size:13px;
@@ -2018,18 +2025,18 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <!-- ===== 입고 리스트 / 검색 ===== -->
         <section id="tab-list" class="tab-pane hidden">
           <div class="search-bar" style="flex-wrap:wrap;gap:10px;align-items:center">
+            <input type="text" id="search-input" placeholder="🔍 유통명·학명·품목코드·업체 검색…" autocomplete="off" style="flex:1;min-width:220px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px">
             <label style="font-size:13px;color:var(--muted);font-weight:500">업체별</label>
             <select id="filter-supplier" style="min-width:160px">
               <option value="all">전체 업체</option>
             </select>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력으로 보기</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-show-sku-view" title="품목코드별 보기 (중복 제외)">🏷 품목코드</button>
             <span id="active-date-filter" class="active-date-filter hidden">
               📅 <span id="active-date-text"></span>
               <button type="button" id="btn-clear-date-filter" title="날짜 필터 해제">×</button>
             </span>
-            <!-- 호환성용 hidden inputs (다른 코드가 참조함) -->
-            <input type="hidden" id="search-input" value="">
+            <!-- 호환성용 hidden inputs -->
             <input type="hidden" id="search-field" value="all">
             <input type="hidden" id="filter-period" value="all">
             <input type="hidden" id="filter-status" value="all">
@@ -2038,7 +2045,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           </div>
 
           <div class="summary-bar" id="summary-bar"></div>
-          <div id="size-breakdown" style="margin-bottom:12px"></div>
+          <div id="size-breakdown" style="display:none"></div>
 
           <div id="list-area"></div>
         </section>
@@ -6931,12 +6938,52 @@ function renderList(){
   const totalQty = list.reduce((s,r)=>s+(Number(r.quantity)||0), 0);
   const totalCost = list.reduce((s,r)=>s+(Number(r.purchasePrice)||0)*(Number(r.quantity)||0), 0);
   const distinctNames = new Set(list.map(r => r.distributionName).filter(Boolean)).size;
+  // 기간별 매입금액 (필터된 리스트 위에서 추가 기간 필터)
+  const periodChoice = localStorage.getItem('zg_period_purchase') || 'all';
+  const todayObj = new Date();
+  let periodTotal = 0;
+  if(periodChoice === 'all'){
+    periodTotal = totalCost;
+  } else {
+    const days = Number(periodChoice);
+    const cutoff = new Date(todayObj); cutoff.setDate(cutoff.getDate() - days);
+    const cutoffISO = cutoff.toISOString().split('T')[0];
+    periodTotal = list
+      .filter(r => (r.receivedAt||'') >= cutoffISO)
+      .reduce((s,r) => s + (Number(r.purchasePrice)||0)*(Number(r.quantity)||0), 0);
+  }
+  const periodLabel = {
+    '7':'최근 7일','30':'최근 30일','90':'최근 3개월',
+    '180':'최근 6개월','365':'최근 1년','all':'전체'
+  }[periodChoice] || '전체';
+
   document.getElementById('summary-bar').innerHTML = `
     <div class="summary-card"><div class="label">총 입고 건수</div><div class="value">${fmtNum(totalItems)}</div></div>
     <div class="summary-card"><div class="label">품종 수</div><div class="value">${fmtNum(distinctNames)}</div></div>
     <div class="summary-card"><div class="label">총 수량</div><div class="value">${fmtNum(totalQty)}</div></div>
-    <div class="summary-card"><div class="label">총 매입금액</div><div class="value">${fmtKRW(totalCost)}</div></div>
+    <div class="summary-card summary-card-period">
+      <div class="label">
+        매입금액
+        <select id="period-purchase">
+          <option value="7"${periodChoice==='7'?' selected':''}>최근 7일</option>
+          <option value="30"${periodChoice==='30'?' selected':''}>최근 30일</option>
+          <option value="90"${periodChoice==='90'?' selected':''}>최근 3개월</option>
+          <option value="180"${periodChoice==='180'?' selected':''}>최근 6개월</option>
+          <option value="365"${periodChoice==='365'?' selected':''}>최근 1년</option>
+          <option value="all"${periodChoice==='all'?' selected':''}>전체</option>
+        </select>
+      </div>
+      <div class="value">${fmtKRW(periodTotal)}</div>
+    </div>
   `;
+  // 기간 변경 → 저장 + 다시 렌더
+  const periodSel = document.getElementById('period-purchase');
+  if(periodSel){
+    periodSel.addEventListener('change', () => {
+      localStorage.setItem('zg_period_purchase', periodSel.value);
+      renderList();
+    });
+  }
 
   // 화분 사이즈별 수량 집계
   const sizeMap = new Map();
