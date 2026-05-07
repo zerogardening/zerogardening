@@ -602,22 +602,34 @@ table.data-table .has-missing td:first-child{box-shadow:inset 3px 0 0 var(--dang
 
 /* ─── 재고 관리 ─── */
 .inv-restock-dashboard{
-  background:#fff;border:1px solid #ffd54f;border-radius:8px;overflow:hidden;
+  background:#fff;border:1px solid #d0d7d0;border-radius:8px;overflow:hidden;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
 }
 .inv-restock-title{
-  background:#fff8e1;padding:8px 14px;font-size:13px;font-weight:600;color:#7a5b00;
-  border-bottom:1px solid #ffd54f;display:flex;align-items:center;gap:6px;
+  background:#c62828;color:#fff;padding:9px 14px;font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:6px;
 }
-.inv-restock-table{width:100%;border-collapse:collapse;font-size:12.5px}
-.inv-restock-table th{background:#fffaeb;padding:6px 10px;text-align:left;color:#7a5b00;font-weight:600;font-size:11.5px;border-bottom:1px solid #ffd54f}
+.inv-restock-table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+.inv-restock-table th{
+  background:#f5f5f5;padding:8px 10px;text-align:left;
+  color:#1a1a1a;font-weight:700;font-size:12px;
+  border-bottom:2px solid #c62828;
+}
 .inv-restock-table th.num{text-align:right}
-.inv-restock-table td{padding:6px 10px;border-bottom:1px solid #fef0c9;color:#333}
-.inv-restock-table td.num{text-align:right;font-weight:600}
+.inv-restock-table td{
+  padding:9px 10px;border-bottom:1px solid #e8e8e8;color:#1a1a1a;
+}
+.inv-restock-table td.num{text-align:right;font-weight:700}
 .inv-restock-table tr:last-child td{border-bottom:none}
-.inv-restock-table tr.urgent td{background:#ffe5e5}
-.inv-restock-table tr.urgent td.qty{color:#c33;font-weight:700}
+.inv-restock-table tr:hover td{background:#fafafa}
+.inv-restock-table tr.urgent td{background:#ffebee}
+.inv-restock-table tr.urgent:hover td{background:#ffe0e3}
+.inv-restock-table tr.urgent td.qty{color:#c62828;font-weight:800;font-size:14px}
 .inv-restock-table .code{font-family:monospace;font-weight:700;color:var(--primary-dark)}
-.inv-restock-more{padding:6px 14px;background:#fffaeb;text-align:center;color:#7a5b00;font-size:11.5px;border-top:1px dashed #ffd54f}
+.inv-restock-more{
+  padding:8px 14px;background:#f5f5f5;text-align:center;
+  color:#555;font-size:12px;border-top:1px solid #e0e0e0;
+}
 .inv-empty-msg{padding:24px;text-align:center;color:var(--muted);background:#f5f7f5;border-radius:8px;font-size:13px}
 .inv-empty-msg.ok{background:#e0f7e9;color:#0a7}
 
