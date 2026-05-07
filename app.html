@@ -2166,8 +2166,8 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           <div class="search-bar" style="flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px">
             <input type="text" id="inv-search" placeholder="🔍 품목코드·유통명·학명 검색…" autocomplete="off" style="flex:1;min-width:220px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px">
             <select id="inv-status-filter" style="min-width:140px">
-              <option value="active">판매중+품절 (기본)</option>
-              <option value="all">전체</option>
+              <option value="all" selected>전체 (기본)</option>
+              <option value="active">판매중+품절</option>
               <option value="selling">판매중만</option>
               <option value="soldout">품절만</option>
               <option value="paused">일시중지만</option>
@@ -11154,7 +11154,7 @@ function _invSave(d){
 }
 
 function getInventoryStatus(key){
-  return (_invState().inventoryStatus[key]) || 'selling';
+  return (_invState().inventoryStatus[key]) || 'paused';
 }
 function setInventoryStatus(key, status){
   const d = _invState();
@@ -11264,7 +11264,7 @@ let _invSelected = new Set(); // selected keys
 function renderInventoryView(){
   const all = computeInventoryList();
   const q = ((document.getElementById('inv-search')||{}).value||'').trim().toLowerCase();
-  const statusFilter = (document.getElementById('inv-status-filter')||{}).value || 'active';
+  const statusFilter = (document.getElementById('inv-status-filter')||{}).value || 'all';
 
   let list = all.filter(it => {
     if(statusFilter === 'active') {
@@ -11350,12 +11350,12 @@ function renderInventoryView(){
         <tr>
           <th class="ck"><input type="checkbox" id="inv-check-all"></th>
           <th style="width:90px">품목코드</th>
+          <th style="width:110px">상태</th>
           <th>유통명 / 학명</th>
           <th class="num" style="width:80px">총 입고</th>
           <th class="num" style="width:80px">총 출고</th>
           <th class="num" style="width:80px">현재 재고</th>
           <th class="num" style="width:90px">최소 재고</th>
-          <th style="width:120px">상태</th>
           <th style="width:80px">조정</th>
         </tr>
       </thead>
@@ -11367,6 +11367,13 @@ function renderInventoryView(){
             <td class="ck"><input type="checkbox" class="inv-row-check" data-key="${escapeHtml(it.key)}" ${checked}></td>
             <td><span class="inv-code">${escapeHtml(it.key)}</span></td>
             <td>
+              <select class="inv-status-select" data-key="${escapeHtml(it.key)}">
+                <option value="selling" ${it.status==='selling'?'selected':''}>판매중</option>
+                <option value="soldout" ${it.status==='soldout'?'selected':''}>품절</option>
+                <option value="paused" ${it.status==='paused'?'selected':''}>일시중지</option>
+              </select>
+            </td>
+            <td>
               <div style="font-weight:500">${escapeHtml(it.distName||'-')}</div>
               ${it.sciName?`<div style="font-style:italic;color:#888;font-size:11.5px;margin-top:2px">${escapeHtml(it.sciName)}</div>`:''}
             </td>
@@ -11375,13 +11382,6 @@ function renderInventoryView(){
             <td class="num"><span class="inv-qty-now ${isLow?'low':'ok'}">${fmtNum(it.currentQty)}</span></td>
             <td class="num">
               <input type="number" class="inv-min-input ${it.hasCustomMin?'custom':''}" data-key="${escapeHtml(it.key)}" value="${it.minQty}" min="0" title="${it.hasCustomMin?'개별 설정':'기본값'}">
-            </td>
-            <td>
-              <select class="inv-status-select" data-key="${escapeHtml(it.key)}">
-                <option value="selling" ${it.status==='selling'?'selected':''}>판매중</option>
-                <option value="soldout" ${it.status==='soldout'?'selected':''}>품절</option>
-                <option value="paused" ${it.status==='paused'?'selected':''}>일시중지</option>
-              </select>
             </td>
             <td>
               <button type="button" class="inv-action-btn" data-action="adjust" data-key="${escapeHtml(it.key)}" title="실재고로 기준점 설정">📝 조정</button>
