@@ -1,0 +1,15 @@
+# 토큰/인증 파일 보호
+.github_token
+*.token
+
+# 백업 파일
+*.bak
+*복구_백업*.json
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
