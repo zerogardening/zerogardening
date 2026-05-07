@@ -7,6 +7,8 @@
 
 <!-- 외부 라이브러리 (엑셀 읽기) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Supabase JS 클라이언트 (클라우드 DB + 인증) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 :root{
@@ -1708,9 +1710,63 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
   font-size:14px;font-variant-numeric:tabular-nums;
 }
 
+<style>
+/* ─── 로그인 오버레이 ─── */
+.login-overlay{position:fixed;inset:0;background:rgba(20,30,25,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:99999}
+.login-overlay.hidden{display:none}
+.login-modal{background:#fff;padding:36px 32px;border-radius:12px;min-width:340px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.login-modal h2{margin:0 0 4px;color:var(--primary-dark);font-size:22px}
+.login-modal .login-sub{color:#666;font-size:13px;margin-bottom:22px}
+.login-modal label{display:block;margin-bottom:14px;font-size:13px;color:#444}
+.login-modal label span{display:block;margin-bottom:5px;font-weight:500}
+.login-modal input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box}
+.login-modal input:focus{outline:none;border-color:var(--primary)}
+.login-modal .login-buttons{display:flex;gap:8px;margin-top:6px}
+.login-modal .login-buttons button{flex:1;padding:10px;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:500}
+.login-modal .btn-login{background:var(--primary);color:#fff}
+.login-modal .btn-login:hover{background:var(--primary-dark)}
+.login-modal .btn-signup{background:#f0f0f0;color:#333}
+.login-modal .btn-signup:hover{background:#e0e0e0}
+.login-modal .login-error{margin-top:12px;color:#c33;font-size:13px;min-height:18px}
+.login-modal .login-info{margin-top:12px;color:#0a7;font-size:13px;min-height:18px}
+.user-bar{position:fixed;top:8px;right:14px;font-size:12px;color:#666;background:rgba(255,255,255,.85);padding:4px 12px;border-radius:14px;z-index:9998;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.user-bar.hidden{display:none}
+.user-bar button{border:none;background:transparent;color:#c33;cursor:pointer;font-size:12px;padding:0}
+.user-bar button:hover{text-decoration:underline}
+.cloud-loading{position:fixed;inset:0;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;z-index:99998;font-size:14px;color:#444}
+.cloud-loading.hidden{display:none}
 </style>
 </head>
 <body>
+
+<!-- ============ 로그인 오버레이 ============ -->
+<div id="login-overlay" class="login-overlay">
+  <div class="login-modal">
+    <h2>제로가드닝 로그인</h2>
+    <div class="login-sub">통합관리 프로그램에 접속하려면 로그인하세요</div>
+    <form id="login-form">
+      <label><span>이메일</span><input type="email" id="login-email" autocomplete="username" required></label>
+      <label><span>비밀번호</span><input type="password" id="login-password" autocomplete="current-password" required minlength="6"></label>
+      <div class="login-buttons">
+        <button type="submit" class="btn-login" id="btn-login">로그인</button>
+        <button type="button" class="btn-signup" id="btn-signup">회원가입</button>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-info" id="login-info"></div>
+    </form>
+  </div>
+</div>
+
+<!-- 로그인 사용자 표시 -->
+<div id="user-bar" class="user-bar hidden">
+  <span id="user-bar-email"></span>
+  <button id="btn-logout">로그아웃</button>
+</div>
+
+<!-- 클라우드 로딩 표시 -->
+<div id="cloud-loading" class="cloud-loading hidden">
+  <span>☁ 클라우드에서 데이터를 불러오는 중...</span>
+</div>
 
 <div class="app">
   <!-- ============ Sidebar ============ -->
@@ -3329,7 +3385,20 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 'use strict';
 
 /* ────────────────────────────────────────────────
-   Storage Module — localStorage 기반 데이터 저장소
+   Cloud Sync — Supabase 클라이언트 + 인증 + 실시간 동기화
+──────────────────────────────────────────────── */
+const SUPABASE_URL = 'https://vjqfhwrgrocapcyndgtx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ds8hYFdqgj-vsotoaqtv4w_XhkL_DN2';
+const _supa = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    })
+  : null;
+let _cloudReady = false;       // 클라우드 데이터 로드 완료
+let _currentUser = null;       // Supabase auth user
+
+/* ────────────────────────────────────────────────
+   Storage Module — 메모리 캐시 + Supabase 클라우드 동기화
 ──────────────────────────────────────────────── */
 /** AAA01 prefix 추출 — Store 내부 + 외부 모두 사용 가능. parseItemCode와 동일 로직 인라인 */
 function extractCodePrefix(code){
@@ -3349,82 +3418,125 @@ const Store = (() => {
     { name:'⭐ 리뷰 안내', content:'식물이 마음에 드셨다면 잠깐 시간 내어 리뷰 한 줄 남겨주시면 큰 힘이 됩니다 :) 키우시다 궁금한 점이나 부족한 부분이 있으시면 언제든 편하게 연락주세요. 감사합니다.' },
   ];
 
+  let _cache = null;  // 메모리 캐시
+
+  function _fillDefaults(data){
+    if(!data.receivings) data.receivings = [];
+    if(!data.companies) data.companies = [];
+    if(!data.statements) data.statements = [];
+    if(!data.orders) data.orders = [];
+    if(!data.skus) data.skus = [];
+    if(!data.manualCards) data.manualCards = [];
+    if(!data.orderBatches) data.orderBatches = [];
+    if(!data.cardPresets){
+      data.cardPresets = BUILTIN_PRESETS.map((p,i) => ({
+        id:'cp_builtin_'+i, name:p.name, content:p.content,
+        isBuiltin:true, createdAt:Date.now()
+      }));
+    }
+    return data;
+  }
+
+  function _runMigrations(data){
+    if(!data._orderBatchMigrated){
+      const orphanOrders = (data.orders||[]).filter(o => !o.batchId);
+      if(orphanOrders.length > 0){
+        const restoreBatchId = '260503-01';
+        if(!data.orderBatches.find(b => b.id === restoreBatchId)){
+          data.orderBatches.push({
+            id: restoreBatchId, uploadedAt: Date.now(), uploadedDate: '260503',
+            seq: 1, fileName: '이전 주문 (복원)', isRestored: true, orderCount: orphanOrders.length
+          });
+        }
+        orphanOrders.forEach(o => { o.batchId = restoreBatchId; });
+      }
+      data._orderBatchMigrated = true;
+    }
+    if(!data._skuPrefixMigrated){
+      const merged = new Map();
+      data.skus.forEach(s => {
+        const prefix = extractCodePrefix(s.barcode);
+        if(!prefix) return;
+        const existing = merged.get(prefix);
+        if(!existing || (s.updatedAt||0) > (existing.updatedAt||0)){
+          merged.set(prefix, Object.assign({}, s, { barcode: prefix }));
+        }
+      });
+      data.skus = Array.from(merged.values());
+      data._skuPrefixMigrated = true;
+    }
+    return data;
+  }
+
   function load(){
+    if(_cache) return _cache;
     try{
       const raw = localStorage.getItem(KEY);
-      if(!raw){
-        const init = structuredClone(DEFAULT);
-        init.cardPresets = BUILTIN_PRESETS.map((p,i) => ({
-          id:'cp_builtin_'+i, name:p.name, content:p.content,
-          isBuiltin:true, createdAt:Date.now()
-        }));
-        return init;
+      if(raw){
+        _cache = _runMigrations(_fillDefaults(JSON.parse(raw)));
+        return _cache;
       }
-      const data = JSON.parse(raw);
-      if(!data.receivings) data.receivings = [];
-      if(!data.companies) data.companies = [];
-      if(!data.statements) data.statements = [];
-      if(!data.orders) data.orders = [];
-      if(!data.skus) data.skus = [];
-      if(!data.manualCards) data.manualCards = [];
-      if(!data.orderBatches) data.orderBatches = [];
-      if(!data.cardPresets){
-        // 기존 사용자에도 빌트인 시드
-        data.cardPresets = BUILTIN_PRESETS.map((p,i) => ({
-          id:'cp_builtin_'+i, name:p.name, content:p.content,
-          isBuiltin:true, createdAt:Date.now()
-        }));
-      }
-      // 주문 배치 마이그레이션 (1회) — 기존 모든 주문을 260503-01 폴더로 통합
-      if(!data._orderBatchMigrated){
-        const orphanOrders = (data.orders||[]).filter(o => !o.batchId);
-        if(orphanOrders.length > 0){
-          const restoreBatchId = '260503-01';
-          if(!data.orderBatches.find(b => b.id === restoreBatchId)){
-            data.orderBatches.push({
-              id: restoreBatchId,
-              uploadedAt: Date.now(),
-              uploadedDate: '260503',
-              seq: 1,
-              fileName: '이전 주문 (복원)',
-              isRestored: true,
-              orderCount: orphanOrders.length
-            });
-          }
-          orphanOrders.forEach(o => { o.batchId = restoreBatchId; });
-        }
-        data._orderBatchMigrated = true;
-        try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
-      }
-      // SKU 마스터 prefix 정규화 마이그레이션 (1회)
-      if(!data._skuPrefixMigrated){
-        const merged = new Map();  // prefix → master
-        data.skus.forEach(s => {
-          const prefix = extractCodePrefix(s.barcode);
-          if(!prefix) return;  // prefix 없으면 스킵
-          const existing = merged.get(prefix);
-          if(!existing || (s.updatedAt||0) > (existing.updatedAt||0)){
-            merged.set(prefix, Object.assign({}, s, { barcode: prefix }));
-          }
-        });
-        data.skus = Array.from(merged.values());
-        data._skuPrefixMigrated = true;
-        // 마이그레이션 결과 즉시 저장
-        try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
-      }
-      return data;
-    }catch(e){
-      console.error('load failed', e);
-      return structuredClone(DEFAULT);
+    }catch(e){ console.error('load fail', e); }
+    _cache = _runMigrations(_fillDefaults(structuredClone(DEFAULT)));
+    return _cache;
+  }
+
+  function save(data){
+    _cache = data;
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+    if(_cloudReady && _supa){
+      _supa.from('app_meta')
+        .upsert({ key:'state', value:data }, { onConflict:'key' })
+        .then(({error}) => { if(error) console.error('Cloud save fail', error); });
     }
   }
-  function save(data){
-    localStorage.setItem(KEY, JSON.stringify(data));
+
+  async function _initFromCloud(){
+    if(!_supa) throw new Error('Supabase 클라이언트가 로드되지 않음');
+    const { data: row, error } = await _supa
+      .from('app_meta').select('value').eq('key','state').maybeSingle();
+    if(error){ console.error('Cloud init fail', error); throw error; }
+    if(row && row.value){
+      _cache = _runMigrations(_fillDefaults(row.value));
+      try{ localStorage.setItem(KEY, JSON.stringify(_cache)); }catch(e){}
+    } else {
+      let initial;
+      try{
+        const raw = localStorage.getItem(KEY);
+        initial = raw ? JSON.parse(raw) : structuredClone(DEFAULT);
+      }catch(e){ initial = structuredClone(DEFAULT); }
+      _cache = _runMigrations(_fillDefaults(initial));
+      const { error: upErr } = await _supa.from('app_meta')
+        .upsert({ key:'state', value:_cache }, { onConflict:'key' });
+      if(upErr){ console.error('Cloud seed fail', upErr); throw upErr; }
+    }
+    _cloudReady = true;
+  }
+
+  function _subscribeCloud(onChange){
+    if(!_supa) return null;
+    return _supa.channel('app-state-'+Math.random().toString(36).slice(2,8))
+      .on('postgres_changes',
+        { event:'*', schema:'public', table:'app_meta', filter:'key=eq.state' },
+        payload => {
+          if(payload.new && payload.new.value){
+            const incoming = JSON.stringify(payload.new.value);
+            const current = JSON.stringify(_cache||{});
+            if(incoming === current) return;
+            _cache = _runMigrations(_fillDefaults(payload.new.value));
+            try{ localStorage.setItem(KEY, JSON.stringify(_cache)); }catch(e){}
+            if(onChange) try{ onChange(); }catch(e){ console.error('UI refresh fail', e); }
+          }
+        })
+      .subscribe();
   }
   function uid(prefix){
     return (prefix||'r_')+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
   }
   return {
+    /* 클라우드 전용 (앱 부팅 시 사용) */
+    _initFromCloud,
+    _subscribeCloud,
     all(){ return load(); },
     /* ── Receivings ── */
     listReceivings(){ return load().receivings.slice().sort((a,b)=>{
@@ -9260,33 +9372,135 @@ document.querySelectorAll('.date-quick').forEach(btn => {
 });
 
 /* ════════════════════════════════════════════════════════════════
-   초기화
+   초기화 — 인증 + 클라우드 로드 후 setup/render 호출
 ════════════════════════════════════════════════════════════════ */
-setupRouting();
-setupTabs();
-setupManualForm();
-setupExcelImport();
-setupBulkUpload();
-setupCleanup();
-setupStatement();
-setupCompanyTabs();
-setupCompanyForm();
-setupCompanyEditModal();
-setupCompanySearchInputs();
-setupOrderTabs();
-setupOrdersCsvUpload();
-setupBatchUpload();
-setupOrderDetailModal();
-setupOrderSearchInputs();
-setupSkuDetailModal();
-setupSkuAddModal();
-setupSkuSearchInputs();
-setupCardModal();
-setupPresetModal();
-renderList();
-renderCompanyList();
-renderOrderDashboard();
-renderSkuList();
+
+/* 모든 UI를 새로고침 (실시간 변경 수신 시 호출) */
+function _refreshAllUI(){
+  try{ renderList(); }catch(e){ console.error(e); }
+  try{ renderCompanyList(); }catch(e){ console.error(e); }
+  try{ renderOrderDashboard && renderOrderDashboard(); }catch(e){ console.error(e); }
+  try{ renderSkuList && renderSkuList(); }catch(e){ console.error(e); }
+}
+
+/* 로그인 폼 처리 — 사용자가 로그인할 때까지 기다림 */
+function _waitForLogin(){
+  return new Promise(resolve => {
+    const overlay = document.getElementById('login-overlay');
+    const form = document.getElementById('login-form');
+    const errEl = document.getElementById('login-error');
+    const infoEl = document.getElementById('login-info');
+    const emailEl = document.getElementById('login-email');
+    const pwEl = document.getElementById('login-password');
+
+    overlay.classList.remove('hidden');
+
+    async function tryLogin(e){
+      if(e) e.preventDefault();
+      errEl.textContent = ''; infoEl.textContent = '';
+      const { data, error } = await _supa.auth.signInWithPassword({
+        email: emailEl.value.trim(),
+        password: pwEl.value
+      });
+      if(error){ errEl.textContent = error.message; return; }
+      resolve(data.session);
+    }
+    async function trySignup(){
+      errEl.textContent = ''; infoEl.textContent = '';
+      if(!emailEl.value.trim() || pwEl.value.length < 6){
+        errEl.textContent = '이메일과 6자 이상 비밀번호 입력하세요';
+        return;
+      }
+      const { data, error } = await _supa.auth.signUp({
+        email: emailEl.value.trim(),
+        password: pwEl.value
+      });
+      if(error){ errEl.textContent = error.message; return; }
+      if(!data.session){
+        infoEl.textContent = '✓ 가입 완료. 이메일 확인 후 로그인하세요.';
+        return;
+      }
+      resolve(data.session);
+    }
+    form.addEventListener('submit', tryLogin);
+    document.getElementById('btn-signup').addEventListener('click', trySignup);
+  });
+}
+
+async function _bootApp(){
+  if(!_supa){
+    alert('Supabase 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인하세요.');
+    return;
+  }
+
+  // 1. 기존 세션 확인 (브라우저에 저장돼 있으면 자동 로그인)
+  let { data: { session } } = await _supa.auth.getSession();
+  if(!session){
+    session = await _waitForLogin();
+  }
+  _currentUser = session.user;
+
+  // 2. 로그인 오버레이 숨기고 로딩 표시
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('cloud-loading').classList.remove('hidden');
+
+  // 3. 클라우드에서 데이터 로드
+  try{
+    await Store._initFromCloud();
+  }catch(e){
+    document.getElementById('cloud-loading').classList.add('hidden');
+    alert('클라우드 데이터 로드 실패: ' + e.message);
+    return;
+  }
+
+  // 4. 실시간 변경 구독
+  Store._subscribeCloud(() => _refreshAllUI());
+
+  // 5. 사용자 표시바 노출
+  const ub = document.getElementById('user-bar');
+  document.getElementById('user-bar-email').textContent = _currentUser.email;
+  ub.classList.remove('hidden');
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    if(!confirm('로그아웃 하시겠어요?')) return;
+    await _supa.auth.signOut();
+    location.reload();
+  });
+
+  // 6. 로딩 숨기고 기존 setup/render 호출
+  document.getElementById('cloud-loading').classList.add('hidden');
+
+  setupRouting();
+  setupTabs();
+  setupManualForm();
+  setupExcelImport();
+  setupBulkUpload();
+  setupCleanup();
+  setupStatement();
+  setupCompanyTabs();
+  setupCompanyForm();
+  setupCompanyEditModal();
+  setupCompanySearchInputs();
+  setupOrderTabs();
+  setupOrdersCsvUpload();
+  setupBatchUpload();
+  setupOrderDetailModal();
+  setupOrderSearchInputs();
+  setupSkuDetailModal();
+  setupSkuAddModal();
+  setupSkuSearchInputs();
+  setupCardModal();
+  setupPresetModal();
+  renderList();
+  renderCompanyList();
+  renderOrderDashboard();
+  renderSkuList();
+}
+
+_bootApp().catch(err => {
+  console.error('App boot failed:', err);
+  document.getElementById('cloud-loading').classList.add('hidden');
+  alert('앱 시작 실패: ' + (err.message || err));
+});
 /* ════════════════════════════════════════════════════════════════
    주문 관리 v2 — 정렬, 체크박스, 편집, 선택출력, 수동카드
 ════════════════════════════════════════════════════════════════ */
