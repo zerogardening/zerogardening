@@ -52,7 +52,7 @@ input,select,textarea{font-family:inherit;font-size:14px}
 }
 .sidebar-header .brand-logo{
   max-width:140px;width:100%;height:auto;display:block;
-  filter:brightness(0) invert(1);  /* 검은 로고 → 흰색 (어두운 사이드바용) */
+  filter:brightness(0) invert(1);
 }
 .sidebar-header .subtitle{font-size:11px;color:var(--accent);margin-top:8px}
 .nav{padding:12px 0;flex:1;overflow-y:auto}
@@ -1053,65 +1053,6 @@ table.sku-table .sku-prefix-tag{
 .modal-title{font-size:16px;font-weight:600;color:var(--primary-dark)}
 .modal-close{font-size:22px;color:var(--muted);background:none;cursor:pointer}
 
-/* ─── 달력 모달 ─── */
-.calendar-modal-back{
-  position:fixed;inset:0;background:rgba(0,0,0,0.4);
-  display:flex;align-items:center;justify-content:center;z-index:200;
-}
-.calendar-modal-back.hidden{display:none}
-.calendar-modal-inner{
-  background:#fff;border-radius:12px;padding:22px 24px 20px;
-  width:92%;max-width:680px;max-height:90vh;overflow-y:auto;
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
-}
-.calendar-controls{
-  display:flex;align-items:center;gap:8px;margin:8px 0 14px;
-}
-.calendar-controls #cal-month-label{
-  flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--primary-dark);
-}
-.calendar-controls .cal-nav{
-  background:#f0f4f0;border:none;width:32px;height:32px;border-radius:6px;
-  cursor:pointer;font-size:16px;color:var(--primary-dark);
-}
-.calendar-controls .cal-nav:hover{background:#e0e8e0}
-.calendar-controls .cal-today-btn{
-  padding:6px 12px;background:var(--primary);color:#fff;border:none;
-  border-radius:6px;cursor:pointer;font-size:12px;
-}
-.calendar-grid{
-  display:grid;grid-template-columns:repeat(7,1fr);gap:3px;
-}
-.cal-day-header{
-  font-weight:600;text-align:center;padding:6px 0;font-size:12px;color:#666;
-}
-.cal-day-header.sun{color:#c33}
-.cal-day-header.sat{color:#06c}
-.cal-day{
-  min-height:62px;padding:5px 5px 4px;border:1px solid #eaeaea;
-  border-radius:6px;cursor:pointer;transition:all .12s;background:#fff;
-  display:flex;flex-direction:column;
-}
-.cal-day:hover{background:#f5f7f5;border-color:var(--primary)}
-.cal-day.other-month{opacity:.3;cursor:default}
-.cal-day.other-month:hover{background:#fff;border-color:#eaeaea}
-.cal-day.today{border-color:var(--primary);border-width:2px}
-.cal-day.today .cal-day-num{color:var(--primary);font-weight:700}
-.cal-day-num{font-size:12px;color:#333}
-.cal-day-num.sun{color:#c33}
-.cal-day-num.sat{color:#06c}
-.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;padding-top:4px}
-.cal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.cal-day-count{font-size:10px;color:var(--muted);margin-top:2px}
-.calendar-legend{
-  margin-top:14px;padding-top:12px;border-top:1px solid #eee;
-  display:flex;flex-wrap:wrap;gap:10px;font-size:12px;
-}
-.cal-legend-item{display:flex;align-items:center;gap:5px;color:#444}
-.cal-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.calendar-empty-msg{color:var(--muted);font-size:12px}
-
-
 /* ── Toast ── */
 .toast-wrap{
   position:fixed;bottom:20px;right:20px;z-index:200;
@@ -1762,30 +1703,43 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 }
 
 <style>
-/* ─── 로그인 오버레이 ─── */
-.login-overlay{position:fixed;inset:0;background:rgba(20,30,25,.6);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:99999}
-.login-overlay.hidden{display:none}
-.login-modal{background:#fff;padding:36px 32px;border-radius:12px;min-width:340px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.login-modal h2{margin:0 0 4px;color:var(--primary-dark);font-size:22px}
-.login-modal .login-sub{color:#666;font-size:13px;margin-bottom:22px}
-.login-modal label{display:block;margin-bottom:14px;font-size:13px;color:#444}
-.login-modal label span{display:block;margin-bottom:5px;font-weight:500}
-.login-modal input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:6px;font-size:14px;box-sizing:border-box}
-.login-modal input:focus{outline:none;border-color:var(--primary)}
-.login-modal .login-buttons{display:flex;gap:8px;margin-top:6px}
-.login-modal .login-buttons button{flex:1;padding:10px;border:none;border-radius:6px;font-size:14px;cursor:pointer;font-weight:500}
-.login-modal .btn-login{background:var(--primary);color:#fff}
-.login-modal .btn-login:hover{background:var(--primary-dark)}
-.login-modal .btn-signup{background:#f0f0f0;color:#333}
-.login-modal .btn-signup:hover{background:#e0e0e0}
-.login-modal .login-error{margin-top:12px;color:#c33;font-size:13px;min-height:18px}
-.login-modal .login-info{margin-top:12px;color:#0a7;font-size:13px;min-height:18px}
+/* ─── 사용자 표시바 + 클라우드 로딩 ─── */
 .user-bar{position:fixed;top:8px;right:14px;font-size:12px;color:#666;background:rgba(255,255,255,.85);padding:4px 12px;border-radius:14px;z-index:9998;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
 .user-bar.hidden{display:none}
 .user-bar button{border:none;background:transparent;color:#c33;cursor:pointer;font-size:12px;padding:0}
 .user-bar button:hover{text-decoration:underline}
 .cloud-loading{position:fixed;inset:0;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;z-index:99998;font-size:14px;color:#444}
 .cloud-loading.hidden{display:none}
+
+/* ─── 달력 모달 ─── */
+.calendar-modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;z-index:200}
+.calendar-modal-back.hidden{display:none}
+.calendar-modal-inner{background:#fff;border-radius:12px;padding:22px 24px 20px;width:92%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.calendar-controls{display:flex;align-items:center;gap:8px;margin:8px 0 14px}
+.calendar-controls #cal-month-label{flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--primary-dark)}
+.calendar-controls .cal-nav{background:#f0f4f0;border:none;width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:16px;color:var(--primary-dark)}
+.calendar-controls .cal-nav:hover{background:#e0e8e0}
+.calendar-controls .cal-today-btn{padding:6px 12px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-header{font-weight:600;text-align:center;padding:6px 0;font-size:12px;color:#666}
+.cal-day-header.sun{color:#c33}
+.cal-day-header.sat{color:#06c}
+.cal-day{min-height:62px;padding:5px 5px 4px;border:1px solid #eaeaea;border-radius:6px;cursor:pointer;transition:all .12s;background:#fff;display:flex;flex-direction:column}
+.cal-day:hover{background:#f5f7f5;border-color:var(--primary)}
+.cal-day.other-month{opacity:.3;cursor:default}
+.cal-day.other-month:hover{background:#fff;border-color:#eaeaea}
+.cal-day.today{border-color:var(--primary);border-width:2px}
+.cal-day.today .cal-day-num{color:var(--primary);font-weight:700}
+.cal-day-num{font-size:12px;color:#333}
+.cal-day-num.sun{color:#c33}
+.cal-day-num.sat{color:#06c}
+.cal-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:auto;padding-top:4px}
+.cal-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-day-count{font-size:10px;color:var(--muted);margin-top:2px}
+.calendar-legend{margin-top:14px;padding-top:12px;border-top:1px solid #eee;display:flex;flex-wrap:wrap;gap:10px;font-size:12px}
+.cal-legend-item{display:flex;align-items:center;gap:5px;color:#444}
+.cal-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.calendar-empty-msg{color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -3434,8 +3388,8 @@ const _supa = (window.supabase && window.supabase.createClient)
       auth: { persistSession: true, autoRefreshToken: true }
     })
   : null;
-let _cloudReady = false;       // 클라우드 데이터 로드 완료
-let _currentUser = null;       // Supabase auth user
+let _cloudReady = false;
+let _currentUser = null;
 
 /* ────────────────────────────────────────────────
    Storage Module — 메모리 캐시 + Supabase 클라우드 동기화
@@ -3458,7 +3412,7 @@ const Store = (() => {
     { name:'⭐ 리뷰 안내', content:'식물이 마음에 드셨다면 잠깐 시간 내어 리뷰 한 줄 남겨주시면 큰 힘이 됩니다 :) 키우시다 궁금한 점이나 부족한 부분이 있으시면 언제든 편하게 연락주세요. 감사합니다.' },
   ];
 
-  let _cache = null;  // 메모리 캐시
+  let _cache = null;
 
   function _fillDefaults(data){
     if(!data.receivings) data.receivings = [];
@@ -9412,10 +9366,9 @@ document.querySelectorAll('.date-quick').forEach(btn => {
 });
 
 /* ════════════════════════════════════════════════════════════════
-   초기화 — 인증 + 클라우드 로드 후 setup/render 호출
+   초기화 — 인증 + 클라우드 로드 후 setup/render
 ════════════════════════════════════════════════════════════════ */
 
-/* 모든 UI를 새로고침 (실시간 변경 수신 시 호출) */
 function _refreshAllUI(){
   try{ renderList(); }catch(e){ console.error(e); }
   try{ renderCompanyList(); }catch(e){ console.error(e); }
@@ -9423,9 +9376,7 @@ function _refreshAllUI(){
   try{ renderSkuList && renderSkuList(); }catch(e){ console.error(e); }
 }
 
-/* 미로그인 시 로그인 페이지로 리다이렉트 */
 function _redirectToLogin(){
-  // 로그인 후 다시 이 위치로 돌아오게 from 파라미터 추가
   const target = encodeURIComponent(location.href);
   location.replace('./index.html?from=' + target);
 }
@@ -9435,19 +9386,15 @@ async function _bootApp(){
     alert('Supabase 라이브러리가 로드되지 않았습니다. 인터넷 연결을 확인하세요.');
     return;
   }
-
-  // 1. 세션 확인 — 없으면 로그인 페이지로 리다이렉트
   const { data: { session } } = await _supa.auth.getSession();
   if(!session){
     _redirectToLogin();
-    return new Promise(() => {}); // redirect 진행 중 → bootApp 멈춤
+    return new Promise(() => {});
   }
   _currentUser = session.user;
 
-  // 2. 클라우드 로딩 표시
   document.getElementById('cloud-loading').classList.remove('hidden');
 
-  // 3. 클라우드에서 데이터 로드
   try{
     await Store._initFromCloud();
   }catch(e){
@@ -9456,10 +9403,8 @@ async function _bootApp(){
     return;
   }
 
-  // 4. 실시간 변경 구독
   Store._subscribeCloud(() => _refreshAllUI());
 
-  // 5. 사용자 표시바 노출
   const ub = document.getElementById('user-bar');
   document.getElementById('user-bar-email').textContent = _currentUser.email;
   ub.classList.remove('hidden');
@@ -9469,7 +9414,6 @@ async function _bootApp(){
     location.replace('./index.html');
   });
 
-  // 6. 로딩 숨기고 기존 setup/render 호출
   document.getElementById('cloud-loading').classList.add('hidden');
 
   setupRouting();
@@ -10611,7 +10555,7 @@ function renderCalendar(year, month){
   _calCurMonth = month;
 
   const recs = Store.listReceivings();
-  const dayMap = {}; // 'YYYY-MM-DD' → { suppliers: Set, count: number }
+  const dayMap = {};
   recs.forEach(r => {
     const d = r.receivedAt;
     if(!d) return;
@@ -10635,13 +10579,11 @@ function renderCalendar(year, month){
     html += `<div class="cal-day-header ${cls}">${d}</div>`;
   });
 
-  // 이전 달 빈 셀
   for(let i = 0; i < startWeekday; i++){
     const prevDate = new Date(year, month, -startWeekday + i + 1);
     html += `<div class="cal-day other-month"><span class="cal-day-num">${prevDate.getDate()}</span></div>`;
   }
 
-  // 이번 달 날짜
   for(let d = 1; d <= daysInMonth; d++){
     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const info = dayMap[dateStr];
@@ -10653,7 +10595,6 @@ function renderCalendar(year, month){
     let countLabel = '';
     if(info){
       const suppliers = Array.from(info.suppliers);
-      // 업체당 점 1개씩 (최대 6개까지 표시, 나머지는 +N)
       const maxShow = 6;
       suppliers.slice(0, maxShow).forEach(s => {
         dots += `<span class="cal-dot" style="background:${colorForSupplier(s)}" title="${escapeHtml(s)}"></span>`;
@@ -10674,7 +10615,6 @@ function renderCalendar(year, month){
   document.getElementById('calendar-grid').innerHTML = html;
   document.getElementById('cal-month-label').textContent = `${year}년 ${month+1}월`;
 
-  // 범례 (이번 달 입고된 업체들)
   const monthSuppliers = new Set();
   Object.keys(dayMap).forEach(date => {
     if(date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)){
@@ -10694,20 +10634,15 @@ function renderCalendar(year, month){
   }
   document.getElementById('calendar-legend').innerHTML = legendHtml;
 
-  // 날짜 클릭 → 입고 리스트 필터링
   document.querySelectorAll('.cal-day[data-date]').forEach(cell => {
     cell.addEventListener('click', () => {
       const date = cell.getAttribute('data-date');
-      // 입고 리스트 / 검색 탭 활성화
       document.querySelector('[data-tab="list"]').click();
-      // 기간 필터를 직접지정으로
       const periodSel = document.getElementById('filter-period');
       periodSel.value = 'custom';
       document.getElementById('custom-date-from').value = date;
       document.getElementById('custom-date-to').value = date;
-      // change 이벤트로 필터 적용
       periodSel.dispatchEvent(new Event('change'));
-      // 모달 닫기
       document.getElementById('calendar-modal').classList.add('hidden');
     });
   });
@@ -10751,4 +10686,4 @@ setupPriceModal();
 
 </script>
 </body>
-</htm
+</html>
