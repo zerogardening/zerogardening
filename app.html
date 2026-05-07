@@ -1740,6 +1740,10 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 .cal-legend-item{display:flex;align-items:center;gap:5px;color:#444}
 .cal-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .calendar-empty-msg{color:var(--muted);font-size:12px}
+.active-date-filter{display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 10px;background:#fff8e1;border:1px solid #ffd54f;border-radius:14px;font-size:12px;color:#7a5b00}
+.active-date-filter.hidden{display:none}
+.active-date-filter button{border:none;background:transparent;color:#7a5b00;cursor:pointer;font-size:16px;padding:0;line-height:1;font-weight:bold}
+.active-date-filter button:hover{color:#c33}
 </style>
 </head>
 <body>
@@ -1992,59 +1996,23 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
         <!-- ===== 입고 리스트 / 검색 ===== -->
         <section id="tab-list" class="tab-pane hidden">
-          <div class="search-bar" style="flex-wrap:wrap;gap:8px">
-            <select id="search-field">
-              <option value="all">전체 검색</option>
-              <option value="distributionName">유통명</option>
-              <option value="scientificName">식물학명</option>
-              <option value="barcode">품목코드</option>
-              <option value="supplier">입고업체</option>
-              <option value="spec">규격</option>
-              <option value="plantTraits">🌱 식물 특성 (전체)</option>
-              <option value="height">↕ 최대높이</option>
-              <option value="width">↔ 최대너비</option>
-              <option value="hardiness">❄ 내한성 (USDA Zone)</option>
-              <option value="watering">💧 물주기</option>
-              <option value="sunlight">☀ 일조량</option>
-              <option value="bloom">🌸 개화기</option>
-            </select>
-            <input type="text" id="search-input" placeholder="검색어 입력…" style="flex:1;min-width:160px">
-            <select id="filter-supplier" style="min-width:140px">
+          <div class="search-bar" style="flex-wrap:wrap;gap:10px;align-items:center">
+            <label style="font-size:13px;color:var(--muted);font-weight:500">업체별</label>
+            <select id="filter-supplier" style="min-width:160px">
               <option value="all">전체 업체</option>
             </select>
-            <select id="filter-period">
-              <option value="all">전체 기간</option>
-              <option value="today">오늘</option>
-              <option value="yesterday">어제</option>
-              <option value="7">최근 7일</option>
-              <option value="30">최근 30일</option>
-              <option value="thisMonth">이번 달</option>
-              <option value="lastMonth">지난 달</option>
-              <option value="thisYear">올해</option>
-              <option value="custom">📅 기간 직접지정</option>
-            </select>
-            <select id="filter-status">
-              <option value="all">전체 상태</option>
-              <option value="ok">정상</option>
-              <option value="missing">누락 항목</option>
-            </select>
-            <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="btn-clear-filters" title="모든 필터 초기화">↺ 초기화</button>
-          </div>
-          <!-- 기간 직접지정 패널 (filter-period === 'custom' 일 때만 표시) -->
-          <div id="custom-date-panel" style="display:none;background:#fff;padding:12px;border-radius:8px;box-shadow:var(--shadow);margin-bottom:12px;flex-wrap:wrap;gap:10px;align-items:center">
-            <span style="font-size:12px;font-weight:600;color:var(--primary-dark)">📅 기간 지정:</span>
-            <input type="date" id="custom-date-from" class="form-control" style="width:auto;padding:6px 10px;font-size:13px">
-            <span class="muted">~</span>
-            <input type="date" id="custom-date-to" class="form-control" style="width:auto;padding:6px 10px;font-size:13px">
-            <span style="font-size:11px;color:var(--muted)">|</span>
-            <span style="font-size:11px;color:var(--muted)">빠른 선택:</span>
-            <button type="button" class="btn btn-ghost btn-sm date-quick" data-range="today">오늘</button>
-            <button type="button" class="btn btn-ghost btn-sm date-quick" data-range="yesterday">어제</button>
-            <button type="button" class="btn btn-ghost btn-sm date-quick" data-range="thisWeek">이번주</button>
-            <button type="button" class="btn btn-ghost btn-sm date-quick" data-range="thisMonth">이번달</button>
-            <button type="button" class="btn btn-ghost btn-sm date-quick" data-range="lastMonth">지난달</button>
-            <button type="button" class="btn btn-ghost btn-sm date-quick" data-range="thisYear">올해</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력으로 보기</button>
+            <span id="active-date-filter" class="active-date-filter hidden">
+              📅 <span id="active-date-text"></span>
+              <button type="button" id="btn-clear-date-filter" title="날짜 필터 해제">×</button>
+            </span>
+            <!-- 호환성용 hidden inputs (다른 코드가 참조함) -->
+            <input type="hidden" id="search-input" value="">
+            <input type="hidden" id="search-field" value="all">
+            <input type="hidden" id="filter-period" value="all">
+            <input type="hidden" id="filter-status" value="all">
+            <input type="hidden" id="custom-date-from" value="">
+            <input type="hidden" id="custom-date-to" value="">
           </div>
 
           <div class="summary-bar" id="summary-bar"></div>
@@ -7156,6 +7124,7 @@ document.getElementById('file-import').addEventListener('change', e=>{
 (function setupCustomDatePanel(){
   const period = document.getElementById('filter-period');
   const panel = document.getElementById('custom-date-panel');
+  if(!panel){ return; } // 패널이 제거된 경우 스킵
   if(!period || !panel) return;
   function sync(){
     if(period.value === 'custom'){
@@ -10638,15 +10607,33 @@ function renderCalendar(year, month){
     cell.addEventListener('click', () => {
       const date = cell.getAttribute('data-date');
       document.querySelector('[data-tab="list"]').click();
-      const periodSel = document.getElementById('filter-period');
-      periodSel.value = 'custom';
+      // hidden inputs + 활성 배지로 날짜 필터 적용
+      document.getElementById('filter-period').value = 'custom';
       document.getElementById('custom-date-from').value = date;
       document.getElementById('custom-date-to').value = date;
-      periodSel.dispatchEvent(new Event('change'));
+      // 활성 배지 표시
+      const badge = document.getElementById('active-date-filter');
+      document.getElementById('active-date-text').textContent = date + ' 입고만 표시';
+      badge.classList.remove('hidden');
+      // 리스트 새로고침
+      try{ renderList(); }catch(e){}
       document.getElementById('calendar-modal').classList.add('hidden');
     });
   });
 }
+
+function _setupDateFilterClearBtn(){
+  const btn = document.getElementById('btn-clear-date-filter');
+  if(!btn) return;
+  btn.addEventListener('click', () => {
+    document.getElementById('filter-period').value = 'all';
+    document.getElementById('custom-date-from').value = '';
+    document.getElementById('custom-date-to').value = '';
+    document.getElementById('active-date-filter').classList.add('hidden');
+    try{ renderList(); }catch(e){}
+  });
+}
+_setupDateFilterClearBtn();
 
 function setupCalendarModal(){
   const btn = document.getElementById('btn-open-calendar');
