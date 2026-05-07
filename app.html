@@ -586,6 +586,12 @@ table.data-table .has-missing td:first-child{box-shadow:inset 3px 0 0 var(--dang
 .plant-traits.empty{color:var(--muted);font-style:italic;font-size:11px}
 
 /* ── 품목코드 관리 ── */
+.size-qty-badge{
+  display:inline-block;padding:2px 8px;margin:1px 2px;
+  background:#eef5ee;color:var(--primary-dark);
+  border-radius:10px;font-size:11.5px;
+}
+.size-qty-badge strong{color:#1b4332;font-weight:700;margin-left:2px}
 table.sku-table{
   width:100%;background:#fff;border-radius:8px;overflow:hidden;
   border-collapse:collapse;box-shadow:var(--shadow);font-size:13px;
@@ -1771,7 +1777,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
     <nav class="nav" id="nav">
       <div class="nav-section">상품 관리</div>
       <div class="nav-item active" data-route="receiving">
-        <span class="nav-icon">📦</span><span>상품입고 관리</span>
+        <span class="nav-icon">📦</span><span>상품 관리</span>
       </div>
       <div class="nav-item" data-route="statement">
         <span class="nav-icon">📋</span><span>명세서 발행</span>
@@ -1802,7 +1808,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
   <main class="main">
     <header class="topbar">
       <div>
-        <h2 id="page-title">상품입고 관리</h2>
+        <h2 id="page-title">상품 관리</h2>
         <div class="meta" id="page-meta">입고 데이터를 등록하고 검색합니다</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -1818,8 +1824,8 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
       <div id="route-receiving">
         <div class="tabs">
           <button class="tab active" data-tab="manual">✏️ 수동 입고</button>
-          <button class="tab" data-tab="list">📋 입고 리스트 / 검색</button>
-          <button class="tab" data-tab="sku">🏷️ 품목코드 관리</button>
+          <button class="tab" data-tab="list">📋 입고 리스트</button>
+          <button class="tab" data-tab="sku" style="display:none">🏷️ 품목코드 관리</button>
         </div>
 
         <!-- ===== 수동 입고 ===== -->
@@ -2002,6 +2008,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <option value="all">전체 업체</option>
             </select>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력으로 보기</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-show-sku-view" title="품목코드별 보기 (중복 제외)">🏷 품목코드</button>
             <span id="active-date-filter" class="active-date-filter hidden">
               📅 <span id="active-date-text"></span>
               <button type="button" id="btn-clear-date-filter" title="날짜 필터 해제">×</button>
@@ -2024,6 +2031,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <!-- ===== 품목코드 관리 ===== -->
         <section id="tab-sku" class="tab-pane hidden">
           <div class="search-bar" style="flex-wrap:wrap;gap:8px">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-back-to-list" title="입고 리스트로 돌아가기">← 입고 리스트로</button>
             <select id="sku-search-field">
               <option value="all">전체 검색</option>
               <option value="barcode">품목코드</option>
@@ -4179,6 +4187,19 @@ function setupTabs(){
       if(target==='sku')  renderSkuList();
     });
   });
+  // 입고 리스트 ↔ 품목코드 토글 버튼
+  const btnShowSku = document.getElementById('btn-show-sku-view');
+  if(btnShowSku){
+    btnShowSku.addEventListener('click', () => {
+      document.querySelector('.tab[data-tab="sku"]').click();
+    });
+  }
+  const btnBackToList = document.getElementById('btn-back-to-list');
+  if(btnBackToList){
+    btnBackToList.addEventListener('click', () => {
+      document.querySelector('.tab[data-tab="list"]').click();
+    });
+  }
 }
 
 /* ────────────────────────────────────────────────
@@ -8451,6 +8472,7 @@ function aggregateSkus(){
         barcode: prefix, prefix: prefix,
         scientificName: '', distributionName: '',
         sizes: new Set(), sizeNums: new Set(),
+        sizeQtyMap: {},  // 사이즈(spec) → 누적 수량
         receivings: [], suppliers: new Set(),
         firstAt: '', lastAt: '',
         totalQty: 0, totalCost: 0, avgPrice: 0, latestPrice: 0,
@@ -8471,6 +8493,9 @@ function aggregateSkus(){
     const price = Number(r.purchasePrice)||0;
     agg.totalQty += qty;
     agg.totalCost += qty * price;
+    if(r.spec){
+      agg.sizeQtyMap[r.spec] = (agg.sizeQtyMap[r.spec]||0) + qty;
+    }
     if(r.receivedAt){
       if(!agg.firstAt || r.receivedAt < agg.firstAt) agg.firstAt = r.receivedAt;
       if(!agg.lastAt  || r.receivedAt > agg.lastAt ) agg.lastAt  = r.receivedAt;
@@ -8603,7 +8628,12 @@ function renderSkuList(){
           if(s.hasMaster && !s.hasReceiving) sourceBadges.push(`<span class="sku-source-badge master">✏️ 수동</span>`);
           else if(s.hasMaster) sourceBadges.push(`<span class="sku-source-badge master">✏️ 편집됨</span>`);
           const sizesHtml = s.sizesArr.length > 0
-            ? s.sizesArr.map(sz => { const m = String(sz).match(/(\d+)/); return m ? `${m[1]}cm` : escapeHtml(sz); }).join(' · ')
+            ? s.sizesArr.map(sz => {
+                const m = String(sz).match(/(\d+)/);
+                const label = m ? `${m[1]}cm` : escapeHtml(sz);
+                const qty = s.sizeQtyMap[sz] || 0;
+                return `<span class="size-qty-badge">${label} <strong>${fmtNum(qty)}</strong></span>`;
+              }).join(' ')
             : '<span class="muted tight">-</span>';
           return `<tr onclick="openSkuDetail(${JSON.stringify(s.barcode).replace(/"/g,'&quot;')})">
             <td><span class="sku-code">${escapeHtml(s.barcode)}</span></td>
