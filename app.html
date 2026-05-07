@@ -6797,13 +6797,30 @@ function getFilteredList(){
   return list;
 }
 
-/* filter-supplier 옵션을 receivings의 고유 업체로 채움 */
+/* filter-supplier 옵션을 receivings의 고유 업체로 채움
+   날짜 필터가 활성화돼 있으면 그 날짜의 업체만 표시 (엑셀 의존 필터 방식) */
 function refreshSupplierFilterOptions(){
   const sel = document.getElementById('filter-supplier');
   if(!sel) return;
   const current = sel.value;
+
+  // 날짜 필터 활성화 여부 체크
+  const period = (document.getElementById('filter-period')||{}).value || 'all';
+  const dateFrom = (document.getElementById('custom-date-from')||{}).value || '';
+  const dateTo   = (document.getElementById('custom-date-to')||{}).value || '';
+
+  let recs = Store.listReceivings();
+  if(period === 'custom' && (dateFrom || dateTo)){
+    recs = recs.filter(r => {
+      const d = (r.receivedAt||'');
+      if(dateFrom && d < dateFrom) return false;
+      if(dateTo   && d > dateTo)   return false;
+      return true;
+    });
+  }
+
   const counts = new Map();
-  Store.listReceivings().forEach(r=>{
+  recs.forEach(r=>{
     const s = (r.supplier||'').trim();
     if(!s) return;
     counts.set(s, (counts.get(s)||0)+1);
@@ -6814,6 +6831,7 @@ function refreshSupplierFilterOptions(){
   });
   sel.innerHTML = '<option value="all">전체 업체</option>' +
     sorted.map(([name,cnt])=>`<option value="${escapeHtml(name)}">${escapeHtml(name)} (${cnt})</option>`).join('');
+  // 기존 선택을 유지 (옵션 목록에 있을 때만)
   if(current && [...sel.options].some(o=>o.value===current)) sel.value = current;
 }
 
@@ -10646,31 +10664,4 @@ function setupCalendarModal(){
     modal.classList.remove('hidden');
   });
   document.getElementById('calendar-close').addEventListener('click', () => {
-    modal.classList.add('hidden');
-  });
-  modal.addEventListener('click', e => {
-    if(e.target === modal) modal.classList.add('hidden');
-  });
-  document.getElementById('cal-prev-month').addEventListener('click', () => {
-    let m = _calCurMonth - 1, y = _calCurYear;
-    if(m < 0){ m = 11; y--; }
-    renderCalendar(y, m);
-  });
-  document.getElementById('cal-next-month').addEventListener('click', () => {
-    let m = _calCurMonth + 1, y = _calCurYear;
-    if(m > 11){ m = 0; y++; }
-    renderCalendar(y, m);
-  });
-  document.getElementById('cal-today').addEventListener('click', () => {
-    const t = new Date();
-    renderCalendar(t.getFullYear(), t.getMonth());
-  });
-}
-
-setupCalendarModal();
-
-setupPriceModal();
-
-</script>
-</body>
-</html>
+    modal.classList.add('hidd
