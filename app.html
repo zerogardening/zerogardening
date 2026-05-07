@@ -10621,17 +10621,22 @@ function renderCalendar(year, month){
   document.querySelectorAll('.cal-day[data-date]').forEach(cell => {
     cell.addEventListener('click', () => {
       const date = cell.getAttribute('data-date');
-      document.querySelector('[data-tab="list"]').click();
-      // hidden inputs + 활성 배지로 날짜 필터 적용
+      // 1) 필터 inputs 먼저 세팅 (탭 클릭 시 renderList가 이 값을 봄)
       document.getElementById('filter-period').value = 'custom';
       document.getElementById('custom-date-from').value = date;
       document.getElementById('custom-date-to').value = date;
-      // 활성 배지 표시
+      // 2) 업체 드롭다운을 'all'로 리셋 (이전 선택이 새 목록에 없을 수 있음)
+      const supSel = document.getElementById('filter-supplier');
+      if(supSel) supSel.value = 'all';
+      // 3) 활성 배지 표시
       const badge = document.getElementById('active-date-filter');
       document.getElementById('active-date-text').textContent = date + ' 입고만 표시';
       badge.classList.remove('hidden');
-      // 리스트 새로고침
-      try{ renderList(); }catch(e){}
+      // 4) 입고 리스트 탭으로 전환 (탭 핸들러가 renderList를 호출, 이때 위 필터 반영됨)
+      document.querySelector('[data-tab="list"]').click();
+      // 5) 안전하게 한 번 더 명시적 갱신 (혹시 탭 클릭이 무효였을 경우)
+      try{ refreshSupplierFilterOptions(); renderList(); }catch(e){ console.error(e); }
+      // 6) 모달 닫기
       document.getElementById('calendar-modal').classList.add('hidden');
     });
   });
