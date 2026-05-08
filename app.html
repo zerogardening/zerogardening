@@ -1816,6 +1816,8 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 .user-bar.hidden{display:none}
 .user-bar button{border:none;background:transparent;color:#c33;cursor:pointer;font-size:12px;padding:0}
 .user-bar button:hover{text-decoration:underline}
+/* 인쇄 시 로그인 정보·로그아웃 버튼은 출력에서 제외 */
+@media print { .user-bar{display:none !important;} }
 .cloud-loading{position:fixed;inset:0;background:rgba(255,255,255,.95);display:flex;align-items:center;justify-content:center;z-index:99998;font-size:14px;color:#444}
 .cloud-loading.hidden{display:none}
 
@@ -11414,24 +11416,30 @@ function computeInventoryList(){
   const adjustments = d.inventoryAdjustments || {};
 
   // 모든 키 수집
-  const keyMap = new Map(); // key → { recvs:[], orders:[], distName, sciName, sizes:Set }
+  const keyMap = new Map(); // key → { recvs:[], orders:[], distName, sciName, sizes:Set, _hasRecvName }
   recs.forEach(r => {
     const key = normalizeInventoryKey(r.barcode);
     if(!key) return;
-    if(!keyMap.has(key)) keyMap.set(key, { recvs:[], orders:[], distName:'', sciName:'', specs:new Set() });
+    if(!keyMap.has(key)) keyMap.set(key, { recvs:[], orders:[], distName:'', sciName:'', specs:new Set(), _hasRecvName:false });
     const o = keyMap.get(key);
     o.recvs.push(r);
-    if(!o.distName && r.distributionName) o.distName = r.distributionName;
+    // 입고리스트의 식물명 우선: distributionName → scientificName 순으로 fallback
+    if(!o.distName && r.distributionName){ o.distName = r.distributionName; o._hasRecvName = true; }
     if(!o.sciName && r.scientificName) o.sciName = r.scientificName;
     if(r.spec) o.specs.add(r.spec);
   });
+  // 두번째 패스: 입고리스트에 distName 이 없는 SKU 만 sciName 으로 보강
+  for(const [, o] of keyMap){
+    if(!o.distName && o.sciName){ o.distName = o.sciName; o._hasRecvName = true; }
+  }
   orders.forEach(o => {
     const key = normalizeInventoryKey(o.itemCode);
     if(!key) return;
-    if(!keyMap.has(key)) keyMap.set(key, { recvs:[], orders:[], distName:'', sciName:'', specs:new Set() });
+    if(!keyMap.has(key)) keyMap.set(key, { recvs:[], orders:[], distName:'', sciName:'', specs:new Set(), _hasRecvName:false });
     const obj = keyMap.get(key);
     obj.orders.push(o);
-    if(!obj.distName && o.productName) obj.distName = o.productName;
+    // 입고리스트에 이름이 있으면 발주 상품명으로 절대 덮어쓰지 않음
+    if(!obj.distName && !obj._hasRecvName && o.productName) obj.distName = o.productName;
   });
 
   const results = [];
