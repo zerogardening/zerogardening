@@ -1143,6 +1143,17 @@ table.sku-table .sku-prefix-tag{
   width:90%;max-width:900px;max-height:85vh;overflow-y:auto;
   box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
+/* 입고 정보 수정 모달: 한 화면에 짤리지 않게 폭 ↑ + 그리드 자동 정렬 */
+.modal.edit-modal-wide{ width:95%; }
+.modal.edit-modal-wide .form-grid{
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+.modal.edit-modal-wide .form-control{ min-width:0; }
+@media (max-width: 900px){
+  .modal.edit-modal-wide .form-grid{
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
 .modal-head{
   display:flex;justify-content:space-between;align-items:center;
   margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);
@@ -2813,7 +2824,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
 <!-- 상세 수정 모달 -->
 <div id="edit-modal" class="modal-back hidden">
-  <div class="modal" style="max-width:920px">
+  <div class="modal edit-modal-wide" style="max-width:1200px">
     <div class="modal-head">
       <div class="modal-title">입고 정보 수정</div>
       <button class="modal-close" id="edit-close">×</button>
