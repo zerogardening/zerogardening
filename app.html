@@ -11676,9 +11676,25 @@ function computeInventoryList(){
     if(!keyMap.has(key)) keyMap.set(key, { recvs:[], orders:[], distName:'', sciName:'', specs:new Set(), _hasRecvName:false });
     const obj = keyMap.get(key);
     obj.orders.push(o);
-    // 입고리스트에 이름이 있으면 발주 상품명으로 절대 덮어쓰지 않음
-    if(!obj.distName && !obj._hasRecvName && o.productName) obj.distName = o.productName;
   });
+
+  // 입고리스트에 이름이 없고 SKU 마스터(식물 등록)에 유통명이 있으면 그걸 우선 사용
+  // (발주의 productName 은 쇼핑몰 상품 제목이라서 길고 부적합)
+  for(const [key, obj] of keyMap){
+    if(obj._hasRecvName) continue;
+    const sku = (typeof Store !== 'undefined' && Store.findSkuByCode) ? Store.findSkuByCode(key) : null;
+    if(sku){
+      if(!obj.distName && sku.distributionName) obj.distName = sku.distributionName;
+      if(!obj.sciName  && sku.scientificName)   obj.sciName  = sku.scientificName;
+      if(obj.distName) obj._hasRecvName = true;  // 추가 fallback 차단
+    }
+  }
+  // 마지막 fallback: SKU 마스터도 없으면 발주 상품명 사용
+  for(const [, obj] of keyMap){
+    if(obj.distName) continue;
+    const firstOrderName = (obj.orders.find(o => o.productName) || {}).productName;
+    if(firstOrderName) obj.distName = firstOrderName;
+  }
 
   const results = [];
   for(const [key, info] of keyMap){
