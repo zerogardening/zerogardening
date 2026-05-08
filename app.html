@@ -9340,6 +9340,7 @@ function aggregateSkus(){
     if(m.note) agg.note = m.note;
     if(m.productCopy) agg.productCopy = m.productCopy;
     if(m.keywords) agg.keywords = m.keywords;
+    if(m.aiFields) agg.aiFields = m.aiFields;
     if(m.aiUpdatedAt) agg.aiUpdatedAt = m.aiUpdatedAt;
     agg.masterUpdatedAt = m.updatedAt;
   });
@@ -9611,16 +9612,20 @@ window.openSkuDetail = function(barcode){
       <div id="ai-writing-pending-info" style="display:none;font-size:12px;color:#1e4abb;background:#fff;padding:8px 12px;border-radius:6px;margin-bottom:10px;border:1px dashed #cfe0fa">
         ⏳ 대기 중 — Cowork 채팅창에 "AI 글쓰기 처리해줘" 한 마디 해주세요. 결과는 자동으로 여기에 반영됩니다.
       </div>
-      <div class="sku-edit-form" id="ai-writing-form">
-        <div class="field" style="grid-column:1/-1">
-          <label>📝 상세페이지 본문 <span class="muted tight" style="font-weight:normal">(직접 편집 가능)</span></label>
-          <textarea name="productCopy" rows="6" placeholder="AI 글쓰기 요청 또는 직접 입력" style="resize:vertical;font-family:inherit;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;width:100%;box-sizing:border-box">${escapeHtml(s.productCopy||'')}</textarea>
+      <div id="ai-writing-form">
+        <div class="ai-global-controls" style="margin-bottom:10px;background:#fff;padding:10px;border-radius:6px;border:1px solid #e0e8f5">
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+            <div style="flex:1;min-width:240px">
+              <label style="font-size:11px;font-weight:600;color:var(--primary-dark);display:block;margin-bottom:3px">📝 전체 요청사항 (모든 항목에 공통 적용)</label>
+              <textarea id="ai-global-request" rows="2" placeholder="예: 좀 더 구어체로, 친근한 톤으로" style="width:100%;font-family:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;line-height:1.5;box-sizing:border-box;resize:vertical"></textarea>
+            </div>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;padding-top:18px;white-space:nowrap">
+              <input type="checkbox" id="ai-overwrite" style="margin:0">기존 내용 덮어쓰기
+            </label>
+          </div>
         </div>
-        <div class="field" style="grid-column:1/-1">
-          <label>🔖 키워드 <span class="muted tight" style="font-weight:normal">(쉼표 또는 줄바꿈으로 구분)</span></label>
-          <textarea name="keywords" rows="2" placeholder="예: 다년초, 양지식물, 여름개화, 정원식물" style="resize:vertical;font-family:inherit;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;width:100%;box-sizing:border-box">${escapeHtml(Array.isArray(s.keywords)?s.keywords.join(', '):(s.keywords||''))}</textarea>
-        </div>
-        ${s.aiUpdatedAt ? `<div class="field" style="grid-column:1/-1"><div class="muted tight">최근 AI 갱신: ${escapeHtml(new Date(s.aiUpdatedAt).toLocaleString('ko-KR'))}</div></div>` : ''}
+        <div id="ai-fields-area">${_renderAiFieldsHtml(s)}</div>
+        ${s.aiUpdatedAt ? `<div class="muted tight" style="margin-top:8px;text-align:right">최근 AI 갱신: ${escapeHtml(new Date(s.aiUpdatedAt).toLocaleString('ko-KR'))}</div>` : ''}
       </div>
     </div>
     <div class="sku-detail-section full" style="margin-top:12px">
@@ -9668,13 +9673,15 @@ function setupSkuDetailModal(){
       _currentSkuCode = newPrefix;
       toast(`✓ 코드 변경 완료 (입고 ${result.renamed}건 갱신)`,'flash');
     }
-    // AI 글쓰기 폼 값 (별도 form 이지만 동일 모달 안)
+    // AI 글쓰기 폼: ai_<fieldId> 텍스트 영역 모두 수집
     const aiForm = document.getElementById('ai-writing-form');
+    const aiFieldsCollected = {};
     if(aiForm){
-      aiForm.querySelectorAll('textarea[name]').forEach(el => fd.set(el.name, el.value));
+      aiForm.querySelectorAll('textarea[name^="ai_"]').forEach(el => {
+        const fid = el.name.slice(3);
+        aiFieldsCollected[fid] = el.value.trim();
+      });
     }
-    const kwRaw = (fd.get('keywords')||'').trim();
-    const kwArr = kwRaw ? kwRaw.split(/[,\n]+/).map(s=>s.trim()).filter(Boolean) : [];
     const patch = {
       distributionName: (fd.get('distributionName')||'').trim(),
       scientificName:   (fd.get('scientificName')||'').trim(),
@@ -9688,8 +9695,7 @@ function setupSkuDetailModal(){
       sunlight:  (fd.get('sunlight')||'').trim(),
       bloomStart:(fd.get('bloomStart')||'').trim(),
       bloomEnd:  (fd.get('bloomEnd')||'').trim(),
-      productCopy: (fd.get('productCopy')||'').trim(),
-      keywords: kwArr,
+      aiFields:  aiFieldsCollected,
     };
     Store.upsertSkuMaster(_currentSkuCode, patch);
     const recvPatch = {
@@ -12221,9 +12227,113 @@ setupCalendarModal();
 setupPriceModal();
 
 /* ════════════════════════════════════════════════════════════════
-   🤖 AI 글쓰기 브릿지 (File System Access API)
-   - 프로젝트 폴더의 ai_writing_queue.json 을 통해 Cowork 의 클로드와 통신
+   🤖 AI 글쓰기 브릿지 v2 (다중 필드 + 항목별 요청)
 ════════════════════════════════════════════════════════════════ */
+
+/** 플랫폼별 필드 정의 — UI 자동 생성 + 큐 schema 동봉 */
+const AI_FIELDS = [
+  // 카페24
+  { id:'cafe24_summary',     platform:'cafe24', label:'상품 요약설명',
+    maxChars:60, rows:2,
+    guide:'한 눈에 매력 어필하는 핵심 카피. 한 줄짜리 짧은 문장.' },
+  { id:'cafe24_brief',       platform:'cafe24', label:'상품 간략설명',
+    maxChars:120, rows:2,
+    guide:'핵심 매력을 풀어쓴 짧은 설명. 2~3문장.' },
+  { id:'cafe24_extra',       platform:'cafe24', label:'상품 추가설명',
+    maxChars:null, rows:5,
+    guide:'상세 페이지 본문 — 외형 / 키우는 환경 / 관리 포인트 / 활용처 순으로 자연스럽게.' },
+  { id:'cafe24_browserTitle',platform:'cafe24', label:'브라우저 타이틀 (Title)',
+    maxChars:60, rows:1,
+    guide:'SEO 친화적 브라우저 탭 제목. 유통명 + 학명 + 핵심 키워드.' },
+  { id:'cafe24_metaAuthor',  platform:'cafe24', label:'메타태그 1: Author',
+    maxChars:30, rows:1, defaultValue:'제로가드닝',
+    guide:"브랜드/작성자명. 기본값 '제로가드닝'." },
+  { id:'cafe24_metaKeywords',platform:'cafe24', label:'메타태그 3: Keywords',
+    maxChars:null, rows:2,
+    guide:'쉼표로 구분된 SEO 키워드 10~20개. 유통명/학명/별명/분류/환경특성/활용/계절.' },
+  { id:'cafe24_imgAlt',      platform:'cafe24', label:'상품 이미지 Alt 텍스트',
+    maxChars:50, rows:1,
+    guide:'이미지 대체 텍스트. 유통명 + 핵심 시각적 특징(꽃 색·잎 모양 등).' },
+
+  // 쿠팡
+  { id:'coupang_searchTerms',platform:'coupang', label:'검색어 (20개)',
+    maxChars:null, rows:3,
+    guide:'쿠팡 검색에 잘 걸릴 키워드 정확히 20개. 쉼표 구분. 유통명, 학명, 별명, 카테고리, 활용, 비슷한 식물명, 트렌드 키워드 골고루.' },
+
+  // 스마트스토어
+  { id:'naver_summary40',    platform:'naver', label:'요약설명 (40자)',
+    maxChars:40, rows:1,
+    guide:'네이버 검색 결과에 노출되는 짧은 요약. 정확히 40자 이내, 핵심 매력 한 줄.' },
+  { id:'naver_tags',         platform:'naver', label:'태그 (10개)',
+    maxChars:null, rows:2,
+    guide:'네이버 쇼핑 태그 정확히 10개. 쉼표 구분. 검색량 있을 만한 자연어 키워드.' },
+  { id:'naver_pageTitle',    platform:'naver', label:'Page Title',
+    maxChars:60, rows:1,
+    guide:'SEO 페이지 제목. 유통명 + 학명 + 카테고리 키워드.' },
+  { id:'naver_metaDesc',     platform:'naver', label:'Meta Description',
+    maxChars:150, rows:2,
+    guide:'검색 결과에 노출되는 메타 설명. 매력 + 핵심 정보 + 행동 유도.' },
+];
+
+const AI_PLATFORMS = [
+  { id:'cafe24',  label:'🛒 카페24',       open:true },
+  { id:'coupang', label:'🛍 쿠팡',          open:true },
+  { id:'naver',   label:'🟢 스마트스토어',  open:true },
+];
+
+/** 특이사항(note) 자동 생성 메타 — note 필드는 기본정보 섹션에 이미 있음 */
+const AI_NOTE_META = {
+  id:'note', target:'note', maxChars:100,
+  guide:'재배 및 관리상 유의할 점 1~2가지. 100자 내외. 식물 특성 기반의 실용 정보.'
+};
+
+/** AI 섹션 HTML 동적 렌더 */
+function _renderAiFieldsHtml(s){
+  const cur = (s.aiFields)||{};
+  const blocks = AI_PLATFORMS.map(p => {
+    const fields = AI_FIELDS.filter(f => f.platform === p.id);
+    if(fields.length === 0) return '';
+    const fieldsHtml = fields.map(f => {
+      const v = (cur[f.id]!=null && cur[f.id]!=='') ? cur[f.id] : (f.defaultValue||'');
+      const vEsc = escapeHtml(v);
+      const phEsc = escapeHtml(f.guide||'');
+      const charLimit = f.maxChars ? `<span class="ai-char-count" data-target="${f.id}" style="font-size:11px;color:${v.length>f.maxChars?'#c33':'var(--muted)'};font-family:'SF Mono',Menlo,monospace">${v.length} / ${f.maxChars}</span>` : '';
+      const lenAttr = f.maxChars ? ` data-max="${f.maxChars}"` : '';
+      return `<div class="ai-field-row" data-field="${f.id}" style="margin-bottom:8px;padding:8px 10px;background:#fff;border-radius:5px;border:1px solid #e8eef7">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">
+          <label style="font-size:12px;font-weight:600;color:#2c3e50;flex:1;min-width:0">${escapeHtml(f.label)}${f.maxChars ? `<span class="muted" style="font-weight:normal;font-size:10.5px;margin-left:5px">최대 ${f.maxChars}자</span>` : ''}</label>
+          ${charLimit}
+        </div>
+        <textarea name="ai_${f.id}" rows="${f.rows||2}" placeholder="${phEsc}"${lenAttr} style="width:100%;font-family:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12.5px;line-height:1.5;box-sizing:border-box;resize:vertical">${vEsc}</textarea>
+        <input type="text" class="ai-field-request" data-field="${f.id}" placeholder="이 항목 요청사항 (선택, 예: 시적으로 / 짧게 / 전문용어 빼고)" style="width:100%;font-family:inherit;padding:4px 8px;border:1px dashed #cfd8e3;border-radius:4px;font-size:11px;color:#5a6776;margin-top:4px;box-sizing:border-box;background:#fafbfd">
+      </div>`;
+    }).join('');
+    return `<details class="ai-platform-group" ${p.open?'open':''} style="margin-bottom:10px">
+      <summary style="font-weight:700;cursor:pointer;padding:8px 10px;font-size:13px;background:#e8efff;border-radius:5px;list-style:none;user-select:none">${p.label} <span class="muted tight" style="font-weight:normal">(${fields.length}개 항목)</span></summary>
+      <div style="padding:8px 0 0 0">${fieldsHtml}</div>
+    </details>`;
+  }).join('');
+  return blocks;
+}
+
+/* ─── 글자수 카운터 (입력 시 갱신) ─── */
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if(!(t instanceof HTMLTextAreaElement)) return;
+  if(!t.name || !t.name.startsWith('ai_')) return;
+  const max = Number(t.dataset.max || 0);
+  if(!max) return;
+  const fid = t.name.slice(3);
+  const c = document.querySelector(`.ai-char-count[data-target="${fid}"]`);
+  if(c){
+    const len = t.value.length;
+    c.textContent = `${len} / ${max}`;
+    c.style.color = len > max ? '#c33' : 'var(--muted)';
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════ */
+
 const AIBridge = (() => {
   const QUEUE_FILE = 'ai_writing_queue.json';
   const IDB_NAME = 'zg_ai_bridge';
@@ -12232,9 +12342,8 @@ const AIBridge = (() => {
   let _dirHandle = null;
   let _pollTimer = null;
   let _pollInterval = 5000;
-  let _appliedIds = new Set(); // 세션 내 중복 적용 방지
+  let _appliedIds = new Set();
 
-  /* ── IndexedDB 미니 헬퍼 (FileSystemDirectoryHandle 영속 저장) ── */
   function _openDB(){
     return new Promise((resolve, reject) => {
       const r = indexedDB.open(IDB_NAME, 1);
@@ -12262,7 +12371,6 @@ const AIBridge = (() => {
     });
   }
 
-  /* ── 폴더 권한 검증 ── */
   async function _verifyPermission(handle, withWrite){
     if(!handle) return false;
     const opts = withWrite ? { mode: 'readwrite' } : {};
@@ -12271,10 +12379,7 @@ const AIBridge = (() => {
     return false;
   }
 
-  /* ── 외부 API ── */
-  async function isSupported(){
-    return typeof window.showDirectoryPicker === 'function';
-  }
+  async function isSupported(){ return typeof window.showDirectoryPicker === 'function'; }
 
   async function getDirHandle(prompt){
     if(_dirHandle){
@@ -12282,12 +12387,7 @@ const AIBridge = (() => {
       _dirHandle = null;
     }
     const saved = await _idbGet(IDB_KEY);
-    if(saved){
-      if(await _verifyPermission(saved, true)){
-        _dirHandle = saved;
-        return _dirHandle;
-      }
-    }
+    if(saved && await _verifyPermission(saved, true)){ _dirHandle = saved; return _dirHandle; }
     if(!prompt) return null;
     return await connectFolder();
   }
@@ -12299,10 +12399,7 @@ const AIBridge = (() => {
     }
     try {
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-      if(!(await _verifyPermission(handle, true))){
-        toast('폴더 권한이 거부되었습니다','error');
-        return null;
-      }
+      if(!(await _verifyPermission(handle, true))){ toast('폴더 권한이 거부되었습니다','error'); return null; }
       _dirHandle = handle;
       await _idbSet(IDB_KEY, handle);
       toast(`✓ 폴더 연결: ${handle.name}`, 'flash');
@@ -12322,10 +12419,10 @@ const AIBridge = (() => {
       const fh = await dir.getFileHandle(QUEUE_FILE);
       const f = await fh.getFile();
       const txt = await f.text();
-      if(!txt.trim()) return { version:1, queue:[] };
+      if(!txt.trim()) return { version:2, queue:[] };
       return JSON.parse(txt);
     } catch(e){
-      if(e && e.name === 'NotFoundError') return { version:1, queue:[] };
+      if(e && e.name === 'NotFoundError') return { version:2, queue:[] };
       console.error('readQueue error', e);
       return null;
     }
@@ -12340,29 +12437,41 @@ const AIBridge = (() => {
     await writable.close();
   }
 
-  /** SKU 정보로 새 요청 큐에 추가 — request 객체 반환 */
-  async function enqueue(skuInfo){
+  /** v2 — fields 배열 + globalRequest + overwrite 포함 */
+  async function enqueue(skuInfo, opts){
     let q = await readQueue();
     if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
     if(!q.queue) q.queue = [];
+    if(!q.version) q.version = 2;
     const id = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const fieldRequests = (opts && opts.fieldRequests) || {};
+    const cur = skuInfo.aiFields || {};
+    const fields = AI_FIELDS.map(f => ({
+      id: f.id,
+      platform: f.platform,
+      label: f.label,
+      maxChars: f.maxChars || null,
+      guide: f.guide || '',
+      currentValue: cur[f.id] || '',
+      request: fieldRequests[f.id] || '',
+    }));
     const req = {
       id,
       skuCode: skuInfo.barcode || skuInfo.skuCode || '',
       scientificName: skuInfo.scientificName || '',
       distributionName: skuInfo.distributionName || '',
       traits: {
-        heightMin: skuInfo.heightMin || '',
-        heightMax: skuInfo.heightMax || '',
-        widthMin: skuInfo.widthMin || '',
-        widthMax: skuInfo.widthMax || '',
-        hardiness: skuInfo.hardiness || '',
-        watering: skuInfo.watering || '',
-        sunlight: skuInfo.sunlight || '',
-        bloomStart: skuInfo.bloomStart || '',
-        bloomEnd: skuInfo.bloomEnd || '',
+        heightMin: skuInfo.heightMin || '', heightMax: skuInfo.heightMax || '',
+        widthMin:  skuInfo.widthMin  || '', widthMax:  skuInfo.widthMax  || '',
+        hardiness: skuInfo.hardiness || '', watering:  skuInfo.watering  || '',
+        sunlight:  skuInfo.sunlight  || '',
+        bloomStart:skuInfo.bloomStart|| '', bloomEnd:  skuInfo.bloomEnd  || '',
       },
       memo: skuInfo.note || skuInfo.memo || '',
+      fields,
+      note: { currentValue: skuInfo.note || '', maxChars: AI_NOTE_META.maxChars, guide: AI_NOTE_META.guide },
+      globalRequest: (opts && opts.globalRequest) || '',
+      overwrite: !!(opts && opts.overwrite),
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
@@ -12371,29 +12480,52 @@ const AIBridge = (() => {
     return req;
   }
 
-  /** 한 번 폴링 — completed 항목을 SKU 마스터에 적용. 적용 건수 반환. */
+  /** completed 항목을 SKU 마스터에 적용 */
   async function pollOnce(){
     const q = await readQueue();
     if(!q || !q.queue || q.queue.length === 0) return 0;
-    let applied = 0;
-    let modified = false;
+    let applied = 0, modified = false;
     for(const r of q.queue){
       if(r.status !== 'completed') continue;
-      if(r.applied) continue;
-      if(_appliedIds.has(r.id)) continue;
+      if(r.applied || _appliedIds.has(r.id)) continue;
       if(!r.result) continue;
       const code = r.skuCode;
       if(!code) continue;
-      const patch = {};
-      if(r.result.productCopy) patch.productCopy = r.result.productCopy;
-      if(r.result.keywords){
-        patch.keywords = Array.isArray(r.result.keywords)
-          ? r.result.keywords
-          : String(r.result.keywords).split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
-      }
-      patch.aiUpdatedAt = new Date().toISOString();
       try {
+        const existing = Store.findSkuByCode(code) || {};
+        const overwrite = !!r.overwrite;
+        const patch = {};
+        // aiFields 머지
+        if(r.result.fields && typeof r.result.fields === 'object'){
+          const merged = Object.assign({}, existing.aiFields||{});
+          for(const [k, v] of Object.entries(r.result.fields)){
+            if(v == null || v === '') continue;
+            if(overwrite || !merged[k]) merged[k] = String(v).trim();
+          }
+          patch.aiFields = merged;
+        }
+        // note (특이사항) 처리
+        if(r.result.note){
+          const cur = (existing.note||'').trim();
+          if(overwrite || !cur) patch.note = String(r.result.note).trim();
+        }
+        // 구버전 호환 — productCopy/keywords 결과도 받아둠
+        if(r.result.productCopy && (overwrite || !existing.productCopy)){
+          patch.productCopy = String(r.result.productCopy).trim();
+        }
+        if(r.result.keywords){
+          const arr = Array.isArray(r.result.keywords)
+            ? r.result.keywords
+            : String(r.result.keywords).split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+          if(overwrite || !existing.keywords || existing.keywords.length===0) patch.keywords = arr;
+        }
+        patch.aiUpdatedAt = new Date().toISOString();
         Store.upsertSkuMaster(code, patch);
+        // 입고 메모도 동기화 (note 가 갱신된 경우)
+        if(patch.note){
+          const recvs = Store.listReceivings().filter(rr => extractCodePrefix(rr.barcode) === code);
+          recvs.forEach(rr => Store.updateReceiving(rr.id, { memo: patch.note }));
+        }
         r.applied = true;
         r.appliedAt = patch.aiUpdatedAt;
         _appliedIds.add(r.id);
@@ -12409,7 +12541,6 @@ const AIBridge = (() => {
     return applied;
   }
 
-  /** 폴링 시작 */
   function startPolling(intervalMs){
     if(_pollTimer) return;
     _pollInterval = intervalMs || _pollInterval;
@@ -12418,47 +12549,42 @@ const AIBridge = (() => {
         const applied = await pollOnce();
         if(applied > 0){
           toast(`✓ AI 글쓰기 ${applied}건 새 결과 반영`, 'flash');
-          // SKU 상세 모달이 열려있으면 새로고침
           const modal = document.getElementById('sku-detail-modal');
           if(modal && !modal.classList.contains('hidden') && _currentSkuCode){
             window.openSkuDetail(_currentSkuCode);
           }
-          // 재고/SKU 목록 새로고침
           if(typeof renderSkuList === 'function') renderSkuList();
           if(typeof renderInventoryView === 'function') renderInventoryView();
         }
-      } catch(e){
-        console.error('poll error', e);
-      }
+      } catch(e){ console.error('poll error', e); }
     };
     _pollTimer = setInterval(tick, _pollInterval);
-    tick(); // 즉시 한 번
+    tick();
   }
   function stopPolling(){
     if(_pollTimer){ clearInterval(_pollTimer); _pollTimer = null; }
   }
 
-  /** 큐에 들어있는 pending 요청 수 */
   async function getPendingCount(){
     const q = await readQueue();
     if(!q || !q.queue) return 0;
     return q.queue.filter(r => r.status === 'pending').length;
   }
 
-  /** 폴더 연결됐는지 체크 */
   async function isConnected(){
     const saved = await _idbGet(IDB_KEY);
     return !!saved;
   }
 
-  /** 프롬프트 텍스트 빌드 (수동 클립보드 모드용) */
-  function buildPromptText(skuInfo){
+  function buildPromptText(skuInfo, opts){
     const t = skuInfo;
+    const cur = t.aiFields || {};
+    const fieldRequests = (opts && opts.fieldRequests) || {};
     const lines = [
       '# 제로가드닝 — AI 상품글쓰기 요청',
       '',
-      '아래 식물 정보를 바탕으로 **상세페이지 본문** 과 **검색 키워드** 를 작성해주세요.',
-      '톤·길이·구조는 SKILL 파일 (`.claude/skills/zg-ai-writing/SKILL.md`) 또는 글쓰기 프로젝트 인스트럭션을 따르세요.',
+      '아래 식물 정보로 **각 플랫폼 항목별 텍스트** 와 **재배·관리 특이사항(100자)** 을 작성해주세요.',
+      '톤·구조·예시는 SKILL 파일(`.claude/skills/zg-ai-writing/SKILL.md`)을 따릅니다.',
       '',
       '## 식물 정보',
       `- 품목코드: ${t.barcode||'-'}`,
@@ -12466,20 +12592,33 @@ const AIBridge = (() => {
       `- 학명: ${t.scientificName||'-'}`,
       `- 최대 높이: ${t.heightMin||'-'} ~ ${t.heightMax||'-'} cm`,
       `- 최대 너비: ${t.widthMin||'-'} ~ ${t.widthMax||'-'} cm`,
-      `- 내한성: ${t.hardiness||'-'}`,
-      `- 물 주기: ${t.watering||'-'}`,
-      `- 일조량: ${t.sunlight||'-'}`,
+      `- 내한성: ${t.hardiness||'-'}, 물 주기: ${t.watering||'-'}, 일조량: ${t.sunlight||'-'}`,
       `- 개화기: ${t.bloomStart||'-'}월 ~ ${t.bloomEnd||'-'}월`,
       `- 메모: ${t.note||t.memo||'-'}`,
       '',
-      '## 출력 형식',
-      '```json',
-      '{',
-      '  "productCopy": "상세페이지 본문 (자유 길이)",',
-      '  "keywords": ["키워드1", "키워드2", "..."]',
-      '}',
-      '```',
+      '## 작성할 항목',
     ];
+    AI_FIELDS.forEach(f => {
+      const reqExtra = fieldRequests[f.id] ? ` *(요청: ${fieldRequests[f.id]})*` : '';
+      lines.push(`- **${f.label}** (${f.maxChars?`최대 ${f.maxChars}자`:'길이 자유'}) — ${f.guide}${reqExtra}`);
+    });
+    lines.push(`- **특이사항(note)** (최대 ${AI_NOTE_META.maxChars}자) — ${AI_NOTE_META.guide}`);
+    if(opts && opts.globalRequest){
+      lines.push('', '## 전체 요청사항');
+      lines.push(opts.globalRequest);
+    }
+    lines.push('');
+    lines.push('## 출력 형식 (JSON)');
+    lines.push('```json');
+    lines.push('{');
+    lines.push('  "fields": {');
+    AI_FIELDS.forEach((f,i) => {
+      lines.push(`    "${f.id}": "..."${i<AI_FIELDS.length-1?',':''}`);
+    });
+    lines.push('  },');
+    lines.push('  "note": "재배 시 ~~ 주의해주세요. ~~"');
+    lines.push('}');
+    lines.push('```');
     return lines.join('\n');
   }
 
@@ -12495,7 +12634,6 @@ const AIBridge = (() => {
 function _setupAiSectionEvents(){
   const modal = document.getElementById('sku-detail-modal');
   if(!modal) return;
-  // 모달 body 가 동적으로 다시 그려지므로 이벤트 위임 사용
   modal.addEventListener('click', async (e) => {
     const t = e.target.closest('button');
     if(!t) return;
@@ -12510,13 +12648,13 @@ function _setupAiSectionEvents(){
         const ok = await AIBridge.connectFolder();
         if(!ok) return;
       }
-      // 현재 SKU 정보 수집
       const all = aggregateSkus();
       const sku = all.find(x => x.barcode === _currentSkuCode);
       if(!sku){ toast('SKU 정보를 찾을 수 없습니다','error'); return; }
-      // 폼에서 사용자가 편집 중인 값 우선 반영
+      // 폼 편집 중 값 우선 반영
       const basicForm = document.getElementById('sku-basic-form');
       const traitForm = document.getElementById('sku-edit-form');
+      const aiForm = document.getElementById('ai-writing-form');
       const merged = Object.assign({}, sku);
       [basicForm, traitForm].forEach(f => {
         if(!f) return;
@@ -12524,9 +12662,27 @@ function _setupAiSectionEvents(){
           if(el.value) merged[el.name] = el.value;
         });
       });
+      // aiFields 도 폼 편집 중 값으로 덮어씀
+      if(aiForm){
+        const editingFields = {};
+        aiForm.querySelectorAll('textarea[name^="ai_"]').forEach(el => {
+          editingFields[el.name.slice(3)] = el.value;
+        });
+        merged.aiFields = Object.assign({}, merged.aiFields||{}, editingFields);
+      }
+      // 항목별 요청 + 전체 요청 + overwrite 수집
+      const fieldRequests = {};
+      if(aiForm){
+        aiForm.querySelectorAll('input.ai-field-request').forEach(el => {
+          const v = (el.value||'').trim();
+          if(v) fieldRequests[el.dataset.field] = v;
+        });
+      }
+      const globalRequest = (document.getElementById('ai-global-request')?.value || '').trim();
+      const overwrite = !!document.getElementById('ai-overwrite')?.checked;
       try {
-        const req = await AIBridge.enqueue(merged);
-        toast(`✓ AI 글쓰기 큐 추가됨 (id: ${req.id.slice(-6)})`, 'flash');
+        const req = await AIBridge.enqueue(merged, { fieldRequests, globalRequest, overwrite });
+        toast(`✓ AI 글쓰기 큐 추가됨 (${AI_FIELDS.length}개 항목+특이사항)`, 'flash');
         AIBridge.startPolling();
         _refreshAiStatus();
       } catch(err){
@@ -12547,7 +12703,16 @@ function _setupAiSectionEvents(){
       const all = aggregateSkus();
       const sku = all.find(x => x.barcode === _currentSkuCode);
       if(!sku){ toast('SKU 정보 없음','error'); return; }
-      const txt = AIBridge.buildPromptText(sku);
+      const aiForm = document.getElementById('ai-writing-form');
+      const fieldRequests = {};
+      if(aiForm){
+        aiForm.querySelectorAll('input.ai-field-request').forEach(el => {
+          const v = (el.value||'').trim();
+          if(v) fieldRequests[el.dataset.field] = v;
+        });
+      }
+      const globalRequest = (document.getElementById('ai-global-request')?.value || '').trim();
+      const txt = AIBridge.buildPromptText(sku, { fieldRequests, globalRequest });
       try {
         await navigator.clipboard.writeText(txt);
         toast('✓ 프롬프트 클립보드 복사 — Cowork 채팅창에 붙여넣기', 'flash');
@@ -12575,7 +12740,7 @@ async function _refreshAiStatus(){
   }
   const connected = await AIBridge.isConnected();
   if(!connected){
-    status.textContent = '⚠ 폴더 연결 필요 — 「폴더 연결」 버튼을 눌러 프로젝트 폴더를 선택하세요';
+    status.textContent = '⚠ 폴더 연결 필요';
     status.style.color = '#c33';
     if(pending) pending.style.display = 'none';
     if(pollBtn) pollBtn.style.display = 'none';
@@ -12597,10 +12762,9 @@ async function _refreshAiStatus(){
   }
 }
 
-/* SKU 상세 모달이 열릴 때마다 AI 상태 갱신 */
 (function _hookOpenSkuDetailForAi(){
   const orig = window.openSkuDetail;
-  if(typeof orig !== 'function'){ return; }
+  if(typeof orig !== 'function') return;
   window.openSkuDetail = function(barcode){
     orig(barcode);
     setTimeout(_refreshAiStatus, 0);
@@ -12609,7 +12773,6 @@ async function _refreshAiStatus(){
 
 _setupAiSectionEvents();
 
-/* 페이지 로드 시 — 폴더 연결돼있고 pending 요청 있으면 자동 폴링 시작 */
 (async () => {
   try {
     if(await AIBridge.isSupported() && await AIBridge.isConnected()){
