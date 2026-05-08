@@ -9338,6 +9338,9 @@ function aggregateSkus(){
       if(m[f]!==null && m[f]!==undefined && m[f]!=='') agg[f] = m[f];
     });
     if(m.note) agg.note = m.note;
+    if(m.productCopy) agg.productCopy = m.productCopy;
+    if(m.keywords) agg.keywords = m.keywords;
+    if(m.aiUpdatedAt) agg.aiUpdatedAt = m.aiUpdatedAt;
     agg.masterUpdatedAt = m.updatedAt;
   });
 
@@ -9594,6 +9597,32 @@ window.openSkuDetail = function(barcode){
       <h4>🌱 식물 특성 <span class="muted tight" style="font-weight:normal">(저장 시 같은 코드 입고 ${s.receivings.length}건 일괄 적용)</span></h4>
       ${editFormHtml}
     </div>
+    <div class="sku-detail-section full ai-writing-section" style="margin-top:12px;background:#f0f7ff;padding:14px;border-radius:8px;border:1px solid #cfe0fa">
+      <h4 style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>🤖 AI 상품글쓰기 <span class="muted tight" style="font-weight:normal">(상세페이지 본문 + 검색 키워드)</span></span>
+        <span id="ai-writing-status" style="font-size:11px;color:var(--muted)"></span>
+      </h4>
+      <div id="ai-writing-controls" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-ai-connect-folder" title="프로젝트 폴더 연결 (최초 1회)">📁 폴더 연결</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-ai-write-request" title="현재 SKU 정보로 AI 글쓰기 요청">🤖 AI 글쓰기 요청</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-ai-poll-now" title="지금 바로 결과 확인" style="display:none">🔄 결과 확인</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-ai-show-prompt" title="프롬프트만 클립보드 복사 (수동 처리용)">📋 프롬프트 복사</button>
+      </div>
+      <div id="ai-writing-pending-info" style="display:none;font-size:12px;color:#1e4abb;background:#fff;padding:8px 12px;border-radius:6px;margin-bottom:10px;border:1px dashed #cfe0fa">
+        ⏳ 대기 중 — Cowork 채팅창에 "AI 글쓰기 처리해줘" 한 마디 해주세요. 결과는 자동으로 여기에 반영됩니다.
+      </div>
+      <div class="sku-edit-form" id="ai-writing-form">
+        <div class="field" style="grid-column:1/-1">
+          <label>📝 상세페이지 본문 <span class="muted tight" style="font-weight:normal">(직접 편집 가능)</span></label>
+          <textarea name="productCopy" rows="6" placeholder="AI 글쓰기 요청 또는 직접 입력" style="resize:vertical;font-family:inherit;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;width:100%;box-sizing:border-box">${escapeHtml(s.productCopy||'')}</textarea>
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>🔖 키워드 <span class="muted tight" style="font-weight:normal">(쉼표 또는 줄바꿈으로 구분)</span></label>
+          <textarea name="keywords" rows="2" placeholder="예: 다년초, 양지식물, 여름개화, 정원식물" style="resize:vertical;font-family:inherit;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.6;width:100%;box-sizing:border-box">${escapeHtml(Array.isArray(s.keywords)?s.keywords.join(', '):(s.keywords||''))}</textarea>
+        </div>
+        ${s.aiUpdatedAt ? `<div class="field" style="grid-column:1/-1"><div class="muted tight">최근 AI 갱신: ${escapeHtml(new Date(s.aiUpdatedAt).toLocaleString('ko-KR'))}</div></div>` : ''}
+      </div>
+    </div>
     <div class="sku-detail-section full" style="margin-top:12px">
       <h4>📦 연결된 입고 이력 (${s.receivings.length}건)</h4>
       ${recvHtml}
@@ -9639,6 +9668,13 @@ function setupSkuDetailModal(){
       _currentSkuCode = newPrefix;
       toast(`✓ 코드 변경 완료 (입고 ${result.renamed}건 갱신)`,'flash');
     }
+    // AI 글쓰기 폼 값 (별도 form 이지만 동일 모달 안)
+    const aiForm = document.getElementById('ai-writing-form');
+    if(aiForm){
+      aiForm.querySelectorAll('textarea[name]').forEach(el => fd.set(el.name, el.value));
+    }
+    const kwRaw = (fd.get('keywords')||'').trim();
+    const kwArr = kwRaw ? kwRaw.split(/[,\n]+/).map(s=>s.trim()).filter(Boolean) : [];
     const patch = {
       distributionName: (fd.get('distributionName')||'').trim(),
       scientificName:   (fd.get('scientificName')||'').trim(),
@@ -9652,6 +9688,8 @@ function setupSkuDetailModal(){
       sunlight:  (fd.get('sunlight')||'').trim(),
       bloomStart:(fd.get('bloomStart')||'').trim(),
       bloomEnd:  (fd.get('bloomEnd')||'').trim(),
+      productCopy: (fd.get('productCopy')||'').trim(),
+      keywords: kwArr,
     };
     Store.upsertSkuMaster(_currentSkuCode, patch);
     const recvPatch = {
@@ -12181,6 +12219,405 @@ setupInventoryView();
 setupCalendarModal();
 
 setupPriceModal();
+
+/* ════════════════════════════════════════════════════════════════
+   🤖 AI 글쓰기 브릿지 (File System Access API)
+   - 프로젝트 폴더의 ai_writing_queue.json 을 통해 Cowork 의 클로드와 통신
+════════════════════════════════════════════════════════════════ */
+const AIBridge = (() => {
+  const QUEUE_FILE = 'ai_writing_queue.json';
+  const IDB_NAME = 'zg_ai_bridge';
+  const IDB_STORE = 'handles';
+  const IDB_KEY = 'projectFolder';
+  let _dirHandle = null;
+  let _pollTimer = null;
+  let _pollInterval = 5000;
+  let _appliedIds = new Set(); // 세션 내 중복 적용 방지
+
+  /* ── IndexedDB 미니 헬퍼 (FileSystemDirectoryHandle 영속 저장) ── */
+  function _openDB(){
+    return new Promise((resolve, reject) => {
+      const r = indexedDB.open(IDB_NAME, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(IDB_STORE);
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  }
+  async function _idbGet(key){
+    const db = await _openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readonly');
+      const req = tx.objectStore(IDB_STORE).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function _idbSet(key, val){
+    const db = await _openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(IDB_STORE, 'readwrite');
+      tx.objectStore(IDB_STORE).put(val, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  /* ── 폴더 권한 검증 ── */
+  async function _verifyPermission(handle, withWrite){
+    if(!handle) return false;
+    const opts = withWrite ? { mode: 'readwrite' } : {};
+    if((await handle.queryPermission(opts)) === 'granted') return true;
+    if((await handle.requestPermission(opts)) === 'granted') return true;
+    return false;
+  }
+
+  /* ── 외부 API ── */
+  async function isSupported(){
+    return typeof window.showDirectoryPicker === 'function';
+  }
+
+  async function getDirHandle(prompt){
+    if(_dirHandle){
+      if(await _verifyPermission(_dirHandle, true)) return _dirHandle;
+      _dirHandle = null;
+    }
+    const saved = await _idbGet(IDB_KEY);
+    if(saved){
+      if(await _verifyPermission(saved, true)){
+        _dirHandle = saved;
+        return _dirHandle;
+      }
+    }
+    if(!prompt) return null;
+    return await connectFolder();
+  }
+
+  async function connectFolder(){
+    if(!(await isSupported())){
+      alert('이 브라우저는 폴더 연결을 지원하지 않습니다. Chrome / Edge 최신 버전을 사용하세요.');
+      return null;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      if(!(await _verifyPermission(handle, true))){
+        toast('폴더 권한이 거부되었습니다','error');
+        return null;
+      }
+      _dirHandle = handle;
+      await _idbSet(IDB_KEY, handle);
+      toast(`✓ 폴더 연결: ${handle.name}`, 'flash');
+      return handle;
+    } catch(e){
+      if(e && e.name === 'AbortError') return null;
+      console.error('connectFolder error', e);
+      toast('폴더 연결 실패: ' + (e.message||e),'error');
+      return null;
+    }
+  }
+
+  async function readQueue(){
+    const dir = await getDirHandle(false);
+    if(!dir) return null;
+    try {
+      const fh = await dir.getFileHandle(QUEUE_FILE);
+      const f = await fh.getFile();
+      const txt = await f.text();
+      if(!txt.trim()) return { version:1, queue:[] };
+      return JSON.parse(txt);
+    } catch(e){
+      if(e && e.name === 'NotFoundError') return { version:1, queue:[] };
+      console.error('readQueue error', e);
+      return null;
+    }
+  }
+
+  async function writeQueue(data){
+    const dir = await getDirHandle(true);
+    if(!dir) throw new Error('폴더가 연결되지 않았습니다');
+    const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
+    const writable = await fh.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+  }
+
+  /** SKU 정보로 새 요청 큐에 추가 — request 객체 반환 */
+  async function enqueue(skuInfo){
+    let q = await readQueue();
+    if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
+    if(!q.queue) q.queue = [];
+    const id = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const req = {
+      id,
+      skuCode: skuInfo.barcode || skuInfo.skuCode || '',
+      scientificName: skuInfo.scientificName || '',
+      distributionName: skuInfo.distributionName || '',
+      traits: {
+        heightMin: skuInfo.heightMin || '',
+        heightMax: skuInfo.heightMax || '',
+        widthMin: skuInfo.widthMin || '',
+        widthMax: skuInfo.widthMax || '',
+        hardiness: skuInfo.hardiness || '',
+        watering: skuInfo.watering || '',
+        sunlight: skuInfo.sunlight || '',
+        bloomStart: skuInfo.bloomStart || '',
+        bloomEnd: skuInfo.bloomEnd || '',
+      },
+      memo: skuInfo.note || skuInfo.memo || '',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    q.queue.push(req);
+    await writeQueue(q);
+    return req;
+  }
+
+  /** 한 번 폴링 — completed 항목을 SKU 마스터에 적용. 적용 건수 반환. */
+  async function pollOnce(){
+    const q = await readQueue();
+    if(!q || !q.queue || q.queue.length === 0) return 0;
+    let applied = 0;
+    let modified = false;
+    for(const r of q.queue){
+      if(r.status !== 'completed') continue;
+      if(r.applied) continue;
+      if(_appliedIds.has(r.id)) continue;
+      if(!r.result) continue;
+      const code = r.skuCode;
+      if(!code) continue;
+      const patch = {};
+      if(r.result.productCopy) patch.productCopy = r.result.productCopy;
+      if(r.result.keywords){
+        patch.keywords = Array.isArray(r.result.keywords)
+          ? r.result.keywords
+          : String(r.result.keywords).split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+      }
+      patch.aiUpdatedAt = new Date().toISOString();
+      try {
+        Store.upsertSkuMaster(code, patch);
+        r.applied = true;
+        r.appliedAt = patch.aiUpdatedAt;
+        _appliedIds.add(r.id);
+        modified = true;
+        applied++;
+      } catch(e){
+        console.error('apply error', e);
+      }
+    }
+    if(modified){
+      try { await writeQueue(q); } catch(e){ console.error('writeQueue after apply', e); }
+    }
+    return applied;
+  }
+
+  /** 폴링 시작 */
+  function startPolling(intervalMs){
+    if(_pollTimer) return;
+    _pollInterval = intervalMs || _pollInterval;
+    const tick = async () => {
+      try {
+        const applied = await pollOnce();
+        if(applied > 0){
+          toast(`✓ AI 글쓰기 ${applied}건 새 결과 반영`, 'flash');
+          // SKU 상세 모달이 열려있으면 새로고침
+          const modal = document.getElementById('sku-detail-modal');
+          if(modal && !modal.classList.contains('hidden') && _currentSkuCode){
+            window.openSkuDetail(_currentSkuCode);
+          }
+          // 재고/SKU 목록 새로고침
+          if(typeof renderSkuList === 'function') renderSkuList();
+          if(typeof renderInventoryView === 'function') renderInventoryView();
+        }
+      } catch(e){
+        console.error('poll error', e);
+      }
+    };
+    _pollTimer = setInterval(tick, _pollInterval);
+    tick(); // 즉시 한 번
+  }
+  function stopPolling(){
+    if(_pollTimer){ clearInterval(_pollTimer); _pollTimer = null; }
+  }
+
+  /** 큐에 들어있는 pending 요청 수 */
+  async function getPendingCount(){
+    const q = await readQueue();
+    if(!q || !q.queue) return 0;
+    return q.queue.filter(r => r.status === 'pending').length;
+  }
+
+  /** 폴더 연결됐는지 체크 */
+  async function isConnected(){
+    const saved = await _idbGet(IDB_KEY);
+    return !!saved;
+  }
+
+  /** 프롬프트 텍스트 빌드 (수동 클립보드 모드용) */
+  function buildPromptText(skuInfo){
+    const t = skuInfo;
+    const lines = [
+      '# 제로가드닝 — AI 상품글쓰기 요청',
+      '',
+      '아래 식물 정보를 바탕으로 **상세페이지 본문** 과 **검색 키워드** 를 작성해주세요.',
+      '톤·길이·구조는 SKILL 파일 (`.claude/skills/zg-ai-writing/SKILL.md`) 또는 글쓰기 프로젝트 인스트럭션을 따르세요.',
+      '',
+      '## 식물 정보',
+      `- 품목코드: ${t.barcode||'-'}`,
+      `- 유통명: ${t.distributionName||'-'}`,
+      `- 학명: ${t.scientificName||'-'}`,
+      `- 최대 높이: ${t.heightMin||'-'} ~ ${t.heightMax||'-'} cm`,
+      `- 최대 너비: ${t.widthMin||'-'} ~ ${t.widthMax||'-'} cm`,
+      `- 내한성: ${t.hardiness||'-'}`,
+      `- 물 주기: ${t.watering||'-'}`,
+      `- 일조량: ${t.sunlight||'-'}`,
+      `- 개화기: ${t.bloomStart||'-'}월 ~ ${t.bloomEnd||'-'}월`,
+      `- 메모: ${t.note||t.memo||'-'}`,
+      '',
+      '## 출력 형식',
+      '```json',
+      '{',
+      '  "productCopy": "상세페이지 본문 (자유 길이)",',
+      '  "keywords": ["키워드1", "키워드2", "..."]',
+      '}',
+      '```',
+    ];
+    return lines.join('\n');
+  }
+
+  return {
+    isSupported, isConnected, connectFolder, getDirHandle,
+    readQueue, writeQueue, enqueue, pollOnce,
+    startPolling, stopPolling, getPendingCount,
+    buildPromptText,
+  };
+})();
+
+/* ─── SKU 상세 모달 안 AI 섹션 이벤트 바인딩 ─── */
+function _setupAiSectionEvents(){
+  const modal = document.getElementById('sku-detail-modal');
+  if(!modal) return;
+  // 모달 body 가 동적으로 다시 그려지므로 이벤트 위임 사용
+  modal.addEventListener('click', async (e) => {
+    const t = e.target.closest('button');
+    if(!t) return;
+    if(t.id === 'btn-ai-connect-folder'){
+      await AIBridge.connectFolder();
+      _refreshAiStatus();
+      return;
+    }
+    if(t.id === 'btn-ai-write-request'){
+      if(!_currentSkuCode){ toast('SKU 가 선택되지 않았습니다','error'); return; }
+      if(!(await AIBridge.isConnected())){
+        const ok = await AIBridge.connectFolder();
+        if(!ok) return;
+      }
+      // 현재 SKU 정보 수집
+      const all = aggregateSkus();
+      const sku = all.find(x => x.barcode === _currentSkuCode);
+      if(!sku){ toast('SKU 정보를 찾을 수 없습니다','error'); return; }
+      // 폼에서 사용자가 편집 중인 값 우선 반영
+      const basicForm = document.getElementById('sku-basic-form');
+      const traitForm = document.getElementById('sku-edit-form');
+      const merged = Object.assign({}, sku);
+      [basicForm, traitForm].forEach(f => {
+        if(!f) return;
+        f.querySelectorAll('input[name],select[name],textarea[name]').forEach(el => {
+          if(el.value) merged[el.name] = el.value;
+        });
+      });
+      try {
+        const req = await AIBridge.enqueue(merged);
+        toast(`✓ AI 글쓰기 큐 추가됨 (id: ${req.id.slice(-6)})`, 'flash');
+        AIBridge.startPolling();
+        _refreshAiStatus();
+      } catch(err){
+        console.error(err);
+        toast('큐 추가 실패: ' + (err.message||err),'error');
+      }
+      return;
+    }
+    if(t.id === 'btn-ai-poll-now'){
+      const n = await AIBridge.pollOnce();
+      toast(n>0 ? `✓ ${n}건 새 결과 반영` : '대기 중인 결과가 없습니다', 'flash');
+      _refreshAiStatus();
+      if(n>0 && _currentSkuCode) window.openSkuDetail(_currentSkuCode);
+      return;
+    }
+    if(t.id === 'btn-ai-show-prompt'){
+      if(!_currentSkuCode){ toast('SKU 미선택','error'); return; }
+      const all = aggregateSkus();
+      const sku = all.find(x => x.barcode === _currentSkuCode);
+      if(!sku){ toast('SKU 정보 없음','error'); return; }
+      const txt = AIBridge.buildPromptText(sku);
+      try {
+        await navigator.clipboard.writeText(txt);
+        toast('✓ 프롬프트 클립보드 복사 — Cowork 채팅창에 붙여넣기', 'flash');
+      } catch(err){
+        console.error(err);
+        toast('클립보드 복사 실패','error');
+      }
+      return;
+    }
+  });
+}
+
+async function _refreshAiStatus(){
+  const status = document.getElementById('ai-writing-status');
+  const pending = document.getElementById('ai-writing-pending-info');
+  const pollBtn = document.getElementById('btn-ai-poll-now');
+  const connectBtn = document.getElementById('btn-ai-connect-folder');
+  if(!status) return;
+  const supported = await AIBridge.isSupported();
+  if(!supported){
+    status.textContent = '⚠ 이 브라우저는 폴더 연결을 지원하지 않습니다 (Chrome 권장)';
+    status.style.color = '#c33';
+    if(connectBtn) connectBtn.style.display = 'none';
+    return;
+  }
+  const connected = await AIBridge.isConnected();
+  if(!connected){
+    status.textContent = '⚠ 폴더 연결 필요 — 「폴더 연결」 버튼을 눌러 프로젝트 폴더를 선택하세요';
+    status.style.color = '#c33';
+    if(pending) pending.style.display = 'none';
+    if(pollBtn) pollBtn.style.display = 'none';
+    if(connectBtn) connectBtn.style.display = '';
+    return;
+  }
+  if(connectBtn) connectBtn.style.display = 'none';
+  const pendingCount = await AIBridge.getPendingCount();
+  if(pendingCount > 0){
+    status.textContent = `⏳ 대기 중: ${pendingCount}건`;
+    status.style.color = '#1e4abb';
+    if(pending) pending.style.display = '';
+    if(pollBtn) pollBtn.style.display = '';
+  } else {
+    status.textContent = '✓ 폴더 연결됨';
+    status.style.color = '#2e7d32';
+    if(pending) pending.style.display = 'none';
+    if(pollBtn) pollBtn.style.display = 'none';
+  }
+}
+
+/* SKU 상세 모달이 열릴 때마다 AI 상태 갱신 */
+(function _hookOpenSkuDetailForAi(){
+  const orig = window.openSkuDetail;
+  if(typeof orig !== 'function'){ return; }
+  window.openSkuDetail = function(barcode){
+    orig(barcode);
+    setTimeout(_refreshAiStatus, 0);
+  };
+})();
+
+_setupAiSectionEvents();
+
+/* 페이지 로드 시 — 폴더 연결돼있고 pending 요청 있으면 자동 폴링 시작 */
+(async () => {
+  try {
+    if(await AIBridge.isSupported() && await AIBridge.isConnected()){
+      const n = await AIBridge.getPendingCount();
+      if(n > 0) AIBridge.startPolling();
+    }
+  } catch(e){ console.warn('AI bridge init', e); }
+})();
 
 </script>
 </body>
