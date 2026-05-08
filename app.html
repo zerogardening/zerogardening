@@ -12420,12 +12420,15 @@ const AI_FIELDS = [
   { id:'cafe24_extra',       platform:'cafe24', label:'상품 추가설명',
     maxChars:300, rows:5,
     guide:'200~300자. 재배 핵심 2~3문장 + 활용 시나리오 1~2문장 + 출하/배송 한 줄. 키워드 자연스럽게 분산.' },
+  { id:'cafe24_searchTerms', platform:'cafe24', label:'검색어 (정확히 20개)',
+    maxChars:null, rows:3,
+    guide:'카페24 자사몰 내부 검색용 키워드 정확히 20개, 쉼표 구분. 7개 카테고리 분배: 일반명+변형(3~4) / 품종명+변형(2~3) / 카테고리(2~3) / 용도(2~3) / 규격(1~2) / 시즌(1~2) / 특성(3~4). 어뷰징/경쟁사 브랜드명 금지. coupang_searchTerms 와 거의 동일한 내용으로 작성 가능.' },
   { id:'cafe24_browserTitle',platform:'cafe24', label:'브라우저 타이틀 (Title)',
     maxChars:60, rows:1,
     guide:'50~60자. [일반명+품종명] [용도/특징] | [브랜드명] 형태. 메인 키워드 앞쪽.' },
   { id:'cafe24_metaAuthor',  platform:'cafe24', label:'메타태그 1: Author',
-    maxChars:30, rows:1, defaultValue:'[브랜드명]',
-    guide:"브랜드/작성자명. 1~2단어. 사용자 별도 지정 없으면 [브랜드명] 그대로." },
+    maxChars:30, rows:1, defaultValue:'제로가드닝',
+    guide:"브랜드/작성자명. 모든 SKU 에 동일하게 '제로가드닝' 사용." },
   { id:'cafe24_metaDesc',    platform:'cafe24', label:'메타태그 2: Description',
     maxChars:120, rows:2,
     guide:'80~120자. SEO meta description. 식물 정체성 + 핵심 매력 + 용도 한~두 문장. 검색 결과에 노출되는 설명문.' },
@@ -12914,6 +12917,46 @@ const AIBridge = (() => {
     startPolling, stopPolling, getPendingCount,
     buildPromptText,
   };
+})();
+
+/* 일회성 마이그레이션 — 기존 SKU 마스터의 "[브랜드명]" → "제로가드닝" 자동 변환 */
+(function _migrateBrandPlaceholder(){
+  try {
+    if(localStorage.getItem('zg_brand_migrated_v1') === 'done') return;
+    if(typeof Store === 'undefined' || !Store.listSkuMasters) return;
+    const masters = Store.listSkuMasters();
+    let updated = 0;
+    for(const m of masters){
+      let changed = false;
+      // aiFields 의 모든 string 값 변환
+      if(m.aiFields && typeof m.aiFields === 'object'){
+        const newAi = {};
+        for(const k of Object.keys(m.aiFields)){
+          const v = m.aiFields[k];
+          if(typeof v === 'string' && v.indexOf('[브랜드명]') >= 0){
+            newAi[k] = v.replace(/\[브랜드명\]/g, '제로가드닝');
+            changed = true;
+          } else {
+            newAi[k] = v;
+          }
+        }
+        if(changed) m.aiFields = newAi;
+      }
+      // productCopy / note / keywords 도 변환
+      ['productCopy','note'].forEach(f => {
+        if(typeof m[f] === 'string' && m[f].indexOf('[브랜드명]') >= 0){
+          m[f] = m[f].replace(/\[브랜드명\]/g, '제로가드닝');
+          changed = true;
+        }
+      });
+      if(changed){
+        Store.upsertSkuMaster(m.barcode, m);
+        updated++;
+      }
+    }
+    localStorage.setItem('zg_brand_migrated_v1', 'done');
+    if(updated > 0) console.log(`[brand migration] ${updated}개 SKU 의 [브랜드명] → 제로가드닝 변환 완료`);
+  } catch(e){ console.warn('brand migration failed', e); }
 })();
 
 /* ─── SKU 상세 모달 안 AI 섹션 이벤트 바인딩 ─── */
