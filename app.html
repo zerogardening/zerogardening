@@ -12273,12 +12273,27 @@ const AI_FIELDS = [
   { id:'naver_metaDesc',     platform:'naver', label:'Meta Description',
     maxChars:150, rows:2,
     guide:'검색 결과에 노출되는 메타 설명. 매력 + 핵심 정보 + 행동 유도.' },
+
+  // 상세페이지 제작
+  { id:'detail_intro',       platform:'detailpage', label:'식물 전반 소개 (1-2줄)',
+    maxChars:100, rows:2,
+    guide:'상세페이지 최상단에 들어가는 첫 인상 카피. 1~2줄, 100자 이내. 식물의 핵심 매력/포지션을 한두 문장으로.' },
+  { id:'detail_leaf',        platform:'detailpage', label:'잎의 특징',
+    maxChars:200, rows:3,
+    guide:'잎의 모양·색·질감·크기·계절 변화 등 시각적·식물학적 특징. 200자 이내, 2~4문장.' },
+  { id:'detail_flower',      platform:'detailpage', label:'꽃의 특징',
+    maxChars:200, rows:3,
+    guide:'꽃의 색·형태·크기·개화기·향·꽃대 길이 등. 200자 이내, 2~4문장. 꽃이 없는 식물이면 "꽃이 잘 피지 않는 관엽 식물입니다" 식으로 자연스럽게.' },
+  { id:'detail_growing',     platform:'detailpage', label:'재배 가이드',
+    maxChars:300, rows:4,
+    guide:'실용적인 재배·관리 가이드. 일조량 / 물주기 / 토양·배수 / 내한성·월동 / 비료·전정 / 주의점 중 traits 기반으로 가장 중요한 4~6가지를 친근한 안내체로. 300자 이내.' },
 ];
 
 const AI_PLATFORMS = [
-  { id:'cafe24',  label:'🛒 카페24',       open:true },
-  { id:'coupang', label:'🛍 쿠팡',          open:true },
-  { id:'naver',   label:'🟢 스마트스토어',  open:true },
+  { id:'cafe24',     label:'🛒 카페24',         open:true },
+  { id:'coupang',    label:'🛍 쿠팡',            open:true },
+  { id:'naver',      label:'🟢 스마트스토어',    open:true },
+  { id:'detailpage', label:'📄 상세페이지 제작', open:true },
 ];
 
 /** 특이사항(note) 자동 생성 메타 — note 필드는 기본정보 섹션에 이미 있음 */
