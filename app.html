@@ -12334,58 +12334,58 @@ const AI_FIELDS = [
   // 카페24
   { id:'cafe24_summary',     platform:'cafe24', label:'상품 요약설명',
     maxChars:60, rows:2,
-    guide:'한 눈에 매력 어필하는 핵심 카피. 한 줄짜리 짧은 문장.' },
+    guide:'40~60자. 핵심 베네핏 1개 + 식물 카테고리. 형용사 남발 금지. 템플릿: [핵심 매력 한 줄], [용도/카테고리]' },
   { id:'cafe24_brief',       platform:'cafe24', label:'상품 간략설명',
-    maxChars:120, rows:2,
-    guide:'핵심 매력을 풀어쓴 짧은 설명. 2~3문장.' },
+    maxChars:150, rows:3,
+    guide:'100~150자, 3줄 이내. 식물 정체성 → 핵심 매력 1~2개 → 용도. 수치 1개 포함.' },
   { id:'cafe24_extra',       platform:'cafe24', label:'상품 추가설명',
-    maxChars:null, rows:5,
-    guide:'상세 페이지 본문 — 외형 / 키우는 환경 / 관리 포인트 / 활용처 순으로 자연스럽게.' },
+    maxChars:300, rows:5,
+    guide:'200~300자. 재배 핵심 2~3문장 + 활용 시나리오 1~2문장 + 출하/배송 한 줄. 키워드 자연스럽게 분산.' },
   { id:'cafe24_browserTitle',platform:'cafe24', label:'브라우저 타이틀 (Title)',
     maxChars:60, rows:1,
-    guide:'SEO 친화적 브라우저 탭 제목. 유통명 + 학명 + 핵심 키워드.' },
+    guide:'50~60자. [일반명+품종명] [용도/특징] | [브랜드명] 형태. 메인 키워드 앞쪽.' },
   { id:'cafe24_metaAuthor',  platform:'cafe24', label:'메타태그 1: Author',
-    maxChars:30, rows:1, defaultValue:'제로가드닝',
-    guide:"브랜드/작성자명. 기본값 '제로가드닝'." },
+    maxChars:30, rows:1, defaultValue:'[브랜드명]',
+    guide:"브랜드/작성자명. 1~2단어. 사용자 별도 지정 없으면 [브랜드명] 그대로." },
   { id:'cafe24_metaKeywords',platform:'cafe24', label:'메타태그 3: Keywords',
     maxChars:null, rows:2,
-    guide:'쉼표로 구분된 SEO 키워드 10~20개. 유통명/학명/별명/분류/환경특성/활용/계절.' },
+    guide:'8~15개, 쉼표 구분. 중요도 순: 메인 키워드 → 품종명 → 용도 → 특성 → 동의어/표기 변형.' },
   { id:'cafe24_imgAlt',      platform:'cafe24', label:'상품 이미지 Alt 텍스트',
-    maxChars:50, rows:1,
-    guide:'이미지 대체 텍스트. 유통명 + 핵심 시각적 특징(꽃 색·잎 모양 등).' },
+    maxChars:30, rows:1,
+    guide:'15~30자. 그 사진이 무엇을 보여주는지 구체적으로. 키워드 1~2개 자연스럽게. 템플릿: [품종명] [상태/장면] [부가 디테일]' },
 
   // 쿠팡
-  { id:'coupang_searchTerms',platform:'coupang', label:'검색어 (20개)',
+  { id:'coupang_searchTerms',platform:'coupang', label:'검색어 (정확히 20개)',
     maxChars:null, rows:3,
-    guide:'쿠팡 검색에 잘 걸릴 키워드 정확히 20개. 쉼표 구분. 유통명, 학명, 별명, 카테고리, 활용, 비슷한 식물명, 트렌드 키워드 골고루.' },
+    guide:'정확히 20개, 쉼표 구분. 7개 카테고리에 분배: 일반명+변형(3~4) / 품종명+변형(2~3) / 카테고리(2~3) / 용도(2~3) / 규격(1~2) / 시즌(1~2) / 특성(3~4). 어뷰징/경쟁사 브랜드명 금지.' },
 
   // 스마트스토어
   { id:'naver_summary40',    platform:'naver', label:'요약설명 (40자)',
     maxChars:40, rows:1,
-    guide:'네이버 검색 결과에 노출되는 짧은 요약. 정확히 40자 이내, 핵심 매력 한 줄.' },
-  { id:'naver_tags',         platform:'naver', label:'태그 (10개)',
+    guide:'정확히 40자 이내(공백 포함). 핵심 베네핏 1개 + 키워드 1~2개. 마침표 없이 끊어 읽히게. 템플릿: [핵심특징] [용도/규격] [핵심키워드]' },
+  { id:'naver_tags',         platform:'naver', label:'태그 (정확히 10개)',
     maxChars:null, rows:2,
-    guide:'네이버 쇼핑 태그 정확히 10개. 쉼표 구분. 검색량 있을 만한 자연어 키워드.' },
+    guide:'정확히 10개, 쉼표 구분. 메인 1: 일반명 / 보조 2~3: 품종명·용도·시즌 / 롱테일 3~4: 결합어·시나리오 / 변형 1~2: 표기 다양화. 11개 이상 금지.' },
   { id:'naver_pageTitle',    platform:'naver', label:'Page Title',
     maxChars:60, rows:1,
-    guide:'SEO 페이지 제목. 유통명 + 학명 + 카테고리 키워드.' },
+    guide:'50~60자. 메인 키워드 앞쪽. [일반명] [품종명] [핵심특징] [용도] | [브랜드명]' },
   { id:'naver_metaDesc',     platform:'naver', label:'Meta Description',
-    maxChars:150, rows:2,
-    guide:'검색 결과에 노출되는 메타 설명. 매력 + 핵심 정보 + 행동 유도.' },
+    maxChars:120, rows:2,
+    guide:'80~120자. 1문장 식물 정체성 + 1문장 베네핏/용도. 키워드 1~2개 자연스럽게.' },
 
   // 상세페이지 제작
   { id:'detail_intro',       platform:'detailpage', label:'식물 전반 소개 (1-2줄)',
     maxChars:100, rows:2,
-    guide:'상세페이지 최상단에 들어가는 첫 인상 카피. 1~2줄, 100자 이내. 식물의 핵심 매력/포지션을 한두 문장으로.' },
-  { id:'detail_leaf',        platform:'detailpage', label:'잎의 특징',
-    maxChars:200, rows:3,
-    guide:'잎의 모양·색·질감·크기·계절 변화 등 시각적·식물학적 특징. 200자 이내, 2~4문장.' },
-  { id:'detail_flower',      platform:'detailpage', label:'꽃의 특징',
-    maxChars:200, rows:3,
-    guide:'꽃의 색·형태·크기·개화기·향·꽃대 길이 등. 200자 이내, 2~4문장. 꽃이 없는 식물이면 "꽃이 잘 피지 않는 관엽 식물입니다" 식으로 자연스럽게.' },
-  { id:'detail_growing',     platform:'detailpage', label:'재배 가이드',
-    maxChars:300, rows:4,
-    guide:'실용적인 재배·관리 가이드. 일조량 / 물주기 / 토양·배수 / 내한성·월동 / 비료·전정 / 주의점 중 traits 기반으로 가장 중요한 4~6가지를 친근한 안내체로. 300자 이내.' },
+    guide:'1~2줄, 100자 내외. 한 번 읽고 "아, 이런 식물이구나"가 직관적으로. 식물 정체성 + 가장 큰 매력 + 용도. 형용사 나열/최고/수치 자랑 금지.' },
+  { id:'detail_leaf',        platform:'detailpage', label:'잎의 특징 (1줄)',
+    maxChars:80, rows:2,
+    guide:'80자 내외 1줄. 색·질감·양감·상록 여부 중 가장 인상적인 2~3가지. 시각적·촉각적 묘사로. 모호한 표현("예쁘다") 금지.' },
+  { id:'detail_flower',      platform:'detailpage', label:'꽃의 특징 (1줄)',
+    maxChars:80, rows:2,
+    guide:'80자 내외 1줄. 색·크기·개화기·향·개화 길이 중 핵심 2~3가지. 꽃이 없는 식물이면 잎 매력 위주로 자연스럽게 우회.' },
+  { id:'detail_growing',     platform:'detailpage', label:'재배 가이드 (3가지)',
+    maxChars:400, rows:6,
+    guide:'전체 400자 이내, 항목 3개. 포맷: "1. 항목 제목 — 1줄 설명\n2. ...\n3. ...". 이 식물 특유의 결정적 관리 포인트 3가지. 일반론(물 잘 주세요) 금지.' },
 ];
 
 const AI_PLATFORMS = [
@@ -12398,7 +12398,7 @@ const AI_PLATFORMS = [
 /** 특이사항(note) 자동 생성 메타 — note 필드는 기본정보 섹션에 이미 있음 */
 const AI_NOTE_META = {
   id:'note', target:'note', maxChars:100,
-  guide:'재배 및 관리상 유의할 점 1~2가지. 100자 내외. 식물 특성 기반의 실용 정보.'
+  guide:'재배·관리상 유의점 1~2가지, 100자 내외. detail_growing 의 3가지 중 가장 결정적인 것 압축. 친근한 안내체("~해주세요").'
 };
 
 /** AI 섹션 HTML 동적 렌더 (v3 — 플랫폼 드롭다운) */
