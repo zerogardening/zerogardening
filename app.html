@@ -12641,19 +12641,49 @@ const AIBridge = (() => {
     }
   }
 
-  async function writeQueue(data){
+  // 동시 쓰기 방지 — 모든 read+write 작업을 Promise chain 으로 직렬화
+  let _writeLock = Promise.resolve();
+  async function _withLock(fn){
+    const prev = _writeLock;
+    let release;
+    _writeLock = new Promise(r => { release = r; });
+    try { await prev; } catch(_){}
+    try { return await fn(); }
+    finally { release(); }
+  }
+
+  async function _writeAndVerify(data){
     const dir = await getDirHandle(true);
     if(!dir) throw new Error('폴더가 연결되지 않았습니다');
+    // JSON 직렬화 — 작은 파일을 위해 indent 없이
+    const json = JSON.stringify(data);
     const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
     const writable = await fh.createWritable();
-    await writable.write(JSON.stringify(data, null, 2));
-    await writable.close();
+    try {
+      // Blob 으로 한 번에 — 더 atomic
+      await writable.write(new Blob([json], { type: 'application/json' }));
+    } finally {
+      await writable.close();
+    }
+    // readback 검증
+    try {
+      const fh2 = await dir.getFileHandle(QUEUE_FILE);
+      const txt = await (await fh2.getFile()).text();
+      JSON.parse(txt);  // 파싱 실패 시 throw
+    } catch(e){
+      throw new Error('큐 파일 readback 검증 실패: ' + (e.message||e));
+    }
+  }
+
+  async function writeQueue(data){
+    return _withLock(() => _writeAndVerify(data));
   }
 
   /** v2 — fields 배열 + globalRequest + overwrite 포함 */
   async function enqueue(skuInfo, opts){
-    let q = await readQueue();
-    if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
+    return _withLock(async () => {
+      let q = await readQueue();
+      if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
     if(!q.queue) q.queue = [];
     if(!q.version) q.version = 2;
     const id = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
@@ -12699,13 +12729,16 @@ const AIBridge = (() => {
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
-    q.queue.push(req);
-    await writeQueue(q);
-    return req;
+      q.queue.push(req);
+      // _withLock 안이라 _writeAndVerify 직접 호출 (writeQueue 호출하면 dead-lock)
+      await _writeAndVerify(q);
+      return req;
+    });
   }
 
   /** completed 항목을 SKU 마스터에 적용 */
   async function pollOnce(){
+    return _withLock(async () => {
     const q = await readQueue();
     if(!q || !q.queue || q.queue.length === 0) return 0;
     let applied = 0, modified = false;
@@ -12778,10 +12811,11 @@ const AIBridge = (() => {
         console.error('apply error', e);
       }
     }
-    if(modified){
-      try { await writeQueue(q); } catch(e){ console.error('writeQueue after apply', e); }
-    }
-    return applied;
+      if(modified){
+        try { await _writeAndVerify(q); } catch(e){ console.error('writeAndVerify after apply', e); }
+      }
+      return applied;
+    });
   }
 
   function startPolling(intervalMs){
