@@ -2114,6 +2114,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               </div>
               <div class="form-actions">
                 <button type="button" class="btn btn-secondary" id="btn-manual-reset">초기화</button>
+                <button type="button" class="btn btn-secondary" id="btn-manual-ai-write" title="현재 입력한 정보로 AI 글쓰기 요청 — 결과는 SKU 마스터에 자동 저장됨" style="background:#e8f0fe;color:#1e4abb;border:1px solid #cfe0fa">🤖 AI 글쓰기 요청</button>
                 <button type="submit" class="btn btn-primary">✓ 입고 등록</button>
               </div>
             </form>
@@ -5049,6 +5050,58 @@ function setupManualForm(){
 
   // 호환용 별칭 (아래 코드에서 사용)
   function hideProdSuggestions(){ hideAllSuggestions(); }
+
+  // ── 수동입고 폼: AI 글쓰기 요청 버튼 ──
+  const btnManualAi = document.getElementById('btn-manual-ai-write');
+  if(btnManualAi){
+    btnManualAi.addEventListener('click', async () => {
+      const fd = new FormData(form);
+      const codeRaw = (fd.get('barcode')||'').trim();
+      if(!codeRaw){ toast('품목코드를 먼저 입력하세요','error'); return; }
+      const prefix = extractCodePrefix(codeRaw) || codeRaw.toUpperCase();
+      if(!prefix || !/^[A-Z]+\d+$/.test(prefix)){
+        toast('품목코드 형식이 올바르지 않습니다 (예: FEE01)','error');
+        return;
+      }
+      const dist = (fd.get('distributionName')||'').trim();
+      if(!dist){ toast('유통명을 먼저 입력하세요','error'); return; }
+
+      // 폴더 연결 보장
+      if(typeof AIBridge === 'undefined'){
+        toast('AI 모듈이 로드되지 않았습니다','error'); return;
+      }
+      if(!(await AIBridge.isConnected())){
+        const ok = await AIBridge.connectFolder();
+        if(!ok) return;
+      }
+      // 기존 SKU 마스터 + 폼 데이터 머지 (폼 우선)
+      const existing = (typeof Store!=='undefined' && Store.findSkuByCode) ? (Store.findSkuByCode(prefix)||{}) : {};
+      const skuInfo = Object.assign({}, existing, {
+        barcode: prefix,
+        distributionName: dist,
+        scientificName:   (fd.get('scientificName')||'').trim() || existing.scientificName || '',
+        heightMin: (fd.get('heightMin')||'').trim() || existing.heightMin || '',
+        heightMax: (fd.get('heightMax')||'').trim() || existing.heightMax || '',
+        widthMin:  (fd.get('widthMin')||'').trim()  || existing.widthMin  || '',
+        widthMax:  (fd.get('widthMax')||'').trim()  || existing.widthMax  || '',
+        hardiness: (fd.get('hardiness')||'').trim() || existing.hardiness || '',
+        watering:  (fd.get('watering')||'').trim()  || existing.watering  || '',
+        sunlight:  (fd.get('sunlight')||'').trim()  || existing.sunlight  || '',
+        bloomStart:(fd.get('bloomStart')||'').trim()|| existing.bloomStart|| '',
+        bloomEnd:  (fd.get('bloomEnd')||'').trim()  || existing.bloomEnd  || '',
+        note: (fd.get('memo')||'').trim() || existing.note || '',
+        aiFields: existing.aiFields || {},
+      });
+      try {
+        await AIBridge.enqueue(skuInfo, { fieldRequests:{}, globalRequest:'', overwrite:false });
+        toast(`✓ ${prefix} AI 글쓰기 큐 추가됨 (${AI_FIELDS.length}+1개 항목) — Cowork 에서 "AI 글쓰기 처리해줘"`, 'flash');
+        AIBridge.startPolling();
+      } catch(err){
+        console.error(err);
+        toast('큐 추가 실패: ' + (err.message||err), 'error');
+      }
+    });
+  }
 
   function autoGenBarcode(force){
     const code = generateItemCode(sciInput.value, specInput.value);
@@ -12302,10 +12355,20 @@ const AI_NOTE_META = {
   guide:'재배 및 관리상 유의할 점 1~2가지. 100자 내외. 식물 특성 기반의 실용 정보.'
 };
 
-/** AI 섹션 HTML 동적 렌더 */
+/** AI 섹션 HTML 동적 렌더 (v3 — 플랫폼 드롭다운) */
 function _renderAiFieldsHtml(s){
   const cur = (s.aiFields)||{};
-  const blocks = AI_PLATFORMS.map(p => {
+  // 1) 드롭다운 셀렉터
+  const selectorHtml = `
+    <div class="ai-platform-tabs" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="font-size:12px;font-weight:600;color:#2c3e50">플랫폼 보기:</label>
+      <select id="ai-platform-select" style="padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:12.5px;background:#fff;cursor:pointer;font-weight:500">
+        ${AI_PLATFORMS.map((p,i) => `<option value="${p.id}" ${i===0?'selected':''}>${p.label} (${AI_FIELDS.filter(f=>f.platform===p.id).length}개)</option>`).join('')}
+      </select>
+      <span class="muted tight" style="font-weight:normal">— 「AI 글쓰기 요청」 한 번에 모든 플랫폼이 함께 채워집니다</span>
+    </div>`;
+  // 2) 각 플랫폼별 패널 (선택된 것만 보임)
+  const panels = AI_PLATFORMS.map((p, idx) => {
     const fields = AI_FIELDS.filter(f => f.platform === p.id);
     if(fields.length === 0) return '';
     const fieldsHtml = fields.map(f => {
@@ -12323,12 +12386,12 @@ function _renderAiFieldsHtml(s){
         <input type="text" class="ai-field-request" data-field="${f.id}" placeholder="이 항목 요청사항 (선택, 예: 시적으로 / 짧게 / 전문용어 빼고)" style="width:100%;font-family:inherit;padding:4px 8px;border:1px dashed #cfd8e3;border-radius:4px;font-size:11px;color:#5a6776;margin-top:4px;box-sizing:border-box;background:#fafbfd">
       </div>`;
     }).join('');
-    return `<details class="ai-platform-group" ${p.open?'open':''} style="margin-bottom:10px">
-      <summary style="font-weight:700;cursor:pointer;padding:8px 10px;font-size:13px;background:#e8efff;border-radius:5px;list-style:none;user-select:none">${p.label} <span class="muted tight" style="font-weight:normal">(${fields.length}개 항목)</span></summary>
-      <div style="padding:8px 0 0 0">${fieldsHtml}</div>
-    </details>`;
+    return `<div class="ai-platform-panel" data-platform="${p.id}" style="display:${idx===0?'block':'none'}">
+      <div style="font-weight:700;padding:6px 10px;font-size:12.5px;background:#e8efff;border-radius:5px;margin-bottom:8px;color:#1e4abb">${p.label}</div>
+      ${fieldsHtml}
+    </div>`;
   }).join('');
-  return blocks;
+  return selectorHtml + panels;
 }
 
 /* ─── 글자수 카운터 (입력 시 갱신) ─── */
@@ -12344,6 +12407,16 @@ document.addEventListener('input', (e) => {
     const len = t.value.length;
     c.textContent = `${len} / ${max}`;
     c.style.color = len > max ? '#c33' : 'var(--muted)';
+  }
+});
+
+/* ─── 플랫폼 드롭다운 변경 — 패널 토글 ─── */
+document.addEventListener('change', (e) => {
+  if(e.target && e.target.id === 'ai-platform-select'){
+    const v = e.target.value;
+    document.querySelectorAll('.ai-platform-panel').forEach(p => {
+      p.style.display = (p.dataset.platform === v) ? 'block' : 'none';
+    });
   }
 });
 
