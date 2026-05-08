@@ -3546,13 +3546,17 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           <span class="price-value" id="price-naver">-</span>
         </div>
       </div>
-      <div class="price-section-title">🛒 쿠팡 단가표 — (소매가 × 수량 + 4,500) × 1.1</div>
+      <div class="price-section-title">🛒 쿠팡 단가표</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;line-height:1.6">
+        소비자가 = (매입가 × 2 × 수량 + 4,500) × 1.1<br>
+        판매가 = (소매가 × 수량 + 4,500) × 1.1
+      </div>
       <table class="price-coupang-table">
         <thead>
           <tr>
             <th style="width:60px">수량</th>
-            <th>계산식</th>
-            <th class="num" style="width:100px">단가</th>
+            <th class="num" style="width:120px">소비자가</th>
+            <th class="num" style="width:120px">판매가</th>
           </tr>
         </thead>
         <tbody id="price-coupang-tbody"></tbody>
@@ -11462,16 +11466,17 @@ function recalculatePrices(){
   document.getElementById('price-wholesale').textContent = fmtKRW(wholesale);
   document.getElementById('price-naver').textContent = fmtKRW(retail);
 
-  // 쿠팡 단가표
+  // 쿠팡 단가표 — 소비자가 / 판매가 두 칸
   const tbody = document.getElementById('price-coupang-tbody');
   tbody.innerHTML = COUPANG_QTYS.map(q => {
-    const subtotal = retail * q + COUPANG_SHIPPING;
-    const finalPrice = round10(subtotal * COUPANG_VAT);
-    const formula = `(${fmtNum(retail)}×${q} + ${fmtNum(COUPANG_SHIPPING)}) × ${COUPANG_VAT}`;
+    // 판매가: (소매가 × 수량 + 4500) × 1.1
+    const sellingFinal = round10((retail * q + COUPANG_SHIPPING) * COUPANG_VAT);
+    // 소비자가: (매입가 × 2 × 수량 + 4500) × 1.1
+    const consumerFinal = round10((purchase * 2 * q + COUPANG_SHIPPING) * COUPANG_VAT);
     return `<tr>
       <td class="qty-cell">${q}개</td>
-      <td class="formula-cell">${formula}</td>
-      <td class="value-cell">${fmtKRW(finalPrice)}</td>
+      <td class="value-cell num">${fmtKRW(consumerFinal)}</td>
+      <td class="value-cell num">${fmtKRW(sellingFinal)}</td>
     </tr>`;
   }).join('');
 }
