@@ -12710,6 +12710,12 @@ const AIBridge = (() => {
     return !!saved;
   }
 
+  async function getFolderName(){
+    const saved = await _idbGet(IDB_KEY);
+    if(saved && saved.name) return saved.name;
+    return '';
+  }
+
   function buildPromptText(skuInfo, opts){
     const t = skuInfo;
     const cur = t.aiFields || {};
@@ -12757,7 +12763,7 @@ const AIBridge = (() => {
   }
 
   return {
-    isSupported, isConnected, connectFolder, getDirHandle,
+    isSupported, isConnected, connectFolder, getDirHandle, getFolderName,
     readQueue, writeQueue, enqueue, pollOnce,
     startPolling, stopPolling, getPendingCount,
     buildPromptText,
@@ -12872,24 +12878,27 @@ async function _refreshAiStatus(){
     if(connectBtn) connectBtn.style.display = 'none';
     return;
   }
+  // 연결 버튼은 항상 표시 — 폴더 변경 가능하게
+  if(connectBtn) connectBtn.style.display = '';
   const connected = await AIBridge.isConnected();
   if(!connected){
     status.textContent = '⚠ 폴더 연결 필요';
     status.style.color = '#c33';
     if(pending) pending.style.display = 'none';
     if(pollBtn) pollBtn.style.display = 'none';
-    if(connectBtn) connectBtn.style.display = '';
+    if(connectBtn){ connectBtn.textContent = '📁 폴더 연결'; connectBtn.title = '프로젝트 폴더 연결 (최초 1회)'; }
     return;
   }
-  if(connectBtn) connectBtn.style.display = 'none';
+  if(connectBtn){ connectBtn.textContent = '📁 폴더 변경'; connectBtn.title = '연결 폴더 변경 — 다른 폴더 선택'; }
+  const folderName = await AIBridge.getFolderName();
   const pendingCount = await AIBridge.getPendingCount();
   if(pendingCount > 0){
-    status.textContent = `⏳ 대기 중: ${pendingCount}건`;
+    status.textContent = `⏳ 대기 중: ${pendingCount}건 · 📁 ${folderName}`;
     status.style.color = '#1e4abb';
     if(pending) pending.style.display = '';
     if(pollBtn) pollBtn.style.display = '';
   } else {
-    status.textContent = '✓ 폴더 연결됨';
+    status.textContent = `✓ 연결됨: ${folderName}`;
     status.style.color = '#2e7d32';
     if(pending) pending.style.display = 'none';
     if(pollBtn) pollBtn.style.display = 'none';
