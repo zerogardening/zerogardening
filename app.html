@@ -7520,6 +7520,12 @@ function exportListToExcel(){
     '매입금액': (Number(r.purchasePrice)||0) * (Number(r.quantity)||0),
     '기본 판매가': Number(r.salePrice)||0,
     '쿠팡 판매가': Number(r.coupangPrice)||0,
+    '최대 높이': (typeof getHeightDisplay==='function') ? getHeightDisplay(r) : (r.maxHeight||''),
+    '최대 너비': (typeof getWidthDisplay==='function') ? getWidthDisplay(r) : (r.maxWidth||''),
+    '내한성': (typeof formatHardiness==='function') ? formatHardiness(r.hardiness) : (r.hardiness||''),
+    '물주기': r.watering||'',
+    '일조량': r.sunlight||'',
+    '개화기': (typeof getBloomDisplay==='function') ? getBloomDisplay(r) : (r.bloomSeason||''),
     '메모': r.memo||'',
   }));
   const today = (typeof todayISO==='function') ? todayISO() : new Date().toISOString().slice(0,10);
@@ -7545,18 +7551,40 @@ function exportInventoryToExcel(){
     return hay.includes(q);
   });
   const statusKo = { selling:'판매중', soldout:'품절', paused:'일시중지' };
-  const rows = list.map(it => ({
-    '품목코드': it.key||'',
-    '유통명': it.distName||'',
-    '식물학명': it.sciName||'',
-    '규격': (it.specs||[]).join(', '),
-    '상태': statusKo[it.status] || it.status || '',
-    '총 입고': Number(it.totalReceived)||0,
-    '총 출고': Number(it.totalShipped)||0,
-    '현재 재고': Number(it.currentQty)||0,
-    '최소 재고': Number(it.minQty)||0,
-    '재입고 필요': (it.status==='selling' && it.currentQty < it.minQty) ? 'Y' : '',
-  }));
+  // 각 SKU 의 입고처 + 최신 식물특성 추출용
+  const allRecvs = (typeof Store!=='undefined' && Store.listReceivings) ? Store.listReceivings() : [];
+  const byKey = new Map();
+  allRecvs.forEach(r=>{
+    const k = (typeof normalizeInventoryKey==='function') ? normalizeInventoryKey(r.barcode) : (r.barcode||'').trim().toUpperCase();
+    if(!k) return;
+    if(!byKey.has(k)) byKey.set(k, { suppliers:new Set(), latest:null });
+    const o = byKey.get(k);
+    if(r.supplier) o.suppliers.add(r.supplier);
+    if(!o.latest || (r.receivedAt||'') >= (o.latest.receivedAt||'')) o.latest = r;
+  });
+  const rows = list.map(it => {
+    const aux = byKey.get(it.key) || { suppliers:new Set(), latest:null };
+    const r = aux.latest || {};
+    return {
+      '품목코드': it.key||'',
+      '유통명': it.distName||'',
+      '식물학명': it.sciName||'',
+      '규격': (it.specs||[]).join(', '),
+      '입고처': Array.from(aux.suppliers).join(', '),
+      '상태': statusKo[it.status] || it.status || '',
+      '총 입고': Number(it.totalReceived)||0,
+      '총 출고': Number(it.totalShipped)||0,
+      '현재 재고': Number(it.currentQty)||0,
+      '최소 재고': Number(it.minQty)||0,
+      '재입고 필요': (it.status==='selling' && it.currentQty < it.minQty) ? 'Y' : '',
+      '최대 높이': (typeof getHeightDisplay==='function') ? getHeightDisplay(r) : (r.maxHeight||''),
+      '최대 너비': (typeof getWidthDisplay==='function') ? getWidthDisplay(r) : (r.maxWidth||''),
+      '내한성':   (typeof formatHardiness==='function') ? formatHardiness(r.hardiness) : (r.hardiness||''),
+      '물주기':   r.watering||'',
+      '일조량':   r.sunlight||'',
+      '개화기':   (typeof getBloomDisplay==='function') ? getBloomDisplay(r) : (r.bloomSeason||''),
+    };
+  });
   const today = (typeof todayISO==='function') ? todayISO() : new Date().toISOString().slice(0,10);
   _downloadXlsx(rows, '재고관리', `재고관리_${today}.xlsx`);
 }
