@@ -2507,6 +2507,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <div class="tabs">
           <button class="tab active" data-otab="batches">📁 일자별 주문</button>
           <button class="tab" data-otab="dashboard">📊 대시보드</button>
+          <button class="tab" data-otab="quotes">📝 견적 요청</button>
         </div>
 
         <!-- ===== 일자별 주문 (업로드 + 폴더 탐색 + 폴더 상세) ===== -->
@@ -2587,6 +2588,54 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           <div class="card" style="margin-top:14px">
             <div class="card-title">📈 전체 누적 현황</div>
             <div class="summary-bar" id="orders-total-summary"></div>
+          </div>
+        </section>
+
+        <!-- ===== 견적 요청 ===== -->
+        <section id="otab-quotes" class="otab-pane hidden">
+          <div class="card">
+            <div class="card-title">📝 새 견적 요청 등록</div>
+            <form id="quote-form">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">요청일자 <span class="req">*</span></label>
+                  <input type="date" name="requestedAt" id="quote-date" class="form-control" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">고객명 <span class="req">*</span></label>
+                  <input type="text" name="customerName" class="form-control" placeholder="예: 홍길동 / OO조경" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">연락처</label>
+                  <input type="text" name="contact" class="form-control" placeholder="010-0000-0000 / email">
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">요청 내용 / 메모 <span class="req">*</span></label>
+                  <textarea name="content" class="form-control" rows="3" placeholder="고객이 문의한 식물·수량·납기·예산 등을 자유롭게 메모" required style="resize:vertical;min-height:70px"></textarea>
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:12px">
+                <button type="button" class="btn btn-ghost" id="btn-quote-reset">초기화</button>
+                <button type="submit" class="btn btn-primary">＋ 등록</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <div class="card-title">
+              📋 견적 요청 목록
+              <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:auto" id="quote-count"></span>
+            </div>
+            <div class="search-bar" style="flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px">
+              <input type="text" id="quote-search" placeholder="🔍 고객명·내용 검색…" autocomplete="off" style="flex:1;min-width:220px;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:13px">
+              <select id="quote-status-filter" style="min-width:140px">
+                <option value="all">전체 상태</option>
+                <option value="요청">요청</option>
+                <option value="완료">완료</option>
+                <option value="취소">취소</option>
+              </select>
+            </div>
+            <div id="quote-list-area"></div>
           </div>
         </section>
 
@@ -3627,7 +3676,7 @@ function extractCodePrefix(code){
 
 const Store = (() => {
   const KEY = 'zerogardening_v1';
-  const DEFAULT = { receivings: [], companies: [], statements: [], orders: [], skus: [], cardPresets: [], manualCards: [], orderBatches: [] };
+  const DEFAULT = { receivings: [], companies: [], statements: [], orders: [], skus: [], cardPresets: [], manualCards: [], orderBatches: [], quoteRequests: [] };
 
   // 빌트인 프리셋 — 첫 로드 시 자동 시드
   const BUILTIN_PRESETS = [
@@ -4030,6 +4079,42 @@ const Store = (() => {
       const d = load();
       if(!d.orders) d.orders = [];
       return d.orders.filter(o => o.batchId === batchId);
+    },
+    /* ── 견적 요청 (Quote Request) ── */
+    listQuoteRequests(){
+      const d = load();
+      if(!d.quoteRequests) d.quoteRequests = [];
+      // 최신순 (createdAt 내림차순)
+      return d.quoteRequests.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+    },
+    addQuoteRequest(item){
+      const d = load();
+      if(!d.quoteRequests) d.quoteRequests = [];
+      const now = Date.now();
+      const rec = Object.assign({
+        id: 'q_' + now + '_' + Math.random().toString(36).slice(2,8),
+        status: '요청',
+        createdAt: now,
+        updatedAt: now,
+      }, item);
+      d.quoteRequests.push(rec);
+      save(d);
+      return rec;
+    },
+    updateQuoteRequest(id, patch){
+      const d = load();
+      if(!d.quoteRequests) d.quoteRequests = [];
+      const idx = d.quoteRequests.findIndex(q => q.id === id);
+      if(idx < 0) return null;
+      d.quoteRequests[idx] = Object.assign({}, d.quoteRequests[idx], patch, { updatedAt: Date.now() });
+      save(d);
+      return d.quoteRequests[idx];
+    },
+    deleteQuoteRequest(id){
+      const d = load();
+      if(!d.quoteRequests) d.quoteRequests = [];
+      d.quoteRequests = d.quoteRequests.filter(q => q.id !== id);
+      save(d);
     },
     /** 주문번호 + 품목코드 + 수령인 조합으로 중복 체크용 키 생성 */
     orderDedupKeys(){
@@ -8249,6 +8334,158 @@ function setupOrderTabs(){
         exitBatchFolder();
         renderBatchFolders();
       }
+      if(target==='quotes') renderQuoteList();
+    });
+  });
+}
+
+/* ════════════════════════════════════════════════════════════════
+   견적 요청 관리
+   - 즉시 견적이 어려운 고객 문의를 메모 형태로 등록·관리
+   - 상태: 요청 / 완료 / 취소
+══════════════════════════════════════════════════════════════ */
+function setupQuoteForm(){
+  const form = document.getElementById('quote-form');
+  if(!form) return;
+  // 기본값: 오늘
+  const dateInp = document.getElementById('quote-date');
+  if(dateInp && !dateInp.value) dateInp.value = todayISO();
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const item = {
+      requestedAt: (fd.get('requestedAt')||'').trim(),
+      customerName: (fd.get('customerName')||'').trim(),
+      contact: (fd.get('contact')||'').trim(),
+      content: (fd.get('content')||'').trim(),
+      status: '요청',
+    };
+    if(!item.requestedAt || !item.customerName || !item.content){
+      toast('필수 항목을 입력하세요','error'); return;
+    }
+    Store.addQuoteRequest(item);
+    toast('✓ 견적 요청 등록 완료','flash');
+    form.reset();
+    if(dateInp) dateInp.value = todayISO();
+    renderQuoteList();
+  });
+  document.getElementById('btn-quote-reset').addEventListener('click', () => {
+    form.reset();
+    if(dateInp) dateInp.value = todayISO();
+  });
+
+  // 검색·필터
+  const debounceRender = (() => {
+    let t = null;
+    return () => { clearTimeout(t); t = setTimeout(renderQuoteList, 120); };
+  })();
+  document.getElementById('quote-search').addEventListener('input', debounceRender);
+  document.getElementById('quote-status-filter').addEventListener('change', renderQuoteList);
+}
+
+function _quoteStatusBadge(status){
+  const map = {
+    '요청':  { bg:'#fff8e1', fg:'#7a5b00' },
+    '완료':  { bg:'#e8f5e9', fg:'#2d6a4f' },
+    '취소':  { bg:'#fde8e8', fg:'#c33' },
+  };
+  const s = map[status] || { bg:'#eee', fg:'#666' };
+  return `<span style="display:inline-block;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:600;background:${s.bg};color:${s.fg}">${escapeHtml(status||'-')}</span>`;
+}
+
+function renderQuoteList(){
+  const area = document.getElementById('quote-list-area');
+  if(!area) return;
+  const q = ((document.getElementById('quote-search')||{}).value||'').trim().toLowerCase();
+  const statusFilter = (document.getElementById('quote-status-filter')||{}).value || 'all';
+  let list = Store.listQuoteRequests();
+  if(statusFilter !== 'all') list = list.filter(it => it.status === statusFilter);
+  if(q){
+    list = list.filter(it =>
+      (it.customerName||'').toLowerCase().includes(q) ||
+      (it.content||'').toLowerCase().includes(q) ||
+      (it.contact||'').toLowerCase().includes(q)
+    );
+  }
+  document.getElementById('quote-count').textContent = list.length>0 ? `총 ${fmtNum(list.length)}건` : '';
+
+  if(list.length === 0){
+    area.innerHTML = '<div class="empty">📭 표시할 견적 요청이 없습니다.</div>';
+    return;
+  }
+  area.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:100px">요청일자</th>
+          <th style="width:140px">고객명</th>
+          <th style="width:140px">연락처</th>
+          <th>요청 내용</th>
+          <th style="width:110px">상태</th>
+          <th style="width:140px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(it => `
+          <tr data-id="${escapeHtml(it.id)}">
+            <td class="tight">${escapeHtml(it.requestedAt||'-')}</td>
+            <td>${escapeHtml(it.customerName||'-')}</td>
+            <td class="tight">${escapeHtml(it.contact||'-')}</td>
+            <td style="white-space:pre-wrap;line-height:1.5">${escapeHtml(it.content||'')}</td>
+            <td>
+              <select class="quote-status-sel" data-id="${escapeHtml(it.id)}" style="padding:4px 6px;font-size:12px;border:1px solid #ddd;border-radius:4px">
+                <option value="요청" ${it.status==='요청'?'selected':''}>요청</option>
+                <option value="완료" ${it.status==='완료'?'selected':''}>완료</option>
+                <option value="취소" ${it.status==='취소'?'selected':''}>취소</option>
+              </select>
+            </td>
+            <td>
+              <button class="btn btn-ghost btn-sm quote-edit-btn" data-id="${escapeHtml(it.id)}">수정</button>
+              <button class="btn btn-ghost btn-sm quote-del-btn" data-id="${escapeHtml(it.id)}" style="color:#c33">삭제</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  // 이벤트 위임
+  area.querySelectorAll('.quote-status-sel').forEach(sel => {
+    sel.addEventListener('change', e => {
+      Store.updateQuoteRequest(e.target.dataset.id, { status: e.target.value });
+      toast('✓ 상태 변경됨','flash');
+      renderQuoteList();
+    });
+  });
+  area.querySelectorAll('.quote-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if(!confirm('이 견적 요청을 삭제하시겠습니까?')) return;
+      Store.deleteQuoteRequest(btn.dataset.id);
+      toast('🗑 삭제됨','warn');
+      renderQuoteList();
+    });
+  });
+  area.querySelectorAll('.quote-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const item = Store.listQuoteRequests().find(q => q.id === id);
+      if(!item) return;
+      const newDate = prompt('요청일자 (YYYY-MM-DD):', item.requestedAt||'');
+      if(newDate === null) return;
+      const newName = prompt('고객명:', item.customerName||'');
+      if(newName === null) return;
+      const newContact = prompt('연락처:', item.contact||'');
+      if(newContact === null) return;
+      const newContent = prompt('요청 내용:', item.content||'');
+      if(newContent === null) return;
+      Store.updateQuoteRequest(id, {
+        requestedAt: (newDate||'').trim(),
+        customerName: (newName||'').trim(),
+        contact: (newContact||'').trim(),
+        content: (newContent||'').trim(),
+      });
+      toast('✓ 수정 완료','flash');
+      renderQuoteList();
     });
   });
 }
@@ -9944,6 +10181,7 @@ async function _bootApp(){
   setupCompanyEditModal();
   setupCompanySearchInputs();
   setupOrderTabs();
+  setupQuoteForm();
   setupOrdersCsvUpload();
   setupBatchUpload();
   setupOrderDetailModal();
