@@ -2117,6 +2117,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
             </select>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-open-calendar" title="달력으로 보기">📅 달력</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-show-sku-view" title="품목코드별 보기 (중복 제외)">🏷 품목코드</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-list-export" title="현재 화면에 보이는 행을 엑셀로 다운로드">📊 엑셀 다운로드</button>
             <span id="active-date-filter" class="active-date-filter hidden">
               📅 <span id="active-date-text"></span>
               <button type="button" id="btn-clear-date-filter" title="날짜 필터 해제">×</button>
@@ -2194,6 +2195,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
                 <option value="paused">→ 일시중지</option>
               </select>
             </span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-export" title="현재 화면에 보이는 행을 엑셀로 다운로드">📊 엑셀 다운로드</button>
           </div>
 
           <!-- 요약 -->
@@ -2825,19 +2827,31 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         </div>
         <div class="form-group">
           <label class="form-label">품목코드/바코드</label>
-          <input type="text" name="barcode" class="form-control">
+          <div class="product-wrap" id="edit-barcode-wrap">
+            <input type="text" name="barcode" id="edit-barcode" class="form-control" autocomplete="off" placeholder="입력 시 자동완성">
+            <div id="edit-barcode-list" class="product-list"></div>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">입고업체</label>
-          <input type="text" name="supplier" class="form-control">
+          <div class="supplier-wrap" id="edit-supplier-wrap">
+            <input type="text" name="supplier" id="edit-supplier" class="form-control" autocomplete="off" placeholder="입력 시 자동완성">
+            <div id="edit-supplier-list" class="supplier-list"></div>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">식물학명</label>
-          <input type="text" name="scientificName" class="form-control">
+          <div class="product-wrap" id="edit-sci-wrap">
+            <input type="text" name="scientificName" id="edit-sci" class="form-control" autocomplete="off" placeholder="입력 시 자동완성">
+            <div id="edit-sci-list" class="product-list"></div>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">유통명</label>
-          <input type="text" name="distributionName" class="form-control">
+          <div class="product-wrap" id="edit-distname-wrap">
+            <input type="text" name="distributionName" id="edit-distname" class="form-control" autocomplete="off" placeholder="입력 시 자동완성">
+            <div id="edit-distname-list" class="product-list"></div>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">규격</label>
@@ -7407,6 +7421,153 @@ document.getElementById('edit-form').elements.purchasePrice.addEventListener('in
 });
 
 /* ────────────────────────────────────────────────
+   상세 수정 모달 자동완성
+   - 입고업체 / 식물학명 / 유통명 / 품목코드 4개 필드
+   - 수동입고와 동일하게 입력 시 드롭다운 표시 → 클릭 선택
+──────────────────────────────────────────────── */
+function setupEditFormAutocomplete(){
+  const supInput = document.getElementById('edit-supplier');
+  const supList  = document.getElementById('edit-supplier-list');
+  const supWrap  = document.getElementById('edit-supplier-wrap');
+  const sciInput = document.getElementById('edit-sci');
+  const distInput = document.getElementById('edit-distname');
+  const barInput = document.getElementById('edit-barcode');
+  if(!supInput || !sciInput || !distInput || !barInput) return;
+
+  function openSup(query=''){ renderSupplierDropdown(supList, query); supList.classList.add('open'); }
+  function closeSup(){ supList.classList.remove('open'); }
+  supInput.addEventListener('input', ()=> openSup(supInput.value));
+  supInput.addEventListener('focus', ()=>{ if(supInput.value.trim()) openSup(supInput.value); });
+  supInput.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSup(); });
+  supList.addEventListener('click', e=>{
+    const item = e.target.closest('.supplier-item');
+    if(!item) return;
+    const name = item.dataset.name;
+    if(name){ supInput.value = name; closeSup(); }
+  });
+  document.addEventListener('click', e=>{
+    if(!supWrap.contains(e.target)) closeSup();
+  });
+
+  const acWraps = [
+    { input: distInput, wrap: document.getElementById('edit-distname-wrap'), list: document.getElementById('edit-distname-list') },
+    { input: sciInput,  wrap: document.getElementById('edit-sci-wrap'),      list: document.getElementById('edit-sci-list') },
+    { input: barInput,  wrap: document.getElementById('edit-barcode-wrap'),  list: document.getElementById('edit-barcode-list') },
+  ];
+  function hideAll(){ acWraps.forEach(w => w.list && w.list.classList.remove('open')); }
+  function showFor(item){
+    if(!item || !item.input || !item.list) return;
+    const q = item.input.value;
+    if(!q || q.trim().length < 1){ item.list.classList.remove('open'); return; }
+    renderProductList(item.list, q);
+    item.list.classList.add('open');
+  }
+  function applyPick(p){
+    if(p.distributionName) distInput.value = p.distributionName;
+    if(p.scientificName)   sciInput.value  = p.scientificName;
+    if(p.lastBarcode)      barInput.value  = p.lastBarcode;
+    hideAll();
+  }
+  acWraps.forEach(item => {
+    if(!item.input || !item.list) return;
+    item.input.addEventListener('input', ()=> showFor(item));
+    item.input.addEventListener('focus', ()=>{ if(item.input.value.trim()) showFor(item); });
+    item.input.addEventListener('keydown', e=>{ if(e.key==='Escape') item.list.classList.remove('open'); });
+    item.list.addEventListener('click', e=>{
+      const li = e.target.closest('.product-item');
+      if(!li) return;
+      const idx = parseInt(li.dataset.idx, 10);
+      const matches = item.list.__matches || [];
+      const p = matches[idx];
+      if(p) applyPick(p);
+    });
+  });
+  document.addEventListener('click', e=>{
+    const insideAny = acWraps.some(w => w.wrap && w.wrap.contains(e.target));
+    if(!insideAny) hideAll();
+  });
+}
+
+/* ────────────────────────────────────────────────
+   엑셀 다운로드 (입고리스트 / 재고관리)
+   - 현재 화면에 보이는(필터된) 행만 .xlsx 로 내보냄
+──────────────────────────────────────────────── */
+function _downloadXlsx(rows, sheetName, fileName){
+  if(!rows || rows.length === 0){ toast('내보낼 데이터가 없습니다','warn'); return; }
+  if(typeof XLSX === 'undefined'){ toast('엑셀 라이브러리(XLSX) 로딩 실패','error'); return; }
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const cols = Object.keys(rows[0]).map(k=>{
+    const maxLen = Math.max(k.length, ...rows.map(r => (r[k]==null?'':String(r[k])).length));
+    return { wch: Math.min(Math.max(maxLen+2, 8), 40) };
+  });
+  ws['!cols'] = cols;
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0,31));
+  XLSX.writeFile(wb, fileName);
+  toast(`✓ '${fileName}' 다운로드 완료 (${rows.length}건)`,'flash');
+}
+function exportListToExcel(){
+  const list = (typeof getFilteredList==='function') ? getFilteredList() : [];
+  const rows = list.map(r=>({
+    '입고일자': r.receivedAt||'',
+    '유통명': r.distributionName||'',
+    '식물학명': r.scientificName||'',
+    '규격': r.spec||'',
+    '품목코드': r.barcode||'',
+    '입고업체': r.supplier||'',
+    '매입단가': Number(r.purchasePrice)||0,
+    '수량': Number(r.quantity)||0,
+    '매입금액': (Number(r.purchasePrice)||0) * (Number(r.quantity)||0),
+    '기본 판매가': Number(r.salePrice)||0,
+    '쿠팡 판매가': Number(r.coupangPrice)||0,
+    '메모': r.memo||'',
+  }));
+  const today = (typeof todayISO==='function') ? todayISO() : new Date().toISOString().slice(0,10);
+  _downloadXlsx(rows, '입고리스트', `입고리스트_${today}.xlsx`);
+}
+function exportInventoryToExcel(){
+  // 재고관리 화면의 필터(검색 + 상태)를 동일 적용
+  if(typeof computeInventoryList !== 'function'){ toast('재고 데이터 함수 없음','error'); return; }
+  const all = computeInventoryList();
+  const q = ((document.getElementById('inv-search')||{}).value||'').trim().toLowerCase();
+  const statusFilter = (document.getElementById('inv-status-filter')||{}).value || 'all';
+  const list = all.filter(it => {
+    if(statusFilter === 'active') {
+      if(it.status === 'paused') return false;
+    } else if(statusFilter === 'lowstock'){
+      if(it.status !== 'selling') return false;
+      if(it.currentQty >= it.minQty) return false;
+    } else if(statusFilter !== 'all'){
+      if(it.status !== statusFilter) return false;
+    }
+    if(!q) return true;
+    const hay = [it.key, it.distName, it.sciName, (it.specs||[]).join(' ')].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  const statusKo = { selling:'판매중', soldout:'품절', paused:'일시중지' };
+  const rows = list.map(it => ({
+    '품목코드': it.key||'',
+    '유통명': it.distName||'',
+    '식물학명': it.sciName||'',
+    '규격': (it.specs||[]).join(', '),
+    '상태': statusKo[it.status] || it.status || '',
+    '총 입고': Number(it.totalReceived)||0,
+    '총 출고': Number(it.totalShipped)||0,
+    '현재 재고': Number(it.currentQty)||0,
+    '최소 재고': Number(it.minQty)||0,
+    '재입고 필요': (it.status==='selling' && it.currentQty < it.minQty) ? 'Y' : '',
+  }));
+  const today = (typeof todayISO==='function') ? todayISO() : new Date().toISOString().slice(0,10);
+  _downloadXlsx(rows, '재고관리', `재고관리_${today}.xlsx`);
+}
+(function setupListInvExport(){
+  const a = document.getElementById('btn-list-export');
+  if(a) a.addEventListener('click', ()=> exportListToExcel());
+  const b = document.getElementById('btn-inv-export');
+  if(b) b.addEventListener('click', ()=> exportInventoryToExcel());
+})();
+
+/* ────────────────────────────────────────────────
    백업 / 복원
 ──────────────────────────────────────────────── */
 document.getElementById('btn-export').addEventListener('click', ()=>{
@@ -8277,18 +8438,26 @@ function handleBatchFile(file){
       toast('인식 가능한 주문이 없습니다','error');
       return;
     }
-    const dupBatch = Store.findBatchByFileName(file.name);
+    // 같은 파일명 + 같은 날짜 dup 만 모달 띄움
+    // 다른 날 같은 파일명 → 덮어쓰지 않고 새 폴더로 추가
+    const today = Store._todayYYMMDD();
+    const all = Store.listOrderBatches();
+    const fnLower = String(file.name).trim().toLowerCase();
+    const sameDayDup = all.find(b =>
+      String(b.fileName||'').trim().toLowerCase() === fnLower &&
+      String(b.uploadedDate||'') === today
+    ) || null;
     _batchPendingUpload = {
       fileName: file.name,
       fileSize: file.size,
       orders: orders,
-      dupBatchId: dupBatch ? dupBatch.id : null
+      dupBatchId: sameDayDup ? sameDayDup.id : null
     };
-    if(dupBatch){
-      // 모달 띄움
+    if(sameDayDup){
+      // 같은 날 같은 파일명 → 덮어쓰기 확인 모달
       document.getElementById('batch-dup-info').innerHTML =
-        `이미 같은 이름의 파일이 폴더 <strong>[${escapeHtml(dupBatch.id)}]</strong> 에 저장되어 있습니다.<br>` +
-        `<span style="color:var(--muted);font-size:12px">업로드: ${escapeHtml(_yymmddToDisplay(dupBatch.uploadedDate))} ${escapeHtml(_tsToHHMM(dupBatch.uploadedAt))} · ${fmtNum(dupBatch.orderCount||0)}건</span><br><br>` +
+        `오늘 이미 같은 이름의 파일을 폴더 <strong>[${escapeHtml(sameDayDup.id)}]</strong> 에 업로드했습니다. 덮어쓰시겠습니까?<br>` +
+        `<span style="color:var(--muted);font-size:12px">업로드: ${escapeHtml(_yymmddToDisplay(sameDayDup.uploadedDate))} ${escapeHtml(_tsToHHMM(sameDayDup.uploadedAt))} · ${fmtNum(sameDayDup.orderCount||0)}건</span><br><br>` +
         `새 파일에는 <strong>${fmtNum(orders.length)}건</strong>의 주문이 들어있습니다.`;
       document.getElementById('batch-dup-modal').classList.remove('hidden');
     } else {
@@ -9724,6 +9893,7 @@ async function _bootApp(){
   setupRouting();
   setupTabs();
   setupManualForm();
+  setupEditFormAutocomplete();
   setupExcelImport();
   setupBulkUpload();
   setupCleanup();
