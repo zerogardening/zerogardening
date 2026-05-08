@@ -4844,6 +4844,39 @@ function detectSpecPreset(specText){
 // 마지막 등록값 (등록 후 폼 자동 채움용)
 const ManualLast = { receivedAt: null, supplier: null };
 
+/** 수동입고 폼에 SKU 의 식물특성을 빈 칸만 채움. 채운 개수 반환. */
+function _fillManualFormFromSku(sku, force){
+  if(!sku) return 0;
+  const form = document.getElementById('manual-form');
+  if(!form) return 0;
+  const traitFields = ['heightMin','heightMax','widthMin','widthMax','hardiness','watering','sunlight','bloomStart','bloomEnd'];
+  let filled = 0;
+  traitFields.forEach(f => {
+    const el = form.elements[f];
+    if(!el) return;
+    const v = sku[f];
+    if((force || !el.value) && v != null && v !== ''){
+      el.value = v;
+      filled++;
+    }
+  });
+  // 메모: 비어있을 때만 SKU.note 로 채움
+  if(form.elements.memo && !form.elements.memo.value && sku.note){
+    form.elements.memo.value = sku.note;
+    filled++;
+  }
+  return filled;
+}
+
+/** 품목코드 prefix 로 aggregateSkus 검색해 채움. 채운 개수 반환. */
+function _fillManualFormFromSkuPrefix(prefix, force){
+  if(!prefix) return 0;
+  const skus = aggregateSkus();
+  const sku = skus.find(s => s.barcode === prefix);
+  if(!sku) return 0;
+  return _fillManualFormFromSku(sku, force);
+}
+
 function setupManualForm(){
   const form = document.getElementById('manual-form');
   // 기본값 : 오늘
@@ -4898,6 +4931,31 @@ function setupManualForm(){
   // 사용자가 직접 바코드를 수정했는지 여부
   let userTouchedBarcode = false;
   barcodeInput.addEventListener('input', ()=>{ userTouchedBarcode = true; });
+
+  // 직접 입력한 품목코드가 기존 SKU 와 일치하면 식물 특성 자동 반영 (재입고 케이스)
+  barcodeInput.addEventListener('change', () => {
+    const v = (barcodeInput.value||'').trim();
+    if(!v) return;
+    const prefix = extractCodePrefix(v) || v.toUpperCase();
+    if(!prefix) return;
+    const skus = aggregateSkus();
+    const sku = skus.find(s => s.barcode === prefix);
+    if(!sku) return;
+    // 유통명/학명 비어있으면 채움
+    let nameFilled = false;
+    if(form.elements.distributionName && !form.elements.distributionName.value && sku.distributionName){
+      form.elements.distributionName.value = sku.distributionName;
+      nameFilled = true;
+    }
+    if(form.elements.scientificName && !form.elements.scientificName.value && sku.scientificName){
+      form.elements.scientificName.value = sku.scientificName;
+      nameFilled = true;
+    }
+    const filled = _fillManualFormFromSku(sku, false);
+    if(filled > 0 || nameFilled){
+      toast(`✓ "${sku.distributionName||prefix}" 기존 정보 ${filled+(nameFilled?1:0)}개 자동 채움`, 'flash');
+    }
+  });
 
   // ── 상품 자동완성: 유통명 / 식물학명 / 품목코드 모두 동일하게 작동 ──
   const distInput = form.elements.distributionName;
@@ -4955,7 +5013,11 @@ function setupManualForm(){
     autoGenBarcode(true);
 
     hideAllSuggestions();
-    toast(`✓ '${p.distributionName}' 정보 자동 채움 (기존 ${p.count}회)`, 'flash');
+    // 기존 SKU 의 식물 특성 자동 채움 (빈 칸만)
+    const _prefixForTraits = extractCodePrefix(p.lastBarcode||'') || String(p.lastBarcode||'').trim().toUpperCase();
+    const _filledTraits = _fillManualFormFromSkuPrefix(_prefixForTraits, false);
+    const traitMsg = _filledTraits > 0 ? ` · 식물특성 ${_filledTraits}개` : '';
+    toast(`✓ '${p.distributionName}' 정보 자동 채움 (기존 ${p.count}회)${traitMsg}`, 'flash');
     setTimeout(()=> form.elements.quantity.focus(), 30);
   }
 
@@ -11839,7 +11901,7 @@ function renderInventoryView(){
           <th class="num" style="width:80px">총 출고</th>
           <th class="num" style="width:80px">현재 재고</th>
           <th class="num" style="width:90px">최소 재고</th>
-          <th style="width:80px">조정</th>
+          <th style="width:170px">작업</th>
         </tr>
       </thead>
       <tbody>
@@ -11866,7 +11928,8 @@ function renderInventoryView(){
             <td class="num">
               <input type="number" class="inv-min-input ${it.hasCustomMin?'custom':''}" data-key="${escapeHtml(it.key)}" value="${it.minQty}" min="0" title="${it.hasCustomMin?'개별 설정':'기본값'}">
             </td>
-            <td>
+            <td style="white-space:nowrap">
+              <button type="button" class="inv-action-btn" data-action="info" data-key="${escapeHtml(it.key)}" title="이 품목의 기본정보(식물 특성 등) 보기/편집" style="margin-right:4px">🌱 기본정보</button>
               <button type="button" class="inv-action-btn" data-action="adjust" data-key="${escapeHtml(it.key)}" title="실재고로 기준점 설정">📝 조정</button>
             </td>
           </tr>`;
@@ -11912,6 +11975,18 @@ function renderInventoryView(){
   area.querySelectorAll('[data-action="adjust"]').forEach(btn => {
     btn.addEventListener('click', e => {
       openInventoryAdjustModal(e.target.dataset.key);
+    });
+  });
+  area.querySelectorAll('[data-action="info"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const key = e.currentTarget.dataset.key;
+      // 재고키(8자리, 예: FEE01-10) → SKU prefix(예: FEE01) 로 변환해 상세 모달 오픈
+      const prefix = extractCodePrefix(key) || key;
+      if(typeof window.openSkuDetail === 'function'){
+        window.openSkuDetail(prefix);
+      } else {
+        toast('SKU 상세 모달을 사용할 수 없습니다','error');
+      }
     });
   });
   _updateInvBulkToolbar();
