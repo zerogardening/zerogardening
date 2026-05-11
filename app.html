@@ -12375,25 +12375,18 @@ function setupInventoryView(){
       if(!ok) return;
     }
     const allSkus = aggregateSkus();
+    // sku 누락된 prefix 도 기본 정보로 채워서 enqueueBatch 한 번으로 적재
+    const skuInfos = Array.from(prefixes).map(prefix => {
+      return allSkus.find(s => s.barcode === prefix)
+          || { barcode: prefix, distributionName:'', scientificName:'', aiFields:{} };
+    });
     let added = 0, failed = 0;
-    for(const prefix of prefixes){
-      const sku = allSkus.find(s => s.barcode === prefix);
-      if(!sku){
-        // 마스터/입고 모두 없을 때 — 기본 정보만으로 큐 적재
-        try {
-          await AIBridge.enqueue({ barcode: prefix, distributionName:'', scientificName:'', aiFields:{} },
-                                  { fieldRequests:{}, globalRequest:'', overwrite:false });
-          added++;
-        } catch(e){ console.error('bulk enqueue', prefix, e); failed++; }
-        continue;
-      }
-      try {
-        await AIBridge.enqueue(sku, { fieldRequests:{}, globalRequest:'', overwrite:false });
-        added++;
-      } catch(e){
-        console.error('bulk enqueue', prefix, e);
-        failed++;
-      }
+    try {
+      const reqs = await AIBridge.enqueueBatch(skuInfos, { fieldRequests:{}, globalRequest:'', overwrite:false });
+      added = reqs.length;
+    } catch(e){
+      console.error('bulk enqueueBatch', e);
+      failed = skuInfos.length;
     }
     AIBridge.startPolling();
     toast(`✓ AI 글쓰기 큐 ${added}건 적재${failed>0?` (실패 ${failed})`:''} — Cowork 에서 "AI 글쓰기 처리해줘"`, 'flash');
@@ -12666,51 +12659,72 @@ const AIBridge = (() => {
   async function _writeAndVerify(data){
     const dir = await getDirHandle(true);
     if(!dir) throw new Error('폴더가 연결되지 않았습니다');
-    // JSON 직렬화 — 작은 파일을 위해 indent 없이
     const json = JSON.stringify(data);
-    const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
-    const writable = await fh.createWritable();
+    const BAK_FILE = QUEUE_FILE + '.bak';
+    // .bak 백업 — 직전 정상 상태를 보관 (truncation 시 복원용)
     try {
-      // Blob 으로 한 번에 — 더 atomic
-      await writable.write(new Blob([json], { type: 'application/json' }));
-    } finally {
-      await writable.close();
+      const cur = await dir.getFileHandle(QUEUE_FILE);
+      const txt = await (await cur.getFile()).text();
+      if(txt && txt.trim()){
+        JSON.parse(txt);  // 손상된 상태면 백업 안 함
+        const bakH = await dir.getFileHandle(BAK_FILE, { create: true });
+        const bw = await bakH.createWritable();
+        try { await bw.write(new Blob([txt], { type:'application/json' })); }
+        finally { await bw.close(); }
+      }
+    } catch(_){ /* 첫 쓰기거나 손상 — 백업 스킵 */ }
+    // 최대 3회 시도 (FUSE/FSA truncation 자동 복구)
+    const MAX_ATTEMPTS = 3;
+    let lastError;
+    for(let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++){
+      try {
+        const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
+        const writable = await fh.createWritable();
+        try { await writable.write(new Blob([json], { type: 'application/json' })); }
+        finally { await writable.close(); }
+        // readback 검증
+        const fh2 = await dir.getFileHandle(QUEUE_FILE);
+        const txt = await (await fh2.getFile()).text();
+        JSON.parse(txt);  // 파싱 실패 시 throw
+        return;  // 성공
+      } catch(e){
+        lastError = e;
+        console.warn(`writeAndVerify 시도 ${attempt}/${MAX_ATTEMPTS} 실패: ${e.message||e}`);
+        await new Promise(r => setTimeout(r, 120 * attempt));
+      }
     }
-    // readback 검증
+    // 3회 전부 실패 → .bak 에서 복원 시도
     try {
-      const fh2 = await dir.getFileHandle(QUEUE_FILE);
-      const txt = await (await fh2.getFile()).text();
-      JSON.parse(txt);  // 파싱 실패 시 throw
-    } catch(e){
-      throw new Error('큐 파일 readback 검증 실패: ' + (e.message||e));
-    }
+      const bakH = await dir.getFileHandle(BAK_FILE);
+      const bakTxt = await (await bakH.getFile()).text();
+      if(bakTxt){
+        JSON.parse(bakTxt);  // .bak 가 손상됐으면 복원 안 함
+        const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
+        const w = await fh.createWritable();
+        try { await w.write(new Blob([bakTxt], { type:'application/json' })); }
+        finally { await w.close(); }
+        console.warn('writeAndVerify 3회 실패 — .bak 에서 복원함');
+      }
+    } catch(_){}
+    throw new Error('큐 파일 쓰기 3회 실패: ' + (lastError && (lastError.message||lastError)));
   }
 
   async function writeQueue(data){
     return _withLock(() => _writeAndVerify(data));
   }
 
-  /** v2 — fields 배열 + globalRequest + overwrite 포함 */
-  async function enqueue(skuInfo, opts){
-    return _withLock(async () => {
-      let q = await readQueue();
-      if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
-    if(!q.queue) q.queue = [];
-    if(!q.version) q.version = 2;
-    const id = 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+  /** 항목 1개 빌드 — slim 포맷. Claude 는 AI_FIELDS/AI_NOTE_META 메타데이터를 app.html 에서 참조. */
+  function _buildRequest(skuInfo, opts){
     const fieldRequests = (opts && opts.fieldRequests) || {};
     const cur = skuInfo.aiFields || {};
+    // 슬림: platform/label/guide/maxChars 제거 (Claude 가 AI_FIELDS 에서 조회)
     const fields = AI_FIELDS.map(f => ({
       id: f.id,
-      platform: f.platform,
-      label: f.label,
-      maxChars: f.maxChars || null,
-      guide: f.guide || '',
       currentValue: cur[f.id] || '',
       request: fieldRequests[f.id] || '',
     }));
-    const req = {
-      id,
+    return {
+      id: 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
       skuCode: skuInfo.barcode || skuInfo.skuCode || '',
       scientificName: skuInfo.scientificName || '',
       distributionName: skuInfo.distributionName || '',
@@ -12721,108 +12735,129 @@ const AIBridge = (() => {
         sunlight:  skuInfo.sunlight  || '',
         bloomStart:skuInfo.bloomStart|| '', bloomEnd:  skuInfo.bloomEnd  || '',
       },
-      traitsAuto: {
-        guide: '학명·일반명 기반으로 비어있는 traits 를 추정해 result.traits 에 채워주세요. ' +
-               '값이 명확하지 않은 항목은 result.uncertainTraits 배열에 fieldId 를 적시. ' +
-               '하드코딩 옵션 — hardiness: Zone2~Zone10 / watering: 자주|보통|적게|건조|다습 / sunlight: 양지|양지-반음지|반음지|반음지-음지|음지 / heightMin·Max·widthMin·Max: cm 정수 / bloomStart·End: 1~12 월. 값이 부적절한 식물(예: 꽃 안 피는 관엽식물의 bloom)은 빈 문자로 두고 uncertainTraits 에도 안 넣음.',
-        existing: {
-          heightMin: skuInfo.heightMin||'', heightMax: skuInfo.heightMax||'',
-          widthMin: skuInfo.widthMin||'', widthMax: skuInfo.widthMax||'',
-          hardiness: skuInfo.hardiness||'', watering: skuInfo.watering||'', sunlight: skuInfo.sunlight||'',
-          bloomStart: skuInfo.bloomStart||'', bloomEnd: skuInfo.bloomEnd||''
-        }
-      },
       memo: skuInfo.note || skuInfo.memo || '',
       fields,
-      note: { currentValue: skuInfo.note || '', maxChars: AI_NOTE_META.maxChars, guide: AI_NOTE_META.guide },
+      note: { currentValue: skuInfo.note || '' },
       globalRequest: (opts && opts.globalRequest) || '',
       overwrite: !!(opts && opts.overwrite),
       status: 'pending',
       createdAt: new Date().toISOString(),
     };
+  }
+
+  /** v3 — slim 포맷 */
+  async function enqueue(skuInfo, opts){
+    return _withLock(async () => {
+      let q = await readQueue();
+      if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
+      if(!q.queue) q.queue = [];
+      if(!q.version) q.version = 2;
+      const req = _buildRequest(skuInfo, opts);
       q.queue.push(req);
-      // _withLock 안이라 _writeAndVerify 직접 호출 (writeQueue 호출하면 dead-lock)
       await _writeAndVerify(q);
       return req;
     });
   }
 
-  /** completed 항목을 SKU 마스터에 적용 */
+  /** v3 — 다건 일괄 적재. N건을 한 번의 read+write 로 처리 (쓰기 횟수 증폭 제거) */
+  async function enqueueBatch(skuInfos, opts){
+    return _withLock(async () => {
+      let q = await readQueue();
+      if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
+      if(!q.queue) q.queue = [];
+      if(!q.version) q.version = 2;
+      const reqs = skuInfos.map(skuInfo => _buildRequest(skuInfo, opts));
+      q.queue.push(...reqs);
+      await _writeAndVerify(q);
+      return reqs;
+    });
+  }
+
+  /** completed 항목을 SKU 마스터에 적용. 적용 성공 시 큐에서 splice (자동 정리). */
   async function pollOnce(){
     return _withLock(async () => {
-    const q = await readQueue();
-    if(!q || !q.queue || q.queue.length === 0) return 0;
-    let applied = 0, modified = false;
-    for(const r of q.queue){
-      if(r.status !== 'completed') continue;
-      if(r.applied || _appliedIds.has(r.id)) continue;
-      if(!r.result) continue;
-      const code = r.skuCode;
-      if(!code) continue;
-      try {
-        const existing = Store.findSkuByCode(code) || {};
-        const overwrite = !!r.overwrite;
-        const patch = {};
-        // aiFields 머지
-        if(r.result.fields && typeof r.result.fields === 'object'){
-          const merged = Object.assign({}, existing.aiFields||{});
-          for(const [k, v] of Object.entries(r.result.fields)){
-            if(v == null || v === '') continue;
-            if(overwrite || !merged[k]) merged[k] = String(v).trim();
-          }
-          patch.aiFields = merged;
+      const q = await readQueue();
+      if(!q || !q.queue || q.queue.length === 0) return 0;
+      const keep = [];
+      let applied = 0;
+      for(const r of q.queue){
+        // completed + result + skuCode 가 아니면 큐에 보존
+        if(r.status !== 'completed' || !r.result || !r.skuCode){
+          keep.push(r); continue;
         }
-        // 식물 특성(traits) 자동 채움
-        if(r.result.traits && typeof r.result.traits === 'object'){
-          const TRAIT_KEYS = ['heightMin','heightMax','widthMin','widthMax',
-                              'hardiness','watering','sunlight','bloomStart','bloomEnd'];
-          const newUncertain = (existing.aiUncertainTraits||[]).slice();
-          const inputUncertain = Array.isArray(r.result.uncertainTraits) ? r.result.uncertainTraits : [];
-          for(const k of TRAIT_KEYS){
-            const v = r.result.traits[k];
-            if(v == null || v === '') continue;
-            const cur = existing[k];
-            if(overwrite || cur == null || cur === ''){
-              patch[k] = String(v).trim();
-              if(inputUncertain.includes(k) && !newUncertain.includes(k)){
-                newUncertain.push(k);
+        // 이미 적용된 entry — 큐에서 제거 (자동 정리)
+        if(r.applied || _appliedIds.has(r.id)){ continue; }
+        try {
+          const existing = Store.findSkuByCode(r.skuCode) || {};
+          const overwrite = !!r.overwrite;
+          const patch = {};
+          // aiFields 머지
+          if(r.result.fields && typeof r.result.fields === 'object'){
+            const merged = Object.assign({}, existing.aiFields||{});
+            for(const [k, v] of Object.entries(r.result.fields)){
+              if(v == null || v === '') continue;
+              if(overwrite || !merged[k]) merged[k] = String(v).trim();
+            }
+            patch.aiFields = merged;
+          }
+          // 식물 특성(traits) 자동 채움
+          if(r.result.traits && typeof r.result.traits === 'object'){
+            const TRAIT_KEYS = ['heightMin','heightMax','widthMin','widthMax',
+                                'hardiness','watering','sunlight','bloomStart','bloomEnd'];
+            const newUncertain = (existing.aiUncertainTraits||[]).slice();
+            const inputUncertain = Array.isArray(r.result.uncertainTraits) ? r.result.uncertainTraits : [];
+            for(const k of TRAIT_KEYS){
+              const v = r.result.traits[k];
+              if(v == null || v === '') continue;
+              const cur = existing[k];
+              if(overwrite || cur == null || cur === ''){
+                patch[k] = String(v).trim();
+                if(inputUncertain.includes(k) && !newUncertain.includes(k)){
+                  newUncertain.push(k);
+                }
               }
             }
+            patch.aiUncertainTraits = newUncertain;
           }
-          patch.aiUncertainTraits = newUncertain;
+          // note (특이사항) 처리
+          if(r.result.note){
+            const curN = (existing.note||'').trim();
+            if(overwrite || !curN) patch.note = String(r.result.note).trim();
+          }
+          // 구버전 호환 — productCopy/keywords 결과도 받아둠
+          if(r.result.productCopy && (overwrite || !existing.productCopy)){
+            patch.productCopy = String(r.result.productCopy).trim();
+          }
+          if(r.result.keywords){
+            const arr = Array.isArray(r.result.keywords)
+              ? r.result.keywords
+              : String(r.result.keywords).split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+            if(overwrite || !existing.keywords || existing.keywords.length===0) patch.keywords = arr;
+          }
+          patch.aiUpdatedAt = new Date().toISOString();
+          Store.upsertSkuMaster(r.skuCode, patch);
+          // 입고 메모도 동기화 (note 가 갱신된 경우)
+          if(patch.note){
+            const recvs = Store.listReceivings().filter(rr => extractCodePrefix(rr.barcode) === r.skuCode);
+            recvs.forEach(rr => Store.updateReceiving(rr.id, { memo: patch.note }));
+          }
+          _appliedIds.add(r.id);
+          applied++;
+          // keep 에 push 하지 않음 → 큐에서 자동 정리
+        } catch(e){
+          console.error('apply error', e);
+          // 적용 실패 — 큐에 보존 (다음 폴링에서 재시도)
+          keep.push(r);
         }
-        // note (특이사항) 처리
-        if(r.result.note){
-          const cur = (existing.note||'').trim();
-          if(overwrite || !cur) patch.note = String(r.result.note).trim();
-        }
-        // 구버전 호환 — productCopy/keywords 결과도 받아둠
-        if(r.result.productCopy && (overwrite || !existing.productCopy)){
-          patch.productCopy = String(r.result.productCopy).trim();
-        }
-        if(r.result.keywords){
-          const arr = Array.isArray(r.result.keywords)
-            ? r.result.keywords
-            : String(r.result.keywords).split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
-          if(overwrite || !existing.keywords || existing.keywords.length===0) patch.keywords = arr;
-        }
-        patch.aiUpdatedAt = new Date().toISOString();
-        Store.upsertSkuMaster(code, patch);
-        // 입고 메모도 동기화 (note 가 갱신된 경우)
-        if(patch.note){
-          const recvs = Store.listReceivings().filter(rr => extractCodePrefix(rr.barcode) === code);
-          recvs.forEach(rr => Store.updateReceiving(rr.id, { memo: patch.note }));
-        }
-        r.applied = true;
-        r.appliedAt = patch.aiUpdatedAt;
-        _appliedIds.add(r.id);
-        modified = true;
-        applied++;
-      } catch(e){
-        console.error('apply error', e);
       }
-    }
+      const modified = (keep.length !== q.queue.length) || applied > 0;
       if(modified){
+        q.queue = keep;
+        // 큐 길이 cap — 오래된 entry 정리 (최근 100건만 보관)
+        const MAX_QUEUE = 100;
+        if(q.queue.length > MAX_QUEUE){
+          q.queue.splice(0, q.queue.length - MAX_QUEUE);
+        }
         try { await _writeAndVerify(q); } catch(e){ console.error('writeAndVerify after apply', e); }
       }
       return applied;
@@ -12918,7 +12953,7 @@ const AIBridge = (() => {
 
   return {
     isSupported, isConnected, connectFolder, getDirHandle, getFolderName,
-    readQueue, writeQueue, enqueue, pollOnce,
+    readQueue, writeQueue, enqueue, enqueueBatch, pollOnce,
     startPolling, stopPolling, getPendingCount,
     buildPromptText,
   };
