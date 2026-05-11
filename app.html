@@ -12635,7 +12635,8 @@ const AIBridge = (() => {
     try {
       const fh = await dir.getFileHandle(QUEUE_FILE);
       const f = await fh.getFile();
-      const txt = await f.text();
+      let txt = await f.text();
+      txt = txt.replace(/\u0000+$/, '');  // trailing null pad strip
       if(!txt.trim()) return { version:2, queue:[] };
       return JSON.parse(txt);
     } catch(e){
@@ -12664,13 +12665,17 @@ const AIBridge = (() => {
     // .bak 백업 — 직전 정상 상태를 보관 (truncation 시 복원용)
     try {
       const cur = await dir.getFileHandle(QUEUE_FILE);
-      const txt = await (await cur.getFile()).text();
+      let txt = await (await cur.getFile()).text();
+      txt = txt.replace(/\u0000+$/, '');
       if(txt && txt.trim()){
         JSON.parse(txt);  // 손상된 상태면 백업 안 함
         const bakH = await dir.getFileHandle(BAK_FILE, { create: true });
+        const bblob = new Blob([txt], { type:'application/json' });
         const bw = await bakH.createWritable();
-        try { await bw.write(new Blob([txt], { type:'application/json' })); }
-        finally { await bw.close(); }
+        try {
+          await bw.write(bblob);
+          await bw.truncate(bblob.size);
+        } finally { await bw.close(); }
       }
     } catch(_){ /* 첫 쓰기거나 손상 — 백업 스킵 */ }
     // 최대 3회 시도 (FUSE/FSA truncation 자동 복구)
@@ -12679,12 +12684,16 @@ const AIBridge = (() => {
     for(let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++){
       try {
         const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
+        const blob = new Blob([json], { type: 'application/json' });
         const writable = await fh.createWritable();
-        try { await writable.write(new Blob([json], { type: 'application/json' })); }
-        finally { await writable.close(); }
-        // readback 검증
+        try {
+          await writable.write(blob);
+          await writable.truncate(blob.size);  // trailing nulls 방지
+        } finally { await writable.close(); }
+        // readback 검증 — trailing null pad 있으면 strip
         const fh2 = await dir.getFileHandle(QUEUE_FILE);
-        const txt = await (await fh2.getFile()).text();
+        let txt = await (await fh2.getFile()).text();
+        txt = txt.replace(/\u0000+$/, '');
         JSON.parse(txt);  // 파싱 실패 시 throw
         return;  // 성공
       } catch(e){
@@ -12696,13 +12705,17 @@ const AIBridge = (() => {
     // 3회 전부 실패 → .bak 에서 복원 시도
     try {
       const bakH = await dir.getFileHandle(BAK_FILE);
-      const bakTxt = await (await bakH.getFile()).text();
+      let bakTxt = await (await bakH.getFile()).text();
+      bakTxt = bakTxt.replace(/\u0000+$/, '');
       if(bakTxt){
         JSON.parse(bakTxt);  // .bak 가 손상됐으면 복원 안 함
         const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
+        const rblob = new Blob([bakTxt], { type:'application/json' });
         const w = await fh.createWritable();
-        try { await w.write(new Blob([bakTxt], { type:'application/json' })); }
-        finally { await w.close(); }
+        try {
+          await w.write(rblob);
+          await w.truncate(rblob.size);
+        } finally { await w.close(); }
         console.warn('writeAndVerify 3회 실패 — .bak 에서 복원함');
       }
     } catch(_){}
