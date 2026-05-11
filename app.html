@@ -12506,8 +12506,9 @@ function _renderAiFieldsHtml(s){
       const phEsc = escapeHtml(f.guide||'');
       const charLimit = f.maxChars ? `<span class="ai-char-count" data-target="${f.id}" style="font-size:11px;color:${v.length>f.maxChars?'#c33':'var(--muted)'};font-family:'SF Mono',Menlo,monospace">${v.length} / ${f.maxChars}</span>` : '';
       const lenAttr = f.maxChars ? ` data-max="${f.maxChars}"` : '';
-      return `<div class="ai-field-row" data-field="${f.id}" style="margin-bottom:8px;padding:8px 10px;background:#fff;border-radius:5px;border:1px solid #e8eef7">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">
+      return `<div class="ai-field-row" data-field="${f.id}" style="position:relative;margin-bottom:8px;padding:8px 10px;background:#fff;border-radius:5px;border:1px solid #e8eef7">
+        <button type="button" class="ai-field-copy" data-target="ai_${f.id}" title="이 항목 내용 복사" style="position:absolute;top:6px;right:6px;width:24px;height:24px;padding:0;border:1px solid #cfd8e3;border-radius:4px;background:#f6f8fb;color:#5a6776;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;z-index:2">📋</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;padding-right:30px">
           <label style="font-size:12px;font-weight:600;color:#2c3e50;flex:1;min-width:0">${escapeHtml(f.label)}${f.maxChars ? `<span class="muted" style="font-weight:normal;font-size:10.5px;margin-left:5px">최대 ${f.maxChars}자</span>` : ''}</label>
           ${charLimit}
         </div>
@@ -12536,6 +12537,36 @@ document.addEventListener('input', (e) => {
     const len = t.value.length;
     c.textContent = `${len} / ${max}`;
     c.style.color = len > max ? '#c33' : 'var(--muted)';
+  }
+});
+
+/* ─── 항목 복사 버튼 ─── */
+document.addEventListener('click', (e) => {
+  const btn = e.target && e.target.closest && e.target.closest('.ai-field-copy');
+  if(!btn) return;
+  const target = btn.dataset.target;
+  const ta = document.querySelector(`textarea[name="${target}"]`);
+  if(!ta) return;
+  const v = ta.value || '';
+  if(!v){ if(typeof toast==='function') toast('복사할 내용이 없어요','warn'); return; }
+  const ok = () => {
+    const prev = btn.innerHTML;
+    btn.innerHTML = '✓';
+    btn.style.background = '#dff5e1';
+    btn.style.color = '#0a6b1e';
+    btn.style.borderColor = '#9bcfa8';
+    setTimeout(() => { btn.innerHTML = prev; btn.style.background='#f6f8fb'; btn.style.color='#5a6776'; btn.style.borderColor='#cfd8e3'; }, 1200);
+  };
+  const fail = () => { if(typeof toast==='function') toast('복사 실패','error'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(ok, () => {
+      // fallback
+      try { ta.select(); document.execCommand('copy'); ta.blur(); window.getSelection().removeAllRanges(); ok(); }
+      catch(_){ fail(); }
+    });
+  } else {
+    try { ta.select(); document.execCommand('copy'); ta.blur(); window.getSelection().removeAllRanges(); ok(); }
+    catch(_){ fail(); }
   }
 });
 
