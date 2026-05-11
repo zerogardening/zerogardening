@@ -2211,6 +2211,13 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <option value="paused">일시중지만</option>
               <option value="lowstock">재입고 필요</option>
             </select>
+            <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#666">
+              <span title="입고일자 기준 필터">📅 입고일</span>
+              <input type="date" id="inv-recv-from" title="입고일자 시작" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+              <span style="color:#888">~</span>
+              <input type="date" id="inv-recv-to" title="입고일자 종료" style="padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-recv-clear" title="날짜 필터 초기화" style="padding:4px 8px">↺</button>
+            </span>
             <span id="inv-bulk-toolbar" class="inv-bulk-toolbar hidden">
               <span id="inv-selected-count" style="font-size:12px;color:#666"></span>
               <select id="inv-bulk-status" style="font-size:12px">
@@ -11954,6 +11961,7 @@ function computeInventoryList(){
       distName: info.distName,
       sciName: info.sciName,
       specs: Array.from(info.specs).sort(),
+      recvDates: info.recvs.map(r => r.receivedAt || '').filter(Boolean).sort(),
       totalReceived: totalRecv,
       totalShipped: totalShip,
       currentQty,
@@ -11991,6 +11999,8 @@ function renderInventoryView(){
   const all = computeInventoryList();
   const q = ((document.getElementById('inv-search')||{}).value||'').trim().toLowerCase();
   const statusFilter = (document.getElementById('inv-status-filter')||{}).value || 'all';
+  const recvFrom = (document.getElementById('inv-recv-from')||{}).value || '';
+  const recvTo   = (document.getElementById('inv-recv-to')  ||{}).value || '';
 
   let list = all.filter(it => {
     if(statusFilter === 'active') {
@@ -12000,6 +12010,15 @@ function renderInventoryView(){
       if(it.currentQty >= it.minQty) return false;
     } else if(statusFilter !== 'all'){
       if(it.status !== statusFilter) return false;
+    }
+    if(recvFrom || recvTo){
+      const dates = it.recvDates || [];
+      const hit = dates.some(d => {
+        if(recvFrom && d < recvFrom) return false;
+        if(recvTo   && d > recvTo)   return false;
+        return true;
+      });
+      if(!hit) return false;
     }
     if(!q) return true;
     const hay = [it.key, it.distName, it.sciName, it.specs.join(' ')].join(' ').toLowerCase();
@@ -12338,6 +12357,16 @@ function setupInventoryView(){
   if(search) search.addEventListener('input', renderInventoryView);
   const statusFilter = document.getElementById('inv-status-filter');
   if(statusFilter) statusFilter.addEventListener('change', renderInventoryView);
+  const recvFromInp = document.getElementById('inv-recv-from');
+  if(recvFromInp) recvFromInp.addEventListener('change', renderInventoryView);
+  const recvToInp = document.getElementById('inv-recv-to');
+  if(recvToInp) recvToInp.addEventListener('change', renderInventoryView);
+  const recvClearBtn = document.getElementById('btn-inv-recv-clear');
+  if(recvClearBtn) recvClearBtn.addEventListener('click', () => {
+    if(recvFromInp) recvFromInp.value = '';
+    if(recvToInp)   recvToInp.value   = '';
+    renderInventoryView();
+  });
   const bulkSel = document.getElementById('inv-bulk-status');
   if(bulkSel) bulkSel.addEventListener('change', () => {
     const status = bulkSel.value;
