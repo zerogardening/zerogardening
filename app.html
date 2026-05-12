@@ -6500,11 +6500,20 @@ function addCustomStmtItem({name, spec, sci, qty, price, taxable}){
 
 // 할인율 변경 시 모든 행의 단가 일괄 재계산 (purchasePrice 있는 것만)
 function applyDiscountToAllItems(){
-  const discount = getCurrentDiscount();
-  StatementState.discount = discount;
+  const newD = getCurrentDiscount();
+  const oldD = Number(StatementState.discount) || 0;
+  StatementState.discount = newD;
+  const oldFactor = 1 - oldD/100;
+  const newFactor = 1 - newD/100;
+  const ratioOk = oldFactor !== 0 && isFinite(newFactor / oldFactor);
   StatementState.items.forEach(it=>{
     if(it.purchasePrice && it.purchasePrice > 0){
-      it.price = calcDiscountedPrice(it.purchasePrice, discount);
+      // 매입가 베이스: 정가(매입가×2) × (1 - 할인) → 100원 반올림
+      it.price = calcDiscountedPrice(it.purchasePrice, newD);
+    } else if(ratioOk){
+      // 매입가 없는 항목(직접 입력·미등록): 이전 할인 대비 새 할인으로 비율 변환
+      const adj = (Number(it.price)||0) * (newFactor / oldFactor);
+      it.price = Math.max(0, Math.round(adj / 100) * 100);
     }
   });
   renderStmtItems();
