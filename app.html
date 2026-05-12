@@ -612,6 +612,15 @@ table.data-table .has-missing td:first-child{box-shadow:inset 3px 0 0 var(--dang
 .summary-card-period select:hover{background:rgba(45,106,79,.08)}
 
 /* ─── 재고 관리 ─── */
+.inv-copy-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;border:none;cursor:pointer;
+  padding:1px 4px;margin-left:4px;
+  font-size:12px;line-height:1;opacity:0.45;
+  border-radius:3px;transition:opacity .12s, background .12s;
+}
+.inv-copy-btn:hover{opacity:1;background:#e8f0fe}
+.inv-copy-btn:active{background:#cfe0fa}
 .inv-restock-dashboard{
   background:#fff;border:1px solid #d0d7d0;border-radius:8px;overflow:hidden;
   box-shadow:0 1px 3px rgba(0,0,0,.05);
@@ -12110,7 +12119,7 @@ function renderInventoryView(){
           const checked = _invSelected.has(it.key) ? 'checked' : '';
           return `<tr data-key="${escapeHtml(it.key)}" class="${_invSelected.has(it.key)?'row-selected':''}">
             <td class="ck"><input type="checkbox" class="inv-row-check" data-key="${escapeHtml(it.key)}" ${checked}></td>
-            <td><span class="inv-code">${escapeHtml(it.key)}</span></td>
+            <td><span class="inv-code">${escapeHtml(it.key)}</span><button type="button" class="inv-copy-btn" data-copy="${escapeHtml(it.key)}" title="품목코드 복사">📋</button></td>
             <td>
               <select class="inv-status-select" data-key="${escapeHtml(it.key)}">
                 <option value="selling" ${it.status==='selling'?'selected':''}>판매중</option>
@@ -12119,8 +12128,8 @@ function renderInventoryView(){
               </select>
             </td>
             <td>
-              <div style="font-weight:500">${escapeHtml(it.distName||'-')}</div>
-              ${it.sciName?`<div style="font-style:italic;color:#888;font-size:11.5px;margin-top:2px">${escapeHtml(it.sciName)}</div>`:''}
+              <div style="font-weight:500;display:flex;align-items:center;gap:4px"><span>${escapeHtml(it.distName||'-')}</span>${it.distName?`<button type="button" class="inv-copy-btn" data-copy="${escapeHtml(it.distName)}" title="유통명 복사">📋</button>`:''}</div>
+              ${it.sciName?`<div style="font-style:italic;color:#888;font-size:11.5px;margin-top:2px;display:flex;align-items:center;gap:4px"><span>${escapeHtml(it.sciName)}</span><button type="button" class="inv-copy-btn" data-copy="${escapeHtml(it.sciName)}" title="학명 복사">📋</button></div>`:''}
               <div style="margin-top:4px">${renderPlantTraits(it, false)}</div>
             </td>
             <td class="num">${fmtNum(it.totalReceived)}</td>
@@ -12187,6 +12196,38 @@ function renderInventoryView(){
         window.openSkuDetail(prefix);
       } else {
         toast('SKU 상세 모달을 사용할 수 없습니다','error');
+      }
+    });
+  });
+  // 품목코드 / 유통명 / 학명 복사버튼 — 이벤트 위임
+  area.querySelectorAll('.inv-copy-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const text = btn.dataset.copy || '';
+      if(!text) return;
+      const onOk = () => toast('✓ 복사됨: ' + (text.length>30 ? text.slice(0,30)+'…' : text));
+      const onFail = () => toast('복사 실패','error');
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(onOk).catch(() => {
+          // fallback
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            onOk();
+          } catch(_){ onFail(); }
+        });
+      } else {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          onOk();
+        } catch(_){ onFail(); }
       }
     });
   });
