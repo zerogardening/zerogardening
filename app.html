@@ -2333,7 +2333,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
           <div class="stmt-meta-row">
             <label>작성일자: <input type="date" id="stmt-date"></label>
-            <label>유효기간/납기일: <input type="date" id="stmt-due"></label>
+            <label><span id="stmt-due-label">유효기간/납기일</span>: <input type="date" id="stmt-due"></label>
             <label class="stmt-screen-only" style="display:flex;gap:6px;align-items:center;background:#fff8e1;padding:6px 10px;border-radius:6px;border:1px dashed var(--warning)">
               💰 할인율
               <input type="number" id="stmt-discount" min="0" max="99" step="0.5" value="0" style="width:60px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;text-align:right">
@@ -2370,6 +2370,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
             <input type="number" id="stmt-add-qty" class="qty" min="1" placeholder="수량">
             <input type="number" id="stmt-add-price" class="price" min="0" step="10" placeholder="단가">
             <button type="button" class="btn btn-primary btn-sm" id="btn-stmt-add">+ 품목 추가</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-stmt-add-custom" title="상품 등록 없이 임의 품목 추가">✏️ 직접 입력</button>
           </div>
 
           <div class="stmt-totals-line">
@@ -3204,6 +3205,52 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
     <div style="border-top:1px solid var(--border);padding-top:12px">
       <div style="font-size:12px;font-weight:600;color:var(--primary-dark);margin-bottom:8px">저장된 프리셋</div>
       <div id="preset-list-area"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 명세서 직접 품목 입력 모달 ============ -->
+<div id="stmt-custom-modal" class="modal-back hidden">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head">
+      <div class="modal-title">✏️ 직접 품목 입력</div>
+      <button class="modal-close" id="stmt-custom-close" type="button">×</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+      상품 등록 없이 명세서·견적서에 임의 품목을 추가합니다.
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">품목명 <span class="req">*</span></label>
+        <input type="text" id="stmt-custom-name" class="form-control" placeholder="예: 라일락 화분 (특대)" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">규격</label>
+        <input type="text" id="stmt-custom-spec" class="form-control" placeholder="예: 15cm 포트" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">학명(선택)</label>
+        <input type="text" id="stmt-custom-sci" class="form-control" placeholder="예: Syringa vulgaris" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">수량 <span class="req">*</span></label>
+        <input type="number" id="stmt-custom-qty" class="form-control" min="1" step="1" value="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">단가 <span class="req">*</span></label>
+        <input type="number" id="stmt-custom-price" class="form-control" min="0" step="10" placeholder="원">
+      </div>
+      <div class="form-group full">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="stmt-custom-taxable">
+          <span>과세 품목 (10% VAT 적용)</span>
+          <span class="muted" style="font-size:11px">— 체크 안 하면 면세</span>
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <button type="button" class="btn btn-secondary" id="stmt-custom-cancel">취소</button>
+      <button type="button" class="btn btn-primary" id="stmt-custom-ok">+ 추가</button>
     </div>
   </div>
 </div>
@@ -6365,6 +6412,40 @@ function addStmtItemFromProduct(p, qty, price){
   return true;
 }
 
+// 상품 등록 없이 임의 품목 추가
+function addCustomStmtItem({name, spec, sci, qty, price, taxable}){
+  name = (name||'').trim();
+  spec = (spec||'').trim();
+  sci  = (sci||'').trim();
+  qty  = Number(qty)||0;
+  price= Number(price)||0;
+  if(!name){ toast('품목명을 입력해주세요','warn'); return false; }
+  if(qty <= 0){ toast('수량을 1 이상 입력해주세요','warn'); return false; }
+  if(price <= 0){ toast('단가를 0보다 큰 값으로 입력해주세요','warn'); return false; }
+  // 동일 이름+규격 중복 체크 (코드 없는 항목끼리)
+  const existing = StatementState.items.find(it =>
+    !(it.barcode||'').trim() &&
+    (it.name||'').trim() === name &&
+    (it.spec||'').trim() === spec
+  );
+  if(existing){
+    alert(`이미 입력한 품목입니다.\n\n[직접 입력] ${existing.name}\n수량을 변경하려면 표에서 직접 수정해주세요.`);
+    return false;
+  }
+  StatementState.items.push({
+    barcode: '',
+    name: name,
+    sci: sci,
+    spec: spec,
+    qty: qty,
+    price: price,
+    purchasePrice: 0,
+    taxable: !!taxable,
+  });
+  renderStmtItems();
+  return true;
+}
+
 // 할인율 변경 시 모든 행의 단가 일괄 재계산 (purchasePrice 있는 것만)
 function applyDiscountToAllItems(){
   const discount = getCurrentDiscount();
@@ -6400,10 +6481,14 @@ function setupStatement(){
 
   // 유형 선택 → 제목 변경
   const typeSel = document.getElementById('stmt-type');
-  typeSel.addEventListener('change', ()=>{
+  const syncStmtTypeUI = () => {
     StatementState.type = typeSel.value;
     document.getElementById('stmt-title').textContent = STMT_TITLE[typeSel.value] || '거래명세서';
-  });
+    const dueLbl = document.getElementById('stmt-due-label');
+    if(dueLbl) dueLbl.textContent = (typeSel.value === 'quote') ? '유효기간' : '납기일';
+  };
+  typeSel.addEventListener('change', syncStmtTypeUI);
+  syncStmtTypeUI();
 
   // 날짜
   const dateInp = document.getElementById('stmt-date');
@@ -6548,6 +6633,46 @@ function setupStatement(){
     addSearch.focus();
   }
   document.getElementById('btn-stmt-add').addEventListener('click', doAdd);
+
+  // ── 직접 입력 모달 ──
+  const customModal = document.getElementById('stmt-custom-modal');
+  const customNameEl  = document.getElementById('stmt-custom-name');
+  const customSpecEl  = document.getElementById('stmt-custom-spec');
+  const customSciEl   = document.getElementById('stmt-custom-sci');
+  const customQtyEl   = document.getElementById('stmt-custom-qty');
+  const customPriceEl = document.getElementById('stmt-custom-price');
+  const customTaxEl   = document.getElementById('stmt-custom-taxable');
+  const openCustom = () => {
+    customNameEl.value = '';
+    customSpecEl.value = '';
+    customSciEl.value  = '';
+    customQtyEl.value  = '1';
+    customPriceEl.value = '';
+    customTaxEl.checked = false;
+    customModal.classList.remove('hidden');
+    setTimeout(()=>customNameEl.focus(), 30);
+  };
+  const closeCustom = () => customModal.classList.add('hidden');
+  document.getElementById('btn-stmt-add-custom').addEventListener('click', openCustom);
+  document.getElementById('stmt-custom-close').addEventListener('click', closeCustom);
+  document.getElementById('stmt-custom-cancel').addEventListener('click', closeCustom);
+  customModal.addEventListener('click', e => { if(e.target === customModal) closeCustom(); });
+  const submitCustom = () => {
+    const ok = addCustomStmtItem({
+      name:  customNameEl.value,
+      spec:  customSpecEl.value,
+      sci:   customSciEl.value,
+      qty:   customQtyEl.value,
+      price: customPriceEl.value,
+      taxable: customTaxEl.checked,
+    });
+    if(ok) closeCustom();
+  };
+  document.getElementById('stmt-custom-ok').addEventListener('click', submitCustom);
+  [customNameEl, customSpecEl, customSciEl, customQtyEl, customPriceEl].forEach(el=>{
+    el.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); submitCustom(); } });
+  });
+
   // Enter 키로도 추가
   [addSearch, addQty, addPrice].forEach(el=>{
     el.addEventListener('keydown', e=>{
