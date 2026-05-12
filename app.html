@@ -2364,7 +2364,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           <!-- 품목 추가 입력 (인쇄 시 숨김) -->
           <div class="stmt-add-row">
             <div class="product-wrap" id="stmt-add-wrap">
-              <input type="text" id="stmt-add-search" placeholder="🔍 품목코드 / 품목명 / 학명 검색…" autocomplete="off">
+              <input type="text" id="stmt-add-search" placeholder="🔍 검색 또는 미등록 품목명 직접 입력" autocomplete="off">
               <div id="stmt-add-list" class="product-list"></div>
             </div>
             <input type="number" id="stmt-add-qty" class="qty" min="1" placeholder="수량">
@@ -6602,9 +6602,29 @@ function setupStatement(){
         if(matches.length > 0) pickedProduct = matches[0];
       }
     }
+    // 매칭 결과 없으면 → 검색어 텍스트를 미등록 품목명으로 그대로 추가
     if(!pickedProduct){
-      toast('품목을 먼저 검색해 선택해주세요','warn');
-      addSearch.focus();
+      const name = addSearch.value.trim();
+      if(!name){
+        toast('품목명을 입력해주세요','warn');
+        addSearch.focus();
+        return;
+      }
+      const qty = Number(addQty.value) || 1;
+      const price = Number(addPrice.value) || 0;
+      if(price <= 0){
+        toast('단가를 입력해주세요','warn');
+        addPrice.focus();
+        return;
+      }
+      const ok = addCustomStmtItem({ name, qty, price, taxable: false });
+      if(ok){
+        addSearch.value = '';
+        addQty.value = '';
+        addPrice.value = '';
+        pickedProduct = null;
+        addSearch.focus();
+      }
       return;
     }
     const qty = Number(addQty.value) || 1;
