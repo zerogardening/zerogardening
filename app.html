@@ -612,15 +612,6 @@ table.data-table .has-missing td:first-child{box-shadow:inset 3px 0 0 var(--dang
 .summary-card-period select:hover{background:rgba(45,106,79,.08)}
 
 /* ─── 재고 관리 ─── */
-.inv-copy-btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  background:transparent;border:none;cursor:pointer;
-  padding:1px 4px;margin-left:4px;
-  font-size:12px;line-height:1;opacity:0.45;
-  border-radius:3px;transition:opacity .12s, background .12s;
-}
-.inv-copy-btn:hover{opacity:1;background:#e8f0fe}
-.inv-copy-btn:active{background:#cfe0fa}
 .inv-restock-dashboard{
   background:#fff;border:1px solid #d0d7d0;border-radius:8px;overflow:hidden;
   box-shadow:0 1px 3px rgba(0,0,0,.05);
@@ -737,6 +728,15 @@ table.sku-table .sku-prefix-tag{
 .sku-source-badge.master{background:#fff8e1;color:#7a5b00}
 .sku-source-badge.both{background:#e0f7fa;color:#006064}
 
+.sku-copy-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:transparent;border:1px solid transparent;cursor:pointer;
+  padding:2px 6px;font-size:12px;line-height:1;
+  opacity:0.55;border-radius:4px;
+  transition:opacity .12s, background .12s, border-color .12s;
+}
+.sku-copy-btn:hover{opacity:1;background:#e8f0fe;border-color:#cfe0fa}
+.sku-copy-btn:active{background:#cfe0fa}
 /* SKU 상세 모달 */
 .sku-detail-grid{
   display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;
@@ -9584,16 +9584,25 @@ window.openSkuDetail = function(barcode){
       </div>
       <div class="sku-basic-edit-grid" id="sku-basic-form">
         <div class="field">
-          <label>품목코드 <span style="font-weight:400;color:var(--muted);font-size:10px">(변경 시 같은 코드 입고 전체에 일괄 반영)</span></label>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span>품목코드 <span style="font-weight:400;color:var(--muted);font-size:10px">(변경 시 같은 코드 입고 전체에 일괄 반영)</span></span>
+            <button type="button" class="sku-copy-btn" data-copy-input="newBarcode" title="품목코드 복사">📋</button>
+          </label>
           <input type="text" name="newBarcode" placeholder="예: FEE01" value="${escapeHtml(s.barcode||'')}"
                  style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;font-weight:600;text-transform:uppercase;color:#1e4abb">
         </div>
         <div class="field">
-          <label>유통명</label>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span>유통명</span>
+            <button type="button" class="sku-copy-btn" data-copy-input="distributionName" title="유통명 복사">📋</button>
+          </label>
           <input type="text" name="distributionName" placeholder="예: 에린지움 블루캅" value="${escapeHtml(s.distributionName||'')}">
         </div>
         <div class="field">
-          <label>식물학명</label>
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            <span>식물학명</span>
+            <button type="button" class="sku-copy-btn" data-copy-input="scientificName" title="식물학명 복사">📋</button>
+          </label>
           <input type="text" name="scientificName" placeholder="예: Eryngium 'Big Blue'" value="${escapeHtml(s.scientificName||'')}">
         </div>
         <div class="field" style="grid-column:1/-1">
@@ -9767,6 +9776,42 @@ function setupSkuDetailModal(){
   document.getElementById('sku-detail-close').addEventListener('click', close);
   document.getElementById('btn-sku-detail-cancel').addEventListener('click', close);
   modal.addEventListener('click', e => { if(e.target === modal) close(); });
+
+  // 복사버튼(품목코드/유통명/학명) — 모달 위임
+  modal.addEventListener('click', e => {
+    const btn = e.target.closest('.sku-copy-btn');
+    if(!btn) return;
+    e.preventDefault(); e.stopPropagation();
+    const inputName = btn.dataset.copyInput;
+    if(!inputName) return;
+    const input = modal.querySelector(`[name="${inputName}"]`);
+    if(!input) return;
+    const text = (input.value || '').trim();
+    if(!text){ toast('복사할 값이 없습니다','warn'); return; }
+    const onOk = () => toast('✓ 복사됨: ' + (text.length>30 ? text.slice(0,30)+'…' : text));
+    const onFail = () => toast('복사 실패','error');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(onOk).catch(() => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+          document.body.appendChild(ta); ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          onOk();
+        } catch(_){ onFail(); }
+      });
+    } else {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        onOk();
+      } catch(_){ onFail(); }
+    }
+  });
 
   document.getElementById('btn-sku-detail-save').addEventListener('click', () => {
     if(!_currentSkuCode) return;
@@ -12119,7 +12164,7 @@ function renderInventoryView(){
           const checked = _invSelected.has(it.key) ? 'checked' : '';
           return `<tr data-key="${escapeHtml(it.key)}" class="${_invSelected.has(it.key)?'row-selected':''}">
             <td class="ck"><input type="checkbox" class="inv-row-check" data-key="${escapeHtml(it.key)}" ${checked}></td>
-            <td><span class="inv-code">${escapeHtml(it.key)}</span><button type="button" class="inv-copy-btn" data-copy="${escapeHtml(it.key)}" title="품목코드 복사">📋</button></td>
+            <td><span class="inv-code">${escapeHtml(it.key)}</span></td>
             <td>
               <select class="inv-status-select" data-key="${escapeHtml(it.key)}">
                 <option value="selling" ${it.status==='selling'?'selected':''}>판매중</option>
@@ -12128,8 +12173,8 @@ function renderInventoryView(){
               </select>
             </td>
             <td>
-              <div style="font-weight:500;display:flex;align-items:center;gap:4px"><span>${escapeHtml(it.distName||'-')}</span>${it.distName?`<button type="button" class="inv-copy-btn" data-copy="${escapeHtml(it.distName)}" title="유통명 복사">📋</button>`:''}</div>
-              ${it.sciName?`<div style="font-style:italic;color:#888;font-size:11.5px;margin-top:2px;display:flex;align-items:center;gap:4px"><span>${escapeHtml(it.sciName)}</span><button type="button" class="inv-copy-btn" data-copy="${escapeHtml(it.sciName)}" title="학명 복사">📋</button></div>`:''}
+              <div style="font-weight:500">${escapeHtml(it.distName||'-')}</div>
+              ${it.sciName?`<div style="font-style:italic;color:#888;font-size:11.5px;margin-top:2px">${escapeHtml(it.sciName)}</div>`:''}
               <div style="margin-top:4px">${renderPlantTraits(it, false)}</div>
             </td>
             <td class="num">${fmtNum(it.totalReceived)}</td>
@@ -12196,38 +12241,6 @@ function renderInventoryView(){
         window.openSkuDetail(prefix);
       } else {
         toast('SKU 상세 모달을 사용할 수 없습니다','error');
-      }
-    });
-  });
-  // 품목코드 / 유통명 / 학명 복사버튼 — 이벤트 위임
-  area.querySelectorAll('.inv-copy-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const text = btn.dataset.copy || '';
-      if(!text) return;
-      const onOk = () => toast('✓ 복사됨: ' + (text.length>30 ? text.slice(0,30)+'…' : text));
-      const onFail = () => toast('복사 실패','error');
-      if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(onOk).catch(() => {
-          // fallback
-          try {
-            const ta = document.createElement('textarea');
-            ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
-            document.body.appendChild(ta); ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            onOk();
-          } catch(_){ onFail(); }
-        });
-      } else {
-        try {
-          const ta = document.createElement('textarea');
-          ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
-          document.body.appendChild(ta); ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          onOk();
-        } catch(_){ onFail(); }
       }
     });
   });
