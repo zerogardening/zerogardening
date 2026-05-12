@@ -2335,10 +2335,29 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
             <label>작성일자: <input type="date" id="stmt-date"></label>
             <label><span id="stmt-due-label">유효기간/납기일</span>: <input type="date" id="stmt-due"></label>
             <label class="stmt-screen-only" style="display:flex;gap:6px;align-items:center;background:#fff8e1;padding:6px 10px;border-radius:6px;border:1px dashed var(--warning)">
-              💰 할인율
-              <input type="number" id="stmt-discount" min="0" max="99" step="0.5" value="0" style="width:60px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;text-align:right">
+              💰
+              <select id="stmt-discount-mode" style="padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+                <option value="discount" selected>할인</option>
+                <option value="surcharge">할증</option>
+              </select>
+              <input type="number" id="stmt-discount" min="0" max="200" step="0.5" value="0" style="width:60px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;text-align:right">
               %
-              <span class="muted" style="font-size:10px">단가 = (매입가×2)×(1-할인율) → 100원 반올림</span>
+              <span class="muted" id="stmt-discount-hint" style="font-size:10px">단가 = (매입가×2)×(1-할인율) → 100원 반올림</span>
+            </label>
+            <label class="stmt-screen-only" style="display:flex;gap:6px;align-items:center;background:#e3f2fd;padding:6px 10px;border-radius:6px;border:1px dashed #90caf9" title="현재 모든 행 단가를 일괄로 단위 절삭">
+              📐 단위 정리
+              <select id="stmt-round-unit" style="padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+                <option value="10">10원</option>
+                <option value="100" selected>100원</option>
+                <option value="1000">1,000원</option>
+                <option value="10000">10,000원</option>
+              </select>
+              <select id="stmt-round-mode" style="padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+                <option value="round" selected>반올림</option>
+                <option value="ceil">올림</option>
+                <option value="floor">내림</option>
+              </select>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-stmt-round-apply" style="padding:3px 10px;font-size:12px">적용</button>
             </label>
           </div>
 
@@ -3211,36 +3230,38 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
 <!-- ============ 명세서 직접 품목 입력 모달 ============ -->
 <div id="stmt-custom-modal" class="modal-back hidden">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:640px;width:95%">
     <div class="modal-head">
       <div class="modal-title">✏️ 직접 품목 입력</div>
       <button class="modal-close" id="stmt-custom-close" type="button">×</button>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">
       상품 등록 없이 명세서·견적서에 임의 품목을 추가합니다.
     </div>
-    <div class="form-grid">
-      <div class="form-group full">
-        <label class="form-label">품목명 <span class="req">*</span></label>
-        <input type="text" id="stmt-custom-name" class="form-control" placeholder="예: 라일락 화분 (특대)" autocomplete="off">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px">품목명 <span class="req">*</span></label>
+        <input type="text" id="stmt-custom-name" class="form-control" placeholder="예: 라일락 화분 (특대)" autocomplete="off" style="width:100%;box-sizing:border-box">
       </div>
-      <div class="form-group">
-        <label class="form-label">규격</label>
-        <input type="text" id="stmt-custom-spec" class="form-control" placeholder="예: 15cm 포트" autocomplete="off">
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px">규격</label>
+        <input type="text" id="stmt-custom-spec" class="form-control" placeholder="예: 15cm 포트" autocomplete="off" style="width:100%;box-sizing:border-box">
       </div>
-      <div class="form-group">
-        <label class="form-label">학명(선택)</label>
-        <input type="text" id="stmt-custom-sci" class="form-control" placeholder="예: Syringa vulgaris" autocomplete="off">
+      <div>
+        <label class="form-label" style="display:block;margin-bottom:4px">학명 <span class="muted" style="font-weight:400">(선택)</span></label>
+        <input type="text" id="stmt-custom-sci" class="form-control" placeholder="예: Syringa vulgaris" autocomplete="off" style="width:100%;box-sizing:border-box">
       </div>
-      <div class="form-group">
-        <label class="form-label">수량 <span class="req">*</span></label>
-        <input type="number" id="stmt-custom-qty" class="form-control" min="1" step="1" value="1">
+      <div style="display:flex;gap:12px">
+        <div style="flex:1">
+          <label class="form-label" style="display:block;margin-bottom:4px">수량 <span class="req">*</span></label>
+          <input type="number" id="stmt-custom-qty" class="form-control" min="1" step="1" value="1" style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="flex:1">
+          <label class="form-label" style="display:block;margin-bottom:4px">단가 <span class="req">*</span></label>
+          <input type="number" id="stmt-custom-price" class="form-control" min="0" step="10" placeholder="원" style="width:100%;box-sizing:border-box">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">단가 <span class="req">*</span></label>
-        <input type="number" id="stmt-custom-price" class="form-control" min="0" step="10" placeholder="원">
-      </div>
-      <div class="form-group full">
+      <div>
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
           <input type="checkbox" id="stmt-custom-taxable">
           <span>과세 품목 (10% VAT 적용)</span>
@@ -3248,7 +3269,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         </label>
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
       <button type="button" class="btn btn-secondary" id="stmt-custom-cancel">취소</button>
       <button type="button" class="btn btn-primary" id="stmt-custom-ok">+ 추가</button>
     </div>
@@ -6364,16 +6385,47 @@ function renderStmtItems(){
   });
 }
 // 할인율 적용 단가: (매입가 × 2) × (1 - discount%/100) → 100원 단위 반올림
+// discountPct 양수 = 할인, 음수 = 할증
 function calcDiscountedPrice(purchasePrice, discountPct){
   const pp = Number(purchasePrice) || 0;
   if(!pp) return 0;
-  const d = Math.max(0, Math.min(99, Number(discountPct)||0));
+  const d = Math.max(-200, Math.min(99, Number(discountPct)||0));
   const raw = pp * 2 * (1 - d/100);
   return Math.round(raw / 100) * 100;
 }
 function getCurrentDiscount(){
   const el = document.getElementById('stmt-discount');
-  return el ? (Number(el.value)||0) : 0;
+  const modeEl = document.getElementById('stmt-discount-mode');
+  const v = el ? (Number(el.value)||0) : 0;
+  const mode = modeEl ? modeEl.value : 'discount';
+  return mode === 'surcharge' ? -v : v;
+}
+
+// 단위 정리: 모든 행의 price 를 unit 단위로 절삭
+function roundToUnit(value, unit, mode){
+  const v = Number(value) || 0;
+  const u = Number(unit) || 1;
+  if(u <= 0) return v;
+  if(mode === 'ceil')  return Math.ceil(v / u) * u;
+  if(mode === 'floor') return Math.floor(v / u) * u;
+  return Math.round(v / u) * u;
+}
+function applyUnitRoundingToAll(){
+  const unitEl = document.getElementById('stmt-round-unit');
+  const modeEl = document.getElementById('stmt-round-mode');
+  const unit = Number(unitEl?.value) || 100;
+  const mode = modeEl?.value || 'round';
+  if(StatementState.items.length === 0){
+    toast('정리할 품목이 없어요','warn');
+    return;
+  }
+  StatementState.items.forEach(it => {
+    it.price = roundToUnit(it.price, unit, mode);
+  });
+  renderStmtItems();
+  const modeKo = mode==='ceil'?'올림':mode==='floor'?'내림':'반올림';
+  const unitKo = unit>=10000 ? '10,000' : unit>=1000 ? '1,000' : String(unit);
+  toast(`✓ 모든 단가를 ${unitKo}원 단위로 ${modeKo} 했어요`);
 }
 
 function addStmtItemFromProduct(p, qty, price){
@@ -6508,6 +6560,25 @@ function setupStatement(){
     discountInput.addEventListener('input', applyDiscountToAllItems);
     discountInput.addEventListener('change', applyDiscountToAllItems);
   }
+  // 할인/할증 모드 변경 → 안내문 갱신 + 재계산
+  const discountModeSel = document.getElementById('stmt-discount-mode');
+  const discountHint = document.getElementById('stmt-discount-hint');
+  const syncDiscountHint = () => {
+    if(!discountHint || !discountModeSel) return;
+    discountHint.textContent = discountModeSel.value === 'surcharge'
+      ? '단가 = (매입가×2)×(1+할증율) → 100원 반올림'
+      : '단가 = (매입가×2)×(1-할인율) → 100원 반올림';
+  };
+  if(discountModeSel){
+    discountModeSel.addEventListener('change', () => {
+      syncDiscountHint();
+      applyDiscountToAllItems();
+    });
+    syncDiscountHint();
+  }
+  // 단위 정리 — 적용 버튼
+  const roundBtn = document.getElementById('btn-stmt-round-apply');
+  if(roundBtn) roundBtn.addEventListener('click', applyUnitRoundingToAll);
 
   // 비고
   document.getElementById('stmt-memo').addEventListener('input', e=>{
