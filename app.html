@@ -12997,7 +12997,17 @@ document.addEventListener('change', (e) => {
 /* ════════════════════════════════════════════════════════════════ */
 
 const AIBridge = (() => {
-  const QUEUE_FILE = 'ai_writing_queue.json';
+  // ─────────────────────────────────────────────────────────────
+  // AIBridge v3 — 디렉토리 기반 큐 (단일 파일 손상 이슈 근본 해결)
+  // 구조: <project>/ai_writing_queue/{pending,completed}/<req_id>.json
+  // 각 파일 ~3~7KB, 손상 임계(~30KB) 한참 아래라 안전.
+  // 외부 인터페이스(readQueue, writeQueue, enqueue, enqueueBatch, pollOnce 등) 는 v2 와 동일.
+  // ─────────────────────────────────────────────────────────────
+  const QUEUE_DIR_NAME = 'ai_writing_queue';
+  const PENDING_SUBDIR = 'pending';
+  const COMPLETED_SUBDIR = 'completed';
+  const META_FILE = '_meta.json';
+
   const IDB_NAME = 'zg_ai_bridge';
   const IDB_STORE = 'handles';
   const IDB_KEY = 'projectFolder';
@@ -13074,24 +13084,9 @@ const AIBridge = (() => {
     }
   }
 
-  async function readQueue(){
-    const dir = await getDirHandle(false);
-    if(!dir) return null;
-    try {
-      const fh = await dir.getFileHandle(QUEUE_FILE);
-      const f = await fh.getFile();
-      let txt = await f.text();
-      txt = txt.replace(/\u0000+$/, '');  // trailing null pad strip
-      if(!txt.trim()) return { version:2, queue:[] };
-      return JSON.parse(txt);
-    } catch(e){
-      if(e && e.name === 'NotFoundError') return { version:2, queue:[] };
-      console.error('readQueue error', e);
-      return null;
-    }
-  }
-
+  // ─────────────────────────────────────────────────────────────
   // 동시 쓰기 방지 — 모든 read+write 작업을 Promise chain 으로 직렬화
+  // ─────────────────────────────────────────────────────────────
   let _writeLock = Promise.resolve();
   async function _withLock(fn){
     const prev = _writeLock;
@@ -13102,73 +13097,137 @@ const AIBridge = (() => {
     finally { release(); }
   }
 
-  async function _writeAndVerify(data){
-    const dir = await getDirHandle(true);
-    if(!dir) throw new Error('폴더가 연결되지 않았습니다');
-    const json = JSON.stringify(data);
-    const BAK_FILE = QUEUE_FILE + '.bak';
-    // .bak 백업 — 직전 정상 상태를 보관 (truncation 시 복원용)
+  // ─────────────────────────────────────────────────────────────
+  // 디렉토리 헬퍼 (v3)
+  // ─────────────────────────────────────────────────────────────
+  async function _getQueueDir(create){
+    const root = await getDirHandle(create);
+    if(!root) return null;
+    try { return await root.getDirectoryHandle(QUEUE_DIR_NAME, { create: !!create }); }
+    catch(e){
+      if(create) throw e;
+      return null;
+    }
+  }
+  async function _getSubDir(subname, create){
+    const qd = await _getQueueDir(create);
+    if(!qd) return null;
+    try { return await qd.getDirectoryHandle(subname, { create: !!create }); }
+    catch(e){
+      if(create) throw e;
+      return null;
+    }
+  }
+
+  async function _readDirItems(subname){
+    const dir = await _getSubDir(subname, false);
+    if(!dir) return [];
+    const items = [];
     try {
-      const cur = await dir.getFileHandle(QUEUE_FILE);
-      let txt = await (await cur.getFile()).text();
-      txt = txt.replace(/\u0000+$/, '');
-      if(txt && txt.trim()){
-        JSON.parse(txt);  // 손상된 상태면 백업 안 함
-        const bakH = await dir.getFileHandle(BAK_FILE, { create: true });
-        const bblob = new Blob([txt], { type:'application/json' });
-        const bw = await bakH.createWritable();
+      for await (const entry of dir.values()){
+        if(entry.kind !== 'file' || !entry.name.endsWith('.json')) continue;
+        if(entry.name === META_FILE) continue;
         try {
-          await bw.write(bblob);
-          await bw.truncate(bblob.size);
-        } finally { await bw.close(); }
+          let txt = await (await entry.getFile()).text();
+          txt = txt.replace(/\x00+$/, '');
+          if(!txt.trim()) continue;
+          items.push(JSON.parse(txt));
+        } catch(e){
+          console.warn('readDirItems: skip corrupt file', entry.name, e);
+        }
       }
-    } catch(_){ /* 첫 쓰기거나 손상 — 백업 스킵 */ }
-    // 최대 3회 시도 (FUSE/FSA truncation 자동 복구)
+    } catch(e){
+      console.warn('readDirItems iterate error', subname, e);
+    }
+    // 정렬: id 의 timestamp 접두사 → 사전순 = 시간순
+    items.sort((a, b) => String(a.id||'').localeCompare(String(b.id||'')));
+    return items;
+  }
+
+  async function _writeItemAtomic(subname, item){
+    if(!item || !item.id) throw new Error('item.id 필요');
+    const dir = await _getSubDir(subname, true);
+    if(!dir) throw new Error('폴더가 연결되지 않았습니다');
+    const fname = item.id + '.json';
+    const json = JSON.stringify(item, null, 2);
     const MAX_ATTEMPTS = 3;
-    let lastError;
+    let lastErr;
     for(let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++){
       try {
-        const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
-        const blob = new Blob([json], { type: 'application/json' });
-        const writable = await fh.createWritable();
-        try {
-          await writable.write(blob);
-          await writable.truncate(blob.size);  // trailing nulls 방지
-        } finally { await writable.close(); }
-        // readback 검증 — trailing null pad 있으면 strip
-        const fh2 = await dir.getFileHandle(QUEUE_FILE);
-        let txt = await (await fh2.getFile()).text();
-        txt = txt.replace(/\u0000+$/, '');
-        JSON.parse(txt);  // 파싱 실패 시 throw
-        return;  // 성공
-      } catch(e){
-        lastError = e;
-        console.warn(`writeAndVerify 시도 ${attempt}/${MAX_ATTEMPTS} 실패: ${e.message||e}`);
-        await new Promise(r => setTimeout(r, 120 * attempt));
-      }
-    }
-    // 3회 전부 실패 → .bak 에서 복원 시도
-    try {
-      const bakH = await dir.getFileHandle(BAK_FILE);
-      let bakTxt = await (await bakH.getFile()).text();
-      bakTxt = bakTxt.replace(/\u0000+$/, '');
-      if(bakTxt){
-        JSON.parse(bakTxt);  // .bak 가 손상됐으면 복원 안 함
-        const fh = await dir.getFileHandle(QUEUE_FILE, { create: true });
-        const rblob = new Blob([bakTxt], { type:'application/json' });
+        const fh = await dir.getFileHandle(fname, { create:true });
+        const blob = new Blob([json], { type:'application/json' });
         const w = await fh.createWritable();
         try {
-          await w.write(rblob);
-          await w.truncate(rblob.size);
+          await w.write(blob);
+          await w.truncate(blob.size);
         } finally { await w.close(); }
-        console.warn('writeAndVerify 3회 실패 — .bak 에서 복원함');
+        // readback 검증
+        const fh2 = await dir.getFileHandle(fname);
+        let txt = await (await fh2.getFile()).text();
+        txt = txt.replace(/\x00+$/, '');
+        JSON.parse(txt);
+        return;
+      } catch(e){
+        lastErr = e;
+        console.warn(`writeItem 시도 ${attempt}/${MAX_ATTEMPTS} 실패 (${subname}/${fname}): ${e.message||e}`);
+        await new Promise(r => setTimeout(r, 100 * attempt));
       }
-    } catch(_){}
-    throw new Error('큐 파일 쓰기 3회 실패: ' + (lastError && (lastError.message||lastError)));
+    }
+    throw new Error(`항목 쓰기 ${MAX_ATTEMPTS}회 실패: ${(lastErr && (lastErr.message||lastErr))}`);
+  }
+
+  async function _deleteItem(subname, id){
+    const dir = await _getSubDir(subname, false);
+    if(!dir) return;
+    try { await dir.removeEntry(id + '.json'); }
+    catch(e){ if(e && e.name !== 'NotFoundError') console.warn('deleteItem', subname, id, e); }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // 공개 인터페이스 (v2 호환)
+  // ─────────────────────────────────────────────────────────────
+  async function readQueue(){
+    try {
+      const pending = await _readDirItems(PENDING_SUBDIR);
+      const completed = await _readDirItems(COMPLETED_SUBDIR);
+      return { version: 3, queue: [...pending, ...completed] };
+    } catch(e){
+      console.error('readQueue error', e);
+      return null;
+    }
   }
 
   async function writeQueue(data){
-    return _withLock(() => _writeAndVerify(data));
+    // v2 호환 — 큐 객체 통째로 받아 디렉토리에 동기화
+    return _withLock(async () => {
+      if(!data || !Array.isArray(data.queue)) return;
+      const wantedPending = new Set();
+      const wantedCompleted = new Set();
+      for(const it of data.queue){
+        if(!it || !it.id) continue;
+        const sub = (it.status === 'completed') ? COMPLETED_SUBDIR : PENDING_SUBDIR;
+        if(sub === COMPLETED_SUBDIR) wantedCompleted.add(it.id); else wantedPending.add(it.id);
+        await _writeItemAtomic(sub, it);
+      }
+      // 디렉토리엔 있지만 wanted 에 없는 파일 → 삭제 (큐에서 빠진 항목 정리)
+      for(const sub of [PENDING_SUBDIR, COMPLETED_SUBDIR]){
+        const dir = await _getSubDir(sub, false);
+        if(!dir) continue;
+        const wanted = sub === COMPLETED_SUBDIR ? wantedCompleted : wantedPending;
+        const toDelete = [];
+        try {
+          for await (const entry of dir.values()){
+            if(entry.kind !== 'file' || !entry.name.endsWith('.json')) continue;
+            if(entry.name === META_FILE) continue;
+            const id = entry.name.slice(0, -5);
+            if(!wanted.has(id)) toDelete.push(entry.name);
+          }
+        } catch(_){}
+        for(const name of toDelete){
+          try { await dir.removeEntry(name); } catch(_){}
+        }
+      }
+    });
   }
 
   /** 항목 1개 빌드 — slim 포맷. Claude 는 AI_FIELDS/AI_NOTE_META 메타데이터를 app.html 에서 참조. */
@@ -13203,48 +13262,41 @@ const AIBridge = (() => {
     };
   }
 
-  /** v3 — slim 포맷 */
+  /** v3 — 단일 enqueue */
   async function enqueue(skuInfo, opts){
     return _withLock(async () => {
-      let q = await readQueue();
-      if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
-      if(!q.queue) q.queue = [];
-      if(!q.version) q.version = 2;
       const req = _buildRequest(skuInfo, opts);
-      q.queue.push(req);
-      await _writeAndVerify(q);
+      await _writeItemAtomic(PENDING_SUBDIR, req);
       return req;
     });
   }
 
-  /** v3 — 다건 일괄 적재. N건을 한 번의 read+write 로 처리 (쓰기 횟수 증폭 제거) */
+  /** v3 — 다건 일괄 enqueue */
   async function enqueueBatch(skuInfos, opts){
     return _withLock(async () => {
-      let q = await readQueue();
-      if(!q) throw new Error('큐 파일을 읽을 수 없습니다');
-      if(!q.queue) q.queue = [];
-      if(!q.version) q.version = 2;
-      const reqs = skuInfos.map(skuInfo => _buildRequest(skuInfo, opts));
-      q.queue.push(...reqs);
-      await _writeAndVerify(q);
+      const reqs = skuInfos.map(s => _buildRequest(s, opts));
+      for(const req of reqs){
+        await _writeItemAtomic(PENDING_SUBDIR, req);
+      }
       return reqs;
     });
   }
 
-  /** completed 항목을 SKU 마스터에 적용. 적용 성공 시 큐에서 splice (자동 정리). */
+  /** completed 항목 → SKU 마스터 반영, 성공 시 파일 삭제 */
   async function pollOnce(){
     return _withLock(async () => {
-      const q = await readQueue();
-      if(!q || !q.queue || q.queue.length === 0) return 0;
-      const keep = [];
+      const completed = await _readDirItems(COMPLETED_SUBDIR);
+      if(completed.length === 0) return 0;
       let applied = 0;
-      for(const r of q.queue){
-        // completed + result + skuCode 가 아니면 큐에 보존
-        if(r.status !== 'completed' || !r.result || !r.skuCode){
-          keep.push(r); continue;
+      for(const r of completed){
+        if(!r.result || !r.skuCode){
+          continue; // 결과 미달 — 파일 보존
         }
-        // 이미 적용된 entry — 큐에서 제거 (자동 정리)
-        if(r.applied || _appliedIds.has(r.id)){ continue; }
+        if(r.applied || _appliedIds.has(r.id)){
+          // 이미 적용 — 파일만 정리
+          await _deleteItem(COMPLETED_SUBDIR, r.id);
+          continue;
+        }
         try {
           const existing = Store.findSkuByCode(r.skuCode) || {};
           const overwrite = !!r.overwrite;
@@ -13277,12 +13329,12 @@ const AIBridge = (() => {
             }
             patch.aiUncertainTraits = newUncertain;
           }
-          // note (특이사항) 처리
+          // note (특이사항)
           if(r.result.note){
             const curN = (existing.note||'').trim();
             if(overwrite || !curN) patch.note = String(r.result.note).trim();
           }
-          // 구버전 호환 — productCopy/keywords 결과도 받아둠
+          // 구버전 호환 — productCopy/keywords
           if(r.result.productCopy && (overwrite || !existing.productCopy)){
             patch.productCopy = String(r.result.productCopy).trim();
           }
@@ -13294,29 +13346,19 @@ const AIBridge = (() => {
           }
           patch.aiUpdatedAt = new Date().toISOString();
           Store.upsertSkuMaster(r.skuCode, patch);
-          // 입고 메모도 동기화 (note 가 갱신된 경우)
+          // 입고 메모 동기화
           if(patch.note){
             const recvs = Store.listReceivings().filter(rr => extractCodePrefix(rr.barcode) === r.skuCode);
             recvs.forEach(rr => Store.updateReceiving(rr.id, { memo: patch.note }));
           }
           _appliedIds.add(r.id);
           applied++;
-          // keep 에 push 하지 않음 → 큐에서 자동 정리
+          // 적용 완료 → 파일 삭제
+          await _deleteItem(COMPLETED_SUBDIR, r.id);
         } catch(e){
           console.error('apply error', e);
-          // 적용 실패 — 큐에 보존 (다음 폴링에서 재시도)
-          keep.push(r);
+          // 실패 — 파일 보존 (다음 폴링에서 재시도)
         }
-      }
-      const modified = (keep.length !== q.queue.length) || applied > 0;
-      if(modified){
-        q.queue = keep;
-        // 큐 길이 cap — 오래된 entry 정리 (최근 100건만 보관)
-        const MAX_QUEUE = 100;
-        if(q.queue.length > MAX_QUEUE){
-          q.queue.splice(0, q.queue.length - MAX_QUEUE);
-        }
-        try { await _writeAndVerify(q); } catch(e){ console.error('writeAndVerify after apply', e); }
       }
       return applied;
     });
@@ -13347,9 +13389,8 @@ const AIBridge = (() => {
   }
 
   async function getPendingCount(){
-    const q = await readQueue();
-    if(!q || !q.queue) return 0;
-    return q.queue.filter(r => r.status === 'pending').length;
+    const pending = await _readDirItems(PENDING_SUBDIR);
+    return pending.length;
   }
 
   async function isConnected(){
