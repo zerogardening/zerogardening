@@ -8994,6 +8994,95 @@ function _tsToHHMM(ts){
 }
 
 /* ── 폴더 그리드 렌더 ── */
+/* ── 송장파일 가공 (CSV 주문 → 송장 출력용 XLSX) ── */
+async function generateShippingXlsx(batchId){
+  const batch = Store.getOrderBatch(batchId);
+  if(!batch){ toast('폴더를 찾을 수 없습니다','error'); return; }
+  const orders = Store.listOrdersByBatch(batchId);
+  if(orders.length === 0){ toast('주문 데이터가 없습니다','warn'); return; }
+
+  // SKU prefix → distributionName 매핑
+  const skuMap = new Map();
+  Store.listSkuMasters().forEach(s => {
+    const pref = extractCodePrefix(s.barcode);
+    if(pref && !skuMap.has(pref)) skuMap.set(pref, s.distributionName || '');
+  });
+
+  // 각 주문 라인 가공
+  const processed = orders.map(o => {
+    let newName = o.productName || '';
+    const code = String(o.itemCode||'').trim();
+    const m = code.match(/^([A-Z]+\d+)(?:-(\d+))?$/i);
+    if(m){
+      const prefix = m[1].toUpperCase();
+      const cm = m[2];
+      const distName = skuMap.get(prefix);
+      if(distName){
+        // G열 옵션에서 숫자 추출 (예: '수량=6개' → 6, 빈 값이면 1)
+        let optQty = 1;
+        const om = String(o.option||'').match(/(\d+)/);
+        if(om) optQty = Number(om[1]) || 1;
+        const mQty = Number(o.qty) || 1;
+        const totalQty = optQty * mQty;
+        const cmStr = cm ? `(${cm}cm)` : '';
+        newName = `${distName}${cmStr} ${totalQty}개`.trim();
+      }
+      // distName 매칭 안 되면 원본 productName 유지
+    }
+    return Object.assign({}, o, { _newName: newName });
+  });
+
+  // 주문번호 그룹핑 — 중복은 ' / ' 결합, 첫 행만 남김
+  const byOrderNo = new Map();
+  const orderNoSeq = [];
+  processed.forEach(o => {
+    if(!byOrderNo.has(o.orderNo)){
+      byOrderNo.set(o.orderNo, { first: o, names: [o._newName] });
+      orderNoSeq.push(o.orderNo);
+    } else {
+      byOrderNo.get(o.orderNo).names.push(o._newName);
+    }
+  });
+  const merged = orderNoSeq.map(on => {
+    const g = byOrderNo.get(on);
+    return Object.assign({}, g.first, { _newName: g.names.join(' / ') });
+  });
+
+  // H열(자체품목코드) 오름차순 정렬
+  merged.sort((a,b) => String(a.itemCode||'').localeCompare(String(b.itemCode||'')));
+
+  // XLSX 생성 (원본 카페24 컬럼 구조 유지)
+  const headers = [
+    '쇼핑몰','쇼핑몰번호','주문번호','발주일','주문상품명','상품번호','옵션','자체품목코드',
+    '결제수단','결제업체','결제정보','판매가','수량','수령인','우편번호','주소',
+    '수령지전화','전화번호','핸드폰','비고','주문자','주문자우편번호','주문자주소',
+    '주문자전화번호','주문자핸드폰','옵션추가 가격','배송비 정보',
+  ];
+  const aoa = [headers];
+  merged.forEach(o => {
+    aoa.push([
+      o.shopName||'', o.shopId||'', o.orderNo||'', o.orderedAt||'',
+      o._newName || o.productName || '',
+      o.productNo||'', o.option||'', o.itemCode||'',
+      o.paymentMethod||'', o.paymentCompany||'', o.paymentInfo||'',
+      o.unitPrice||0, o.qty||0,
+      o.recipientName||'', o.recipientZip||'', o.recipientAddr||'',
+      o.recipientPhone||'', o.recipientPhone2||'', o.recipientMobile||'',
+      o.memo||'',
+      o.ordererName||'', o.ordererZip||'', o.ordererAddr||'',
+      o.ordererPhone||'', o.ordererMobile||'',
+      o.optionExtraPrice||0, o.shippingInfo||'',
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '송장출력');
+  const fnameBase = (batch.fileName||batchId).replace(/\.(csv|xlsx|xls)$/i,'');
+  const outName = `송장_${fnameBase}.xlsx`;
+  XLSX.writeFile(wb, outName);
+  toast(`✓ 송장파일 다운로드: ${outName}`,'flash');
+}
+
 function renderBatchFolders(){
   const area = document.getElementById('batch-folder-list');
   if(!area) return;
@@ -9038,6 +9127,7 @@ function renderBatchFolders(){
                 <span>${escapeHtml(_tsToHHMM(b.uploadedAt))}</span>
               </div>
               <div class="bf-actions">
+                <button class="btn btn-secondary btn-sm bf-shipping" data-id="${escapeHtml(b.id)}" title="송장 출력용 XLSX 다운로드">송장파일</button>
                 <button class="btn btn-primary btn-sm bf-open" data-id="${escapeHtml(b.id)}">열기</button>
                 <button class="btn btn-danger btn-sm bf-delete" data-id="${escapeHtml(b.id)}">삭제</button>
               </div>
@@ -9049,6 +9139,12 @@ function renderBatchFolders(){
   }).join('');
 
   // 이벤트 위임
+  area.querySelectorAll('.bf-shipping').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      generateShippingXlsx(btn.dataset.id);
+    });
+  });
   area.querySelectorAll('.bf-open').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
