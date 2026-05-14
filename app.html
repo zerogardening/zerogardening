@@ -9010,7 +9010,8 @@ async function generateShippingXlsx(batchId){
     if(skuId.length === 5 && !skuMap.has(skuId)) skuMap.set(skuId, s.distributionName || '');
   });
 
-  // 각 주문 라인 가공
+  // 각 주문 라인 가공 — 매칭 실패 항목은 unmatched 에 누적해서 콘솔 로그
+  const unmatched = [];
   const processed = orders.map(o => {
     let newName = o.productName || '';
     const code = String(o.itemCode||'').trim().toUpperCase();
@@ -9029,11 +9030,19 @@ async function generateShippingXlsx(batchId){
         const totalQty = optQty * mQty;
         const cmStr = cm ? `(${cm}cm)` : '';
         newName = `${distName}${cmStr} ${totalQty}개`.trim();
+      } else {
+        // 디버그: SKU 매칭 실패 — SKU 마스터에 해당 5자 prefix 가 없음
+        console.warn(`[송장] SKU 매칭 실패: itemCode='${code}', skuId='${skuId}' — SKU 마스터에 등록된 prefix 가 없습니다. 원본 productName 유지.`);
+        unmatched.push({ itemCode: code, skuId, productName: o.productName });
       }
-      // distName 매칭 안 되면 원본 productName 유지
     }
     return Object.assign({}, o, { _newName: newName });
   });
+  // 매칭 실패 요약 (콘솔)
+  if(unmatched.length > 0){
+    console.warn(`[송장] 총 ${unmatched.length}건 SKU 매칭 실패:`, unmatched);
+    console.warn('[송장] SKU 마스터에 등록된 prefix 목록(상위 50):', Array.from(skuMap.keys()).slice(0, 50));
+  }
 
   // 주문번호 그룹핑 — 중복은 ' / ' 결합, 첫 행만 남김
   const byOrderNo = new Map();
