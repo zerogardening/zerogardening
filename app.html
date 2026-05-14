@@ -9078,14 +9078,14 @@ async function generateShippingXlsx(batchId){
   // H열(자체품목코드) 오름차순 정렬
   merged.sort((a,b) => String(a.itemCode||'').localeCompare(String(b.itemCode||'')));
 
-  // XLSX 생성 (원본 카페24 컬럼 구조 유지)
-  const headers = [
-    '쇼핑몰','쇼핑몰번호','주문번호','발주일','주문상품명','상품번호','옵션','자체품목코드',
-    '결제수단','결제업체','결제정보','판매가','수량','수령인','우편번호','주소',
-    '수령지전화','전화번호','핸드폰','비고','주문자','주문자우편번호','주문자주소',
-    '주문자전화번호','주문자핸드폰','옵션추가 가격','배송비 정보',
-  ];
-  const aoa = [headers];
+  // XLSX 생성 (원본 카페24 컬럼 순서 유지)
+  // 택배 프로그램이 1행도 데이터로 인식하기 때문에 헤더 행은 출력하지 않음
+  // 참고용 컬럼 순서:
+  //   A쇼핑몰 B쇼핑몰번호 C주문번호 D발주일 E주문상품명 F상품번호 G옵션 H자체품목코드
+  //   I결제수단 J결제업체 K결제정보 L판매가 M수량 N수령인 O우편번호 P주소
+  //   Q수령지전화 R전화번호 S핸드폰 T비고 U주문자 V주문자우편번호 W주문자주소
+  //   X주문자전화번호 Y주문자핸드폰 Z옵션추가가격 AA배송비정보
+  const aoa = [];
   merged.forEach(o => {
     aoa.push([
       o.shopName||'', o.shopId||'', o.orderNo||'', o.orderedAt||'',
