@@ -9001,22 +9001,25 @@ async function generateShippingXlsx(batchId){
   const orders = Store.listOrdersByBatch(batchId);
   if(orders.length === 0){ toast('주문 데이터가 없습니다','warn'); return; }
 
-  // SKU prefix → distributionName 매핑
+  // SKU ID (앞 5자) → distributionName 매핑
+  // 사용자 규칙: 품목코드 앞 5자(예: 'ECH01')가 SKU ID. SKU 마스터의 barcode 가
+  //   'ECH01' / 'ECH01-15' / 'ECH0101' 등 어떤 형식이든 앞 5자만 보고 매칭
   const skuMap = new Map();
   Store.listSkuMasters().forEach(s => {
-    const pref = extractCodePrefix(s.barcode);
-    if(pref && !skuMap.has(pref)) skuMap.set(pref, s.distributionName || '');
+    const skuId = String(s.barcode||'').trim().toUpperCase().slice(0, 5);
+    if(skuId.length === 5 && !skuMap.has(skuId)) skuMap.set(skuId, s.distributionName || '');
   });
 
   // 각 주문 라인 가공
   const processed = orders.map(o => {
     let newName = o.productName || '';
-    const code = String(o.itemCode||'').trim();
-    const m = code.match(/^([A-Z]+\d+)(?:-(\d+))?$/i);
-    if(m){
-      const prefix = m[1].toUpperCase();
-      const cm = m[2];
-      const distName = skuMap.get(prefix);
+    const code = String(o.itemCode||'').trim().toUpperCase();
+    if(code){
+      const skuId = code.slice(0, 5);  // 앞 5자 = SKU ID
+      // 화분 cm 추출 — dash 뒤 숫자 (예: 'ECH01-15' → '15'). dash 없으면 빈 값
+      const cmMatch = code.match(/-(\d+)$/);
+      const cm = cmMatch ? cmMatch[1] : '';
+      const distName = skuMap.get(skuId);
       if(distName){
         // G열 옵션에서 숫자 추출 (예: '수량=6개' → 6, 빈 값이면 1)
         let optQty = 1;
