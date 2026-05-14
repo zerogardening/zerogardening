@@ -13647,6 +13647,11 @@ const AIBridge = (() => {
             }
             patch.aiFields = merged;
           }
+          // distributionName / scientificName 자동 머지 (큐 항목의 값 우선 사용)
+          ['distributionName','scientificName'].forEach(k => {
+            const v = String((r.result && r.result[k]) || r[k] || '').trim();
+            if(v && (overwrite || !existing[k])) patch[k] = v;
+          });
           // 식물 특성(traits) 자동 채움
           if(r.result.traits && typeof r.result.traits === 'object'){
             const TRAIT_KEYS = ['heightMin','heightMax','widthMin','widthMax',
