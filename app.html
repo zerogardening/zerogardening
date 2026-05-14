@@ -9004,11 +9004,22 @@ async function generateShippingXlsx(batchId){
   // SKU ID (앞 5자) → distributionName 매핑
   // 사용자 규칙: 품목코드 앞 5자(예: 'ECH01')가 SKU ID. SKU 마스터의 barcode 가
   //   'ECH01' / 'ECH01-15' / 'ECH0101' 등 어떤 형식이든 앞 5자만 보고 매칭
+  // 폴백: SKU 마스터의 distributionName 이 비어 있으면 receivings(입고)에서 보충
   const skuMap = new Map();
+  // 1차: SKU 마스터에서 distributionName 가져옴 (값 있을 때만 등록)
   Store.listSkuMasters().forEach(s => {
     const skuId = String(s.barcode||'').trim().toUpperCase().slice(0, 5);
-    if(skuId.length === 5 && !skuMap.has(skuId)) skuMap.set(skuId, s.distributionName || '');
+    const dn = String(s.distributionName||'').trim();
+    if(skuId.length === 5 && dn && !skuMap.has(skuId)) skuMap.set(skuId, dn);
   });
+  // 2차: 마스터에 없으면 receivings(입고)의 distributionName 폴백
+  if(typeof Store.listReceivings === 'function'){
+    Store.listReceivings().forEach(r => {
+      const skuId = String(r.barcode||'').trim().toUpperCase().slice(0, 5);
+      const dn = String(r.distributionName||'').trim();
+      if(skuId.length === 5 && dn && !skuMap.has(skuId)) skuMap.set(skuId, dn);
+    });
+  }
 
   // 각 주문 라인 가공 — 매칭 실패 항목은 unmatched 에 누적해서 콘솔 로그
   const unmatched = [];
