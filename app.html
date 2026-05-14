@@ -9030,10 +9030,14 @@ async function generateShippingXlsx(batchId){
         const totalQty = optQty * mQty;
         const cmStr = cm ? `(${cm}cm)` : '';
         newName = `${distName}${cmStr} ${totalQty}개`.trim();
+      } else if(skuMap.has(skuId)){
+        // SKU 는 등록되어 있지만 유통명(distributionName) 이 비어 있음
+        console.warn(`[송장] SKU ${skuId} 는 등록되어 있지만 유통명(distributionName) 이 비어 있습니다. 재고관리에서 유통명 입력 필요. 원본 productName 유지.`);
+        unmatched.push({ itemCode: code, skuId, reason: '유통명 누락', productName: o.productName });
       } else {
-        // 디버그: SKU 매칭 실패 — SKU 마스터에 해당 5자 prefix 가 없음
+        // SKU 자체가 마스터에 미등록
         console.warn(`[송장] SKU 매칭 실패: itemCode='${code}', skuId='${skuId}' — SKU 마스터에 등록된 prefix 가 없습니다. 원본 productName 유지.`);
-        unmatched.push({ itemCode: code, skuId, productName: o.productName });
+        unmatched.push({ itemCode: code, skuId, reason: 'SKU 미등록', productName: o.productName });
       }
     }
     return Object.assign({}, o, { _newName: newName });
