@@ -9114,12 +9114,31 @@ async function generateShippingXlsx(batchId){
 
   if(folder){
     try {
-      const fh = await folder.getFileHandle(outName, { create: true });
+      // 폴더 내 기존 파일과 충돌 안 나는 이름 찾기 — 덮어쓰기 방지
+      // 1번째: 20{batchId}.xlsx
+      // 2번째: 20{batchId}-01.xlsx
+      // 3번째: 20{batchId}-02.xlsx ...
+      const baseName = `20${batchId}`;
+      const used = new Set();
+      for await (const entry of folder.values()){
+        if(entry.kind === 'file') used.add(entry.name);
+      }
+      let saveName = `${baseName}.xlsx`;
+      if(used.has(saveName)){
+        let found = false;
+        for(let i = 1; i <= 99; i++){
+          const nn = String(i).padStart(2, '0');
+          const cand = `${baseName}-${nn}.xlsx`;
+          if(!used.has(cand)){ saveName = cand; found = true; break; }
+        }
+        if(!found) saveName = `${baseName}-${Date.now()}.xlsx`;  // 100건 넘으면 timestamp
+      }
+      const fh = await folder.getFileHandle(saveName, { create: true });
       const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
       const blob = new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const w = await fh.createWritable();
       try { await w.write(blob); await w.truncate(blob.size); } finally { await w.close(); }
-      toast(`✓ 송장파일 저장: ${folder.name}/${outName}`,'flash');
+      toast(`✓ 송장파일 저장: ${folder.name}/${saveName}`,'flash');
       return;
     } catch(e){
       console.warn('송장 폴더 쓰기 실패 → 다운로드 폴백', e);
