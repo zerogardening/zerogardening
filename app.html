@@ -7982,7 +7982,39 @@ document.getElementById('edit-form').addEventListener('submit', e=>{
     maxHeight: '', maxWidth: '', bloomSeason: '',
   };
   Store.updateReceiving(id, patch);
-  toast('✓ 수정 완료');
+
+  // 양방향 동기화 — 같은 prefix 의 SKU 마스터 + 다른 입고 항목들까지 일괄 갱신
+  // (SKU 마스터 편집 모달과 대칭 동작)
+  let masterUpdated = false;
+  let othersUpdated = 0;
+  try {
+    const prefix = extractCodePrefix(patch.barcode || '');
+    if(prefix){
+      // SKU 마스터에 sync 할 필드 (식물 정체성 + 특성)
+      const masterPatch = {
+        distributionName: patch.distributionName,
+        scientificName:   patch.scientificName,
+        note: patch.memo,  // 입고 메모 → SKU 특이사항
+      };
+      SKU_TRAIT_FIELDS.forEach(f => { masterPatch[f] = patch[f]; });
+      Store.upsertSkuMaster(prefix, masterPatch);
+      masterUpdated = true;
+      // 같은 prefix 의 다른 receivings 도 동기화
+      const recvPatch = {
+        distributionName: patch.distributionName,
+        scientificName:   patch.scientificName,
+      };
+      SKU_TRAIT_FIELDS.forEach(f => { recvPatch[f] = patch[f]; });
+      recvPatch.maxHeight = ''; recvPatch.maxWidth = ''; recvPatch.bloomSeason = '';
+      const others = Store.listReceivings().filter(r => r.id !== id && extractCodePrefix(r.barcode||'') === prefix);
+      others.forEach(r => { Store.updateReceiving(r.id, recvPatch); othersUpdated++; });
+    }
+  } catch(e){ console.warn('cross-sync after receiving edit', e); }
+
+  const syncMsg = masterUpdated
+    ? (othersUpdated > 0 ? ` (SKU 마스터 + 입고 ${othersUpdated}건 동기화)` : ' (SKU 마스터 동기화)')
+    : '';
+  toast(`✓ 수정 완료${syncMsg}`);
   document.getElementById('edit-modal').classList.add('hidden');
   renderList();
 });
