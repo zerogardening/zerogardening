@@ -9197,12 +9197,59 @@ async function convertRosenToShipped(file){
     const wsOut = XLSX.utils.aoa_to_sheet(aoa);
     const wbOut = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wbOut, wsOut, '배송완료');
+
+    // 파일명: 20{YYYYMMDD}-{NN}.xlsx (그날 일련번호, 송장파일과 같은 규칙)
+    // 충돌 시 -01, -02 추가
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
-    const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-    const outName = `배송완료_${ts}.xlsx`;
-    XLSX.writeFile(wbOut, outName);
-    toast(`✓ 배송완료 파일 다운로드: ${outName} (${aoa.length-1}건)`,'flash');
+    const datePrefix = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+    const fallbackName = `${datePrefix}-${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
+
+    // 배송완료 폴더 핸들 시도 — 첫 사용 시 폴더 선택 프롬프트
+    let folder = null;
+    try { folder = await AIBridge.getCompletedFolder(true); }
+    catch(e){ console.warn('getCompletedFolder', e); }
+
+    if(folder){
+      try {
+        // 폴더 내 기존 파일 스캔
+        const used = new Set();
+        for await (const entry of folder.values()){
+          if(entry.kind === 'file') used.add(entry.name);
+        }
+        // 그날 가장 큰 NN 찾기 (-01, -02, ...)
+        let maxNN = 0;
+        const datePat = new RegExp(`^${datePrefix}-(\\d+)(?:-\\d+)?\\.xlsx$`);
+        for(const name of used){
+          const m = name.match(datePat);
+          if(m){ const nn = Number(m[1]); if(nn > maxNN) maxNN = nn; }
+        }
+        const newNN = String(maxNN + 1).padStart(2, '0');
+        const baseName = `${datePrefix}-${newNN}`;
+        let saveName = `${baseName}.xlsx`;
+        // 새 NN 이라 보통 충돌 안 나지만 안전장치 — 중복이면 -01, -02
+        if(used.has(saveName)){
+          let found = false;
+          for(let i = 1; i <= 99; i++){
+            const cand = `${baseName}-${String(i).padStart(2,'0')}.xlsx`;
+            if(!used.has(cand)){ saveName = cand; found = true; break; }
+          }
+          if(!found) saveName = `${baseName}-${Date.now()}.xlsx`;
+        }
+        const fh = await folder.getFileHandle(saveName, { create: true });
+        const ab = XLSX.write(wbOut, { bookType:'xlsx', type:'array' });
+        const blob = new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const w = await fh.createWritable();
+        try { await w.write(blob); await w.truncate(blob.size); } finally { await w.close(); }
+        toast(`✓ 배송완료 파일 저장: ${folder.name}/${saveName} (${aoa.length-1}건)`,'flash');
+        return;
+      } catch(e){
+        console.warn('배송완료 폴더 쓰기 실패 → 다운로드 폴백', e);
+      }
+    }
+    // 폴더 권한 없거나 쓰기 실패 → 브라우저 기본 다운로드
+    XLSX.writeFile(wbOut, fallbackName);
+    toast(`✓ 배송완료 파일 다운로드: ${fallbackName} (${aoa.length-1}건)`,'flash');
   } catch(e){
     console.error('convertRosenToShipped', e);
     toast('변환 실패: ' + (e.message||e),'error');
@@ -13256,6 +13303,7 @@ const AIBridge = (() => {
   const IDB_STORE = 'handles';
   const IDB_KEY = 'projectFolder';
   const IDB_SHIPPING_KEY = 'shippingFolder';
+  const IDB_COMPLETED_KEY = 'completedFolder';  // 카페24 배송완료 업로드용 폴더
   let _dirHandle = null;
   let _pollTimer = null;
   let _pollInterval = 5000;
@@ -13726,12 +13774,44 @@ const AIBridge = (() => {
     return (saved && saved.name) || '';
   }
 
+  // ─── 배송완료(카페24 입력) 폴더 (별도 권한) ───
+  async function getCompletedFolder(promptIfMissing){
+    const saved = await _idbGet(IDB_COMPLETED_KEY);
+    if(saved && await _verifyPermission(saved, true)) return saved;
+    if(!promptIfMissing) return null;
+    if(!(await isSupported())){
+      alert('이 브라우저는 폴더 선택을 지원하지 않습니다. Chrome / Edge 최신 버전을 사용하세요.');
+      return null;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      if(!(await _verifyPermission(handle, true))){ toast('폴더 권한이 거부되었습니다','error'); return null; }
+      await _idbSet(IDB_COMPLETED_KEY, handle);
+      toast(`✓ 배송완료 저장 폴더 연결: ${handle.name}`, 'flash');
+      return handle;
+    } catch(e){
+      if(e && e.name === 'AbortError') return null;
+      console.error('getCompletedFolder error', e);
+      toast('배송완료 폴더 연결 실패: ' + (e.message||e),'error');
+      return null;
+    }
+  }
+  async function clearCompletedFolder(){
+    await _idbSet(IDB_COMPLETED_KEY, undefined);
+    toast('배송완료 저장 폴더 연결 해제됨', 'flash');
+  }
+  async function getCompletedFolderName(){
+    const saved = await _idbGet(IDB_COMPLETED_KEY);
+    return (saved && saved.name) || '';
+  }
+
   return {
     isSupported, isConnected, connectFolder, getDirHandle, getFolderName,
     readQueue, writeQueue, enqueue, enqueueBatch, pollOnce,
     startPolling, stopPolling, getPendingCount,
     buildPromptText,
     getShippingFolder, clearShippingFolder, getShippingFolderName,
+    getCompletedFolder, clearCompletedFolder, getCompletedFolderName,
   };
 })();
 
