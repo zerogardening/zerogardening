@@ -9077,8 +9077,8 @@ async function generateShippingXlsx(batchId){
   const ws = XLSX.utils.aoa_to_sheet(aoa);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '송장출력');
-  const fnameBase = (batch.fileName||batchId).replace(/\.(csv|xlsx|xls)$/i,'');
-  const outName = `송장_${fnameBase}.xlsx`;
+  // 파일명 규칙: 20{yymmdd}-{NN}.xlsx (예: batch.id='260514-01' → 20260514-01.xlsx)
+  const outName = `20${batchId}.xlsx`;
   XLSX.writeFile(wb, outName);
   toast(`✓ 송장파일 다운로드: ${outName}`,'flash');
 }
@@ -9387,6 +9387,8 @@ function _commitBatchUpload(mode){
   if(mode === 'overwrite' && pending.dupBatchId){
     Store.replaceBatchOrders(pending.dupBatchId, cleaned);
     toast(`✓ 폴더 [${pending.dupBatchId}] 가 덮어쓰기 되었습니다 (${cleaned.length}건)`,'flash');
+    // 송장파일 자동 생성·다운로드
+    try { generateShippingXlsx(pending.dupBatchId); } catch(e){ console.warn('자동 송장 생성 실패', e); }
   } else {
     const today = Store._todayYYMMDD();
     const next = Store.nextBatchIdForDate(today);
@@ -9396,6 +9398,8 @@ function _commitBatchUpload(mode){
     };
     Store.createBatchWithOrders(meta, cleaned);
     toast(`✓ 새 폴더 [${next.id}] 가 생성되었습니다 (${cleaned.length}건)`,'flash');
+    // 송장파일 자동 생성·다운로드 (실패해도 무시 — 버튼으로 재시도 가능)
+    try { generateShippingXlsx(next.id); } catch(e){ console.warn('자동 송장 생성 실패', e); }
   }
   _batchPendingUpload = null;
   renderBatchFolders();
