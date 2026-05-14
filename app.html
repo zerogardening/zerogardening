@@ -2691,6 +2691,23 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <div class="card-title">📁 업로드 폴더</div>
               <div id="batch-folder-list"></div>
             </div>
+
+            <div class="card">
+              <div class="card-title">
+                🚚 로젠 송장 → 카페24 배송완료 변환
+                <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:auto">
+                  로젠택배 엑셀 출력 파일을 업로드하면 카페24 배송완료 양식(XLSX)으로 변환
+                </span>
+              </div>
+              <div class="csv-dropzone" id="shipped-dropzone">
+                <div class="csv-dropzone-icon">📦</div>
+                <div class="csv-dropzone-text">로젠 송장 엑셀(.xlsx)을 끌어다 놓거나 클릭하여 업로드</div>
+                <div class="csv-dropzone-hint">
+                  변환 결과: <strong>주문번호 / 공란 / 운송장번호 / 박스수량</strong> 4열 XLSX 다운로드
+                </div>
+                <input type="file" id="shipped-file-input" accept=".xlsx,.xls" style="display:none">
+              </div>
+            </div>
           </div>
 
           <!-- 뷰 B: 폴더 상세 (열려있는 폴더의 주문 리스트) -->
@@ -9149,6 +9166,66 @@ async function generateShippingXlsx(batchId){
   toast(`✓ 송장파일 다운로드: ${outName}`,'flash');
 }
 
+/* ── 로젠 송장 출력 XLSX → 카페24 배송완료 양식 XLSX 변환 ── */
+async function convertRosenToShipped(file){
+  if(!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const wbIn = XLSX.read(buf, { cellDates:false });
+    const wsIn = wbIn.Sheets[wbIn.SheetNames[0]];
+    // 4행부터 데이터 (1행 타이틀, 2~3행 헤더). 0-indexed 인덱스 사용
+    const rowsIn = XLSX.utils.sheet_to_json(wsIn, { header:1, defval:'' });
+    // 출력 헤더 + 데이터
+    const aoa = [['주문번호','품목별 주문번호','운송장번호','수량']];
+    for(let i = 3; i < rowsIn.length; i++){
+      const row = rowsIn[i];
+      const orderNo   = row[18]; // S열 (1-indexed=19)
+      const trackingNo = row[3]; // D열
+      const boxQty    = row[11]; // L열
+      if((!orderNo || String(orderNo).trim()==='') && (!trackingNo || String(trackingNo).trim()==='')) continue;
+      aoa.push([
+        String(orderNo||'').trim(),
+        '',  // B열 품목별 주문번호 공란
+        String(trackingNo||'').trim(),
+        boxQty===''||boxQty==null ? '' : Number(boxQty)||boxQty,
+      ]);
+    }
+    if(aoa.length <= 1){
+      toast('변환할 데이터가 없습니다 (4행부터 비어있음)','warn');
+      return;
+    }
+    const wsOut = XLSX.utils.aoa_to_sheet(aoa);
+    const wbOut = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wbOut, wsOut, '배송완료');
+    const now = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const outName = `배송완료_${ts}.xlsx`;
+    XLSX.writeFile(wbOut, outName);
+    toast(`✓ 배송완료 파일 다운로드: ${outName} (${aoa.length-1}건)`,'flash');
+  } catch(e){
+    console.error('convertRosenToShipped', e);
+    toast('변환 실패: ' + (e.message||e),'error');
+  }
+}
+
+function setupShippedDropzone(){
+  const dz = document.getElementById('shipped-dropzone');
+  const fi = document.getElementById('shipped-file-input');
+  if(!dz || !fi) return;
+  dz.addEventListener('click', () => fi.click());
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const f = e.dataTransfer.files[0]; if(f) convertRosenToShipped(f);
+  });
+  fi.addEventListener('change', e => {
+    const f = e.target.files[0]; if(f) convertRosenToShipped(f);
+    e.target.value = '';
+  });
+}
+
 function renderBatchFolders(){
   const area = document.getElementById('batch-folder-list');
   if(!area) return;
@@ -10963,6 +11040,7 @@ async function _bootApp(){
   setupOrderTabs();
   setupQuoteForm();
   setupOrdersCsvUpload();
+  setupShippedDropzone();
   setupBatchUpload();
   setupOrderDetailModal();
   setupOrderSearchInputs();
