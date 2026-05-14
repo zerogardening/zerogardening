@@ -9106,6 +9106,26 @@ async function generateShippingXlsx(batchId){
   XLSX.utils.book_append_sheet(wb, ws, '송장출력');
   // 파일명 규칙: 20{yymmdd}-{NN}.xlsx (예: batch.id='260514-01' → 20260514-01.xlsx)
   const outName = `20${batchId}.xlsx`;
+
+  // 송장 저장 폴더에 직접 저장 시도 (첫 사용 시 폴더 선택 프롬프트)
+  let folder = null;
+  try { folder = await AIBridge.getShippingFolder(true); }
+  catch(e){ console.warn('getShippingFolder', e); }
+
+  if(folder){
+    try {
+      const fh = await folder.getFileHandle(outName, { create: true });
+      const ab = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+      const blob = new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const w = await fh.createWritable();
+      try { await w.write(blob); await w.truncate(blob.size); } finally { await w.close(); }
+      toast(`✓ 송장파일 저장: ${folder.name}/${outName}`,'flash');
+      return;
+    } catch(e){
+      console.warn('송장 폴더 쓰기 실패 → 다운로드 폴백', e);
+    }
+  }
+  // 폴더 권한 없거나 쓰기 실패 → 브라우저 기본 다운로드
   XLSX.writeFile(wb, outName);
   toast(`✓ 송장파일 다운로드: ${outName}`,'flash');
 }
@@ -13138,6 +13158,7 @@ const AIBridge = (() => {
   const IDB_NAME = 'zg_ai_bridge';
   const IDB_STORE = 'handles';
   const IDB_KEY = 'projectFolder';
+  const IDB_SHIPPING_KEY = 'shippingFolder';
   let _dirHandle = null;
   let _pollTimer = null;
   let _pollInterval = 5000;
@@ -13577,11 +13598,43 @@ const AIBridge = (() => {
     return lines.join('\n');
   }
 
+  // ─── 송장 저장 폴더 (별도 권한) ───
+  async function getShippingFolder(promptIfMissing){
+    const saved = await _idbGet(IDB_SHIPPING_KEY);
+    if(saved && await _verifyPermission(saved, true)) return saved;
+    if(!promptIfMissing) return null;
+    if(!(await isSupported())){
+      alert('이 브라우저는 폴더 선택을 지원하지 않습니다. Chrome / Edge 최신 버전을 사용하세요.');
+      return null;
+    }
+    try {
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      if(!(await _verifyPermission(handle, true))){ toast('폴더 권한이 거부되었습니다','error'); return null; }
+      await _idbSet(IDB_SHIPPING_KEY, handle);
+      toast(`✓ 송장 저장 폴더 연결: ${handle.name}`, 'flash');
+      return handle;
+    } catch(e){
+      if(e && e.name === 'AbortError') return null;
+      console.error('getShippingFolder error', e);
+      toast('송장 폴더 연결 실패: ' + (e.message||e),'error');
+      return null;
+    }
+  }
+  async function clearShippingFolder(){
+    await _idbSet(IDB_SHIPPING_KEY, undefined);
+    toast('송장 저장 폴더 연결 해제됨', 'flash');
+  }
+  async function getShippingFolderName(){
+    const saved = await _idbGet(IDB_SHIPPING_KEY);
+    return (saved && saved.name) || '';
+  }
+
   return {
     isSupported, isConnected, connectFolder, getDirHandle, getFolderName,
     readQueue, writeQueue, enqueue, enqueueBatch, pollOnce,
     startPolling, stopPolling, getPendingCount,
     buildPromptText,
+    getShippingFolder, clearShippingFolder, getShippingFolderName,
   };
 })();
 
