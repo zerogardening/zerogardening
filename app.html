@@ -10667,8 +10667,20 @@ function renderCardDoc(){
 
 /** 한 장의 카드 HTML — page-break-after 로 분할 */
 function renderSingleCardHtml_orig(orderNo, memo, addPageBreakBefore){
-  const lines = Store.listOrders().filter(o => o.orderNo === orderNo);
-  if(lines.length === 0) return '';
+  const rawLines = Store.listOrders().filter(o => o.orderNo === orderNo);
+  if(rawLines.length === 0) return '';
+  // 같은 품목(itemCode) 은 1번만 표시 — 사용자 요청
+  // 한 주문 안에 같은 itemCode 가 여러 라인 있어도 카드엔 1번
+  // (라인 중복 저장 케이스 / 한 사람이 같은 품목을 별 라인으로 주문한 케이스 모두 처리)
+  const _seenKeys = new Set();
+  const lines = [];
+  for(const ln of rawLines){
+    const k = String(ln.itemCode||'').trim().toUpperCase()
+              || `__name__${(ln.productName||'').trim()}`;
+    if(_seenKeys.has(k)) continue;
+    _seenKeys.add(k);
+    lines.push(ln);
+  }
   const first = lines[0];
 
   const plantsHtml = lines.map(line => {
