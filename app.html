@@ -2343,6 +2343,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               </select>
               <button type="button" class="btn btn-primary btn-sm" id="btn-inv-bulk-ai" title="선택한 품목 일괄 AI 글쓰기 요청 — 큐에 적재됨" style="background:#1e4abb;color:#fff;border:1px solid #1e4abb">🤖 AI 글쓰기 일괄</button>
             </span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-ai-clear-queue" title="AI 글쓰기 큐의 대기 항목을 모두 비웁니다 (완료된 결과는 유지)" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">🗑 AI 큐 비우기</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-export" title="현재 화면에 보이는 행을 엑셀로 다운로드">📊 엑셀 다운로드</button>
           </div>
 
@@ -12079,9 +12080,9 @@ window.openPickListModal = function(batchId){
       <thead>
         <tr>
           <th class="ck">✓</th>
-          <th class="num" style="width:90px">필요 수량</th>
           <th>품목코드</th>
           <th>유통명 / 학명</th>
+          <th class="num" style="width:90px">필요 수량</th>
           <th class="num">주문</th>
         </tr>
       </thead>
@@ -12089,19 +12090,18 @@ window.openPickListModal = function(batchId){
         ${pickList.map(item => {
           return `<tr>
             <td class="ck"><input type="checkbox"></td>
-            <td class="num qty">${fmtNum(item.actualQty)}</td>
             <td class="code">${escapeHtml(item.code)}</td>
             <td>
               <div class="dist">${escapeHtml(item.distName)}${item.size ? ` <span style="color:var(--muted);font-weight:500;font-size:11.5px">(${escapeHtml(item.size)})</span>` : ''}</div>
               ${item.sciName ? `<div class="sci">${escapeHtml(item.sciName)}</div>` : ''}
             </td>
+            <td class="num qty">${fmtNum(item.actualQty)}</td>
             <td class="num">${fmtNum(item.orderCount)}건</td>
           </tr>`;
         }).join('')}
         <tr class="total-row">
-          <td></td>
+          <td colspan="3" style="text-align:right">합계</td>
           <td class="num qty">${fmtNum(totalActual)}</td>
-          <td colspan="2" style="text-align:right">합계</td>
           <td class="num">${fmtNum(uniqueOrders)}건</td>
         </tr>
       </tbody>
@@ -13141,6 +13141,24 @@ function setupInventoryView(){
     toast(`✓ AI 글쓰기 큐 ${added}건 적재${failed>0?` (실패 ${failed})`:''} — Cowork 에서 "AI 글쓰기 처리해줘"`, 'flash');
   });
 
+  // ── AI 글쓰기 큐 클리어 ──
+  const btnClearAiQueue = document.getElementById('btn-ai-clear-queue');
+  if(btnClearAiQueue) btnClearAiQueue.addEventListener('click', async () => {
+    if(typeof AIBridge === 'undefined'){ toast('AI 모듈이 로드되지 않았습니다','error'); return; }
+    if(!(await AIBridge.isConnected())){ toast('AI 폴더가 연결되지 않았습니다','warn'); return; }
+    const n = await AIBridge.getPendingCount();
+    if(n === 0){ toast('대기 중인 항목이 없습니다','flash'); return; }
+    const msg = `AI 글쓰기 큐에 쌓여 있는 ${n}건의 대기 항목을 모두 삭제합니다.\n(완료된 결과는 그대로 유지됩니다.)\n\n계속하시겠습니까?`;
+    if(!confirm(msg)) return;
+    try {
+      const deleted = await AIBridge.clearAllPending();
+      toast(`✓ AI 큐 ${deleted}건 비움`, 'flash');
+    } catch(e){
+      console.error('clearAllPending', e);
+      toast('큐 비우기 실패: ' + (e.message||e), 'error');
+    }
+  });
+
   setupInventoryAdjustModal();
   setupInventorySettingsModal();
 }
@@ -13735,6 +13753,28 @@ const AIBridge = (() => {
     return pending.length;
   }
 
+  // 대기 큐 전체 비우기 (완료 결과는 보존). 삭제한 건수 반환.
+  async function clearAllPending(){
+    return _withLock(async () => {
+      const dir = await _getSubDir(PENDING_SUBDIR, false);
+      if(!dir) return 0;
+      const toDelete = [];
+      try {
+        for await (const entry of dir.values()){
+          if(entry.kind !== 'file' || !entry.name.endsWith('.json')) continue;
+          if(entry.name === META_FILE) continue;
+          toDelete.push(entry.name);
+        }
+      } catch(e){ console.warn('clearAllPending iterate', e); }
+      let deleted = 0;
+      for(const name of toDelete){
+        try { await dir.removeEntry(name); deleted++; }
+        catch(e){ console.warn('clearAllPending remove', name, e); }
+      }
+      return deleted;
+    });
+  }
+
   async function isConnected(){
     const saved = await _idbGet(IDB_KEY);
     return !!saved;
@@ -13857,7 +13897,7 @@ const AIBridge = (() => {
   return {
     isSupported, isConnected, connectFolder, getDirHandle, getFolderName,
     readQueue, writeQueue, enqueue, enqueueBatch, pollOnce,
-    startPolling, stopPolling, getPendingCount,
+    startPolling, stopPolling, getPendingCount, clearAllPending,
     buildPromptText,
     getShippingFolder, clearShippingFolder, getShippingFolderName,
     getCompletedFolder, clearCompletedFolder, getCompletedFolderName,
