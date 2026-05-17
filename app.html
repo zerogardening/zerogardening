@@ -2309,6 +2309,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
             <div style="font-size:13px;color:var(--muted)">
               총 입고 - 총 출고로 자동 계산 · 송장 업로드 시 자동 차감 · 수동 조정 가능
             </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-bulk-price" title="매입가 기반으로 모든 입고의 판매가·쿠팡가를 일괄 재설정" style="background:#fff8e1;color:#7a5b00;border:1px solid #f0d68f">💰 단가 일괄 조정</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-settings" title="설정">⚙ 설정</button>
           </div>
 
@@ -3726,6 +3727,50 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
   </div>
 </div>
 
+<!-- ============ 단가 일괄 조정 모달 ============ -->
+<div id="bulk-price-modal" class="modal-back hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">💰 단가 일괄 조정</div>
+      <button class="modal-close" id="bulk-price-modal-close">×</button>
+    </div>
+    <div style="padding:18px">
+      <div style="background:#fff8e1;padding:10px;border-radius:6px;font-size:12px;color:#555;margin-bottom:14px;line-height:1.6">
+        매입단가가 있는 모든 입고 레코드의 <b>기본판매가</b>·<b>쿠팡판매가</b>를 일괄로 재설정합니다.<br>
+        SKU master 의 다른 정보(품목명·특성·AI 글)는 영향받지 않습니다. 미리보기로 변경 내역 먼저 확인하세요.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">기본판매가 배율 (매입가 × ?)</label>
+          <input type="number" id="bulk-price-rate-sale" value="2.0" step="0.05" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px">
+          <div style="font-size:11px;color:#888;margin-top:2px">2.0 = 마진율(마크업) 100%</div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">쿠팡판매가 배율 (매입가 × ?)</label>
+          <input type="number" id="bulk-price-rate-coupang" value="2.1" step="0.05" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px">
+          <div style="font-size:11px;color:#888;margin-top:2px">기본값 2.1</div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">반올림 단위</label>
+        <select id="bulk-price-round" style="padding:8px;border:1px solid #ddd;border-radius:6px">
+          <option value="10">10원 단위 (기본)</option>
+          <option value="100">100원 단위</option>
+          <option value="1">1원 단위 (반올림 없음)</option>
+        </select>
+      </div>
+      <div id="bulk-price-preview" style="border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:14px;max-height:320px;overflow:auto;font-size:12px">
+        <div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-preview-btn">🔍 미리보기</button>
+        <button type="button" class="btn btn-primary btn-sm" id="bulk-price-apply-btn" disabled style="background:#7a5b00;border-color:#7a5b00">⚡ 일괄 적용</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-cancel-btn">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============ 단가 관리 모달 ============ -->
 <div id="price-modal" class="modal-back hidden">
   <div class="modal" style="max-width:580px">
@@ -4575,9 +4620,9 @@ function calcSalePrice(purchase){
   return roundTo10(p*2);
 }
 function calcCoupangPrice(purchase){
-  // 쿠팡가 = 기본판매가(매입가×2) × 1.1 = 매입가 × 2.2 (10원 반올림)
+  // 쿠팡가 = 매입가 × 2.1 (10원 반올림)
   const p = Number(purchase)||0;
-  return roundTo10(p*2.2);
+  return roundTo10(p*2.1);
 }
 function fmtKRW(n){
   if(n===null||n===undefined||n==='') return '-';
@@ -14098,6 +14143,131 @@ _setupAiSectionEvents();
     }
   } catch(e){ console.warn('AI bridge init', e); }
 })();
+
+// ===== 단가 일괄 조정 (재고관리 탭) =====
+(function _setupBulkPriceAdjust(){
+  const btn = document.getElementById('btn-inv-bulk-price');
+  const modal = document.getElementById('bulk-price-modal');
+  if(!btn || !modal) return;
+  const closeModal = () => modal.classList.add('hidden');
+  const openModal  = () => {
+    document.getElementById('bulk-price-rate-sale').value = '2.0';
+    document.getElementById('bulk-price-rate-coupang').value = '2.1';
+    document.getElementById('bulk-price-round').value = '10';
+    document.getElementById('bulk-price-preview').innerHTML =
+      '<div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>';
+    document.getElementById('bulk-price-apply-btn').disabled = true;
+    window._bulkPriceChanges = null;
+    modal.classList.remove('hidden');
+  };
+  btn.addEventListener('click', openModal);
+  document.getElementById('bulk-price-modal-close').addEventListener('click', closeModal);
+  document.getElementById('bulk-price-cancel-btn').addEventListener('click', closeModal);
+
+  function _readOpts(){
+    const saleRate    = Number(document.getElementById('bulk-price-rate-sale').value);
+    const coupangRate = Number(document.getElementById('bulk-price-rate-coupang').value);
+    const roundUnit   = Number(document.getElementById('bulk-price-round').value) || 10;
+    return {
+      saleRate: (saleRate > 0 ? saleRate : 2.0),
+      coupangRate: (coupangRate > 0 ? coupangRate : 2.1),
+      roundUnit,
+    };
+  }
+  function _roundTo(n, unit){
+    if(unit <= 1) return Math.round(n);
+    return Math.round(n/unit)*unit;
+  }
+  function _collectChanges(opts){
+    const changes = [];
+    const all = Store.listReceivings();
+    all.forEach(r => {
+      const p = Number(r.purchasePrice) || 0;
+      if(!p) return;
+      const newSale    = _roundTo(p * opts.saleRate,    opts.roundUnit);
+      const newCoupang = _roundTo(p * opts.coupangRate, opts.roundUnit);
+      const curSale    = Number(r.salePrice)    || 0;
+      const curCoupang = Number(r.coupangPrice) || 0;
+      if(newSale !== curSale || newCoupang !== curCoupang){
+        changes.push({
+          id: r.id,
+          barcode: r.barcode || '',
+          name: r.distributionName || '',
+          purchase: p,
+          oldSale: curSale, newSale,
+          oldCoupang: curCoupang, newCoupang,
+        });
+      }
+    });
+    return changes;
+  }
+  function _fmt(n){ return (Number(n)||0).toLocaleString('ko-KR'); }
+
+  document.getElementById('bulk-price-preview-btn').addEventListener('click', () => {
+    const opts = _readOpts();
+    const changes = _collectChanges(opts);
+    const previewBox = document.getElementById('bulk-price-preview');
+    const applyBtn = document.getElementById('bulk-price-apply-btn');
+    if(changes.length === 0){
+      previewBox.innerHTML = '<div style="color:#1b4332"><b>✓ 영향받는 입고 없음</b> — 모든 입고가 이미 입력한 배율과 일치합니다.</div>';
+      applyBtn.disabled = true;
+      window._bulkPriceChanges = null;
+      return;
+    }
+    const sample = changes.slice(0, 15);
+    const rows = sample.map(c =>
+      `<tr><td style="padding:4px 6px;border-bottom:1px solid #f0f0f0">${c.barcode||'-'}</td>` +
+      `<td style="padding:4px 6px;border-bottom:1px solid #f0f0f0">${(c.name||'-').replace(/</g,'&lt;')}</td>` +
+      `<td style="padding:4px 6px;text-align:right;border-bottom:1px solid #f0f0f0">${_fmt(c.purchase)}</td>` +
+      `<td style="padding:4px 6px;text-align:right;color:#888;border-bottom:1px solid #f0f0f0">${_fmt(c.oldSale)}</td>` +
+      `<td style="padding:4px 6px;text-align:right;color:#1b4332;font-weight:600;border-bottom:1px solid #f0f0f0">${_fmt(c.newSale)}</td>` +
+      `<td style="padding:4px 6px;text-align:right;color:#888;border-bottom:1px solid #f0f0f0">${_fmt(c.oldCoupang)}</td>` +
+      `<td style="padding:4px 6px;text-align:right;color:#1b4332;font-weight:600;border-bottom:1px solid #f0f0f0">${_fmt(c.newCoupang)}</td>` +
+      `</tr>`
+    ).join('');
+    previewBox.innerHTML =
+      `<div style="margin-bottom:8px"><b>${changes.length}건</b> 입고 레코드의 단가가 변경됩니다 (샘플 ${sample.length}건 표시)</div>` +
+      `<table style="width:100%;border-collapse:collapse;font-size:11px"><thead>` +
+      `<tr style="background:#f5f7f5"><th style="padding:4px 6px;text-align:left">코드</th>` +
+      `<th style="padding:4px 6px;text-align:left">품목명</th>` +
+      `<th style="padding:4px 6px;text-align:right">매입가</th>` +
+      `<th style="padding:4px 6px;text-align:right">기존 판매가</th>` +
+      `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 판매가</th>` +
+      `<th style="padding:4px 6px;text-align:right">기존 쿠팡가</th>` +
+      `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 쿠팡가</th></tr></thead>` +
+      `<tbody>${rows}</tbody></table>`;
+    applyBtn.disabled = false;
+    window._bulkPriceChanges = changes;
+  });
+
+  document.getElementById('bulk-price-apply-btn').addEventListener('click', () => {
+    const changes = window._bulkPriceChanges || [];
+    if(changes.length === 0) return;
+    if(!confirm(`${changes.length}건의 입고 레코드 단가를 일괄 변경합니다. 진행할까요?\n(되돌리기 어렵습니다)`)) return;
+    let applied = 0, failed = 0;
+    changes.forEach(c => {
+      try{
+        Store.updateReceiving(c.id, { salePrice: c.newSale, coupangPrice: c.newCoupang });
+        applied++;
+      }catch(e){
+        console.warn('update fail', c.id, e);
+        failed++;
+      }
+    });
+    closeModal();
+    if(typeof toast === 'function'){
+      const msg = failed > 0
+        ? `✓ 단가 일괄 조정 — ${applied}건 변경, ${failed}건 실패`
+        : `✓ 단가 일괄 조정 완료 — ${applied}건 변경됨`;
+      toast(msg, failed > 0 ? 'warn' : 'success');
+    }
+    if(typeof renderInventoryView === 'function') renderInventoryView();
+    if(typeof renderList === 'function') renderList();
+    if(typeof renderSkuList === 'function') renderSkuList();
+    window._bulkPriceChanges = null;
+  });
+})();
+
 
 </script>
 </body>
