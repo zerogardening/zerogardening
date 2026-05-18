@@ -3739,7 +3739,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         매입단가가 있는 모든 입고 레코드의 <b>기본판매가</b>·<b>쿠팡판매가</b>를 일괄로 재설정합니다.<br>
         SKU master 의 다른 정보(품목명·특성·AI 글)는 영향받지 않습니다. 미리보기로 변경 내역 먼저 확인하세요.
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
         <div>
           <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">기본판매가 배율 (매입가 × ?)</label>
           <input type="number" id="bulk-price-rate-sale" value="2.0" step="0.05" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px">
@@ -3749,6 +3749,11 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">쿠팡판매가 배율 (매입가 × ?)</label>
           <input type="number" id="bulk-price-rate-coupang" value="2.1" step="0.05" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px">
           <div style="font-size:11px;color:#888;margin-top:2px">기본값 2.1</div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">쿠팡소비자가 배율 (매입가 × ?)</label>
+          <input type="number" id="bulk-price-rate-consumer" value="2.0" step="0.05" min="0" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:6px">
+          <div style="font-size:11px;color:#888;margin-top:2px">할인 전 정가 표시용</div>
         </div>
       </div>
       <div style="margin-bottom:14px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">
@@ -14304,6 +14309,7 @@ _setupAiSectionEvents();
   const openModal  = () => {
     document.getElementById('bulk-price-rate-sale').value = '2.0';
     document.getElementById('bulk-price-rate-coupang').value = '2.1';
+    document.getElementById('bulk-price-rate-consumer').value = '2.0';
     document.getElementById('bulk-price-round').value = '10';
     document.getElementById('bulk-price-preview').innerHTML =
       '<div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>';
@@ -14317,12 +14323,14 @@ _setupAiSectionEvents();
   document.getElementById('bulk-price-cancel-btn').addEventListener('click', closeModal);
 
   function _readOpts(){
-    const saleRate    = Number(document.getElementById('bulk-price-rate-sale').value);
-    const coupangRate = Number(document.getElementById('bulk-price-rate-coupang').value);
-    const roundUnit   = Number(document.getElementById('bulk-price-round').value) || 10;
+    const saleRate     = Number(document.getElementById('bulk-price-rate-sale').value);
+    const coupangRate  = Number(document.getElementById('bulk-price-rate-coupang').value);
+    const consumerRate = Number(document.getElementById('bulk-price-rate-consumer').value);
+    const roundUnit    = Number(document.getElementById('bulk-price-round').value) || 10;
     return {
-      saleRate: (saleRate > 0 ? saleRate : 2.0),
-      coupangRate: (coupangRate > 0 ? coupangRate : 2.1),
+      saleRate:     (saleRate     > 0 ? saleRate     : 2.0),
+      coupangRate:  (coupangRate  > 0 ? coupangRate  : 2.1),
+      consumerRate: (consumerRate > 0 ? consumerRate : 2.0),
       roundUnit,
     };
   }
@@ -14336,11 +14344,13 @@ _setupAiSectionEvents();
     all.forEach(r => {
       const p = Number(r.purchasePrice) || 0;
       if(!p) return;
-      const newSale    = _roundTo(p * opts.saleRate,    opts.roundUnit);
-      const newCoupang = _roundTo(p * opts.coupangRate, opts.roundUnit);
-      const curSale    = Number(r.salePrice)    || 0;
-      const curCoupang = Number(r.coupangPrice) || 0;
-      if(newSale !== curSale || newCoupang !== curCoupang){
+      const newSale     = _roundTo(p * opts.saleRate,     opts.roundUnit);
+      const newCoupang  = _roundTo(p * opts.coupangRate,  opts.roundUnit);
+      const newConsumer = _roundTo(p * opts.consumerRate, opts.roundUnit);
+      const curSale     = Number(r.salePrice)     || 0;
+      const curCoupang  = Number(r.coupangPrice)  || 0;
+      const curConsumer = Number(r.consumerPrice) || 0;
+      if(newSale !== curSale || newCoupang !== curCoupang || newConsumer !== curConsumer){
         changes.push({
           id: r.id,
           barcode: r.barcode || '',
@@ -14348,6 +14358,7 @@ _setupAiSectionEvents();
           purchase: p,
           oldSale: curSale, newSale,
           oldCoupang: curCoupang, newCoupang,
+          oldConsumer: curConsumer, newConsumer,
         });
       }
     });
@@ -14375,6 +14386,8 @@ _setupAiSectionEvents();
       `<td style="padding:4px 6px;text-align:right;color:#1b4332;font-weight:600;border-bottom:1px solid #f0f0f0">${_fmt(c.newSale)}</td>` +
       `<td style="padding:4px 6px;text-align:right;color:#888;border-bottom:1px solid #f0f0f0">${_fmt(c.oldCoupang)}</td>` +
       `<td style="padding:4px 6px;text-align:right;color:#1b4332;font-weight:600;border-bottom:1px solid #f0f0f0">${_fmt(c.newCoupang)}</td>` +
+      `<td style="padding:4px 6px;text-align:right;color:#888;border-bottom:1px solid #f0f0f0">${_fmt(c.oldConsumer)}</td>` +
+      `<td style="padding:4px 6px;text-align:right;color:#1b4332;font-weight:600;border-bottom:1px solid #f0f0f0">${_fmt(c.newConsumer)}</td>` +
       `</tr>`
     ).join('');
     previewBox.innerHTML =
@@ -14386,7 +14399,9 @@ _setupAiSectionEvents();
       `<th style="padding:4px 6px;text-align:right">기존 판매가</th>` +
       `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 판매가</th>` +
       `<th style="padding:4px 6px;text-align:right">기존 쿠팡가</th>` +
-      `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 쿠팡가</th></tr></thead>` +
+      `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 쿠팡가</th>` +
+      `<th style="padding:4px 6px;text-align:right">기존 소비자가</th>` +
+      `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 소비자가</th></tr></thead>` +
       `<tbody>${rows}</tbody></table>`;
     applyBtn.disabled = false;
     window._bulkPriceChanges = changes;
@@ -14399,7 +14414,7 @@ _setupAiSectionEvents();
     let applied = 0, failed = 0;
     changes.forEach(c => {
       try{
-        Store.updateReceiving(c.id, { salePrice: c.newSale, coupangPrice: c.newCoupang });
+        Store.updateReceiving(c.id, { salePrice: c.newSale, coupangPrice: c.newCoupang, consumerPrice: c.newConsumer });
         applied++;
       }catch(e){
         console.warn('update fail', c.id, e);
