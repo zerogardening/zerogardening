@@ -3751,48 +3751,14 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           <div style="font-size:11px;color:#888;margin-top:2px">기본값 2.1</div>
         </div>
       </div>
-      <div style="margin-bottom:14px">
-        <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">반올림 단위</label>
-        <select id="bulk-price-round" style="padding:8px;border:1px solid #ddd;border-radius:6px">
-          <option value="10">10원 단위 (기본)</option>
-          <option value="100">100원 단위</option>
-          <option value="1">1원 단위 (반올림 없음)</option>
-        </select>
-      </div>
-      <div id="bulk-price-preview" style="border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:14px;max-height:320px;overflow:auto;font-size:12px">
-        <div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-preview-btn">🔍 미리보기</button>
-        <button type="button" class="btn btn-primary btn-sm" id="bulk-price-apply-btn" disabled style="background:#7a5b00;border-color:#7a5b00">⚡ 일괄 적용</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-cancel-btn">취소</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ 단가 관리 모달 ============ -->
-<div id="price-modal" class="modal-back hidden">
-  <div class="modal" style="max-width:580px">
-    <div class="modal-head">
-      <div class="modal-title" id="price-modal-title">💰 단가 관리</div>
-      <button class="modal-close" id="price-modal-close">×</button>
-    </div>
-    <div id="price-modal-body">
-      <div class="price-input-row">
-        <label>매입가</label>
-        <input type="number" id="price-purchase" min="0" step="100" placeholder="0">
-        <span class="muted tight">원</span>
-        <span class="price-hint" id="price-hint"></span>
-      </div>
-      <div style="margin:14px 0 0;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">
+      <div style="margin-bottom:14px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">
         <button type="button" id="price-formula-toggle" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 12px;background:transparent;border:none;cursor:pointer;font-size:12px;color:#444;font-weight:600">
-          <span>⚙ 가격 공식 설정</span>
+          <span>⚙ 가격 공식 설정 (단가 관리 모달에도 적용)</span>
           <span id="price-formula-toggle-icon" style="font-size:10px;color:#888">▼</span>
         </button>
         <div id="price-formula-panel" class="hidden" style="padding:0 12px 12px;border-top:1px solid #e8e8e8">
           <div style="font-size:11px;color:#666;margin:8px 0;line-height:1.6">
-            여기서 바꾼 파라미터는 <b>모든 SKU</b> 의 단가 계산에 적용됩니다. 입력 즉시 위 가격이 자동 재계산돼요.
+            여기서 바꾼 파라미터는 단가 관리 모달의 <b>소매·도매·쿠팡 단가표 계산</b>에 영구 적용됩니다. 위의 일괄 적용 배율과는 별개의 설정이에요.
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
             <div>
@@ -3831,6 +3797,41 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
             <button type="button" id="pf-reset-btn" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 10px">↺ 기본값 복원</button>
           </div>
         </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:12px;font-weight:600;color:#444;margin-bottom:4px">반올림 단위</label>
+        <select id="bulk-price-round" style="padding:8px;border:1px solid #ddd;border-radius:6px">
+          <option value="10">10원 단위 (기본)</option>
+          <option value="100">100원 단위</option>
+          <option value="1">1원 단위 (반올림 없음)</option>
+        </select>
+      </div>
+      <div id="bulk-price-preview" style="border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:14px;max-height:320px;overflow:auto;font-size:12px">
+        <div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-preview-btn">🔍 미리보기</button>
+        <button type="button" class="btn btn-primary btn-sm" id="bulk-price-apply-btn" disabled style="background:#7a5b00;border-color:#7a5b00">⚡ 일괄 적용</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-cancel-btn">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 단가 관리 모달 ============ -->
+<div id="price-modal" class="modal-back hidden">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-head">
+      <div class="modal-title" id="price-modal-title">💰 단가 관리</div>
+      <button class="modal-close" id="price-modal-close">×</button>
+    </div>
+    <div id="price-modal-body">
+      <div class="price-input-row">
+        <label>매입가</label>
+        <input type="number" id="price-purchase" min="0" step="100" placeholder="0">
+        <span class="muted tight">원</span>
+        <span class="price-hint" id="price-hint"></span>
+      </div>
       </div>
       <div class="price-list">
         <div class="price-row">
@@ -12297,7 +12298,6 @@ window.openPriceModal = function(sku){
     hint.textContent = '입고 이력 없음 — 매입가를 직접 입력하세요';
   }
 
-  _syncPriceFormulaPanel();
   recalculatePrices();
   input.oninput = recalculatePrices;
   document.getElementById('price-modal').classList.remove('hidden');
@@ -12406,7 +12406,6 @@ function recalculatePrices(){
 function setupPriceModal(){
   const modal = document.getElementById('price-modal');
   if(!modal) return;
-  _setupPriceFormulaPanel();
   const close = () => modal.classList.add('hidden');
   document.getElementById('price-modal-close').addEventListener('click', close);
   document.getElementById('btn-price-cancel').addEventListener('click', close);
@@ -14300,6 +14299,7 @@ _setupAiSectionEvents();
   const btn = document.getElementById('btn-inv-bulk-price');
   const modal = document.getElementById('bulk-price-modal');
   if(!btn || !modal) return;
+  if(typeof _setupPriceFormulaPanel === 'function') _setupPriceFormulaPanel();
   const closeModal = () => modal.classList.add('hidden');
   const openModal  = () => {
     document.getElementById('bulk-price-rate-sale').value = '2.0';
@@ -14309,6 +14309,7 @@ _setupAiSectionEvents();
       '<div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>';
     document.getElementById('bulk-price-apply-btn').disabled = true;
     window._bulkPriceChanges = null;
+    if(typeof _syncPriceFormulaPanel === 'function') _syncPriceFormulaPanel();
     modal.classList.remove('hidden');
   };
   btn.addEventListener('click', openModal);
