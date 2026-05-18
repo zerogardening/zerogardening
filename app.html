@@ -9181,10 +9181,12 @@ async function generateShippingXlsx(batchId){
       const cm = cmMatch ? cmMatch[1] : '';
       const distName = skuMap.get(skuId);
       if(distName){
-        // G열 옵션에서 숫자 추출 (예: '수량=6개' → 6, 빈 값이면 1)
+        // G열 옵션이 '수량=N개' 패턴일 때만 N 곱하기.
+        // 색상/사이즈 등 다른 옵션(예: '색상=5번')은 무시하고 M열(주문 수량)만 사용.
         let optQty = 1;
-        const om = String(o.option||'').match(/(\d+)/);
-        if(om) optQty = Number(om[1]) || 1;
+        const optStr = String(o.option||'');
+        const qm = optStr.match(/수량\s*=\s*(\d+)/);
+        if(qm) optQty = Number(qm[1]) || 1;
         const mQty = Number(o.qty) || 1;
         const totalQty = optQty * mQty;
         const cmStr = cm ? `(${cm}cm)` : '';
