@@ -13008,7 +13008,7 @@ function renderInventoryView(){
     <table class="inv-table">
       <thead>
         <tr>
-          <th class="ck"><input type="checkbox" id="inv-check-all"></th>
+          <th class="ck"><input type="checkbox" id="inv-check-all" ${list.length > 0 && list.every(it => _invSelected.has(it.key)) ? 'checked' : ''}></th>
           <th style="width:90px">품목코드</th>
           <th style="width:110px">상태</th>
           <th>유통명 / 학명</th>
@@ -14407,6 +14407,10 @@ _setupAiSectionEvents();
       }
     });
     closeModal();
+    const popupMsg = failed > 0
+      ? `✓ 단가 일괄 조정 완료\n\n${applied}건의 단가가 새로 적용됐어요.\n(실패 ${failed}건 — 콘솔 확인)`
+      : `✓ 단가 일괄 조정 완료\n\n${applied}건의 단가가 새로 적용됐어요.`;
+    alert(popupMsg);
     if(typeof toast === 'function'){
       const msg = failed > 0
         ? `✓ 단가 일괄 조정 — ${applied}건 변경, ${failed}건 실패`
