@@ -3785,6 +3785,53 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <span class="muted tight">원</span>
         <span class="price-hint" id="price-hint"></span>
       </div>
+      <div style="margin:14px 0 0;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">
+        <button type="button" id="price-formula-toggle" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:9px 12px;background:transparent;border:none;cursor:pointer;font-size:12px;color:#444;font-weight:600">
+          <span>⚙ 가격 공식 설정</span>
+          <span id="price-formula-toggle-icon" style="font-size:10px;color:#888">▼</span>
+        </button>
+        <div id="price-formula-panel" class="hidden" style="padding:0 12px 12px;border-top:1px solid #e8e8e8">
+          <div style="font-size:11px;color:#666;margin:8px 0;line-height:1.6">
+            여기서 바꾼 파라미터는 <b>모든 SKU</b> 의 단가 계산에 적용됩니다. 입력 즉시 위 가격이 자동 재계산돼요.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px">
+            <div>
+              <label style="display:block;margin-bottom:3px;color:#555;font-weight:500">소매가 배율</label>
+              <input type="number" id="pf-retail-mult" step="0.05" min="0" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+              <div style="font-size:10px;color:#888;margin-top:2px">소매가 = 매입가 × 이 값</div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:3px;color:#555;font-weight:500">도매가 배율</label>
+              <input type="number" id="pf-wholesale-mult" step="0.05" min="0" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+              <div style="font-size:10px;color:#888;margin-top:2px">도매가 = 매입가 × 이 값</div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:3px;color:#555;font-weight:500">쿠팡 배송비 (원)</label>
+              <input type="number" id="pf-coupang-shipping" step="100" min="0" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+              <div style="font-size:10px;color:#888;margin-top:2px">쿠팡 공식에 더해지는 배송비</div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:3px;color:#555;font-weight:500">쿠팡 부가세율</label>
+              <input type="number" id="pf-coupang-vat" step="0.01" min="1" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+              <div style="font-size:10px;color:#888;margin-top:2px">1.1 = 10% 부가세</div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:3px;color:#555;font-weight:500">쿠팡 소비자가 매입가 배수</label>
+              <input type="number" id="pf-coupang-consumer-mult" step="0.1" min="0" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+              <div style="font-size:10px;color:#888;margin-top:2px">소비자가 = (매입가 × <b>이 값</b> × 수량 + 배송비) × 부가세</div>
+            </div>
+            <div>
+              <label style="display:block;margin-bottom:3px;color:#555;font-weight:500">쿠팡 수량 슬롯</label>
+              <input type="text" id="pf-coupang-qtys" placeholder="예: 1,2,3,4,6,9" style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px">
+              <div style="font-size:10px;color:#888;margin-top:2px">쉼표로 구분. 표 행에 표시될 수량</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;justify-content:space-between;align-items:center;margin-top:10px">
+            <span id="pf-status" style="font-size:11px;color:#1b4332"></span>
+            <button type="button" id="pf-reset-btn" class="btn btn-secondary btn-sm" style="font-size:11px;padding:4px 10px">↺ 기본값 복원</button>
+          </div>
+        </div>
+      </div>
       <div class="price-list">
         <div class="price-row">
           <span class="price-label">🏪 소매가 <span class="price-formula">매입가 × 1.7</span></span>
@@ -3800,7 +3847,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         </div>
       </div>
       <div class="price-section-title">🛒 쿠팡 단가표</div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;line-height:1.6">
+      <div id="coupang-formula-desc" style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px;line-height:1.6">
         소비자가 = (매입가 × 2 × 수량 + 4,500) × 1.1<br>
         판매가 = (소매가 × 수량 + 4,500) × 1.1
       </div>
@@ -12195,11 +12242,39 @@ setupPickListModal();
 /* ════════════════════════════════════════════════════════════════
    단가 관리 — 매입가 → 자동 계산 (소매/도매/네이버/쿠팡)
 ════════════════════════════════════════════════════════════════ */
-const COUPANG_QTYS = [1, 2, 3, 4, 6, 9];
-const COUPANG_SHIPPING = 4500;  // 쿠팡 배송비
-const COUPANG_VAT = 1.1;          // 쿠팡 부가세 1.1
-const RETAIL_MULTIPLIER = 1.7;
-const WHOLESALE_MULTIPLIER = 1.2;
+const DEFAULT_PRICE_FORMULA = {
+  retailMult: 1.7,
+  wholesaleMult: 1.2,
+  coupangShipping: 4500,
+  coupangVat: 1.1,
+  coupangConsumerMult: 2,
+  coupangQtys: [1, 2, 3, 4, 6, 9],
+};
+const PRICE_FORMULA_KEY = 'zg_price_formula_v1';
+function loadPriceFormula(){
+  try{
+    const raw = localStorage.getItem(PRICE_FORMULA_KEY);
+    if(!raw) return Object.assign({}, DEFAULT_PRICE_FORMULA);
+    const obj = JSON.parse(raw);
+    const merged = Object.assign({}, DEFAULT_PRICE_FORMULA, obj);
+    if(!Array.isArray(merged.coupangQtys) || merged.coupangQtys.length === 0){
+      merged.coupangQtys = DEFAULT_PRICE_FORMULA.coupangQtys.slice();
+    }
+    return merged;
+  }catch(e){ return Object.assign({}, DEFAULT_PRICE_FORMULA); }
+}
+function savePriceFormula(obj){
+  try{
+    localStorage.setItem(PRICE_FORMULA_KEY, JSON.stringify(obj));
+    return true;
+  }catch(e){ return false; }
+}
+// 후방호환 — 옛 상수명 참조하는 코드가 있을 수 있어 게터로 노출
+Object.defineProperty(window, 'COUPANG_QTYS',           { get(){ return loadPriceFormula().coupangQtys; } });
+Object.defineProperty(window, 'COUPANG_SHIPPING',       { get(){ return loadPriceFormula().coupangShipping; } });
+Object.defineProperty(window, 'COUPANG_VAT',            { get(){ return loadPriceFormula().coupangVat; } });
+Object.defineProperty(window, 'RETAIL_MULTIPLIER',      { get(){ return loadPriceFormula().retailMult; } });
+Object.defineProperty(window, 'WHOLESALE_MULTIPLIER',   { get(){ return loadPriceFormula().wholesaleMult; } });
 
 window.openPriceModal = function(sku){
   if(!sku){ toast('SKU 정보 누락','error'); return; }
@@ -12222,17 +12297,84 @@ window.openPriceModal = function(sku){
     hint.textContent = '입고 이력 없음 — 매입가를 직접 입력하세요';
   }
 
+  _syncPriceFormulaPanel();
   recalculatePrices();
   input.oninput = recalculatePrices;
   document.getElementById('price-modal').classList.remove('hidden');
 };
 
+function _syncPriceFormulaPanel(){
+  const F = loadPriceFormula();
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+  set('pf-retail-mult', F.retailMult);
+  set('pf-wholesale-mult', F.wholesaleMult);
+  set('pf-coupang-shipping', F.coupangShipping);
+  set('pf-coupang-vat', F.coupangVat);
+  set('pf-coupang-consumer-mult', F.coupangConsumerMult);
+  set('pf-coupang-qtys', F.coupangQtys.join(','));
+}
+
+function _setupPriceFormulaPanel(){
+  const toggle = document.getElementById('price-formula-toggle');
+  const panel  = document.getElementById('price-formula-panel');
+  const icon   = document.getElementById('price-formula-toggle-icon');
+  if(!toggle || !panel) return;
+  toggle.addEventListener('click', () => {
+    const hidden = panel.classList.toggle('hidden');
+    if(icon) icon.textContent = hidden ? '▼' : '▲';
+  });
+
+  const status = document.getElementById('pf-status');
+  function _flash(msg){
+    if(!status) return;
+    status.textContent = msg;
+    clearTimeout(_flash._t);
+    _flash._t = setTimeout(() => { status.textContent = ''; }, 1800);
+  }
+
+  function _readPanelAndSave(){
+    const F = loadPriceFormula();
+    const num = (id, fb) => {
+      const el = document.getElementById(id);
+      const v = el ? Number(el.value) : NaN;
+      return (!isNaN(v) && v >= 0) ? v : fb;
+    };
+    F.retailMult          = num('pf-retail-mult',          F.retailMult);
+    F.wholesaleMult       = num('pf-wholesale-mult',       F.wholesaleMult);
+    F.coupangShipping     = num('pf-coupang-shipping',     F.coupangShipping);
+    F.coupangVat          = num('pf-coupang-vat',          F.coupangVat);
+    F.coupangConsumerMult = num('pf-coupang-consumer-mult',F.coupangConsumerMult);
+    const qtysRaw = (document.getElementById('pf-coupang-qtys')||{}).value || '';
+    const parsedQtys = qtysRaw.split(/[,\s]+/).map(s=>Number(s.trim())).filter(n => !isNaN(n) && n>0);
+    if(parsedQtys.length > 0) F.coupangQtys = parsedQtys;
+    savePriceFormula(F);
+    recalculatePrices();
+    _flash('✓ 저장됨');
+  }
+
+  ['pf-retail-mult','pf-wholesale-mult','pf-coupang-shipping','pf-coupang-vat',
+   'pf-coupang-consumer-mult','pf-coupang-qtys'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('change', _readPanelAndSave);
+  });
+
+  const resetBtn = document.getElementById('pf-reset-btn');
+  if(resetBtn) resetBtn.addEventListener('click', () => {
+    if(!confirm('가격 공식 파라미터를 모두 기본값으로 되돌릴까요?')) return;
+    savePriceFormula(Object.assign({}, DEFAULT_PRICE_FORMULA));
+    _syncPriceFormulaPanel();
+    recalculatePrices();
+    _flash('✓ 기본값 복원됨');
+  });
+}
+
 function recalculatePrices(){
   const purchase = Number(document.getElementById('price-purchase').value) || 0;
   const round10 = (n) => Math.round(n/10)*10;
+  const F = loadPriceFormula();
 
-  const retail = round10(purchase * RETAIL_MULTIPLIER);
-  const wholesale = round10(purchase * WHOLESALE_MULTIPLIER);
+  const retail = round10(purchase * F.retailMult);
+  const wholesale = round10(purchase * F.wholesaleMult);
 
   document.getElementById('price-retail').textContent = fmtKRW(retail);
   document.getElementById('price-wholesale').textContent = fmtKRW(wholesale);
@@ -12240,22 +12382,31 @@ function recalculatePrices(){
 
   // 쿠팡 단가표 — 소비자가 / 판매가 두 칸
   const tbody = document.getElementById('price-coupang-tbody');
-  tbody.innerHTML = COUPANG_QTYS.map(q => {
-    // 판매가: (소매가 × 수량 + 4500) × 1.1
-    const sellingFinal = round10((retail * q + COUPANG_SHIPPING) * COUPANG_VAT);
-    // 소비자가: (매입가 × 2 × 수량 + 4500) × 1.1
-    const consumerFinal = round10((purchase * 2 * q + COUPANG_SHIPPING) * COUPANG_VAT);
+  tbody.innerHTML = F.coupangQtys.map(q => {
+    // 판매가: (소매가 × 수량 + 배송비) × 부가세
+    const sellingFinal = round10((retail * q + F.coupangShipping) * F.coupangVat);
+    // 소비자가: (매입가 × 소비자가배수 × 수량 + 배송비) × 부가세
+    const consumerFinal = round10((purchase * F.coupangConsumerMult * q + F.coupangShipping) * F.coupangVat);
     return `<tr>
       <td class="qty-cell">${q}개</td>
       <td class="value-cell num">${fmtKRW(consumerFinal)}</td>
       <td class="value-cell num">${fmtKRW(sellingFinal)}</td>
     </tr>`;
   }).join('');
+
+  // 공식 영역의 동적 설명 텍스트도 업데이트 (있다면)
+  const desc = document.getElementById('coupang-formula-desc');
+  if(desc){
+    desc.innerHTML =
+      `소비자가 = (매입가 × ${F.coupangConsumerMult} × 수량 + ${F.coupangShipping.toLocaleString()}) × ${F.coupangVat}<br>` +
+      `판매가 = (소매가 × 수량 + ${F.coupangShipping.toLocaleString()}) × ${F.coupangVat}`;
+  }
 }
 
 function setupPriceModal(){
   const modal = document.getElementById('price-modal');
   if(!modal) return;
+  _setupPriceFormulaPanel();
   const close = () => modal.classList.add('hidden');
   document.getElementById('price-modal-close').addEventListener('click', close);
   document.getElementById('btn-price-cancel').addEventListener('click', close);
