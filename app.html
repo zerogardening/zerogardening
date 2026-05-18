@@ -9308,15 +9308,24 @@ async function convertRosenToShipped(file){
     const rowsIn = XLSX.utils.sheet_to_json(wsIn, { header:1, defval:'' });
     // 출력 헤더 + 데이터
     const aoa = [['주문번호','품목별 주문번호','운송장번호','수량']];
+    // 주문번호별 등장 카운터 — 같은 주문번호가 N번 나오면 -01, -02, ... 순서대로 부여
+    const orderCount = Object.create(null);
     for(let i = 3; i < rowsIn.length; i++){
       const row = rowsIn[i];
       const orderNo   = row[18]; // S열 (1-indexed=19)
       const trackingNo = row[3]; // D열
       const boxQty    = row[11]; // L열
       if((!orderNo || String(orderNo).trim()==='') && (!trackingNo || String(trackingNo).trim()==='')) continue;
+      const orderNoStr = String(orderNo||'').trim();
+      // 품목별 주문번호 = '주문번호-NN' (NN: 같은 주문번호 등장 순서, 2자리 0-pad)
+      let itemOrderNo = '';
+      if(orderNoStr){
+        orderCount[orderNoStr] = (orderCount[orderNoStr] || 0) + 1;
+        itemOrderNo = `${orderNoStr}-${String(orderCount[orderNoStr]).padStart(2,'0')}`;
+      }
       aoa.push([
-        String(orderNo||'').trim(),
-        '',  // B열 품목별 주문번호 공란
+        orderNoStr,
+        itemOrderNo,  // B열 품목별 주문번호 (주문번호-NN)
         String(trackingNo||'').trim(),
         boxQty===''||boxQty==null ? '' : Number(boxQty)||boxQty,
       ]);
