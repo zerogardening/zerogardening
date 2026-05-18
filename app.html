@@ -3816,7 +3816,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-preview-btn">🔍 미리보기</button>
-        <button type="button" class="btn btn-primary btn-sm" id="bulk-price-apply-btn" disabled style="background:#7a5b00;border-color:#7a5b00">⚡ 일괄 적용</button>
+        <button type="button" class="btn btn-primary btn-sm" id="bulk-price-apply-btn" style="background:#7a5b00;border-color:#7a5b00">⚡ 일괄 적용</button>
         <button type="button" class="btn btn-secondary btn-sm" id="bulk-price-cancel-btn">취소</button>
       </div>
     </div>
@@ -14313,7 +14313,6 @@ _setupAiSectionEvents();
     document.getElementById('bulk-price-round').value = '10';
     document.getElementById('bulk-price-preview').innerHTML =
       '<div style="color:#888">미리보기를 보려면 [🔍 미리보기] 버튼을 클릭하세요.</div>';
-    document.getElementById('bulk-price-apply-btn').disabled = true;
     window._bulkPriceChanges = null;
     if(typeof _syncPriceFormulaPanel === 'function') _syncPriceFormulaPanel();
     modal.classList.remove('hidden');
@@ -14373,7 +14372,6 @@ _setupAiSectionEvents();
     const applyBtn = document.getElementById('bulk-price-apply-btn');
     if(changes.length === 0){
       previewBox.innerHTML = '<div style="color:#1b4332"><b>✓ 영향받는 입고 없음</b> — 모든 입고가 이미 입력한 배율과 일치합니다.</div>';
-      applyBtn.disabled = true;
       window._bulkPriceChanges = null;
       return;
     }
@@ -14403,13 +14401,26 @@ _setupAiSectionEvents();
       `<th style="padding:4px 6px;text-align:right">기존 소비자가</th>` +
       `<th style="padding:4px 6px;text-align:right;color:#1b4332">→ 새 소비자가</th></tr></thead>` +
       `<tbody>${rows}</tbody></table>`;
-    applyBtn.disabled = false;
     window._bulkPriceChanges = changes;
   });
 
   document.getElementById('bulk-price-apply-btn').addEventListener('click', () => {
-    const changes = window._bulkPriceChanges || [];
-    if(changes.length === 0) return;
+    let changes = window._bulkPriceChanges;
+    // 미리보기 없이 눌렀거나 데이터가 비어있으면 자동 수집
+    if(!Array.isArray(changes) || changes.length === 0){
+      try {
+        changes = _collectChanges(_readOpts());
+      } catch(e){
+        console.error('collect fail', e);
+        alert('미리 계산 중 오류가 발생했어요. 콘솔(F12)에서 에러 메시지를 확인해주세요.');
+        return;
+      }
+      window._bulkPriceChanges = changes;
+    }
+    if(!Array.isArray(changes) || changes.length === 0){
+      alert('변경할 항목이 없어요.\n\n매입단가가 입력된 SKU 가 없거나, 모든 SKU 가 이미 현재 배율과 일치합니다.');
+      return;
+    }
     if(!confirm(`${changes.length}건의 입고 레코드 단가를 일괄 변경합니다. 진행할까요?\n(되돌리기 어렵습니다)`)) return;
     let applied = 0, failed = 0;
     changes.forEach(c => {
