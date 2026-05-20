@@ -2698,14 +2698,14 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <div class="card-title">
                 🚚 로젠 송장 → 카페24 배송완료 변환
                 <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:auto">
-                  로젠택배 엑셀 출력 파일을 업로드하면 카페24 배송완료 양식(XLSX)으로 변환
+                  로젠택배 엑셀 출력 파일을 업로드하면 카페24 배송완료 양식(CSV)으로 변환
                 </span>
               </div>
               <div class="csv-dropzone" id="shipped-dropzone">
                 <div class="csv-dropzone-icon">📦</div>
                 <div class="csv-dropzone-text">로젠 송장 엑셀(.xlsx)을 끌어다 놓거나 클릭하여 업로드</div>
                 <div class="csv-dropzone-hint">
-                  변환 결과: <strong>주문번호 / 공란 / 운송장번호 / 박스수량</strong> 4열 XLSX 다운로드
+                  변환 결과: <strong>주문번호 / 공란 / 운송장번호 / 박스수량</strong> 4열 CSV 다운로드 (수량 1은 공란)
                 </div>
                 <input type="file" id="shipped-file-input" accept=".xlsx,.xls" style="display:none">
               </div>
@@ -9299,7 +9299,7 @@ async function generateShippingXlsx(batchId){
   toast(`✓ 송장파일 다운로드: ${outName}`,'flash');
 }
 
-/* ── 로젠 송장 출력 XLSX → 카페24 배송완료 양식 XLSX 변환 ── */
+/* ── 로젠 송장 출력 XLSX → 카페24 배송완료 양식 CSV 변환 ── */
 async function convertRosenToShipped(file){
   if(!file) return;
   try {
@@ -9329,7 +9329,12 @@ async function convertRosenToShipped(file){
         orderNoStr,
         itemOrderNo,  // B열 품목별 주문번호 (주문번호-NN)
         String(trackingNo||'').trim(),
-        boxQty===''||boxQty==null ? '' : Number(boxQty)||boxQty,
+        (() => {
+          if(boxQty===''||boxQty==null) return '';
+          const _n = Number(boxQty);
+          if(!isNaN(_n) && _n === 1) return ''; // 수량 1 은 공란
+          return isNaN(_n) ? boxQty : _n;
+        })(),
       ]);
     }
     if(aoa.length <= 1){
@@ -9345,7 +9350,7 @@ async function convertRosenToShipped(file){
     const now = new Date();
     const pad = n => String(n).padStart(2,'0');
     const datePrefix = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
-    const fallbackName = `${datePrefix}-${pad(now.getHours())}${pad(now.getMinutes())}.xlsx`;
+    const fallbackName = `${datePrefix}-${pad(now.getHours())}${pad(now.getMinutes())}.csv`;
 
     // 배송완료 폴더 핸들 시도 — 첫 사용 시 폴더 선택 프롬프트
     let folder = null;
@@ -9361,26 +9366,27 @@ async function convertRosenToShipped(file){
         }
         // 그날 가장 큰 NN 찾기 (-01, -02, ...)
         let maxNN = 0;
-        const datePat = new RegExp(`^${datePrefix}-(\\d+)(?:-\\d+)?\\.xlsx$`);
+        const datePat = new RegExp(`^${datePrefix}-(\\d+)(?:-\\d+)?\\.csv$`);
         for(const name of used){
           const m = name.match(datePat);
           if(m){ const nn = Number(m[1]); if(nn > maxNN) maxNN = nn; }
         }
         const newNN = String(maxNN + 1).padStart(2, '0');
         const baseName = `${datePrefix}-${newNN}`;
-        let saveName = `${baseName}.xlsx`;
+        let saveName = `${baseName}.csv`;
         // 새 NN 이라 보통 충돌 안 나지만 안전장치 — 중복이면 -01, -02
         if(used.has(saveName)){
           let found = false;
           for(let i = 1; i <= 99; i++){
-            const cand = `${baseName}-${String(i).padStart(2,'0')}.xlsx`;
+            const cand = `${baseName}-${String(i).padStart(2,'0')}.csv`;
             if(!used.has(cand)){ saveName = cand; found = true; break; }
           }
-          if(!found) saveName = `${baseName}-${Date.now()}.xlsx`;
+          if(!found) saveName = `${baseName}-${Date.now()}.csv`;
         }
         const fh = await folder.getFileHandle(saveName, { create: true });
-        const ab = XLSX.write(wbOut, { bookType:'xlsx', type:'array' });
-        const blob = new Blob([ab], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        // CSV 출력 — UTF-8 BOM 포함 (한글 엑셀 호환)
+        const csv = XLSX.utils.sheet_to_csv(wsOut);
+        const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8' });
         const w = await fh.createWritable();
         try { await w.write(blob); await w.truncate(blob.size); } finally { await w.close(); }
         toast(`✓ 배송완료 파일 저장: ${folder.name}/${saveName} (${aoa.length-1}건)`,'flash');
@@ -9389,8 +9395,17 @@ async function convertRosenToShipped(file){
         console.warn('배송완료 폴더 쓰기 실패 → 다운로드 폴백', e);
       }
     }
-    // 폴더 권한 없거나 쓰기 실패 → 브라우저 기본 다운로드
-    XLSX.writeFile(wbOut, fallbackName);
+    // 폴더 권한 없거나 쓰기 실패 → 브라우저 기본 다운로드 (CSV + UTF-8 BOM)
+    {
+      const csv = XLSX.utils.sheet_to_csv(wsOut);
+      const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fallbackName;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
     toast(`✓ 배송완료 파일 다운로드: ${fallbackName} (${aoa.length-1}건)`,'flash');
   } catch(e){
     console.error('convertRosenToShipped', e);
