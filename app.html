@@ -1752,6 +1752,71 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 }
 
 
+/* 카드 컴팩트 모드 — 3-5종 한 페이지 출력
+   감사 문구 숨김 + 식물 카드 간격/패딩 축소 + 메타 영역 축소 */
+.card-page-compact .card-greeting{ display:none !important; }
+.card-page-compact .card-plant{
+  padding:9px 14px !important;
+  margin-bottom:6px !important;
+}
+.card-page-compact .plant-head{
+  margin-bottom:6px !important;
+  padding-bottom:5px !important;
+}
+.card-page-compact .plant-traits-grid{
+  gap:3px 10px !important;
+  margin-bottom:4px !important;
+}
+.card-page-compact .plant-note{
+  margin-top:5px !important;
+  padding:4px 8px !important;
+}
+.card-page-compact .card-section-title{
+  margin-bottom:8px !important;
+  margin-top:2px !important;
+  padding-bottom:4px !important;
+}
+.card-page-compact .card-meta{
+  margin-bottom:6px !important;
+  padding:4px 10px !important;
+}
+.card-page-compact .card-memo-box{
+  margin-top:8px !important;
+  padding:6px 4px !important;
+}
+.card-page-compact .card-footer{
+  margin-top:8px !important;
+  padding-top:6px !important;
+  padding-bottom:2px !important;
+}
+.card-page-compact .card-header{
+  padding-bottom:6px !important;
+}
+.card-page-compact .card-logo{
+  max-width:160px !important;
+}
+@media print {
+  body.printing-card .card-page-compact{
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  body.printing-card .card-page-compact .card-plant{
+    padding:7px 12px !important;
+    margin-bottom:5px !important;
+  }
+  body.printing-card .card-page-compact .plant-traits-grid{
+    gap:2px 10px !important;
+    font-size:10.5px !important;
+  }
+  body.printing-card .card-page-compact .card-section-title{
+    margin-bottom:6px !important;
+    margin-top:0 !important;
+  }
+  body.printing-card .card-page-compact .card-logo{
+    max-width:140px !important;
+  }
+}
+
 /* 카드 자동 페이지 분할 — 식물 4개 이상일 때 인사+안내+푸터를 다음 페이지로 */
 @media print {
   body.printing-card .card-page-split{
@@ -10889,8 +10954,12 @@ function renderSingleCardHtml_orig(orderNo, memo, addPageBreakBefore){
   // 고객명 표시 제거됨
   const pageBreak = addPageBreakBefore ? 'card-page-break' : '';
   // 식물 4개 이상이면 자동으로 인사+안내+푸터를 다음 페이지로
-  const PLANTS_PER_PAGE = 4;
-  const splitClass = lines.length >= PLANTS_PER_PAGE ? 'card-page-split' : '';
+  // 1-2종: 기본 레이아웃 (감사 문구 포함)
+  // 3-5종: card-page-compact (감사 문구 숨김 + 패딩 축소로 한장에)
+  // 6종+: card-page-split (두 페이지 분할)
+  const PLANTS_PER_PAGE = 6;
+  const _n = lines.length;
+  const splitClass = _n >= PLANTS_PER_PAGE ? 'card-page-split' : (_n >= 3 ? 'card-page-compact' : '');
 
   return `<div class="card-page ${pageBreak} ${splitClass}">
     <div class="card-header">
@@ -12045,8 +12114,10 @@ function renderSingleCardHtml(orderNo, memo, addPageBreakBefore){
     // 고객명 표시 제거됨
     const pageBreak = addPageBreakBefore ? 'card-page-break' : '';
     // 식물 4개 이상이면 자동 분할
-    const PLANTS_PER_PAGE = 4;
-    const splitClass = md.plants.length >= PLANTS_PER_PAGE ? 'card-page-split' : '';
+    // 동일 정책: 3-5종 compact, 6종+ split
+    const PLANTS_PER_PAGE = 6;
+    const _n = md.plants.length;
+    const splitClass = _n >= PLANTS_PER_PAGE ? 'card-page-split' : (_n >= 3 ? 'card-page-compact' : '');
     const plantsHtml = md.plants.map(p => {
       const heightTxt = formatRange(p.heightMin, p.heightMax, 'cm');
       const widthTxt  = formatRange(p.widthMin,  p.widthMax,  'cm');
