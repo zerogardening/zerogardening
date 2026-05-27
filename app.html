@@ -9320,13 +9320,14 @@ async function generateShippingXlsx(batchId){
     });
   });
 
-  // 정렬: packTier → 상품종류(앞 5자) → cm → 수량 → orderNo
-  // 같은 tier 안에서 같은 상품끼리, 같은 상품 안에서 사이즈끼리, 같은 사이즈 안에서 수량끼리 자연스럽게 묶임
+  // 정렬: packTier → cm → 상품종류(앞 5자) → 수량 → orderNo
+  // 박스 사이즈 전환을 최소화하기 위해 cm 을 sku 보다 우선. 같은 사이즈 안에서 같은 상품끼리,
+  // 같은 상품 안에서 수량끼리 자연스럽게 묶임. (예: 15cm 전부 → 20cm 전부 → 21cm 전부)
   merged.sort((a,b) => {
     if(a._packTier !== b._packTier) return a._packTier - b._packTier;
+    if(a._firstCm !== b._firstCm) return a._firstCm - b._firstCm;
     const sk = a._firstSku.localeCompare(b._firstSku);
     if(sk !== 0) return sk;
-    if(a._firstCm !== b._firstCm) return a._firstCm - b._firstCm;
     if(a._firstQty !== b._firstQty) return a._firstQty - b._firstQty;
     return String(a.orderNo||'').localeCompare(String(b.orderNo||''));
   });
