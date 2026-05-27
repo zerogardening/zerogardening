@@ -2766,6 +2766,12 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
                   로젠택배 엑셀 출력 파일을 업로드하면 카페24 배송완료 양식(CSV)으로 변환
                 </span>
               </div>
+              <div id="completed-folder-bar" style="display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font-size:13px">
+                <span style="color:var(--muted)">📁 저장 폴더:</span>
+                <strong id="completed-folder-name" style="flex:1;color:var(--muted)">미연결 (클릭하여 폴더 선택)</strong>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-completed-folder-pick">📂 폴더 변경</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-completed-folder-clear" style="display:none">해제</button>
+              </div>
               <div class="csv-dropzone" id="shipped-dropzone">
                 <div class="csv-dropzone-icon">📦</div>
                 <div class="csv-dropzone-text">로젠 송장 엑셀(.xlsx)을 끌어다 놓거나 클릭하여 업로드</div>
@@ -9559,6 +9565,44 @@ function setupShippedDropzone(){
     const f = e.target.files[0]; if(f) convertRosenToShipped(f);
     e.target.value = '';
   });
+
+  // ── 배송완료 저장 폴더 상태바 ──
+  const nameEl = document.getElementById('completed-folder-name');
+  const pickBtn = document.getElementById('btn-completed-folder-pick');
+  const clearBtn = document.getElementById('btn-completed-folder-clear');
+  async function refreshCompletedFolderName(){
+    if(!nameEl) return;
+    try {
+      const n = await AIBridge.getCompletedFolderName();
+      if(n){
+        nameEl.textContent = n;
+        nameEl.style.color = 'var(--text)';
+        if(clearBtn) clearBtn.style.display = '';
+      } else {
+        nameEl.textContent = '미연결 (클릭하여 폴더 선택)';
+        nameEl.style.color = 'var(--muted)';
+        if(clearBtn) clearBtn.style.display = 'none';
+      }
+    } catch(e){ console.warn('refreshCompletedFolderName', e); }
+  }
+  if(pickBtn){
+    pickBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      try {
+        const h = await AIBridge.getCompletedFolder(true);
+        if(h) await refreshCompletedFolderName();
+      } catch(err){ console.error(err); }
+    });
+  }
+  if(clearBtn){
+    clearBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if(!confirm('배송완료 저장 폴더 연결을 해제하시겠어요?')) return;
+      await AIBridge.clearCompletedFolder();
+      await refreshCompletedFolderName();
+    });
+  }
+  refreshCompletedFolderName();
 }
 
 function renderBatchFolders(){
