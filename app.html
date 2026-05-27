@@ -9235,38 +9235,43 @@ async function generateShippingXlsx(batchId){
   }
 
   // 각 주문 라인 가공 — 매칭 실패 항목은 unmatched 에 누적해서 콘솔 로그
+  // 정렬에 필요한 메타(_sku5, _cm, _totalQty) 도 함께 부여
   const unmatched = [];
   const processed = orders.map(o => {
     let newName = o.productName || '';
     const code = String(o.itemCode||'').trim().toUpperCase();
+    let sku5 = '';      // 앞 5자 = 상품종류 (예: 'TIF01')
+    let cmNum = null;   // 포트 사이즈 number (예: 15). dash 뒤 숫자 없으면 null
+    let totalQty = Number(o.qty) || 1;
     if(code){
-      const skuId = code.slice(0, 5);  // 앞 5자 = SKU ID
-      // 화분 cm 추출 — dash 뒤 숫자 (예: 'ECH01-15' → '15'). dash 없으면 빈 값
+      sku5 = code.slice(0, 5);
+      // 화분 cm 추출 — dash 뒤 숫자 (예: 'ECH01-15' → 15). dash 없으면 null
       const cmMatch = code.match(/-(\d+)$/);
-      const cm = cmMatch ? cmMatch[1] : '';
-      const distName = skuMap.get(skuId);
+      if(cmMatch) cmNum = Number(cmMatch[1]);
+      // 수량 계산 — 매칭 성공/실패와 무관하게 정렬에 쓰이므로 항상 계산
+      // G열 옵션이 '수량=N개' 패턴일 때만 N 곱하기.
+      // 색상/사이즈 등 다른 옵션(예: '색상=5번')은 무시하고 M열(주문 수량)만 사용.
+      let optQty = 1;
+      const optStr = String(o.option||'');
+      const qm = optStr.match(/수량\s*=\s*(\d+)/);
+      if(qm) optQty = Number(qm[1]) || 1;
+      const mQty = Number(o.qty) || 1;
+      totalQty = optQty * mQty;
+      const distName = skuMap.get(sku5);
       if(distName){
-        // G열 옵션이 '수량=N개' 패턴일 때만 N 곱하기.
-        // 색상/사이즈 등 다른 옵션(예: '색상=5번')은 무시하고 M열(주문 수량)만 사용.
-        let optQty = 1;
-        const optStr = String(o.option||'');
-        const qm = optStr.match(/수량\s*=\s*(\d+)/);
-        if(qm) optQty = Number(qm[1]) || 1;
-        const mQty = Number(o.qty) || 1;
-        const totalQty = optQty * mQty;
-        const cmStr = cm ? `(${cm}cm)` : '';
+        const cmStr = cmNum !== null ? `(${cmNum}cm)` : '';
         newName = `${distName}${cmStr} ${totalQty}개`.trim();
-      } else if(skuMap.has(skuId)){
+      } else if(skuMap.has(sku5)){
         // SKU 는 등록되어 있지만 유통명(distributionName) 이 비어 있음
-        console.warn(`[송장] SKU ${skuId} 는 등록되어 있지만 유통명(distributionName) 이 비어 있습니다. 재고관리에서 유통명 입력 필요. 원본 productName 유지.`);
-        unmatched.push({ itemCode: code, skuId, reason: '유통명 누락', productName: o.productName });
+        console.warn(`[송장] SKU ${sku5} 는 등록되어 있지만 유통명(distributionName) 이 비어 있습니다. 재고관리에서 유통명 입력 필요. 원본 productName 유지.`);
+        unmatched.push({ itemCode: code, skuId: sku5, reason: '유통명 누락', productName: o.productName });
       } else {
         // SKU 자체가 마스터에 미등록
-        console.warn(`[송장] SKU 매칭 실패: itemCode='${code}', skuId='${skuId}' — SKU 마스터에 등록된 prefix 가 없습니다. 원본 productName 유지.`);
-        unmatched.push({ itemCode: code, skuId, reason: 'SKU 미등록', productName: o.productName });
+        console.warn(`[송장] SKU 매칭 실패: itemCode='${code}', skuId='${sku5}' — SKU 마스터에 등록된 prefix 가 없습니다. 원본 productName 유지.`);
+        unmatched.push({ itemCode: code, skuId: sku5, reason: 'SKU 미등록', productName: o.productName });
       }
     }
-    return Object.assign({}, o, { _newName: newName });
+    return Object.assign({}, o, { _newName: newName, _sku5: sku5, _cm: cmNum, _totalQty: totalQty });
   });
   // 매칭 실패 요약 (콘솔)
   if(unmatched.length > 0){
@@ -9274,24 +9279,57 @@ async function generateShippingXlsx(batchId){
     console.warn('[송장] SKU 마스터에 등록된 prefix 목록(상위 50):', Array.from(skuMap.keys()).slice(0, 50));
   }
 
-  // 주문번호 그룹핑 — 중복은 ' / ' 결합, 첫 행만 남김
+  // 주문번호 그룹핑 — 중복은 ' / ' 결합, 첫 행만 남김. 라인 목록은 포장 tier 판별용으로 보존
   const byOrderNo = new Map();
   const orderNoSeq = [];
   processed.forEach(o => {
     if(!byOrderNo.has(o.orderNo)){
-      byOrderNo.set(o.orderNo, { first: o, names: [o._newName] });
+      byOrderNo.set(o.orderNo, { first: o, names: [o._newName], lines: [o] });
       orderNoSeq.push(o.orderNo);
     } else {
-      byOrderNo.get(o.orderNo).names.push(o._newName);
+      const g = byOrderNo.get(o.orderNo);
+      g.names.push(o._newName);
+      g.lines.push(o);
     }
   });
+  // 포장 tier 판별 — 작업자 동선 최적화 (전용박스 → 롤골판지 순으로 묶음)
+  //   1: 단품 1라인 + cm ≥ 15 + 수량 1   (전용박스 1개)
+  //   2: 단품 1라인 + cm ≥ 15 + 수량 2+ (전용박스 다개)
+  //   3: 단품 1라인 + cm < 15 또는 사이즈 미상 (롤골판지 단품)
+  //   4: 복합주문 (라인 2개 이상, 롤골판지)
   const merged = orderNoSeq.map(on => {
     const g = byOrderNo.get(on);
-    return Object.assign({}, g.first, { _newName: g.names.join(' / ') });
+    const firstLine = g.lines[0];
+    const lineCount = g.lines.length;
+    const cm = firstLine._cm;
+    const qty = firstLine._totalQty || 1;
+    let packTier;
+    if(lineCount === 1 && cm !== null && cm >= 15){
+      packTier = (qty === 1) ? 1 : 2;
+    } else if(lineCount === 1){
+      packTier = 3;
+    } else {
+      packTier = 4;
+    }
+    return Object.assign({}, g.first, {
+      _newName: g.names.join(' / '),
+      _packTier: packTier,
+      _firstSku: firstLine._sku5 || '',
+      _firstCm: (cm !== null ? cm : 9999),  // 사이즈 미상은 같은 sku 안에서 뒤로
+      _firstQty: qty,
+    });
   });
 
-  // H열(자체품목코드) 오름차순 정렬
-  merged.sort((a,b) => String(a.itemCode||'').localeCompare(String(b.itemCode||'')));
+  // 정렬: packTier → 상품종류(앞 5자) → cm → 수량 → orderNo
+  // 같은 tier 안에서 같은 상품끼리, 같은 상품 안에서 사이즈끼리, 같은 사이즈 안에서 수량끼리 자연스럽게 묶임
+  merged.sort((a,b) => {
+    if(a._packTier !== b._packTier) return a._packTier - b._packTier;
+    const sk = a._firstSku.localeCompare(b._firstSku);
+    if(sk !== 0) return sk;
+    if(a._firstCm !== b._firstCm) return a._firstCm - b._firstCm;
+    if(a._firstQty !== b._firstQty) return a._firstQty - b._firstQty;
+    return String(a.orderNo||'').localeCompare(String(b.orderNo||''));
+  });
 
   // XLSX 생성 (원본 카페24 컬럼 순서 유지)
   // 택배 프로그램이 1행도 데이터로 인식하기 때문에 헤더 행은 출력하지 않음
