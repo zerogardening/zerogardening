@@ -11015,7 +11015,7 @@ function renderSingleCardHtml_orig(orderNo, memo, addPageBreakBefore){
   }
   const first = lines[0];
 
-  const plantsHtml = lines.map(line => {
+  const plantHtmls = lines.map(line => {
     const matched = findReceivingByItemCode(line.itemCode);
     const rec = matched ? matched.rec : null;
     const skuMaster = Store.findSkuByCode(parseItemCode(line.itemCode||'').prefix || line.itemCode || '');
@@ -11058,43 +11058,69 @@ function renderSingleCardHtml_orig(orderNo, memo, addPageBreakBefore){
       </div>
       ${note ? `<div class="plant-note"><span class="note-lbl">📝 특이사항</span>${escapeHtml(note)}</div>` : ''}
     </div>`;
-  }).join('');
+  });
 
   const today = todayISO();
   // 고객명 표시 제거됨
   const pageBreak = addPageBreakBefore ? 'card-page-break' : '';
-  // 식물 4개 이상이면 자동으로 인사+안내+푸터를 다음 페이지로
   // 1-2종: 기본 레이아웃 (감사 문구 포함)
   // 3-5종: card-page-compact (감사 문구 숨김 + 패딩 축소로 한장에)
-  // 6종+: card-page-split (두 페이지 분할)
+  // 6종+: 두 .card-page div 로 명시 분할 — 식물도 양쪽에 균등 분배
   const PLANTS_PER_PAGE = 6;
   const _n = lines.length;
-  const splitClass = _n >= PLANTS_PER_PAGE ? 'card-page-split' : (_n >= 3 ? 'card-page-compact' : '');
+  const isSplit = _n >= PLANTS_PER_PAGE;
+  const compactClass = (!isSplit && _n >= 3) ? 'card-page-compact' : '';
 
-  return `<div class="card-page ${pageBreak} ${splitClass}">
-    <div class="card-header">
+  // 공통 HTML 조각
+  const _headerHtml = `<div class="card-header">
       <img class="card-logo" src="${CARD_LOGO_URL}" alt="제로가드닝">
       <div class="card-tagline-top">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
-    </div>
-    <div class="card-meta">
+    </div>`;
+  const _metaHtml = `<div class="card-meta">
       <div class="meta-block"><span class="lbl">주문번호</span><span class="val">${escapeHtml(first.orderNo)}</span></div>
       <div class="meta-block"><span class="lbl">발송일</span><span class="val">${today}</span></div>
       ${first.trackingNumber ? `<div class="meta-block"><span class="lbl">송장번호</span><span class="tracking">${escapeHtml(first.trackingNumber)}</span></div>` : ''}
-    </div>
-    <div class="card-section-title">🌿 정원식물 관리카드</div>
-    ${plantsHtml}
-    <div class="card-greeting">
+    </div>`;
+  const _greetingHtml = `<div class="card-greeting">
       <div class="card-thanks">구매해주셔서 감사합니다</div>
       <div class="card-thanks-sub">정성껏 키운 식물이 잘 도착했길 바랍니다.</div>
-    </div>
-    <div class="card-bottom-block">
+    </div>`;
+  const _bottomBlockHtml = `<div class="card-bottom-block">
       <div class="card-memo-box ${memo?'':'empty'}">
         <div class="memo-title">💌 안내 말씀</div><div class="memo-text"> ${escapeHtml(memo)}</div>
       </div>
       <div class="card-footer">
         <img class="card-logo-footer" src="${CARD_LOGO2_URL}" alt="제로가드닝">
       </div>
-    </div>
+    </div>`;
+
+  if (isSplit) {
+    // 6종+: 두 페이지에 균등 분배 (1쪽: ceil(n/2), 2쪽: floor(n/2))
+    const mid = Math.ceil(_n / 2);
+    const page1Plants = plantHtmls.slice(0, mid).join('');
+    const page2Plants = plantHtmls.slice(mid).join('');
+    return `<div class="card-page ${pageBreak}">
+    ${_headerHtml}
+    ${_metaHtml}
+    <div class="card-section-title">🌿 정원식물 관리카드 (1/2)</div>
+    ${page1Plants}
+  </div>
+  <div class="card-page card-page-break">
+    ${_headerHtml}
+    <div class="card-section-title">🌿 정원식물 관리카드 (2/2)</div>
+    ${page2Plants}
+    ${_greetingHtml}
+    ${_bottomBlockHtml}
+  </div>`;
+  }
+
+  return `<div class="card-page ${pageBreak} ${compactClass}">
+    ${_headerHtml}
+    ${_metaHtml}
+    <div class="card-section-title">🌿 정원식물 관리카드</div>
+    ${plantHtmls.join('')}
+    ${_greetingHtml}
+    ${_bottomBlockHtml}
   </div>`;
 }
 
@@ -12223,12 +12249,12 @@ function renderSingleCardHtml(orderNo, memo, addPageBreakBefore){
     const today = todayISO();
     // 고객명 표시 제거됨
     const pageBreak = addPageBreakBefore ? 'card-page-break' : '';
-    // 식물 4개 이상이면 자동 분할
-    // 동일 정책: 3-5종 compact, 6종+ split
+    // 1-2종: 기본 / 3-5종: compact / 6종+: 명시적 두 페이지 균등 분배
     const PLANTS_PER_PAGE = 6;
     const _n = md.plants.length;
-    const splitClass = _n >= PLANTS_PER_PAGE ? 'card-page-split' : (_n >= 3 ? 'card-page-compact' : '');
-    const plantsHtml = md.plants.map(p => {
+    const isSplit = _n >= PLANTS_PER_PAGE;
+    const compactClass = (!isSplit && _n >= 3) ? 'card-page-compact' : '';
+    const plantHtmls = md.plants.map(p => {
       const heightTxt = formatRange(p.heightMin, p.heightMax, 'cm');
       const widthTxt  = formatRange(p.widthMin,  p.widthMax,  'cm');
       const bloomTxt  = formatRange(p.bloomStart,p.bloomEnd,  '월');
@@ -12256,31 +12282,55 @@ function renderSingleCardHtml(orderNo, memo, addPageBreakBefore){
         </div>
         ${p.note ? `<div class="plant-note"><span class="note-lbl">📝 특이사항</span>${escapeHtml(p.note)}</div>` : ''}
       </div>`;
-    }).join('');
-    return `<div class="card-page ${pageBreak} ${splitClass}">
-      <div class="card-header">
+    });
+    const _headerHtml = `<div class="card-header">
         <img class="card-logo" src="${CARD_LOGO_URL}" alt="제로가드닝">
         <div class="card-tagline-top">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
-      </div>
-      <div class="card-meta">
+      </div>`;
+    const _metaHtml = `<div class="card-meta">
         <div class="meta-block"><span class="lbl">주문번호</span><span class="val">${escapeHtml(md.orderNo)}</span></div>
         <div class="meta-block"><span class="lbl">발송일</span><span class="val">${today}</span></div>
         ${md.trackingNumber ? `<div class="meta-block"><span class="lbl">송장번호</span><span class="tracking">${escapeHtml(md.trackingNumber)}</span></div>` : ''}
-      </div>
-      <div class="card-section-title">🌿 정원식물 관리카드</div>
-      ${plantsHtml}
-      <div class="card-greeting">
+      </div>`;
+    const _greetingHtml = `<div class="card-greeting">
         <div class="card-thanks">구매해주셔서 감사합니다</div>
         <div class="card-thanks-sub">정성껏 키운 식물이 잘 도착했길 바랍니다.</div>
-      </div>
-      <div class="card-bottom-block">
+      </div>`;
+    const _bottomBlockHtml = `<div class="card-bottom-block">
         <div class="card-memo-box ${memo?'':'empty'}">
           <div class="memo-title">💌 안내 말씀</div><div class="memo-text"> ${escapeHtml(memo)}</div>
         </div>
         <div class="card-footer">
           <img class="card-logo-footer" src="${CARD_LOGO2_URL}" alt="제로가드닝">
         </div>
-      </div>
+      </div>`;
+
+    if (isSplit) {
+      const mid = Math.ceil(_n / 2);
+      const page1Plants = plantHtmls.slice(0, mid).join('');
+      const page2Plants = plantHtmls.slice(mid).join('');
+      return `<div class="card-page ${pageBreak}">
+      ${_headerHtml}
+      ${_metaHtml}
+      <div class="card-section-title">🌿 정원식물 관리카드 (1/2)</div>
+      ${page1Plants}
+    </div>
+    <div class="card-page card-page-break">
+      ${_headerHtml}
+      <div class="card-section-title">🌿 정원식물 관리카드 (2/2)</div>
+      ${page2Plants}
+      ${_greetingHtml}
+      ${_bottomBlockHtml}
+    </div>`;
+    }
+
+    return `<div class="card-page ${pageBreak} ${compactClass}">
+      ${_headerHtml}
+      ${_metaHtml}
+      <div class="card-section-title">🌿 정원식물 관리카드</div>
+      ${plantHtmls.join('')}
+      ${_greetingHtml}
+      ${_bottomBlockHtml}
     </div>`;
   }
   return renderSingleCardHtml_orig(orderNo, memo, addPageBreakBefore);
