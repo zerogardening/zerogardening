@@ -9292,11 +9292,25 @@ async function generateShippingXlsx(batchId){
       g.lines.push(o);
     }
   });
+  // 포트 사이즈별 박스 점유 점수 — 3300 박스(320×320 바닥) 1단 = 8점
+  //   cm ≤ 10 → 1점,  cm ≤ 15 → 2점,  cm ≤ 22 → 3점,  cm ≥ 23 → 4점,  미상 → 2점(보수적)
+  function _potScore(cm){
+    if(cm == null) return 2;
+    if(cm <= 10) return 1;
+    if(cm <= 15) return 2;
+    if(cm <= 22) return 3;
+    return 4;
+  }
+
   // 포장 tier 판별 — 작업자 동선 최적화 (전용박스 → 롤골판지 순으로 묶음)
   //   1: 단품 1라인 + cm ≥ 15 + 수량 1   (전용박스 1개)
   //   2: 단품 1라인 + cm ≥ 15 + 수량 2+ (전용박스 다개)
   //   3: 단품 1라인 + cm < 15 또는 사이즈 미상 (롤골판지 단품)
   //   4: 복합주문 (라인 2개 이상, 롤골판지)
+  // 박스 가격(J열) — 모든 라인의 (사이즈점수 × 수량) 합으로 결정
+  //   점수 ≥ 12: '확인요망' (1박스 초과 우려)
+  //   점수 ≥ 9 : '3300'   (큰 박스 필요)
+  //   그 외     : '2750'   (기본 박스)
   const merged = orderNoSeq.map(on => {
     const g = byOrderNo.get(on);
     const firstLine = g.lines[0];
@@ -9311,12 +9325,23 @@ async function generateShippingXlsx(batchId){
     } else {
       packTier = 4;
     }
+    // 박스 점유 점수 합산
+    let boxScore = 0;
+    for(const ln of g.lines){
+      boxScore += _potScore(ln._cm) * (ln._totalQty || 1);
+    }
+    let boxPrice;
+    if(boxScore >= 12)      boxPrice = '확인요망';
+    else if(boxScore >= 9)  boxPrice = '3300';
+    else                    boxPrice = '2750';
     return Object.assign({}, g.first, {
       _newName: g.names.join(' / '),
       _packTier: packTier,
       _firstSku: firstLine._sku5 || '',
       _firstCm: (cm !== null ? cm : 9999),  // 사이즈 미상은 같은 sku 안에서 뒤로
       _firstQty: qty,
+      _boxScore: boxScore,
+      _boxPrice: boxPrice,
     });
   });
 
@@ -9345,7 +9370,9 @@ async function generateShippingXlsx(batchId){
       o.shopName||'', o.shopId||'', o.orderNo||'', o.orderedAt||'',
       o._newName || o.productName || '',
       o.productNo||'', o.option||'', o.itemCode||'',
-      o.paymentMethod||'', o.paymentCompany||'', o.paymentInfo||'',
+      o.paymentMethod||'',
+      o._boxPrice || '2750',   // J열: 박스 가격 또는 '확인요망' (원본 결제업체 덮어쓰기)
+      o.paymentInfo||'',
       o.unitPrice||0, o.qty||0,
       o.recipientName||'', o.recipientZip||'', o.recipientAddr||'',
       o.recipientPhone||'', o.recipientPhone2||'', o.recipientMobile||'',
