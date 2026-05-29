@@ -9478,6 +9478,21 @@ async function convertRosenToShipped(file){
       toast('변환할 데이터가 없습니다 (4행부터 비어있음)','warn');
       return;
     }
+    // 송장 순서 보관 — 동봉카드 일괄 출력 시 이 순서대로 정렬
+    try {
+      const seqOrderNos = [];
+      const _seenShipOrders = new Set();
+      for(let i=1; i<aoa.length; i++){
+        const no = String(aoa[i][0]||'').trim();
+        if(!no || _seenShipOrders.has(no)) continue;
+        _seenShipOrders.add(no); seqOrderNos.push(no);
+      }
+      localStorage.setItem('lastShippingOrderSeq', JSON.stringify({
+        orderNos: seqOrderNos,
+        savedAt: Date.now(),
+        count: seqOrderNos.length,
+      }));
+    } catch(_e){ console.warn('save lastShippingOrderSeq failed', _e); }
     const wsOut = XLSX.utils.aoa_to_sheet(aoa);
     const wbOut = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wbOut, wsOut, '배송완료');
@@ -10956,6 +10971,23 @@ window.openCardModal = function(orderNo){
 /** 일괄 카드 출력 모달 — 여러 주문번호를 한 번에 */
 window.openBulkCardModal = function(orderNos){
   if(!orderNos || orderNos.length === 0){ toast('대상 주문이 없습니다','warn'); return; }
+  // ── 송장 순서 기반 재정렬: 송장에 있는 주문은 송장 순서 → 나머지는 원래 순서 ──
+  try {
+    const saved = JSON.parse(localStorage.getItem('lastShippingOrderSeq')||'null');
+    if(saved && Array.isArray(saved.orderNos) && saved.orderNos.length){
+      const want = new Set(orderNos.map(String));
+      const seen = new Set();
+      const head = [];
+      for(const no of saved.orderNos){
+        const k = String(no);
+        if(want.has(k) && !seen.has(k)){ head.push(k); seen.add(k); }
+      }
+      if(head.length > 0){
+        const rest = orderNos.filter(no => !seen.has(String(no)));
+        orderNos = head.concat(rest);
+      }
+    }
+  } catch(_e){ console.warn('reorder by shipping seq failed', _e); }
   _isBulkMode = true;
   _bulkCardOrderNos = orderNos.slice();
   _currentCardOrderNo = null;
@@ -10986,9 +11018,26 @@ function renderCardDoc(){
   }
   // 정보 안내 (일괄일 때만 상단 표시)
   if(_isBulkMode && orderNos.length > 1){
+    // 송장 순서 매칭 정보
+    let _shipInfo = '';
+    try {
+      const _saved = JSON.parse(localStorage.getItem('lastShippingOrderSeq')||'null');
+      if(_saved && Array.isArray(_saved.orderNos) && _saved.orderNos.length){
+        const _wantSet = new Set(orderNos.map(String));
+        const _matched = _saved.orderNos.filter(no => _wantSet.has(String(no))).length;
+        if(_matched > 0){
+          const _outside = orderNos.length - _matched;
+          const _d = new Date(_saved.savedAt||0);
+          const _ts = _saved.savedAt ? `${_d.getMonth()+1}/${_d.getDate()} ${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}` : '';
+          _shipInfo = `<br>📦 송장 순서 적용: <strong>${_matched}건</strong>` +
+                      (_outside > 0 ? ` · 송장 외(뒤에 배치): <strong>${_outside}건</strong>` : '') +
+                      (_ts ? ` <span style="opacity:0.7">(송장 변환: ${_ts})</span>` : '');
+        }
+      }
+    } catch(_e){}
     html += `<div class="bulk-info card-screen-only" style="background:#e7f0ff;border-left:4px solid #1e4abb;padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#0b2c75">
       📄 총 <strong>${orderNos.length}장</strong>의 카드가 생성됩니다. 인쇄 시 "PDF로 저장"을 선택하면 모든 카드를 한 PDF 파일로 받을 수 있습니다.
-      각 카드는 A4 한 장에 하나씩 자동 분할 출력됩니다.
+      각 카드는 A4 한 장에 하나씩 자동 분할 출력됩니다.${_shipInfo}
     </div>`;
   }
   orderNos.forEach((orderNo, idx) => {
