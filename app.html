@@ -9380,7 +9380,12 @@ async function generateShippingXlsx(batchId){
   //     같은 날 여러 주문은 1회로 묶음.
   //     수령인명 또는 우편번호 없는 주문은 카운트 안 함 (회차 표시 없음)
   try {
-    const _normStr = (s) => String(s||'').replace(/\s+/g, '').trim();
+    // 한글 NFC 정규화 + 모든 종류 whitespace 제거 (전각/반각/탭/개행 등)
+    const _normStr = (s) => {
+      let v = String(s||'');
+      try { v = v.normalize('NFC'); } catch(_){}
+      return v.replace(/[\s\u00A0\u3000]+/g, '').trim();
+    };
     const _normZip = (z) => String(z||'').replace(/[^0-9]/g, '');
     const _custKey = (o) => {
       const name = _normStr(o.recipientName);
@@ -9388,10 +9393,21 @@ async function generateShippingXlsx(batchId){
       if(!name || !zip) return '';
       return name + '|' + zip;
     };
-    const _dateKey = (o) => String(o.orderedAt||'').slice(0, 10);
+    // 날짜 정규화 — YYYY-MM-DD 형태로 강제. zero-pad 안 된 입력도 처리.
+    // 지원 포맷: '2026-5-29 14:30', '2026/05/29', '2026.5.29', '20260529' 등
+    const _dateKey = (o) => {
+      const s = String(o.orderedAt||'').trim();
+      if(!s) return '';
+      let m = s.match(/(\d{4})[-\/\. ]+(\d{1,2})[-\/\. ]+(\d{1,2})/);
+      if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+      m = s.match(/^(\d{4})(\d{2})(\d{2})/);
+      if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+      return s.slice(0, 10);
+    };
     // customerKey → Set<dateKey> 누적 (Store 의 전체 주문 기록)
+    const _allOrders = Store.listOrders();
     const _custDates = new Map();
-    Store.listOrders().forEach(o => {
+    _allOrders.forEach(o => {
       const ck = _custKey(o); if(!ck) return;
       const dk = _dateKey(o); if(!dk) return;
       if(!_custDates.has(ck)) _custDates.set(ck, new Set());
@@ -9402,17 +9418,31 @@ async function generateShippingXlsx(batchId){
     _custDates.forEach((set, ck) => { _custSorted.set(ck, Array.from(set).sort()); });
     // merged 의 각 항목에 회차 부여 → 2회차 이상이면 _newName 앞에 (#N) prefix
     let _prefixCount = 0;
+    const _debugRows = [];
     merged.forEach(o => {
-      const ck = _custKey(o); if(!ck) return;
-      const dk = _dateKey(o); if(!dk) return;
-      const sorted = _custSorted.get(ck); if(!sorted) return;
+      const ck = _custKey(o);
+      const dk = _dateKey(o);
+      const sorted = (ck && _custSorted.get(ck)) || [];
       const idx = sorted.indexOf(dk);
-      if(idx < 1) return; // -1 (없음) 또는 0 (첫 구매) → 표시 안 함
-      const nth = idx + 1; // 1-base 회차
-      o._newName = `(#${nth}) ${o._newName||''}`;
-      _prefixCount++;
+      const nth = idx + 1;
+      if(idx >= 1){
+        o._newName = `(#${nth}) ${o._newName||''}`;
+        _prefixCount++;
+      }
+      _debugRows.push({
+        orderNo: o.orderNo,
+        recipient: o.recipientName,
+        zip: o.recipientZip,
+        custKey: ck || '(없음)',
+        thisDate: dk,
+        allDates: sorted.join(', '),
+        nth: nth > 0 ? nth : '-',
+        prefixed: idx >= 1 ? 'Y' : '',
+      });
     });
-    if(_prefixCount > 0) console.log(`[송장] 재구매 표시 ${_prefixCount}건 / 전체 ${merged.length}건`);
+    console.log(`[송장] 재구매 표시 ${_prefixCount}건 / 전체 ${merged.length}건 · Store 전체 주문 ${_allOrders.length}건`);
+    console.log('[송장] 회차 매칭 상세 ↓ (한 사람의 allDates 가 여러 개여야 회차 2 이상 됨)');
+    console.table(_debugRows);
   } catch(_e){ console.warn('purchase count prefix failed', _e); }
 
   // XLSX 생성 (원본 카페24 컬럼 순서 유지)
