@@ -9375,6 +9375,39 @@ async function generateShippingXlsx(batchId){
     }));
   } catch(_e){ console.warn('save lastShippingOrderSeq failed', _e); }
 
+  // ── 고객 누적 구매 횟수 표시: 2회차부터 (#N) prefix ──
+  // 룰: 주문자 휴대폰번호 기준, 같은 날 여러 주문은 1회로 묶음
+  // 휴대폰번호 없는 주문은 카운트 안 함 (회차 표시 없음)
+  try {
+    const _normPhone = (p) => String(p||'').replace(/[^0-9]/g, '');
+    const _custKey = (o) => _normPhone(o.ordererMobile) || _normPhone(o.ordererPhone) || '';
+    const _dateKey = (o) => String(o.orderedAt||'').slice(0, 10);
+    // customerKey → Set<dateKey> 누적 (Store 의 전체 주문 기록)
+    const _custDates = new Map();
+    Store.listOrders().forEach(o => {
+      const ck = _custKey(o); if(!ck) return;
+      const dk = _dateKey(o); if(!dk) return;
+      if(!_custDates.has(ck)) _custDates.set(ck, new Set());
+      _custDates.get(ck).add(dk);
+    });
+    // 각 customerKey 의 dateKey 정렬 (오름차순) — 회차 계산용
+    const _custSorted = new Map();
+    _custDates.forEach((set, ck) => { _custSorted.set(ck, Array.from(set).sort()); });
+    // merged 의 각 항목에 회차 부여 → 2회차 이상이면 _newName 앞에 (#N) prefix
+    let _prefixCount = 0;
+    merged.forEach(o => {
+      const ck = _custKey(o); if(!ck) return;
+      const dk = _dateKey(o); if(!dk) return;
+      const sorted = _custSorted.get(ck); if(!sorted) return;
+      const idx = sorted.indexOf(dk);
+      if(idx < 1) return; // -1 (없음) 또는 0 (첫 구매) → 표시 안 함
+      const nth = idx + 1; // 1-base 회차
+      o._newName = `(#${nth}) ${o._newName||''}`;
+      _prefixCount++;
+    });
+    if(_prefixCount > 0) console.log(`[송장] 재구매 표시 ${_prefixCount}건 / 전체 ${merged.length}건`);
+  } catch(_e){ console.warn('purchase count prefix failed', _e); }
+
   // XLSX 생성 (원본 카페24 컬럼 순서 유지)
   // 택배 프로그램이 1행도 데이터로 인식하기 때문에 헤더 행은 출력하지 않음
   // 참고용 컬럼 순서:
