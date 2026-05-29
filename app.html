@@ -9363,6 +9363,18 @@ async function generateShippingXlsx(batchId){
     return String(a.orderNo||'').localeCompare(String(b.orderNo||''));
   });
 
+  // 송장 입력파일 행 순서 보관 — 동봉카드 일괄 출력 시 이 순서대로 정렬
+  // (이게 작업자가 실제 포장하는 순서. packTier → cm → SKU → 수량 → orderNo)
+  try {
+    const seqOrderNos = merged.map(o => String(o.orderNo||'').trim()).filter(Boolean);
+    localStorage.setItem('lastShippingOrderSeq', JSON.stringify({
+      orderNos: seqOrderNos,
+      savedAt: Date.now(),
+      count: seqOrderNos.length,
+      batchId: batchId,
+    }));
+  } catch(_e){ console.warn('save lastShippingOrderSeq failed', _e); }
+
   // XLSX 생성 (원본 카페24 컬럼 순서 유지)
   // 택배 프로그램이 1행도 데이터로 인식하기 때문에 헤더 행은 출력하지 않음
   // 참고용 컬럼 순서:
@@ -9478,21 +9490,6 @@ async function convertRosenToShipped(file){
       toast('변환할 데이터가 없습니다 (4행부터 비어있음)','warn');
       return;
     }
-    // 송장 순서 보관 — 동봉카드 일괄 출력 시 이 순서대로 정렬
-    try {
-      const seqOrderNos = [];
-      const _seenShipOrders = new Set();
-      for(let i=1; i<aoa.length; i++){
-        const no = String(aoa[i][0]||'').trim();
-        if(!no || _seenShipOrders.has(no)) continue;
-        _seenShipOrders.add(no); seqOrderNos.push(no);
-      }
-      localStorage.setItem('lastShippingOrderSeq', JSON.stringify({
-        orderNos: seqOrderNos,
-        savedAt: Date.now(),
-        count: seqOrderNos.length,
-      }));
-    } catch(_e){ console.warn('save lastShippingOrderSeq failed', _e); }
     const wsOut = XLSX.utils.aoa_to_sheet(aoa);
     const wbOut = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wbOut, wsOut, '배송완료');
