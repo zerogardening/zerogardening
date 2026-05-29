@@ -4469,6 +4469,35 @@ const Store = (() => {
       data.orders = data.orders.filter(o => o.batchId !== batchId);
       save(data);
     },
+    /* ── 고객 누적 구매 이력 (batch 삭제와 무관하게 영구 보존) ──
+       customerKey → { dates: ['YYYY-MM-DD', ...], name, zip, lastUpdated } */
+    listCustomerHistory(){
+      const d = load();
+      if(!d.customerHistory) d.customerHistory = {};
+      return d.customerHistory;
+    },
+    /** entries: [{key, date, name, zip}, ...] — 일괄 upsert (1회 save) */
+    upsertCustomerHistoryBatch(entries){
+      if(!Array.isArray(entries) || entries.length === 0) return 0;
+      const d = load();
+      if(!d.customerHistory) d.customerHistory = {};
+      const now = Date.now();
+      let added = 0;
+      entries.forEach(e => {
+        if(!e || !e.key || !e.date) return;
+        if(!d.customerHistory[e.key]){
+          d.customerHistory[e.key] = { dates: [], name: e.name||'', zip: e.zip||'', lastUpdated: now };
+        }
+        const entry = d.customerHistory[e.key];
+        if(!Array.isArray(entry.dates)) entry.dates = [];
+        if(!entry.dates.includes(e.date)){ entry.dates.push(e.date); added++; }
+        if(e.name) entry.name = e.name;
+        if(e.zip)  entry.zip  = e.zip;
+        entry.lastUpdated = now;
+      });
+      save(d);
+      return added;
+    },
     listOrdersByBatch(batchId){
       const d = load();
       if(!d.orders) d.orders = [];
@@ -9376,9 +9405,15 @@ async function generateShippingXlsx(batchId){
   } catch(_e){ console.warn('save lastShippingOrderSeq failed', _e); }
 
   // ── 고객 누적 구매 횟수 표시: 2회차부터 (#N) prefix ──
-  // 룰: 수령인명 + 우편번호 기준 (쿠팡 안전번호 때문에 휴대폰 식별 불가),
-  //     같은 날 여러 주문은 1회로 묶음.
-  //     수령인명 또는 우편번호 없는 주문은 카운트 안 함 (회차 표시 없음)
+  // 룰:
+  //   - 수령인명 + 우편번호 기준 (쿠팡 안전번호 때문에 휴대폰 식별 불가)
+  //   - 같은 날 여러 주문은 1회로 묶음
+  //   - 같은 송장 안 같은 사람의 모든 주문은 같은 회차로 통합 (그 고객의 최대 nth)
+  //   - 수령인명 또는 우편번호 없는 주문은 카운트 안 함 (회차 표시 없음)
+  // 데이터 소스:
+  //   1) Store.listOrders() — 현재 Store 의 모든 주문
+  //   2) Store.listCustomerHistory() — batch 삭제와 무관한 영구 누적 이력
+  //   두 소스를 합쳐서 unique dates 계산. 송장 생성 후 history 에 upsert.
   try {
     // 한글 NFC 정규화 + 모든 종류 whitespace 제거 (전각/반각/탭/개행 등)
     const _normStr = (s) => {
@@ -9393,8 +9428,7 @@ async function generateShippingXlsx(batchId){
       if(!name || !zip) return '';
       return name + '|' + zip;
     };
-    // 날짜 정규화 — YYYY-MM-DD 형태로 강제. zero-pad 안 된 입력도 처리.
-    // 지원 포맷: '2026-5-29 14:30', '2026/05/29', '2026.5.29', '20260529' 등
+    // 날짜 정규화 — YYYY-MM-DD 형태로 강제
     const _dateKey = (o) => {
       const s = String(o.orderedAt||'').trim();
       if(!s) return '';
@@ -9404,7 +9438,7 @@ async function generateShippingXlsx(batchId){
       if(m) return `${m[1]}-${m[2]}-${m[3]}`;
       return s.slice(0, 10);
     };
-    // customerKey → Set<dateKey> 누적 (Store 의 전체 주문 기록)
+    // 1) Store.listOrders() 에서 dates 수집
     const _allOrders = Store.listOrders();
     const _custDates = new Map();
     _allOrders.forEach(o => {
@@ -9413,21 +9447,47 @@ async function generateShippingXlsx(batchId){
       if(!_custDates.has(ck)) _custDates.set(ck, new Set());
       _custDates.get(ck).add(dk);
     });
-    // 각 customerKey 의 dateKey 정렬 (오름차순) — 회차 계산용
+    // 2) customerHistory 에서 dates 합치기
+    const _history = (typeof Store.listCustomerHistory === 'function') ? Store.listCustomerHistory() : {};
+    let _historyCount = 0;
+    Object.keys(_history).forEach(ck => {
+      _historyCount++;
+      if(!_custDates.has(ck)) _custDates.set(ck, new Set());
+      const dates = (_history[ck] && _history[ck].dates) || [];
+      dates.forEach(d => _custDates.get(ck).add(d));
+    });
+    // 정렬
     const _custSorted = new Map();
     _custDates.forEach((set, ck) => { _custSorted.set(ck, Array.from(set).sort()); });
-    // merged 의 각 항목에 회차 부여 → 2회차 이상이면 _newName 앞에 (#N) prefix
+
+    // 3) merged 의 각 customerKey 의 최대 nth 계산 (같은 송장 안 같은 사람은 같은 회차)
+    const _custMaxNth = new Map();
+    merged.forEach(o => {
+      const ck = _custKey(o); if(!ck) return;
+      const dk = _dateKey(o); if(!dk) return;
+      const sorted = _custSorted.get(ck) || [];
+      const idx = sorted.indexOf(dk);
+      if(idx < 0) return;
+      const nth = idx + 1;
+      if(!_custMaxNth.has(ck) || _custMaxNth.get(ck) < nth){
+        _custMaxNth.set(ck, nth);
+      }
+    });
+
+    // 4) 2회차 이상이면 _newName 앞에 (#N) prefix
     let _prefixCount = 0;
     const _debugRows = [];
     merged.forEach(o => {
       const ck = _custKey(o);
       const dk = _dateKey(o);
       const sorted = (ck && _custSorted.get(ck)) || [];
-      const idx = sorted.indexOf(dk);
-      const nth = idx + 1;
-      if(idx >= 1){
-        o._newName = `(#${nth}) ${o._newName||''}`;
+      const myIdx = sorted.indexOf(dk);
+      const maxNth = ck ? (_custMaxNth.get(ck) || 0) : 0;
+      let prefixed = '';
+      if(maxNth >= 2){
+        o._newName = `(#${maxNth}) ${o._newName||''}`;
         _prefixCount++;
+        prefixed = 'Y';
       }
       _debugRows.push({
         orderNo: o.orderNo,
@@ -9436,13 +9496,29 @@ async function generateShippingXlsx(batchId){
         custKey: ck || '(없음)',
         thisDate: dk,
         allDates: sorted.join(', '),
-        nth: nth > 0 ? nth : '-',
-        prefixed: idx >= 1 ? 'Y' : '',
+        myNth: myIdx >= 0 ? myIdx + 1 : '-',
+        maxNth: maxNth || '-',
+        prefixed: prefixed,
       });
     });
-    console.log(`[송장] 재구매 표시 ${_prefixCount}건 / 전체 ${merged.length}건 · Store 전체 주문 ${_allOrders.length}건`);
-    console.log('[송장] 회차 매칭 상세 ↓ (한 사람의 allDates 가 여러 개여야 회차 2 이상 됨)');
+    console.log(`[송장] 재구매 표시 ${_prefixCount}건 / 전체 ${merged.length}건`);
+    console.log(`  · Store 주문 ${_allOrders.length}건 / 누적 history ${_historyCount}명`);
+    console.log('[송장] 회차 매칭 상세 ↓ (같은 사람의 모든 주문은 maxNth 가 같음)');
     console.table(_debugRows);
+
+    // 5) 이번 송장의 모든 (customerKey, dateKey) 를 history 에 upsert (영구 보존)
+    if(typeof Store.upsertCustomerHistoryBatch === 'function'){
+      const _upserts = [];
+      merged.forEach(o => {
+        const ck = _custKey(o); if(!ck) return;
+        const dk = _dateKey(o); if(!dk) return;
+        _upserts.push({ key: ck, date: dk, name: o.recipientName, zip: o.recipientZip });
+      });
+      if(_upserts.length > 0){
+        const added = Store.upsertCustomerHistoryBatch(_upserts);
+        console.log(`[송장] customerHistory 에 새 (고객,날짜) ${added}건 추가`);
+      }
+    }
   } catch(_e){ console.warn('purchase count prefix failed', _e); }
 
   // XLSX 생성 (원본 카페24 컬럼 순서 유지)
