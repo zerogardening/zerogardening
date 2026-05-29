@@ -9376,11 +9376,18 @@ async function generateShippingXlsx(batchId){
   } catch(_e){ console.warn('save lastShippingOrderSeq failed', _e); }
 
   // ── 고객 누적 구매 횟수 표시: 2회차부터 (#N) prefix ──
-  // 룰: 주문자 휴대폰번호 기준, 같은 날 여러 주문은 1회로 묶음
-  // 휴대폰번호 없는 주문은 카운트 안 함 (회차 표시 없음)
+  // 룰: 수령인명 + 우편번호 기준 (쿠팡 안전번호 때문에 휴대폰 식별 불가),
+  //     같은 날 여러 주문은 1회로 묶음.
+  //     수령인명 또는 우편번호 없는 주문은 카운트 안 함 (회차 표시 없음)
   try {
-    const _normPhone = (p) => String(p||'').replace(/[^0-9]/g, '');
-    const _custKey = (o) => _normPhone(o.ordererMobile) || _normPhone(o.ordererPhone) || '';
+    const _normStr = (s) => String(s||'').replace(/\s+/g, '').trim();
+    const _normZip = (z) => String(z||'').replace(/[^0-9]/g, '');
+    const _custKey = (o) => {
+      const name = _normStr(o.recipientName);
+      const zip  = _normZip(o.recipientZip);
+      if(!name || !zip) return '';
+      return name + '|' + zip;
+    };
     const _dateKey = (o) => String(o.orderedAt||'').slice(0, 10);
     // customerKey → Set<dateKey> 누적 (Store 의 전체 주문 기록)
     const _custDates = new Map();
