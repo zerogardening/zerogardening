@@ -1416,6 +1416,7 @@ table.orders-table .product-cell{
 }
 table.orders-table .product-cell .pname{font-weight:500;color:var(--text);line-height:1.35}
 table.orders-table .product-cell .popt{font-size:11px;color:var(--muted);margin-top:2px}
+.popt.popt-warn{color:#d92020 !important;font-weight:700}
 table.orders-table .code-cell{
   font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11px;
   color:#1e4abb;background:#e7f0ff;padding:3px 7px;border-radius:4px;
@@ -4807,6 +4808,18 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m=>({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[m]));
+}
+
+/* 주문 옵션 렌더 — '사이즈=N개' 처럼 수량을 사이즈 옵션에 잘못 입력한 경우 빨간색 경고 표시 */
+function renderOrderOption(option){
+  if(!option) return '';
+  const s = String(option);
+  // 사이즈= 바로 뒤에 'N개' (cm 등 규격 없이 갯수만) → 수량을 사이즈 옵션에 잘못 넣은 케이스
+  const misplacedQty = /사이즈\s*=\s*\d+\s*개/.test(s);
+  if(misplacedQty){
+    return `<div class="popt popt-warn" title="수량이 '사이즈' 옵션에 입력된 것 같아요. 수량 옵션을 확인하세요.">⚠ ${escapeHtml(s)}</div>`;
+  }
+  return `<div class="popt">${escapeHtml(s)}</div>`;
 }
 
 /* ── USDA Zone 라벨/온도 매핑 ── */
@@ -9034,7 +9047,7 @@ function renderCsvPreviewTable(orders){
       <td class="order-no">${escapeHtml(o.orderNo)}</td>
       <td class="product-cell">
         <div class="pname">${escapeHtml(o.productName||'-')}</div>
-        ${o.option?`<div class="popt">${escapeHtml(o.option)}</div>`:''}
+        ${renderOrderOption(o.option)}
       </td>
       <td>${codeHtml}</td>
       <td class="num">${fmtNum(o.qty)}</td>
@@ -10271,7 +10284,7 @@ function renderOrderList(){
             <td class="order-no">${escapeHtml(o.orderNo)}</td>
             <td class="product-cell">
               <div class="pname">${escapeHtml(o.productName||'-')}</div>
-              ${o.option?`<div class="popt">${escapeHtml(o.option)}</div>`:''}
+              ${renderOrderOption(o.option)}
               ${plantNameTip}
             </td>
             <td>${codeHtml}</td>
@@ -11882,7 +11895,7 @@ function renderOrderList(){
             <td class="order-no">${escapeHtml(o.orderNo)}</td>
             <td class="product-cell">
               <div class="pname">${escapeHtml(o.productName||'-')}</div>
-              ${o.option?`<div class="popt">${escapeHtml(o.option)}</div>`:''}
+              ${renderOrderOption(o.option)}
               ${plantNameTip}
             </td>
             <td>${codeHtml}</td>
