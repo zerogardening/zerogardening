@@ -2409,6 +2409,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
                 <option value="paused">→ 일시중지</option>
               </select>
               <button type="button" class="btn btn-primary btn-sm" id="btn-inv-bulk-ai" title="선택한 품목 일괄 AI 글쓰기 요청 — 큐에 적재됨" style="background:#1e4abb;color:#fff;border:1px solid #1e4abb">🤖 AI 글쓰기 일괄</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-bulk-delete" title="선택한 품목의 입고 기록을 완전히 삭제 (되돌릴 수 없음)" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">🗑 재고 삭제</button>
             </span>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-ai-clear-queue" title="AI 글쓰기 큐의 대기 항목을 모두 비웁니다 (완료된 결과는 유지)" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">🗑 AI 큐 비우기</button>
             <button type="button" class="btn btn-secondary btn-sm" id="btn-inv-export" title="현재 화면에 보이는 행을 엑셀로 다운로드">📊 엑셀 다운로드</button>
@@ -13258,6 +13259,20 @@ function setInventoryAdjustment(key, qty){
   _invSave(d);
 }
 
+/* 재고 항목 완전 삭제 — 해당 키의 입고 기록 + 재고 메타(상태/조정/최소재고) 제거.
+   주문(출고) 기록은 건드리지 않음. 되돌릴 수 없음. 삭제된 입고 건수 반환. */
+function deleteInventoryItem(key){
+  const d = _invState();
+  const before = (d.receivings||[]).length;
+  d.receivings = (d.receivings||[]).filter(r => normalizeInventoryKey(r.barcode) !== key);
+  const removed = before - d.receivings.length;
+  if(d.inventoryAdjustments) delete d.inventoryAdjustments[key];
+  if(d.inventoryStatus)      delete d.inventoryStatus[key];
+  if(d.inventoryMinQty)      delete d.inventoryMinQty[key];
+  _invSave(d);
+  return removed;
+}
+
 /* 재고 계산 — 모든 SKU(8자리 키) 집계 */
 function computeInventoryList(){
   const d = _invState();
@@ -13483,7 +13498,7 @@ function renderInventoryView(){
           <th class="num" style="width:80px">총 출고</th>
           <th class="num" style="width:80px">현재 재고</th>
           <th class="num" style="width:90px">최소 재고</th>
-          <th style="width:170px">작업</th>
+          <th style="width:230px">작업</th>
         </tr>
       </thead>
       <tbody>
@@ -13514,6 +13529,7 @@ function renderInventoryView(){
             <td style="white-space:nowrap">
               <button type="button" class="inv-action-btn" data-action="info" data-key="${escapeHtml(it.key)}" title="이 품목의 기본정보(식물 특성 등) 보기/편집" style="margin-right:4px">🌱 기본정보</button>
               <button type="button" class="inv-action-btn" data-action="adjust" data-key="${escapeHtml(it.key)}" title="실재고로 기준점 설정">📝 조정</button>
+              <button type="button" class="inv-action-btn" data-action="delete" data-key="${escapeHtml(it.key)}" title="이 품목의 입고 기록을 완전히 삭제 (되돌릴 수 없음)" style="margin-left:4px;background:#fef2f2;color:#b91c1c;border-color:#fecaca">🗑 삭제</button>
             </td>
           </tr>`;
         }).join('')}
@@ -13558,6 +13574,26 @@ function renderInventoryView(){
   area.querySelectorAll('[data-action="adjust"]').forEach(btn => {
     btn.addEventListener('click', e => {
       openInventoryAdjustModal(e.target.dataset.key);
+    });
+  });
+  area.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const key = e.currentTarget.dataset.key;
+      const all = Store.all();
+      const recvCount  = (all.receivings||[]).filter(r => normalizeInventoryKey(r.barcode) === key).length;
+      const orderCount = (all.orders||[]).filter(o => normalizeInventoryKey(o.itemCode) === key).length;
+      const it = computeInventoryList().find(x => x.key === key);
+      const name = it ? (it.distName || key) : key;
+      let msg = `[${key}] ${name}\n\n입고 기록 ${recvCount}건을 완전히 삭제합니다.\n입고리스트에서도 사라지며, 되돌릴 수 없습니다.`;
+      if(orderCount > 0){
+        msg += `\n\n⚠ 이 품목은 주문(출고) 기록이 ${orderCount}건 있어, 삭제 후에도 출고 이력 때문에 음수 재고로 다시 표시될 수 있어요. (주문 기록은 삭제하지 않습니다)`;
+      }
+      msg += `\n\n계속할까요?`;
+      if(!confirm(msg)) return;
+      const removed = deleteInventoryItem(key);
+      _invSelected.delete(key);
+      renderInventoryView();
+      toast(`✓ ${key} 삭제됨 (입고 ${removed}건)`);
     });
   });
   area.querySelectorAll('[data-action="info"]').forEach(btn => {
@@ -13764,6 +13800,27 @@ function setupInventoryView(){
     bulkSel.value='';
     renderInventoryView();
     toast(`✓ ${status==='selling'?'판매중':status==='soldout'?'품절':'일시중지'}으로 변경됨`);
+  });
+  // ── 일괄 삭제 ──
+  const btnBulkDel = document.getElementById('btn-inv-bulk-delete');
+  if(btnBulkDel) btnBulkDel.addEventListener('click', () => {
+    if(_invSelected.size === 0){ toast('선택된 품목이 없어요','warn'); return; }
+    const keys = Array.from(_invSelected);
+    const keySet = new Set(keys);
+    const all = Store.all();
+    const recvCount  = (all.receivings||[]).filter(r => keySet.has(normalizeInventoryKey(r.barcode))).length;
+    const orderCount = (all.orders||[]).filter(o => keySet.has(normalizeInventoryKey(o.itemCode))).length;
+    let msg = `선택한 ${keys.length}개 품목의 입고 기록 ${recvCount}건을 완전히 삭제합니다.\n입고리스트에서도 사라지며, 되돌릴 수 없습니다.`;
+    if(orderCount > 0){
+      msg += `\n\n⚠ 이 중 주문(출고) 기록이 ${orderCount}건 있어, 삭제 후에도 출고 이력 때문에 음수 재고로 다시 표시될 수 있어요. (주문 기록은 삭제하지 않습니다)`;
+    }
+    msg += `\n\n계속할까요?`;
+    if(!confirm(msg)) return;
+    let total = 0;
+    keys.forEach(key => { total += deleteInventoryItem(key); });
+    _invSelected.clear();
+    renderInventoryView();
+    toast(`✓ ${keys.length}개 품목 삭제됨 (입고 ${total}건)`);
   });
   // ── 일괄 AI 글쓰기 ──
   const btnBulkAi = document.getElementById('btn-inv-bulk-ai');
