@@ -11396,15 +11396,21 @@ function _setupCardEditDelegation(){
     if(rst){ const gkey=rst.dataset.gkey; if(gkey&&_cardEditsData[gkey]){ delete _cardEditsData[gkey]; _saveCardEdits(); renderCardDoc(); } return; }
   });
 }
-function _openServiceAddDialog(gkeys){
+function _openServiceAddDialog(gkeys, opts){
   gkeys = Array.isArray(gkeys) ? gkeys.filter(Boolean) : (gkeys ? [gkeys] : []);
   if(gkeys.length===0){ toast('대상이 없습니다','warn'); return; }
+  const asService = !!(opts && opts.service);
   document.getElementById('svc-add-overlay')?.remove();
   const skus = Store.listSkuMasters().filter(s=>(s.distributionName||'').trim()).sort((a,b)=>String(a.distributionName).localeCompare(String(b.distributionName),'ko'));
-  const titleTxt = gkeys.length>1 ? `➕ 선택한 ${gkeys.length}건에 품목 추가` : '+ 품목 추가';
+  const titleTxt = asService
+    ? (gkeys.length>1 ? `🎁 선택한 ${gkeys.length}건에 서비스 품목 추가` : '🎁 서비스 품목 추가')
+    : (gkeys.length>1 ? `➕ 선택한 ${gkeys.length}건에 품목 추가` : '+ 품목 추가');
+  const descTxt = asService
+    ? '품목명을 입력하면 등록 품목이 자동완성으로 떠요. 카드에 "○○○ - 서비스" 로 등록됩니다. 특성·하단 안내는 동일하게 들어갑니다.'
+    : '품목명을 입력하면 등록 품목이 자동완성으로 떠요. 선택하면 카드에 그대로 추가됩니다. 특성·하단 안내는 동일하게 들어갑니다.';
   const ov=document.createElement('div'); ov.id='svc-add-overlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 6px;font-size:16px">${escapeHtml(titleTxt)}</h3><div style="font-size:11px;color:var(--muted,#888);margin-bottom:12px">품목명을 입력하면 등록 품목이 자동완성으로 떠요. 선택하면 카드에 그대로 추가됩니다. 특성·하단 안내는 동일하게 들어갑니다.</div><label style="font-size:12px;font-weight:600;display:block">품목명 검색 / 입력</label><input id="svc-name" class="form-control" style="margin:4px 0 0;width:100%" placeholder="예: 제주꿀풀" autocomplete="off"><div id="svc-sug" class="svc-sug-list"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">추가</button></div></div>`;
+  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 6px;font-size:16px">${escapeHtml(titleTxt)}</h3><div style="font-size:11px;color:var(--muted,#888);margin-bottom:12px">${descTxt}</div><label style="font-size:12px;font-weight:600;display:block">품목명 검색 / 입력</label><input id="svc-name" class="form-control" style="margin:4px 0 0;width:100%" placeholder="예: 제주꿀풀" autocomplete="off"><div id="svc-sug" class="svc-sug-list"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">${asService?'서비스 추가':'추가'}</button></div></div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
   const nameEl=document.getElementById('svc-name'), sugEl=document.getElementById('svc-sug');
@@ -11428,12 +11434,12 @@ function _openServiceAddDialog(gkeys){
     let svc;
     if(s){ svc={ scientificName:s.scientificName||'', heightMin:s.heightMin||'',heightMax:s.heightMax||'',widthMin:s.widthMin||'',widthMax:s.widthMax||'',bloomStart:s.bloomStart||'',bloomEnd:s.bloomEnd||'',hardiness:s.hardiness||'',watering:s.watering||'',sunlight:s.sunlight||'',note:s.note||'' }; }
     else { svc={}; }
-    svc.name=base;
+    svc.name = asService ? (/서비스\s*$/.test(base) ? base : base + ' - 서비스') : base;
     gkeys.forEach(gk=>{ const ed=_getCardEdits(gk); ed.service=ed.service||[]; ed.service.push(Object.assign({}, svc)); });
     _saveCardEdits();
     ov.remove();
     const cm=document.getElementById('card-modal'); if(cm && !cm.classList.contains('hidden')) renderCardDoc();
-    toast(`✓ "${base}" 추가 (${gkeys.length}건)`,'flash');
+    toast(`✓ "${svc.name}" 추가 (${gkeys.length}건)`,'flash');
   });
 }
 
@@ -12078,7 +12084,7 @@ function renderOrderList(){
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
           <button class="btn btn-primary btn-sm" id="btn-bulk-card-open" style="width:100%">전체 ${fmtNum(uniqueOrders.size)}건 PDF</button>
           <button class="btn btn-secondary btn-sm" id="btn-bulk-card-selected" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>선택 ${fmtNum(selectedUniqueNos.size)}건 PDF</button>
-          <button class="btn btn-secondary btn-sm" id="btn-bulk-service" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>➕ 선택 ${fmtNum(selectedUniqueNos.size)}건 품목 추가</button>
+          <button class="btn btn-secondary btn-sm" id="btn-bulk-service" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>🎁 선택 ${fmtNum(selectedUniqueNos.size)}건에 서비스</button>
           <button class="btn btn-ghost btn-sm" id="btn-manual-card-open" style="width:100%">✍️ 수동 카드 작성</button>
         </div>
       </div>
@@ -12100,11 +12106,11 @@ function renderOrderList(){
     document.getElementById('btn-manual-card-open').addEventListener('click', openManualCardModal);
     const _svcBtn = document.getElementById('btn-bulk-service');
     if(_svcBtn) _svcBtn.addEventListener('click', () => {
-      if(selectedUniqueNos.size === 0){ toast('품목 추가할 주문을 먼저 체크하세요','warn'); return; }
+      if(selectedUniqueNos.size === 0){ toast('서비스 줄 주문을 먼저 체크하세요','warn'); return; }
       _loadCardEdits();
       const gks = new Set();
       selectedValid.forEach(o => gks.add(_shipGroupKey(o) || ('__solo__'+String(o.orderNo))));
-      _openServiceAddDialog(Array.from(gks));
+      _openServiceAddDialog(Array.from(gks), {service:true});
     });
   }
 
