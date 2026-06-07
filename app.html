@@ -1180,6 +1180,17 @@ table.sku-table .sku-prefix-tag{
     background:transparent !important;
   }
   body.printing-card .card-screen-only{ display:none !important; }
+  .card-plant-del{margin-left:8px;border:none;background:#ffe3e3;color:#c92a2a;border-radius:50%;width:20px;height:20px;line-height:18px;text-align:center;cursor:pointer;font-size:11px;padding:0;flex:none}
+  .plant-service-tag{display:inline-block;margin-left:6px;font-size:10px;background:#d3f9d8;color:#2b8a3e;border-radius:4px;padding:1px 6px;vertical-align:middle}
+  .card-add-service{margin:10px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .card-add-service-btn{border:1px dashed #1e4abb;background:#eef3ff;color:#1e4abb;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px}
+  .card-reset-btn{border:1px solid var(--border,#ddd);background:transparent;color:var(--muted,#888);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:11px}
+  .order-group-row td{background:#eef3ff;border-top:2px solid #c7d6ff;padding:7px 10px}
+  .ogr-badge{display:inline-block;font-size:11px;font-weight:700;color:#1e4abb;background:#dce8ff;border-radius:4px;padding:2px 7px;margin-right:8px}
+  .ogr-badge.hap{color:#2b8a3e;background:#d3f9d8}
+  .ogr-name{font-weight:700}
+  .ogr-meta{color:var(--muted,#888);font-size:12px;margin-left:6px}
+  .ogr-card-btn{float:right;border:1px solid #1e4abb;background:#fff;color:#1e4abb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
   body.printing-card .card-doc{
     border:none !important;
     border-radius:0 !important;
@@ -9281,6 +9292,17 @@ function _tsToHHMM(ts){
 
 /* ── 폴더 그리드 렌더 ── */
 /* ── 송장파일 가공 (CSV 주문 → 송장 출력용 XLSX) ── */
+/* ── 합포장 그룹핑 공유 헬퍼 — 송장/주문리스트/동봉카드가 동일 기준 사용 ──
+   그룹 키 = 정규화이름 + 우편번호 + 연락처키.  연락처키: 안전번호(050X)는 모두 __SAFE__,
+   일반번호는 번호 자체, 없으면 __NONE__.  이름/우편번호 없으면 null(단독 처리). */
+function _grpNorm(s){ let v=String(s||''); try{ v=v.normalize('NFC'); }catch(_){} return v.replace(/[\s 　]+/g,'').trim(); }
+function _grpZip(z){ return String(z||'').replace(/[^0-9]/g,''); }
+function _grpPhoneDigits(p){ return String(p||'').replace(/[^0-9]/g,''); }
+function _grpContact(o){ return _grpPhoneDigits(o.recipientMobile) || _grpPhoneDigits(o.recipientPhone2) || _grpPhoneDigits(o.recipientPhone); }
+function _grpIsSafe(d){ return /^050/.test(String(d||'')); }
+function _grpContactKey(o){ const c=_grpContact(o); if(!c) return '__NONE__'; return _grpIsSafe(c) ? '__SAFE__' : c; }
+function _shipGroupKey(o){ const name=_grpNorm(o.recipientName); const zip=_grpZip(o.recipientZip); if(!name||!zip) return null; return name+'|'+zip+'|'+_grpContactKey(o); }
+
 async function generateShippingXlsx(batchId){
   const batch = Store.getOrderBatch(batchId);
   if(!batch){ toast('폴더를 찾을 수 없습니다','error'); return; }
@@ -9358,25 +9380,10 @@ async function generateShippingXlsx(batchId){
   //       - 둘 다 안전번호(050X 가상/안심번호) → 합포장 그룹으로 보고, 나중에 들어온 주문의 안전번호로 통일
   //       - 그 외 일반번호가 다르면 → 개별 주문건으로 분리
   //   · 이름 또는 우편번호가 없으면 단독 처리(다른 무명 주문과 섞지 않음)
-  const _grpNorm = (s) => { let v = String(s||''); try { v = v.normalize('NFC'); } catch(_){} return v.replace(/[\s 　]+/g,'').trim(); };
-  const _grpZip  = (z) => String(z||'').replace(/[^0-9]/g,'');
-  const _grpPhoneDigits = (p) => String(p||'').replace(/[^0-9]/g,'');
-  // 수령인 대표 연락처: 핸드폰 → 전화번호 → 수령지전화 순
-  const _grpContact = (o) => _grpPhoneDigits(o.recipientMobile) || _grpPhoneDigits(o.recipientPhone2) || _grpPhoneDigits(o.recipientPhone);
-  // 050 으로 시작하면 안전번호(가상/안심번호)로 간주
-  const _grpIsSafe = (digits) => /^050/.test(digits);
-  // 그룹 키 — 안전번호는 모두 '__SAFE__' 로 모으고(통일 대상), 일반번호는 번호 자체로 구분(다르면 분리)
-  const _grpContactKey = (o) => {
-    const c = _grpContact(o);
-    if(!c) return '__NONE__';
-    return _grpIsSafe(c) ? '__SAFE__' : c;
-  };
   const byCust = new Map();
   const custSeq = [];
   processed.forEach((o, idx) => {
-    const name = _grpNorm(o.recipientName);
-    const zip  = _grpZip(o.recipientZip);
-    const key  = (name && zip) ? (name + '|' + zip + '|' + _grpContactKey(o)) : ('__solo__' + idx);
+    const key = _shipGroupKey(o) || ('__solo__' + idx);
     if(!byCust.has(key)){ byCust.set(key, { lines: [o], key: key }); custSeq.push(key); }
     else byCust.get(key).lines.push(o);
   });
@@ -9949,6 +9956,7 @@ function enterBatchFolder(batchId){
 
   // 필터 설정 후 렌더
   _orderBatchFilter = batchId;
+  try { _orderUI.sort = 'ship-group'; } catch(_e){}
   // 검색/기간/선택 초기화 (폴더 안에서는 그 폴더 전체를 default 로)
   const sf = document.getElementById('order-search-input'); if(sf) sf.value = '';
   const pf = document.getElementById('order-period'); if(pf) pf.value = 'all';
@@ -11234,34 +11242,176 @@ function renderCardDoc(){
     document.getElementById('card-doc').innerHTML = '<div class="muted" style="padding:30px;text-align:center">출력할 주문이 없습니다.</div>';
     return;
   }
-  // 정보 안내 (일괄일 때만 상단 표시)
-  if(_isBulkMode && orderNos.length > 1){
-    // 송장 순서 매칭 정보
-    let _shipInfo = '';
-    try {
-      const _saved = JSON.parse(localStorage.getItem('lastShippingOrderSeq')||'null');
-      if(_saved && Array.isArray(_saved.orderNos) && _saved.orderNos.length){
-        const _wantSet = new Set(orderNos.map(String));
-        const _matched = _saved.orderNos.filter(no => _wantSet.has(String(no))).length;
-        if(_matched > 0){
-          const _outside = orderNos.length - _matched;
-          const _d = new Date(_saved.savedAt||0);
-          const _ts = _saved.savedAt ? `${_d.getMonth()+1}/${_d.getDate()} ${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}` : '';
-          _shipInfo = `<br>📦 송장 순서 적용: <strong>${_matched}건</strong>` +
-                      (_outside > 0 ? ` · 송장 외(뒤에 배치): <strong>${_outside}건</strong>` : '') +
-                      (_ts ? ` <span style="opacity:0.7">(송장 변환: ${_ts})</span>` : '');
+  // 합포장 그룹 단위로 카드 생성 (일괄). 단일/수동은 기존 경로 유지.
+  if(_isBulkMode){
+    _loadCardEdits();
+    _setupCardEditDelegation();
+    const groups = _buildCardGroups(orderNos);
+    _cardGroupsCache = groups;
+    if(groups.length > 1){
+      let _shipInfo = '';
+      try {
+        const _saved = JSON.parse(localStorage.getItem('lastShippingOrderSeq')||'null');
+        if(_saved && Array.isArray(_saved.orderNos) && _saved.orderNos.length){
+          const _wantSet = new Set(orderNos.map(String));
+          const _matched = _saved.orderNos.filter(no => _wantSet.has(String(no))).length;
+          if(_matched > 0){
+            const _d = new Date(_saved.savedAt||0);
+            const _ts = _saved.savedAt ? `${_d.getMonth()+1}/${_d.getDate()} ${String(_d.getHours()).padStart(2,'0')}:${String(_d.getMinutes()).padStart(2,'0')}` : '';
+            _shipInfo = `<br>📦 송장 순서로 정렬됨` + (_ts ? ` <span style="opacity:0.7">(송장 변환: ${_ts})</span>` : '');
+          }
         }
-      }
-    } catch(_e){}
-    html += `<div class="bulk-info card-screen-only" style="background:#e7f0ff;border-left:4px solid #1e4abb;padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#0b2c75">
-      📄 총 <strong>${orderNos.length}장</strong>의 카드가 생성됩니다. 인쇄 시 "PDF로 저장"을 선택하면 모든 카드를 한 PDF 파일로 받을 수 있습니다.
-      각 카드는 A4 한 장에 하나씩 자동 분할 출력됩니다.${_shipInfo}
-    </div>`;
+      } catch(_e){}
+      html += `<div class="bulk-info card-screen-only" style="background:#e7f0ff;border-left:4px solid #1e4abb;padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#0b2c75">
+        📄 합포장 기준 총 <strong>${groups.length}장</strong>의 카드 (주문 ${orderNos.length}건 → 합포장 ${groups.length}건). 인쇄 시 "PDF로 저장"을 선택하세요.<br>✕ 로 항목 제거, [+ 서비스 품목 추가] 로 사은품을 넣을 수 있어요.${_shipInfo}
+      </div>`;
+    }
+    groups.forEach((g, idx) => { html += renderGroupCardHtml(g, memo, idx > 0); });
+    document.getElementById('card-doc').innerHTML = html;
+    return;
   }
   orderNos.forEach((orderNo, idx) => {
     html += renderSingleCardHtml(orderNo, memo, idx > 0);
   });
   document.getElementById('card-doc').innerHTML = html;
+}
+
+/* ── 동봉카드: 합포장 그룹 빌드 + 편집(서비스품목 추가 / 항목 제거) ── */
+let _cardGroupsCache = [];
+let _cardEditsData = {};
+function _cardEditsStorageKey(){ return 'cardEdits_' + ((typeof _orderBatchFilter==='string'&&_orderBatchFilter)?_orderBatchFilter:'_all'); }
+function _loadCardEdits(){ try{ _cardEditsData = JSON.parse(localStorage.getItem(_cardEditsStorageKey())||'{}')||{}; }catch(_e){ _cardEditsData={}; } }
+function _saveCardEdits(){ try{ localStorage.setItem(_cardEditsStorageKey(), JSON.stringify(_cardEditsData)); }catch(_e){} }
+function _getCardEdits(gkey){ if(!_cardEditsData[gkey]) _cardEditsData[gkey]={hidden:[],service:[]}; return _cardEditsData[gkey]; }
+function _cardLineKey(ln){ return String(ln.itemCode||'').trim().toUpperCase() || ('__name__'+(ln.productName||'').trim()); }
+
+function _buildCardGroups(orderNos){
+  const allOrders = Store.listOrders();
+  const byNo = new Map();
+  allOrders.forEach(o => { const k=String(o.orderNo); if(!byNo.has(k)) byNo.set(k,[]); byNo.get(k).push(o); });
+  const groups = new Map();
+  (orderNos||[]).forEach(no => {
+    const lines = byNo.get(String(no)) || [];
+    if(lines.length===0) return;
+    const gkey = _shipGroupKey(lines[0]) || ('__solo__'+no);
+    if(!groups.has(gkey)) groups.set(gkey, { key:gkey, orderNos:[], lines:[] });
+    const g = groups.get(gkey);
+    g.orderNos.push(String(no));
+    lines.forEach(l => g.lines.push(l));
+  });
+  groups.forEach(g => {
+    const seen=new Set(); const out=[];
+    g.lines.forEach(ln=>{ const k=_cardLineKey(ln); if(seen.has(k)) return; seen.add(k); out.push(ln); });
+    g.lines=out;
+    g.tracking=(g.lines.find(l=>l.trackingNumber)||{}).trackingNumber||'';
+    g.recipientName=(g.lines[0]||{}).recipientName||'';
+  });
+  let seq=[]; try{ const s=JSON.parse(localStorage.getItem('lastShippingOrderSeq')||'null'); if(s&&Array.isArray(s.orderNos)) seq=s.orderNos.map(String); }catch(_e){}
+  const seqPos=new Map(); seq.forEach((no,i)=>{ if(!seqPos.has(no)) seqPos.set(no,i); });
+  const arr=Array.from(groups.values());
+  arr.forEach((g,gi)=>{ let r=Infinity; g.orderNos.forEach(no=>{ const pp=seqPos.has(no)?seqPos.get(no):Infinity; if(pp<r) r=pp; }); g._rank=(r===Infinity)?(1e9+gi):r; });
+  arr.sort((a,b)=>a._rank-b._rank);
+  return arr;
+}
+
+function _cardLineToPlant(line){
+  const matched = findReceivingByItemCode(line.itemCode);
+  const rec = matched ? matched.rec : null;
+  const skuMaster = Store.findSkuByCode(parseItemCode(line.itemCode||'').prefix || line.itemCode || '');
+  const pick = f => (skuMaster && skuMaster[f]) ? skuMaster[f] : ((rec && rec[f]) ? rec[f] : '');
+  return {
+    distName: pick('distributionName') || line.productName || '-',
+    sciName: pick('scientificName'),
+    heightTxt: formatRange(pick('heightMin'),pick('heightMax'),'cm') || (rec&&rec.maxHeight) || '',
+    widthTxt: formatRange(pick('widthMin'),pick('widthMax'),'cm') || (rec&&rec.maxWidth) || '',
+    bloomTxt: formatRange(pick('bloomStart'),pick('bloomEnd'),'월') || (rec&&rec.bloomSeason) || '',
+    hardyTxt: formatHardiness(pick('hardiness')),
+    wateringTxt: fullWateringLabel(pick('watering')),
+    sunlightTxt: fullSunlightLabel(pick('sunlight')),
+    note: (skuMaster&&skuMaster.note) || (rec&&rec.memo) || '',
+  };
+}
+function _serviceToPlant(s){
+  return {
+    distName: s.name||'-', sciName: s.scientificName||'',
+    heightTxt: formatRange(s.heightMin,s.heightMax,'cm'),
+    widthTxt: formatRange(s.widthMin,s.widthMax,'cm'),
+    bloomTxt: formatRange(s.bloomStart,s.bloomEnd,'월'),
+    hardyTxt: formatHardiness(s.hardiness),
+    wateringTxt: fullWateringLabel(s.watering),
+    sunlightTxt: fullSunlightLabel(s.sunlight),
+    note: s.note||'',
+  };
+}
+function _cardPlantDiv(pl, editKey, isService){
+  const traitRow=(icon,label,val)=>`<div class="pt-row"><span class="pt-icon">${icon}</span><span class="pt-lbl">${label}</span><span class="pt-val ${val?'':'empty'}">${val?escapeHtml(val):'—'}</span></div>`;
+  const delBtn = `<button type="button" class="card-plant-del card-screen-only" data-editkey="${escapeHtml(String(editKey))}" title="이 항목 카드에서 제거">✕</button>`;
+  const svcTag = isService ? `<span class="plant-service-tag card-screen-only">서비스</span>` : '';
+  return `<div class="card-plant">
+    <div class="plant-head"><div><span class="plant-name">${escapeHtml(pl.distName)}</span>${svcTag}${pl.sciName?`<span class="plant-sci">${escapeHtml(pl.sciName)}</span>`:''}</div>${delBtn}</div>
+    <div class="plant-traits-grid">
+      ${traitRow('↕','최대 높이',pl.heightTxt)}
+      ${traitRow('↔','최대 너비',pl.widthTxt)}
+      ${traitRow('❄','내한성',pl.hardyTxt)}
+      ${traitRow('💧','물 주기',pl.wateringTxt)}
+      ${traitRow('☀','일조량',pl.sunlightTxt)}
+      ${traitRow('🌸','개화기',pl.bloomTxt)}
+    </div>
+    ${pl.note?`<div class="plant-note"><span class="note-lbl">📝 특이사항</span>${escapeHtml(pl.note)}</div>`:''}
+  </div>`;
+}
+function renderGroupCardHtml(group, memo, addPageBreakBefore){
+  const edits = _getCardEdits(group.key);
+  const hidden = new Set(edits.hidden||[]);
+  const data=[];
+  group.lines.forEach(ln=>{ const k=_cardLineKey(ln); if(hidden.has(k)) return; data.push(_cardPlantDiv(_cardLineToPlant(ln), k, false)); });
+  (edits.service||[]).forEach((s,i)=>{ data.push(_cardPlantDiv(_serviceToPlant(s), 'svc:'+i, true)); });
+  const pageBreak = addPageBreakBefore ? 'card-page-break' : '';
+  const PLANTS_PER_PAGE=6; const _n=data.length;
+  const isSplit=_n>=PLANTS_PER_PAGE;
+  const compactClass=(!isSplit&&_n>=3)?'card-page-compact':'';
+  const _headerHtml = `<div class="card-header"><img class="card-logo" src="${CARD_LOGO_URL}" alt="제로가드닝"><div class="card-tagline-top">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div></div>`;
+  const _metaHtml = `<div class="card-meta">${group.tracking?`<div class="meta-block"><span class="lbl">송장번호</span><span class="tracking">${escapeHtml(group.tracking)}</span></div>`:''}</div>`;
+  const _greetingHtml = `<div class="card-greeting"><div class="card-thanks">구매해주셔서 감사합니다</div><div class="card-thanks-sub">정성껏 키운 식물이 잘 도착했길 바랍니다.</div></div>`;
+  const _editTools = `<div class="card-add-service card-screen-only"><button type="button" class="card-add-service-btn" data-gkey="${escapeHtml(group.key)}">+ 서비스 품목 추가</button><button type="button" class="card-reset-btn" data-gkey="${escapeHtml(group.key)}" title="이 카드의 편집 되돌리기">↺ 편집 초기화</button></div>`;
+  const _bottomBlockHtml = `<div class="card-bottom-block"><div class="card-memo-box ${memo?'':'empty'}"><div class="memo-title">💌 안내 말씀</div><div class="memo-text"> ${escapeHtml(memo)}</div></div><div class="card-footer"><img class="card-logo-footer" src="${CARD_LOGO2_URL}" alt="제로가드닝"></div></div>`;
+  if(isSplit){
+    const mid=Math.ceil(_n/2);
+    return `<div class="card-page ${pageBreak}" data-gkey="${escapeHtml(group.key)}">${_headerHtml}${_metaHtml}<div class="card-section-title">🌿 정원식물 관리카드 (1/2)</div>${data.slice(0,mid).join('')}</div>
+    <div class="card-page card-page-break" data-gkey="${escapeHtml(group.key)}">${_headerHtml}<div class="card-section-title">🌿 정원식물 관리카드 (2/2)</div>${data.slice(mid).join('')}${_editTools}${_greetingHtml}${_bottomBlockHtml}</div>`;
+  }
+  return `<div class="card-page ${pageBreak} ${compactClass}" data-gkey="${escapeHtml(group.key)}">${_headerHtml}${_metaHtml}<div class="card-section-title">🌿 정원식물 관리카드</div>${data.join('')}${_editTools}${_greetingHtml}${_bottomBlockHtml}</div>`;
+}
+function _setupCardEditDelegation(){
+  const doc=document.getElementById('card-doc'); if(!doc||doc._editWired) return; doc._editWired=true;
+  doc.addEventListener('click', e=>{
+    const del=e.target.closest('.card-plant-del');
+    if(del){ const card=del.closest('[data-gkey]'); const gkey=card&&card.dataset.gkey; const key=del.dataset.editkey; if(gkey!=null&&key!=null){ const ed=_getCardEdits(gkey); if(key.indexOf('svc:')===0){ const i=parseInt(key.slice(4),10); if(Array.isArray(ed.service)&&ed.service[i]!=null) ed.service.splice(i,1); } else { ed.hidden=ed.hidden||[]; if(ed.hidden.indexOf(key)<0) ed.hidden.push(key); } _saveCardEdits(); renderCardDoc(); } return; }
+    const add=e.target.closest('.card-add-service-btn');
+    if(add){ _openServiceAddDialog(add.dataset.gkey); return; }
+    const rst=e.target.closest('.card-reset-btn');
+    if(rst){ const gkey=rst.dataset.gkey; if(gkey&&_cardEditsData[gkey]){ delete _cardEditsData[gkey]; _saveCardEdits(); renderCardDoc(); } return; }
+  });
+}
+function _openServiceAddDialog(gkey){
+  document.getElementById('svc-add-overlay')?.remove();
+  const skus = Store.listSkuMasters().filter(s=>(s.distributionName||'').trim()).sort((a,b)=>String(a.distributionName).localeCompare(String(b.distributionName),'ko'));
+  const opts = ['<option value="">— 직접 입력 —</option>'].concat(skus.map((s,i)=>`<option value="${i}">${escapeHtml(s.distributionName)} (${escapeHtml(extractCodePrefix(s.barcode)||s.barcode||'')})</option>`)).join('');
+  const ov=document.createElement('div'); ov.id='svc-add-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 14px;font-size:16px">+ 서비스 품목 추가</h3><label style="font-size:12px;font-weight:600;display:block">등록 품목에서 선택</label><select id="svc-sku-sel" class="form-control" style="margin:4px 0 12px;width:100%">${opts}</select><label style="font-size:12px;font-weight:600;display:block">품목명 (직접 입력/수정 가능)</label><input id="svc-name" class="form-control" style="margin:4px 0 16px;width:100%" placeholder="예: 사은품 허브 모종"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">추가</button></div></div>`;
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  const sel=document.getElementById('svc-sku-sel'), nameEl=document.getElementById('svc-name');
+  sel.addEventListener('change',()=>{ if(sel.value!=='') nameEl.value=skus[parseInt(sel.value,10)].distributionName||''; });
+  document.getElementById('svc-cancel').addEventListener('click',()=>ov.remove());
+  document.getElementById('svc-add-go').addEventListener('click',()=>{
+    let svc; const v=sel.value;
+    if(v!==''){ const s=skus[parseInt(v,10)]; svc={ name:(nameEl.value||s.distributionName||'').trim(), scientificName:s.scientificName||'', heightMin:s.heightMin||'',heightMax:s.heightMax||'',widthMin:s.widthMin||'',widthMax:s.widthMax||'',bloomStart:s.bloomStart||'',bloomEnd:s.bloomEnd||'',hardiness:s.hardiness||'',watering:s.watering||'',sunlight:s.sunlight||'',note:s.note||'' }; }
+    else { const nm=(nameEl.value||'').trim(); if(!nm){ toast('품목명을 입력하세요','warn'); return; } svc={ name:nm }; }
+    const ed=_getCardEdits(gkey); ed.service=ed.service||[]; ed.service.push(svc); _saveCardEdits();
+    ov.remove(); renderCardDoc(); toast('✓ 서비스 품목 추가됨','flash');
+  });
 }
 
 /** 한 장의 카드 HTML — page-break-after 로 분할 */
@@ -11344,8 +11494,6 @@ function renderSingleCardHtml_orig(orderNo, memo, addPageBreakBefore){
       <div class="card-tagline-top">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
     </div>`;
   const _metaHtml = `<div class="card-meta">
-      <div class="meta-block"><span class="lbl">주문번호</span><span class="val">${escapeHtml(first.orderNo)}</span></div>
-      <div class="meta-block"><span class="lbl">발송일</span><span class="val">${today}</span></div>
       ${first.trackingNumber ? `<div class="meta-block"><span class="lbl">송장번호</span><span class="tracking">${escapeHtml(first.trackingNumber)}</span></div>` : ''}
     </div>`;
   const _greetingHtml = `<div class="card-greeting">
@@ -11779,6 +11927,69 @@ function _orderSortFn(sortKey){
   };
 }
 
+/* ── 주문리스트 합포장 그룹 정렬/렌더 ── */
+function _shipSeqPosMap(){ let seq=[]; try{ const s=JSON.parse(localStorage.getItem('lastShippingOrderSeq')||'null'); if(s&&Array.isArray(s.orderNos)) seq=s.orderNos.map(String);}catch(_e){} const m=new Map(); seq.forEach((no,i)=>{ if(!m.has(no)) m.set(no,i); }); return m; }
+function _sortFilteredByShipGroup(filtered){
+  const seqPos=_shipSeqPosMap();
+  const rank=new Map(), first=new Map();
+  filtered.forEach((o,i)=>{ const gk=_shipGroupKey(o)||('__solo__'+String(o.orderNo)); o.__gk=gk;
+    const pos=seqPos.has(String(o.orderNo))?seqPos.get(String(o.orderNo)):Infinity;
+    if(!rank.has(gk)||pos<rank.get(gk)) rank.set(gk,pos);
+    if(!first.has(gk)) first.set(gk,i);
+  });
+  const eff=gk=>{ const r=rank.get(gk); return (r==null||r===Infinity)?(1e9+first.get(gk)):r; };
+  filtered.sort((a,b)=>{ const ra=eff(a.__gk), rb=eff(b.__gk); if(ra!==rb) return ra-rb; if(a.__gk!==b.__gk) return first.get(a.__gk)-first.get(b.__gk); return String(a.orderNo).localeCompare(String(b.orderNo)); });
+}
+function _renderOrderRows(filtered){
+  const rowHtml = (o) => {
+    const matched = findReceivingByItemCode(o.itemCode);
+    const matchMark = matched ? (matched.type==='exact' ? ' ✓' : ' ≈') : '';
+    const matchTitle = matched
+      ? (matched.type==='exact' ? '입고 정확 매칭: '+escapeHtml(matched.rec.distributionName||'') : 'AAA01 prefix 매칭: '+escapeHtml(matched.rec.distributionName||''))
+      : '매칭된 입고 상품 없음';
+    const codeHtml = o.itemCode
+      ? `<span class="code-cell ${matched?'':'unmatched'}" title="${matchTitle}">${escapeHtml(o.itemCode)}${matchMark}</span>`
+      : '<span class="muted">-</span>';
+    const plantNameTip = matched
+      ? `<div class="popt" style="color:${matched.type==='exact'?'var(--primary)':'#7a5b00'};font-weight:500">→ ${escapeHtml(matched.rec.distributionName||'')}${matched.rec.scientificName?' <i style="opacity:0.7">('+escapeHtml(matched.rec.scientificName)+')</i>':''}</div>`
+      : '';
+    const phone = o.recipientMobile || o.recipientPhone2 || o.recipientPhone || '-';
+    const isSelected = _orderUI.selected.has(o.id);
+    const trackingHtml = o.trackingNumber
+      ? `<span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#1e4abb;background:#e7f0ff;padding:1px 5px;border-radius:3px">${escapeHtml(o.trackingNumber)}</span>`
+      : '<span class="muted tight">-</span>';
+    return `<tr class="${isSelected?'selected':''}" data-id="${o.id}">
+      <td class="col-check"><input type="checkbox" class="row-check" data-id="${o.id}" ${isSelected?'checked':''}></td>
+      <td class="nowrap">${escapeHtml(o.orderedAt||'-')}</td>
+      <td class="order-no">${escapeHtml(o.orderNo)}</td>
+      <td class="product-cell"><div class="pname">${escapeHtml(o.productName||'-')}</div>${renderOrderOption(o.option)}${plantNameTip}</td>
+      <td>${codeHtml}</td>
+      <td class="num">${fmtNum(o.qty)}</td>
+      <td class="num">${fmtKRW(orderRevenue(o))}</td>
+      <td class="nowrap">${escapeHtml(o.recipientName||'-')}</td>
+      <td class="nowrap tight">${escapeHtml(phone)}</td>
+      <td class="addr-cell">${escapeHtml(o.recipientAddr||'-')}</td>
+      <td>${trackingHtml}</td>
+      <td class="col-act">
+        <button class="row-action-btn" onclick="event.stopPropagation(); openOrderDetail('${o.id}')" title="상세 보기">👁</button>
+        <button class="row-action-btn" onclick="event.stopPropagation(); openOrderEdit('${o.id}')" title="수정">✏️</button>
+        <button class="row-action-btn del" onclick="event.stopPropagation(); deleteOrderConfirm('${o.id}')" title="삭제">🗑</button>
+      </td>
+    </tr>`;
+  };
+  if(_orderUI.sort !== 'ship-group') return filtered.map(rowHtml).join('');
+  const gMeta=new Map();
+  filtered.forEach(o=>{ const gk=o.__gk||(_shipGroupKey(o)||('__solo__'+String(o.orderNo))); if(!gMeta.has(gk)) gMeta.set(gk,{recipient:o.recipientName||'-', addr:o.recipientAddr||'', orderNos:new Set(), lines:0}); const m=gMeta.get(gk); m.orderNos.add(o.orderNo); m.lines++; });
+  let last=null; const parts=[];
+  filtered.forEach(o=>{ const gk=o.__gk||(_shipGroupKey(o)||('__solo__'+String(o.orderNo)));
+    if(gk!==last){ last=gk; const m=gMeta.get(gk); const isHap=m.lines>1; const ons=Array.from(m.orderNos);
+      parts.push(`<tr class="order-group-row"><td colspan="12"><span class="ogr-badge ${isHap?'hap':''}">${isHap?'📦 합포장':'단건'}</span><span class="ogr-name">${escapeHtml(m.recipient)}</span><span class="ogr-meta">· 주문 ${ons.length}건 · 품목 ${m.lines}개${m.addr?(' · '+escapeHtml(m.addr)):''}</span><button type="button" class="ogr-card-btn" data-ordernos="${escapeHtml(ons.join(','))}">📦 동봉카드</button></td></tr>`);
+    }
+    parts.push(rowHtml(o));
+  });
+  return parts.join('');
+}
+
 /** 주문 검색/리스트 — v2 (정렬 + 체크박스 + 인라인 액션) */
 function renderOrderList(){
   // _orderBatchFilter 가 설정되어 있으면 그 batch 의 주문만 (폴더 진입 시)
@@ -11822,7 +12033,8 @@ function renderOrderList(){
   });
 
   // 정렬 적용
-  filtered.sort(_orderSortFn(_orderUI.sort));
+  if(_orderUI.sort === 'ship-group') _sortFilteredByShipGroup(filtered);
+  else filtered.sort(_orderSortFn(_orderUI.sort));
   _orderUI.lastSortedFiltered = filtered;
   // 글로벌 캐시도 유지 (기존 코드 호환)
   window._lastFilteredOrders = filtered;
@@ -11876,6 +12088,7 @@ function renderOrderList(){
   toolbar.innerHTML = `
     <label>📊 정렬:</label>
     <select id="order-sort-select">
+      <option value="ship-group">📦 합포장/송장 순서</option>
       <option value="orderedAt-desc">주문일 (최신순)</option>
       <option value="orderedAt-asc">주문일 (오래된순)</option>
       <option value="orderNo-desc">주문번호 (내림차순)</option>
@@ -11934,49 +12147,14 @@ function renderOrderList(){
         </tr>
       </thead>
       <tbody>
-        ${filtered.map(o => {
-          const matched = findReceivingByItemCode(o.itemCode);
-          const matchMark = matched ? (matched.type==='exact' ? ' ✓' : ' ≈') : '';
-          const matchTitle = matched
-            ? (matched.type==='exact' ? '입고 정확 매칭: '+escapeHtml(matched.rec.distributionName||'') : 'AAA01 prefix 매칭: '+escapeHtml(matched.rec.distributionName||''))
-            : '매칭된 입고 상품 없음';
-          const codeHtml = o.itemCode
-            ? `<span class="code-cell ${matched?'':'unmatched'}" title="${matchTitle}">${escapeHtml(o.itemCode)}${matchMark}</span>`
-            : '<span class="muted">-</span>';
-          const plantNameTip = matched
-            ? `<div class="popt" style="color:${matched.type==='exact'?'var(--primary)':'#7a5b00'};font-weight:500">→ ${escapeHtml(matched.rec.distributionName||'')}${matched.rec.scientificName?' <i style="opacity:0.7">('+escapeHtml(matched.rec.scientificName)+')</i>':''}</div>`
-            : '';
-          const phone = o.recipientMobile || o.recipientPhone2 || o.recipientPhone || '-';
-          const isSelected = _orderUI.selected.has(o.id);
-          const trackingHtml = o.trackingNumber
-            ? `<span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#1e4abb;background:#e7f0ff;padding:1px 5px;border-radius:3px">${escapeHtml(o.trackingNumber)}</span>`
-            : '<span class="muted tight">-</span>';
-          return `<tr class="${isSelected?'selected':''}" data-id="${o.id}">
-            <td class="col-check"><input type="checkbox" class="row-check" data-id="${o.id}" ${isSelected?'checked':''}></td>
-            <td class="nowrap">${escapeHtml(o.orderedAt||'-')}</td>
-            <td class="order-no">${escapeHtml(o.orderNo)}</td>
-            <td class="product-cell">
-              <div class="pname">${escapeHtml(o.productName||'-')}</div>
-              ${renderOrderOption(o.option)}
-              ${plantNameTip}
-            </td>
-            <td>${codeHtml}</td>
-            <td class="num">${fmtNum(o.qty)}</td>
-            <td class="num">${fmtKRW(orderRevenue(o))}</td>
-            <td class="nowrap">${escapeHtml(o.recipientName||'-')}</td>
-            <td class="nowrap tight">${escapeHtml(phone)}</td>
-            <td class="addr-cell">${escapeHtml(o.recipientAddr||'-')}</td>
-            <td>${trackingHtml}</td>
-            <td class="col-act">
-              <button class="row-action-btn" onclick="event.stopPropagation(); openOrderDetail('${o.id}')" title="상세 보기">👁</button>
-              <button class="row-action-btn" onclick="event.stopPropagation(); openOrderEdit('${o.id}')" title="수정">✏️</button>
-              <button class="row-action-btn del" onclick="event.stopPropagation(); deleteOrderConfirm('${o.id}')" title="삭제">🗑</button>
-            </td>
-          </tr>`;
-        }).join('')}
+        ${_renderOrderRows(filtered)}
       </tbody>
     </table>
   `;
+
+  area.querySelectorAll('.ogr-card-btn').forEach(b=>{
+    b.addEventListener('click', e=>{ e.stopPropagation(); const ons=(b.dataset.ordernos||'').split(',').filter(Boolean); if(ons.length) openBulkCardModal(ons); });
+  });
 
   // 전체선택
   const allChk = document.getElementById('order-check-all');
@@ -12555,8 +12733,6 @@ function renderSingleCardHtml(orderNo, memo, addPageBreakBefore){
         <div class="card-tagline-top">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
       </div>`;
     const _metaHtml = `<div class="card-meta">
-        <div class="meta-block"><span class="lbl">주문번호</span><span class="val">${escapeHtml(md.orderNo)}</span></div>
-        <div class="meta-block"><span class="lbl">발송일</span><span class="val">${today}</span></div>
         ${md.trackingNumber ? `<div class="meta-block"><span class="lbl">송장번호</span><span class="tracking">${escapeHtml(md.trackingNumber)}</span></div>` : ''}
       </div>`;
     const _greetingHtml = `<div class="card-greeting">
