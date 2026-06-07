@@ -1191,6 +1191,9 @@ table.sku-table .sku-prefix-tag{
   .ogr-name{font-weight:700}
   .ogr-meta{color:var(--muted,#888);font-size:12px;margin-left:6px}
   .ogr-card-btn{float:right;border:1px solid #1e4abb;background:#fff;color:#1e4abb;border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
+  .svc-sug-list{border:1px solid var(--border,#ddd);border-radius:8px;max-height:190px;overflow:auto;margin-top:4px;display:none}
+  .svc-sug{padding:8px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f1f1}
+  .svc-sug:hover{background:#eef3ff}
   body.printing-card .card-doc{
     border:none !important;
     border-radius:0 !important;
@@ -11263,7 +11266,7 @@ function renderCardDoc(){
         }
       } catch(_e){}
       html += `<div class="bulk-info card-screen-only" style="background:#e7f0ff;border-left:4px solid #1e4abb;padding:10px 14px;border-radius:6px;margin-bottom:12px;font-size:12px;color:#0b2c75">
-        📄 합포장 기준 총 <strong>${groups.length}장</strong>의 카드 (주문 ${orderNos.length}건 → 합포장 ${groups.length}건). 인쇄 시 "PDF로 저장"을 선택하세요.<br>✕ 로 항목 제거, [+ 서비스 품목 추가] 로 사은품을 넣을 수 있어요.${_shipInfo}
+        📄 합포장 기준 총 <strong>${groups.length}장</strong>의 카드 (주문 ${orderNos.length}건 → 합포장 ${groups.length}건). 인쇄 시 "PDF로 저장"을 선택하세요.<br>✕ 로 항목 제거, [+ 품목 추가] 로 품목을 넣을 수 있어요.${_shipInfo}
       </div>`;
     }
     groups.forEach((g, idx) => { html += renderGroupCardHtml(g, memo, idx > 0); });
@@ -11346,7 +11349,7 @@ function _serviceToPlant(s){
 function _cardPlantDiv(pl, editKey, isService){
   const traitRow=(icon,label,val)=>`<div class="pt-row"><span class="pt-icon">${icon}</span><span class="pt-lbl">${label}</span><span class="pt-val ${val?'':'empty'}">${val?escapeHtml(val):'—'}</span></div>`;
   const delBtn = `<button type="button" class="card-plant-del card-screen-only" data-editkey="${escapeHtml(String(editKey))}" title="이 항목 카드에서 제거">✕</button>`;
-  const svcTag = isService ? `<span class="plant-service-tag card-screen-only">서비스</span>` : '';
+  const svcTag = '';
   return `<div class="card-plant">
     <div class="plant-head"><div><span class="plant-name">${escapeHtml(pl.distName)}</span>${svcTag}${pl.sciName?`<span class="plant-sci">${escapeHtml(pl.sciName)}</span>`:''}</div>${delBtn}</div>
     <div class="plant-traits-grid">
@@ -11373,7 +11376,7 @@ function renderGroupCardHtml(group, memo, addPageBreakBefore){
   const _headerHtml = `<div class="card-header"><img class="card-logo" src="${CARD_LOGO_URL}" alt="제로가드닝"><div class="card-tagline-top">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div></div>`;
   const _metaHtml = `<div class="card-meta">${group.tracking?`<div class="meta-block"><span class="lbl">송장번호</span><span class="tracking">${escapeHtml(group.tracking)}</span></div>`:''}</div>`;
   const _greetingHtml = `<div class="card-greeting"><div class="card-thanks">구매해주셔서 감사합니다</div><div class="card-thanks-sub">정성껏 키운 식물이 잘 도착했길 바랍니다.</div></div>`;
-  const _editTools = `<div class="card-add-service card-screen-only"><button type="button" class="card-add-service-btn" data-gkey="${escapeHtml(group.key)}">+ 서비스 품목 추가</button><button type="button" class="card-reset-btn" data-gkey="${escapeHtml(group.key)}" title="이 카드의 편집 되돌리기">↺ 편집 초기화</button></div>`;
+  const _editTools = `<div class="card-add-service card-screen-only"><button type="button" class="card-add-service-btn" data-gkey="${escapeHtml(group.key)}">+ 품목 추가</button><button type="button" class="card-reset-btn" data-gkey="${escapeHtml(group.key)}" title="이 카드의 편집 되돌리기">↺ 편집 초기화</button></div>`;
   const _bottomBlockHtml = `<div class="card-bottom-block"><div class="card-memo-box ${memo?'':'empty'}"><div class="memo-title">💌 안내 말씀</div><div class="memo-text"> ${escapeHtml(memo)}</div></div><div class="card-footer"><img class="card-logo-footer" src="${CARD_LOGO2_URL}" alt="제로가드닝"></div></div>`;
   if(isSplit){
     const mid=Math.ceil(_n/2);
@@ -11398,27 +11401,39 @@ function _openServiceAddDialog(gkeys){
   if(gkeys.length===0){ toast('대상이 없습니다','warn'); return; }
   document.getElementById('svc-add-overlay')?.remove();
   const skus = Store.listSkuMasters().filter(s=>(s.distributionName||'').trim()).sort((a,b)=>String(a.distributionName).localeCompare(String(b.distributionName),'ko'));
-  const opts = ['<option value="">— 직접 입력 —</option>'].concat(skus.map((s,i)=>`<option value="${i}">${escapeHtml(s.distributionName)} (${escapeHtml(extractCodePrefix(s.barcode)||s.barcode||'')})</option>`)).join('');
-  const titleTxt = gkeys.length>1 ? `🎁 선택한 ${gkeys.length}건에 서비스 품목 추가` : '+ 서비스 품목 추가';
+  const titleTxt = gkeys.length>1 ? `➕ 선택한 ${gkeys.length}건에 품목 추가` : '+ 품목 추가';
   const ov=document.createElement('div'); ov.id='svc-add-overlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 6px;font-size:16px">${escapeHtml(titleTxt)}</h3><div style="font-size:11px;color:var(--muted,#888);margin-bottom:12px">선택하면 카드에 "○○○ - 서비스" 로 등록됩니다. 식물 특성·하단 안내는 동일하게 들어갑니다.</div><label style="font-size:12px;font-weight:600;display:block">등록 품목에서 선택</label><select id="svc-sku-sel" class="form-control" style="margin:4px 0 12px;width:100%">${opts}</select><label style="font-size:12px;font-weight:600;display:block">품목명 (직접 입력/수정 가능)</label><input id="svc-name" class="form-control" style="margin:4px 0 16px;width:100%" placeholder="예: 제주꿀풀"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">서비스 추가</button></div></div>`;
+  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 6px;font-size:16px">${escapeHtml(titleTxt)}</h3><div style="font-size:11px;color:var(--muted,#888);margin-bottom:12px">품목명을 입력하면 등록 품목이 자동완성으로 떠요. 선택하면 카드에 그대로 추가됩니다. 특성·하단 안내는 동일하게 들어갑니다.</div><label style="font-size:12px;font-weight:600;display:block">품목명 검색 / 입력</label><input id="svc-name" class="form-control" style="margin:4px 0 0;width:100%" placeholder="예: 제주꿀풀" autocomplete="off"><div id="svc-sug" class="svc-sug-list"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">추가</button></div></div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
-  const sel=document.getElementById('svc-sku-sel'), nameEl=document.getElementById('svc-name');
-  sel.addEventListener('change',()=>{ if(sel.value!=='') nameEl.value=skus[parseInt(sel.value,10)].distributionName||''; });
+  const nameEl=document.getElementById('svc-name'), sugEl=document.getElementById('svc-sug');
+  function renderSug(){
+    const nq=(nameEl.value||'').trim().toLowerCase().replace(/\s+/g,'');
+    if(!nq){ sugEl.style.display='none'; sugEl.innerHTML=''; return; }
+    const ms=skus.filter(s=>String(s.distributionName).toLowerCase().replace(/\s+/g,'').includes(nq)).slice(0,12);
+    if(ms.length===0){ sugEl.style.display='none'; sugEl.innerHTML=''; return; }
+    sugEl.innerHTML=ms.map(s=>`<div class="svc-sug" data-name="${escapeHtml(s.distributionName)}">${escapeHtml(s.distributionName)} <span style="color:#999;font-size:11px">${escapeHtml(extractCodePrefix(s.barcode)||s.barcode||'')}</span></div>`).join('');
+    sugEl.style.display='block';
+  }
+  nameEl.addEventListener('input', renderSug);
+  nameEl.addEventListener('focus', renderSug);
+  sugEl.addEventListener('click', e=>{ const it=e.target.closest('.svc-sug'); if(!it) return; nameEl.value=it.dataset.name; sugEl.style.display='none'; nameEl.focus(); });
   document.getElementById('svc-cancel').addEventListener('click',()=>ov.remove());
+  setTimeout(()=>nameEl.focus(),0);
   document.getElementById('svc-add-go').addEventListener('click',()=>{
-    let svc, base; const v=sel.value;
-    if(v!==''){ const s=skus[parseInt(v,10)]; base=(nameEl.value||s.distributionName||'').trim(); svc={ scientificName:s.scientificName||'', heightMin:s.heightMin||'',heightMax:s.heightMax||'',widthMin:s.widthMin||'',widthMax:s.widthMax||'',bloomStart:s.bloomStart||'',bloomEnd:s.bloomEnd||'',hardiness:s.hardiness||'',watering:s.watering||'',sunlight:s.sunlight||'',note:s.note||'' }; }
-    else { base=(nameEl.value||'').trim(); if(!base){ toast('품목명을 입력하세요','warn'); return; } svc={}; }
-    let name=base; if(!/서비스\s*$/.test(name)) name += ' - 서비스';
-    svc.name=name;
+    const base=(nameEl.value||'').trim(); if(!base){ toast('품목명을 입력하세요','warn'); return; }
+    const bn=base.toLowerCase().replace(/\s+/g,'');
+    const s=skus.find(x=>String(x.distributionName).trim().toLowerCase().replace(/\s+/g,'')===bn);
+    let svc;
+    if(s){ svc={ scientificName:s.scientificName||'', heightMin:s.heightMin||'',heightMax:s.heightMax||'',widthMin:s.widthMin||'',widthMax:s.widthMax||'',bloomStart:s.bloomStart||'',bloomEnd:s.bloomEnd||'',hardiness:s.hardiness||'',watering:s.watering||'',sunlight:s.sunlight||'',note:s.note||'' }; }
+    else { svc={}; }
+    svc.name=base;
     gkeys.forEach(gk=>{ const ed=_getCardEdits(gk); ed.service=ed.service||[]; ed.service.push(Object.assign({}, svc)); });
     _saveCardEdits();
     ov.remove();
     const cm=document.getElementById('card-modal'); if(cm && !cm.classList.contains('hidden')) renderCardDoc();
-    toast(`✓ 서비스 "${name}" 추가 (${gkeys.length}건)`,'flash');
+    toast(`✓ "${base}" 추가 (${gkeys.length}건)`,'flash');
   });
 }
 
@@ -11949,7 +11964,7 @@ function _sortFilteredByShipGroup(filtered){
   filtered.sort((a,b)=>{ const ra=eff(a.__gk), rb=eff(b.__gk); if(ra!==rb) return ra-rb; if(a.__gk!==b.__gk) return first.get(a.__gk)-first.get(b.__gk); return String(a.orderNo).localeCompare(String(b.orderNo)); });
 }
 function _renderOrderRows(filtered){
-  const rowHtml = (o) => {
+  const rowHtml = (o, grouped) => {
     const matched = findReceivingByItemCode(o.itemCode);
     const matchMark = matched ? (matched.type==='exact' ? ' ✓' : ' ≈') : '';
     const matchTitle = matched
@@ -11967,7 +11982,7 @@ function _renderOrderRows(filtered){
       ? `<span style="font-family:'SF Mono',Menlo,monospace;font-size:10.5px;color:#1e4abb;background:#e7f0ff;padding:1px 5px;border-radius:3px">${escapeHtml(o.trackingNumber)}</span>`
       : '<span class="muted tight">-</span>';
     return `<tr class="${isSelected?'selected':''}" data-id="${o.id}">
-      <td class="col-check"><input type="checkbox" class="row-check" data-id="${o.id}" ${isSelected?'checked':''}></td>
+      <td class="col-check">${grouped ? '' : `<input type="checkbox" class="row-check" data-id="${o.id}" ${isSelected?'checked':''}>`}</td>
       <td class="nowrap">${escapeHtml(o.orderedAt||'-')}</td>
       <td class="order-no">${escapeHtml(o.orderNo)}</td>
       <td class="product-cell"><div class="pname">${escapeHtml(o.productName||'-')}</div>${renderOrderOption(o.option)}${plantNameTip}</td>
@@ -11987,13 +12002,13 @@ function _renderOrderRows(filtered){
   };
   if(_orderUI.sort !== 'ship-group') return filtered.map(rowHtml).join('');
   const gMeta=new Map();
-  filtered.forEach(o=>{ const gk=o.__gk||(_shipGroupKey(o)||('__solo__'+String(o.orderNo))); if(!gMeta.has(gk)) gMeta.set(gk,{recipient:o.recipientName||'-', addr:o.recipientAddr||'', orderNos:new Set(), lines:0}); const m=gMeta.get(gk); m.orderNos.add(o.orderNo); m.lines++; });
+  filtered.forEach(o=>{ const gk=o.__gk||(_shipGroupKey(o)||('__solo__'+String(o.orderNo))); if(!gMeta.has(gk)) gMeta.set(gk,{recipient:o.recipientName||'-', addr:o.recipientAddr||'', orderNos:new Set(), lines:0, ids:[]}); const m=gMeta.get(gk); m.orderNos.add(o.orderNo); m.lines++; m.ids.push(o.id); });
   let last=null; const parts=[];
   filtered.forEach(o=>{ const gk=o.__gk||(_shipGroupKey(o)||('__solo__'+String(o.orderNo)));
-    if(gk!==last){ last=gk; const m=gMeta.get(gk); const isHap=m.lines>1; const ons=Array.from(m.orderNos);
-      parts.push(`<tr class="order-group-row"><td colspan="12"><span class="ogr-badge ${isHap?'hap':''}">${isHap?'📦 합포장':'단건'}</span><span class="ogr-name">${escapeHtml(m.recipient)}</span><span class="ogr-meta">· 주문 ${ons.length}건 · 품목 ${m.lines}개${m.addr?(' · '+escapeHtml(m.addr)):''}</span><button type="button" class="ogr-card-btn" data-ordernos="${escapeHtml(ons.join(','))}">📦 동봉카드</button></td></tr>`);
+    if(gk!==last){ last=gk; const m=gMeta.get(gk); const isHap=m.lines>1; const ons=Array.from(m.orderNos); const allSel=m.ids.length>0 && m.ids.every(id=>_orderUI.selected.has(id));
+      parts.push(`<tr class="order-group-row"><td colspan="12"><input type="checkbox" class="group-check" data-ids="${escapeHtml(m.ids.join(','))}" ${allSel?'checked':''} style="margin-right:8px;vertical-align:middle;cursor:pointer"><span class="ogr-badge ${isHap?'hap':''}">${isHap?'📦 합포장':'단건'}</span><span class="ogr-name">${escapeHtml(m.recipient)}</span><span class="ogr-meta">· 주문 ${ons.length}건 · 품목 ${m.lines}개${m.addr?(' · '+escapeHtml(m.addr)):''}</span><button type="button" class="ogr-card-btn" data-ordernos="${escapeHtml(ons.join(','))}">📦 동봉카드</button></td></tr>`);
     }
-    parts.push(rowHtml(o));
+    parts.push(rowHtml(o, true));
   });
   return parts.join('');
 }
@@ -12063,7 +12078,7 @@ function renderOrderList(){
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
           <button class="btn btn-primary btn-sm" id="btn-bulk-card-open" style="width:100%">전체 ${fmtNum(uniqueOrders.size)}건 PDF</button>
           <button class="btn btn-secondary btn-sm" id="btn-bulk-card-selected" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>선택 ${fmtNum(selectedUniqueNos.size)}건 PDF</button>
-          <button class="btn btn-secondary btn-sm" id="btn-bulk-service" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>🎁 선택 ${fmtNum(selectedUniqueNos.size)}건에 서비스</button>
+          <button class="btn btn-secondary btn-sm" id="btn-bulk-service" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>➕ 선택 ${fmtNum(selectedUniqueNos.size)}건 품목 추가</button>
           <button class="btn btn-ghost btn-sm" id="btn-manual-card-open" style="width:100%">✍️ 수동 카드 작성</button>
         </div>
       </div>
@@ -12085,7 +12100,7 @@ function renderOrderList(){
     document.getElementById('btn-manual-card-open').addEventListener('click', openManualCardModal);
     const _svcBtn = document.getElementById('btn-bulk-service');
     if(_svcBtn) _svcBtn.addEventListener('click', () => {
-      if(selectedUniqueNos.size === 0){ toast('서비스 줄 주문을 먼저 체크하세요','warn'); return; }
+      if(selectedUniqueNos.size === 0){ toast('품목 추가할 주문을 먼저 체크하세요','warn'); return; }
       _loadCardEdits();
       const gks = new Set();
       selectedValid.forEach(o => gks.add(_shipGroupKey(o) || ('__solo__'+String(o.orderNo))));
@@ -12171,6 +12186,13 @@ function renderOrderList(){
 
   area.querySelectorAll('.ogr-card-btn').forEach(b=>{
     b.addEventListener('click', e=>{ e.stopPropagation(); const ons=(b.dataset.ordernos||'').split(',').filter(Boolean); if(ons.length) openBulkCardModal(ons); });
+  });
+  area.querySelectorAll('.group-check').forEach(chk=>{
+    const ids=(chk.dataset.ids||'').split(',').filter(Boolean);
+    const selN=ids.filter(id=>_orderUI.selected.has(id)).length;
+    chk.indeterminate = selN>0 && selN<ids.length;
+    chk.addEventListener('click', e=>e.stopPropagation());
+    chk.addEventListener('change', e=>{ if(e.target.checked) ids.forEach(id=>_orderUI.selected.add(id)); else ids.forEach(id=>_orderUI.selected.delete(id)); renderOrderList(); });
   });
 
   // 전체선택
