@@ -2346,6 +2346,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <section id="tab-sku" class="tab-pane hidden">
           <div class="search-bar" style="flex-wrap:wrap;gap:8px">
             <button type="button" class="btn btn-secondary btn-sm" id="btn-back-to-list" title="입고 리스트로 돌아가기">← 입고 리스트로</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-scan-dup-codes" title="앞5자가 겹치는 다른 식물 찾기">🔍 코드 중복 검사</button>
             <select id="sku-search-field">
               <option value="all">전체 검색</option>
               <option value="barcode">품목코드</option>
@@ -5081,8 +5082,10 @@ function generateItemCode(scientificName, specText, excludeId){
   // 2) 없으면 같은 prefix의 max+1 (학명 같아도 규격 다르면 새 번호)
   if(num == null){
     let maxN = 0;
-    for(const r of all){
-      const m = (r.barcode||'').match(reBase);
+    const _scanCodes = all.map(r => r.barcode||'');
+    try { Store.listSkuMasters().forEach(s => _scanCodes.push(s.barcode||'')); } catch(_e){}
+    for(const _bc of _scanCodes){
+      const m = String(_bc).match(reBase);
       if(m){
         const n = parseInt(m[1],10);
         if(n > maxN) maxN = n;
@@ -5628,6 +5631,13 @@ function setupManualForm(){
       bloomEnd:  (fd.get('bloomEnd')||'').trim(),
       source: 'manual',
     };
+    // 앞5자(prefix) 충돌 가드 — 다른 식물이 이미 쓰는 코드면 저장 차단
+    const _addCf = _findPrefixConflict(item.barcode, item, null);
+    if(_addCf){
+      toast(`⚠ 코드 ${extractCodePrefix(item.barcode)} 는 이미 다른 식물 "${_addCf.name}" 에 쓰이고 있어요. 앞 5자(품목코드)를 바꿔주세요.`, 'error');
+      if(typeof barcodeInput !== 'undefined' && barcodeInput) barcodeInput.focus();
+      return;
+    }
     Store.addReceiving(item);
     // 마지막 등록값 기억 → 다음 입력 시 자동 채움
     ManualLast.receivedAt = item.receivedAt;
@@ -8194,6 +8204,20 @@ document.getElementById('edit-form').addEventListener('submit', e=>{
     // 신규 필드로 마이그레이션되었으므로 구 필드는 비움
     maxHeight: '', maxWidth: '', bloomSeason: '',
   };
+  // 앞5자(prefix) 충돌 가드 — prefix 가 바뀌어 다른 식물 코드와 겹치면 저장 차단
+  try {
+    const _newPfx = extractCodePrefix(patch.barcode||'');
+    const _oldE = Store.listReceivings().find(r => r.id === id);
+    const _oldPfx = extractCodePrefix((_oldE&&_oldE.barcode)||'');
+    if(_newPfx && _newPfx !== _oldPfx){
+      const _editCf = _findPrefixConflict(patch.barcode, patch, id);
+      if(_editCf){
+        toast(`⚠ 코드 ${_newPfx} 는 이미 다른 식물 "${_editCf.name}" 에 쓰이고 있어요. 앞 5자를 바꿔주세요.`, 'error');
+        const _bi = document.getElementById('edit-barcode'); if(_bi) _bi.focus();
+        return;
+      }
+    }
+  } catch(_e){ console.warn('prefix conflict guard (edit)', _e); }
   Store.updateReceiving(id, patch);
 
   // 양방향 동기화 — 같은 prefix 의 SKU 마스터 + 다른 입고 항목들까지 일괄 갱신
@@ -13235,6 +13259,91 @@ function _setupManualBarcodeDupCheck(){
 }
 
 _setupManualBarcodeDupCheck();
+
+/* ════════════════════════════════════════════════════════════════
+   ⚠ 앞5자(prefix) 충돌 — 같은 5자 코드가 서로 다른 식물에 배정되는 것을 막음
+════════════════════════════════════════════════════════════════ */
+// 식물 식별키: 학명 우선, 없으면 유통명
+function _plantKey(e){
+  const s = normalizeSci(e.scientificName||'');
+  if(s) return 'S|'+s;
+  const d = (e.distributionName||'').trim().toUpperCase().replace(/\s+/g,' ');
+  if(d) return 'D|'+d;
+  return '';
+}
+// 두 항목이 "확실히 다른 식물"인지 — 비교 불가(한쪽만 정보)면 false (오탐 방지)
+function _isDifferentPlant(a, b){
+  const sa = normalizeSci(a.scientificName||''), sb = normalizeSci(b.scientificName||'');
+  if(sa && sb) return sa !== sb;
+  const da = (a.distributionName||'').trim().toUpperCase().replace(/\s+/g,' ');
+  const db = (b.distributionName||'').trim().toUpperCase().replace(/\s+/g,' ');
+  if(da && db) return da !== db;
+  return false;
+}
+// barcode 의 앞5자(prefix)가 entry 와 다른 식물에 이미 쓰이는지 검사. 충돌 항목 반환(없으면 null)
+function _findPrefixConflict(barcode, entry, excludeId){
+  const prefix = extractCodePrefix(barcode||'');
+  if(!prefix) return null;
+  const cands = [];
+  try { Store.listReceivings().forEach(r => { if(!(excludeId && r.id===excludeId) && extractCodePrefix(r.barcode||'')===prefix) cands.push(r); }); } catch(_e){}
+  try { Store.listSkuMasters().forEach(m => { if(extractCodePrefix(m.barcode||'')===prefix) cands.push(m); }); } catch(_e){}
+  for(const c of cands){
+    if(_isDifferentPlant(entry, c)){
+      return { prefix, name: (c.distributionName||c.scientificName||'(이름 없음)').trim()||'(이름 없음)', entry: c };
+    }
+  }
+  return null;
+}
+// 전체 데이터에서 앞5자가 겹치는 다른 식물들을 스캔 → 리포트용
+function _scanPrefixCollisions(){
+  const byPfx = new Map(); // prefix -> Map(plantKey -> {name, sci, count, srcs:Set})
+  function add(e, src){
+    const p = extractCodePrefix(e.barcode||''); if(!p) return;
+    const k = _plantKey(e); if(!k) return;
+    if(!byPfx.has(p)) byPfx.set(p, new Map());
+    const m = byPfx.get(p);
+    if(!m.has(k)) m.set(k, { name:(e.distributionName||e.scientificName||'(이름 없음)').trim()||'(이름 없음)', sci:(e.scientificName||'').trim(), count:0, srcs:new Set() });
+    const o=m.get(k); o.count++; o.srcs.add(src);
+  }
+  try { Store.listReceivings().forEach(r=>add(r,'입고')); } catch(_e){}
+  try { Store.listSkuMasters().forEach(s=>add(s,'마스터')); } catch(_e){}
+  const out=[];
+  byPfx.forEach((m,p)=>{ if(m.size>1) out.push({ prefix:p, identities:Array.from(m.values()) }); });
+  out.sort((a,b)=>a.prefix.localeCompare(b.prefix));
+  return out;
+}
+function _showDupCodeReport(){
+  const cols = _scanPrefixCollisions();
+  document.getElementById('dup-code-report-overlay')?.remove();
+  let body;
+  if(cols.length===0){
+    body = '<p style="margin:0;color:var(--muted);line-height:1.6">✓ 앞 5자가 겹치는 다른 식물이 없습니다. 코드가 깨끗해요!</p>';
+  } else {
+    const blocks = cols.map(c=>{
+      const items = c.identities.map(i=>{
+        const sci = i.sci ? ` <span style="color:var(--muted)">· ${escapeHtml(i.sci)}</span>` : '';
+        const src = ` <span style="color:var(--muted);font-size:11px">(${Array.from(i.srcs).join('/')}, ${i.count}건)</span>`;
+        return `<li style="margin:3px 0"><b>${escapeHtml(i.name)}</b>${sci}${src}</li>`;
+      }).join('');
+      return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-weight:700;font-family:monospace;font-size:15px;color:#d9480f;margin-bottom:6px">${escapeHtml(c.prefix)}</div>
+        <ul style="margin:0;padding-left:18px">${items}</ul></div>`;
+    }).join('');
+    body = `<p style="margin:0 0 12px;line-height:1.6">앞 5자가 같은데 <b>서로 다른 식물</b>로 등록된 코드가 <b style="color:#d9480f">${cols.length}건</b> 있어요.<br>아래 코드들은 한쪽 식물의 품목코드를 새 코드로 바꿔주세요(입고 리스트에서 해당 항목 수정).</p>${blocks}`;
+  }
+  const ov=document.createElement('div');
+  ov.id='dup-code-report-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:560px;width:100%;max-height:80vh;overflow:auto;border-radius:14px;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:17px">🔍 코드 중복 검사 결과</h3>
+      <button type="button" id="dup-code-report-close" class="btn btn-secondary btn-sm">닫기</button>
+    </div>${body}</div>`;
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+  document.getElementById('dup-code-report-close').addEventListener('click',()=>ov.remove());
+}
+document.getElementById('btn-scan-dup-codes')?.addEventListener('click', _showDupCodeReport);
 
 /* ════════════════════════════════════════════════════════════════
    📊 재고 관리
