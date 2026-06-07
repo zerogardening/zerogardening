@@ -9328,19 +9328,35 @@ async function generateShippingXlsx(batchId){
     console.warn('[송장] SKU 마스터에 등록된 prefix 목록(상위 50):', Array.from(skuMap.keys()).slice(0, 50));
   }
 
-  // 주문번호 그룹핑 — 중복은 ' / ' 결합, 첫 행만 남김. 라인 목록은 포장 tier 판별용으로 보존
-  const byOrderNo = new Map();
-  const orderNoSeq = [];
-  processed.forEach(o => {
-    if(!byOrderNo.has(o.orderNo)){
-      byOrderNo.set(o.orderNo, { first: o, names: [o._newName], lines: [o] });
-      orderNoSeq.push(o.orderNo);
-    } else {
-      const g = byOrderNo.get(o.orderNo);
-      g.names.push(o._newName);
-      g.lines.push(o);
-    }
+  // 합포장 그룹핑 — 이름+우편번호+연락처 기준. 복수건은 상품 통합 없이 라인별 1행으로 출력하고,
+  // 로젠 합포장 인식을 위해 상품명 뒤에 '/' 를 붙인다. 그룹 내 라인 순서는 입력(주문) 순서 유지.
+  //   · 같은 이름+우편번호라도 연락처가 다르면:
+  //       - 둘 다 안전번호(050X 가상/안심번호) → 합포장 그룹으로 보고, 나중에 들어온 주문의 안전번호로 통일
+  //       - 그 외 일반번호가 다르면 → 개별 주문건으로 분리
+  //   · 이름 또는 우편번호가 없으면 단독 처리(다른 무명 주문과 섞지 않음)
+  const _grpNorm = (s) => { let v = String(s||''); try { v = v.normalize('NFC'); } catch(_){} return v.replace(/[\s 　]+/g,'').trim(); };
+  const _grpZip  = (z) => String(z||'').replace(/[^0-9]/g,'');
+  const _grpPhoneDigits = (p) => String(p||'').replace(/[^0-9]/g,'');
+  // 수령인 대표 연락처: 핸드폰 → 전화번호 → 수령지전화 순
+  const _grpContact = (o) => _grpPhoneDigits(o.recipientMobile) || _grpPhoneDigits(o.recipientPhone2) || _grpPhoneDigits(o.recipientPhone);
+  // 050 으로 시작하면 안전번호(가상/안심번호)로 간주
+  const _grpIsSafe = (digits) => /^050/.test(digits);
+  // 그룹 키 — 안전번호는 모두 '__SAFE__' 로 모으고(통일 대상), 일반번호는 번호 자체로 구분(다르면 분리)
+  const _grpContactKey = (o) => {
+    const c = _grpContact(o);
+    if(!c) return '__NONE__';
+    return _grpIsSafe(c) ? '__SAFE__' : c;
+  };
+  const byCust = new Map();
+  const custSeq = [];
+  processed.forEach((o, idx) => {
+    const name = _grpNorm(o.recipientName);
+    const zip  = _grpZip(o.recipientZip);
+    const key  = (name && zip) ? (name + '|' + zip + '|' + _grpContactKey(o)) : ('__solo__' + idx);
+    if(!byCust.has(key)){ byCust.set(key, { lines: [o], key: key }); custSeq.push(key); }
+    else byCust.get(key).lines.push(o);
   });
+
   // 포트 사이즈별 박스 점유 점수 — 3300 박스(320×320 바닥) 1단 = 8점
   //   cm ≤ 10 → 1점,  cm ≤ 15 → 2점,  cm ≤ 22 → 3점,  cm ≥ 23 → 4점,  미상 → 2점(보수적)
   function _potScore(cm){
@@ -9355,15 +9371,17 @@ async function generateShippingXlsx(batchId){
   //   1: 단품 1라인 + cm ≥ 15 + 수량 1   (전용박스 1개)
   //   2: 단품 1라인 + cm ≥ 15 + 수량 2+ (전용박스 다개)
   //   3: 단품 1라인 + cm < 15 또는 사이즈 미상 (롤골판지 단품)
-  //   4: 복합주문 (라인 2개 이상, 롤골판지)
-  // 박스 가격(J열) — 모든 라인의 (사이즈점수 × 수량) 합으로 결정
-  //   점수 ≥ 12: '확인요망' (1박스 초과 우려)
-  //   점수 ≥ 9 : '3300'   (큰 박스 필요)
-  //   그 외     : '2750'   (기본 박스)
-  const merged = orderNoSeq.map(on => {
-    const g = byOrderNo.get(on);
-    const firstLine = g.lines[0];
-    const lineCount = g.lines.length;
+  //   4: 복수주문건 (라인 2개 이상, 롤골판지)
+  // 박스 가격(J열) — 그룹 모든 라인의 (사이즈점수 × 수량) 합으로 결정. 복수건이면 그룹 전 행에 동일 적용
+  //   점수 ≥ 12: '확인요망' (1박스 초과 우려)  / ≥ 9: '3300' / 그 외: '2750'
+  // 출력은 라인별 1행. 복수건은 상품 통합 없이 각 행 상품명 뒤에 '/' 를 붙여 로젠 합포장 신호로 사용.
+  const groups = custSeq.map(key => {
+    const g = byCust.get(key);
+    const lines = g.lines;
+    const lineCount = lines.length;
+    const isMulti = lineCount > 1;
+    const firstLine = lines[0];
+    const lastLine  = lines[lineCount - 1];
     const cm = firstLine._cm;
     const qty = firstLine._totalQty || 1;
     let packTier;
@@ -9374,42 +9392,61 @@ async function generateShippingXlsx(batchId){
     } else {
       packTier = 4;
     }
-    // 박스 점유 점수 합산
+    // 박스 점유 점수 — 그룹 전체 합산
     let boxScore = 0;
-    for(const ln of g.lines){
+    for(const ln of lines){
       boxScore += _potScore(ln._cm) * (ln._totalQty || 1);
     }
     let boxPrice;
     if(boxScore >= 12)      boxPrice = '확인요망';
     else if(boxScore >= 9)  boxPrice = '3300';
     else                    boxPrice = '2750';
-    return Object.assign({}, g.first, {
-      _newName: g.names.join(' / '),
+    // 안전번호 복수건이면 나중에 들어온 주문(입력순 마지막)의 연락처로 그룹 전 행 통일
+    const unifySafe = isMulti && key.endsWith('|__SAFE__');
+    // 라인별 1행 생성 (상품 통합 없음)
+    const rows = lines.map(ln => {
+      const row = Object.assign({}, ln, {
+        _newName: isMulti ? ((ln._newName||'') + '/') : (ln._newName||''),
+        _boxPrice: boxPrice,
+        _isMulti: isMulti,
+      });
+      if(unifySafe){
+        row.recipientMobile = lastLine.recipientMobile;
+        row.recipientPhone2 = lastLine.recipientPhone2;
+      }
+      return row;
+    });
+    return {
+      rows: rows,
       _packTier: packTier,
       _firstSku: firstLine._sku5 || '',
       _firstCm: (cm !== null ? cm : 9999),  // 사이즈 미상은 같은 sku 안에서 뒤로
       _firstQty: qty,
       _boxScore: boxScore,
-      _boxPrice: boxPrice,
-    });
+      _orderNo: firstLine.orderNo || '',
+    };
   });
 
-  // 정렬: packTier → cm → 상품종류(앞 5자) → 수량 → orderNo
-  // 박스 사이즈 전환을 최소화하기 위해 cm 을 sku 보다 우선. 같은 사이즈 안에서 같은 상품끼리,
-  // 같은 상품 안에서 수량끼리 자연스럽게 묶임. (예: 15cm 전부 → 20cm 전부 → 21cm 전부)
-  merged.sort((a,b) => {
+  // 정렬: packTier → cm → 상품종류(앞 5자) → 수량 → orderNo (그룹 단위 정렬, 그룹 내 라인은 입력 순서 유지)
+  groups.sort((a,b) => {
     if(a._packTier !== b._packTier) return a._packTier - b._packTier;
     if(a._firstCm !== b._firstCm) return a._firstCm - b._firstCm;
     const sk = a._firstSku.localeCompare(b._firstSku);
     if(sk !== 0) return sk;
     if(a._firstQty !== b._firstQty) return a._firstQty - b._firstQty;
-    return String(a.orderNo||'').localeCompare(String(b.orderNo||''));
+    return String(a._orderNo||'').localeCompare(String(b._orderNo||''));
   });
+
+  // 그룹 평탄화 — 최종 출력 행 목록 (그룹 내 라인은 입력 순서 그대로)
+  const merged = [];
+  groups.forEach(grp => { grp.rows.forEach(r => merged.push(r)); });
 
   // 송장 입력파일 행 순서 보관 — 동봉카드 일괄 출력 시 이 순서대로 정렬
   // (이게 작업자가 실제 포장하는 순서. packTier → cm → SKU → 수량 → orderNo)
   try {
-    const seqOrderNos = merged.map(o => String(o.orderNo||'').trim()).filter(Boolean);
+    const _seqSeen = new Set();
+    const seqOrderNos = [];
+    merged.forEach(o => { const _on = String(o.orderNo||'').trim(); if(_on && !_seqSeen.has(_on)){ _seqSeen.add(_on); seqOrderNos.push(_on); } });
     localStorage.setItem('lastShippingOrderSeq', JSON.stringify({
       orderNos: seqOrderNos,
       savedAt: Date.now(),
