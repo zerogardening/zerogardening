@@ -11393,24 +11393,32 @@ function _setupCardEditDelegation(){
     if(rst){ const gkey=rst.dataset.gkey; if(gkey&&_cardEditsData[gkey]){ delete _cardEditsData[gkey]; _saveCardEdits(); renderCardDoc(); } return; }
   });
 }
-function _openServiceAddDialog(gkey){
+function _openServiceAddDialog(gkeys){
+  gkeys = Array.isArray(gkeys) ? gkeys.filter(Boolean) : (gkeys ? [gkeys] : []);
+  if(gkeys.length===0){ toast('대상이 없습니다','warn'); return; }
   document.getElementById('svc-add-overlay')?.remove();
   const skus = Store.listSkuMasters().filter(s=>(s.distributionName||'').trim()).sort((a,b)=>String(a.distributionName).localeCompare(String(b.distributionName),'ko'));
   const opts = ['<option value="">— 직접 입력 —</option>'].concat(skus.map((s,i)=>`<option value="${i}">${escapeHtml(s.distributionName)} (${escapeHtml(extractCodePrefix(s.barcode)||s.barcode||'')})</option>`)).join('');
+  const titleTxt = gkeys.length>1 ? `🎁 선택한 ${gkeys.length}건에 서비스 품목 추가` : '+ 서비스 품목 추가';
   const ov=document.createElement('div'); ov.id='svc-add-overlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px';
-  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 14px;font-size:16px">+ 서비스 품목 추가</h3><label style="font-size:12px;font-weight:600;display:block">등록 품목에서 선택</label><select id="svc-sku-sel" class="form-control" style="margin:4px 0 12px;width:100%">${opts}</select><label style="font-size:12px;font-weight:600;display:block">품목명 (직접 입력/수정 가능)</label><input id="svc-name" class="form-control" style="margin:4px 0 16px;width:100%" placeholder="예: 사은품 허브 모종"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">추가</button></div></div>`;
+  ov.innerHTML=`<div style="background:var(--card,#fff);color:var(--text,#222);max-width:420px;width:100%;border-radius:14px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.3)"><h3 style="margin:0 0 6px;font-size:16px">${escapeHtml(titleTxt)}</h3><div style="font-size:11px;color:var(--muted,#888);margin-bottom:12px">선택하면 카드에 "○○○ - 서비스" 로 등록됩니다. 식물 특성·하단 안내는 동일하게 들어갑니다.</div><label style="font-size:12px;font-weight:600;display:block">등록 품목에서 선택</label><select id="svc-sku-sel" class="form-control" style="margin:4px 0 12px;width:100%">${opts}</select><label style="font-size:12px;font-weight:600;display:block">품목명 (직접 입력/수정 가능)</label><input id="svc-name" class="form-control" style="margin:4px 0 16px;width:100%" placeholder="예: 제주꿀풀"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" id="svc-cancel" class="btn btn-secondary btn-sm">취소</button><button type="button" id="svc-add-go" class="btn btn-primary btn-sm">서비스 추가</button></div></div>`;
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov);
   const sel=document.getElementById('svc-sku-sel'), nameEl=document.getElementById('svc-name');
   sel.addEventListener('change',()=>{ if(sel.value!=='') nameEl.value=skus[parseInt(sel.value,10)].distributionName||''; });
   document.getElementById('svc-cancel').addEventListener('click',()=>ov.remove());
   document.getElementById('svc-add-go').addEventListener('click',()=>{
-    let svc; const v=sel.value;
-    if(v!==''){ const s=skus[parseInt(v,10)]; svc={ name:(nameEl.value||s.distributionName||'').trim(), scientificName:s.scientificName||'', heightMin:s.heightMin||'',heightMax:s.heightMax||'',widthMin:s.widthMin||'',widthMax:s.widthMax||'',bloomStart:s.bloomStart||'',bloomEnd:s.bloomEnd||'',hardiness:s.hardiness||'',watering:s.watering||'',sunlight:s.sunlight||'',note:s.note||'' }; }
-    else { const nm=(nameEl.value||'').trim(); if(!nm){ toast('품목명을 입력하세요','warn'); return; } svc={ name:nm }; }
-    const ed=_getCardEdits(gkey); ed.service=ed.service||[]; ed.service.push(svc); _saveCardEdits();
-    ov.remove(); renderCardDoc(); toast('✓ 서비스 품목 추가됨','flash');
+    let svc, base; const v=sel.value;
+    if(v!==''){ const s=skus[parseInt(v,10)]; base=(nameEl.value||s.distributionName||'').trim(); svc={ scientificName:s.scientificName||'', heightMin:s.heightMin||'',heightMax:s.heightMax||'',widthMin:s.widthMin||'',widthMax:s.widthMax||'',bloomStart:s.bloomStart||'',bloomEnd:s.bloomEnd||'',hardiness:s.hardiness||'',watering:s.watering||'',sunlight:s.sunlight||'',note:s.note||'' }; }
+    else { base=(nameEl.value||'').trim(); if(!base){ toast('품목명을 입력하세요','warn'); return; } svc={}; }
+    let name=base; if(!/서비스\s*$/.test(name)) name += ' - 서비스';
+    svc.name=name;
+    gkeys.forEach(gk=>{ const ed=_getCardEdits(gk); ed.service=ed.service||[]; ed.service.push(Object.assign({}, svc)); });
+    _saveCardEdits();
+    ov.remove();
+    const cm=document.getElementById('card-modal'); if(cm && !cm.classList.contains('hidden')) renderCardDoc();
+    toast(`✓ 서비스 "${name}" 추가 (${gkeys.length}건)`,'flash');
   });
 }
 
@@ -12055,6 +12063,7 @@ function renderOrderList(){
         <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
           <button class="btn btn-primary btn-sm" id="btn-bulk-card-open" style="width:100%">전체 ${fmtNum(uniqueOrders.size)}건 PDF</button>
           <button class="btn btn-secondary btn-sm" id="btn-bulk-card-selected" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>선택 ${fmtNum(selectedUniqueNos.size)}건 PDF</button>
+          <button class="btn btn-secondary btn-sm" id="btn-bulk-service" style="width:100%" ${selectedUniqueNos.size===0?'disabled':''}>🎁 선택 ${fmtNum(selectedUniqueNos.size)}건에 서비스</button>
           <button class="btn btn-ghost btn-sm" id="btn-manual-card-open" style="width:100%">✍️ 수동 카드 작성</button>
         </div>
       </div>
@@ -12074,6 +12083,14 @@ function renderOrderList(){
       openBulkCardModal(orderedNos);
     });
     document.getElementById('btn-manual-card-open').addEventListener('click', openManualCardModal);
+    const _svcBtn = document.getElementById('btn-bulk-service');
+    if(_svcBtn) _svcBtn.addEventListener('click', () => {
+      if(selectedUniqueNos.size === 0){ toast('서비스 줄 주문을 먼저 체크하세요','warn'); return; }
+      _loadCardEdits();
+      const gks = new Set();
+      selectedValid.forEach(o => gks.add(_shipGroupKey(o) || ('__solo__'+String(o.orderNo))));
+      _openServiceAddDialog(Array.from(gks));
+    });
   }
 
   // 정렬 툴바
