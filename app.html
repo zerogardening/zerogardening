@@ -9570,7 +9570,7 @@ async function generateShippingXlsx(batchId){
       const maxNth = ck ? (_custMaxNth.get(ck) || 0) : 0;
       let prefixed = '';
       if(maxNth >= 2){
-        o._newName = `★${maxNth} ${o._newName||''}`;
+        o._newName = `(★${maxNth}) ${o._newName||''}`;
         _prefixCount++;
         prefixed = 'Y';
       }
