@@ -4858,6 +4858,7 @@ const Store = (() => {
     },
   };
 })();
+if(typeof window!=='undefined'){ window.Store = Store; }
 
 /* ────────────────────────────────────────────────
    Helpers — 가격 계산, 포맷, 검증
