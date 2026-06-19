@@ -15595,25 +15595,60 @@ _setupAiSectionEvents();
     var s2=value<=300?100:value<=2000?80:value<=10000?60:value<=100000?35:15;
     return { percentile:null, level:l2, score:s2, relative:false };
   }
+  /* ── v3 다차원: 수요크기 + 수요게이트(곱) + 판매기간폭 + 성장세 ── */
+  var SELL3 = { demand:0.30, competition:0.28, season:0.17, window:0.12, trend:0.13 };
+  function demandSizeScore(avgMonthly){
+    if(avgMonthly==null||avgMonthly<=0) return 0;
+    var lo=Math.log10(50), hi=Math.log10(50000);
+    return clamp(Math.round((Math.log10(avgMonthly+1)-lo)/(hi-lo)*100),0,100);
+  }
+  /* 검색량 절대치가 받쳐줘야 함 — 적으면 경쟁 낮아도 판매력 제한(곱연산 게이트). <30회≈0.08, 300회≈0.5, 3000회+≈1.0 */
+  function demandGate(avgMonthly){
+    if(avgMonthly==null||avgMonthly<=0) return 0.08;
+    var lo=Math.log10(30), hi=Math.log10(3000);
+    return clamp((Math.log10(avgMonthly+1)-lo)/(hi-lo),0.08,1);
+  }
+  /* 월별 트렌드(데이터랩 추정) → 판매기간폭(window: 꾸준형↑/시즌집중↓) + 성장세(trend) + 피크월 */
+  function trendStats(trend){
+    if(!trend||!trend.length) return null;
+    var vals=trend.map(function(p){ return (p.est!=null?p.est:(p.ratio!=null?p.ratio:0)); });
+    var peak=Math.max.apply(null,vals); if(!(peak>0)) return null;
+    var months=0; for(var i=0;i<vals.length;i++){ if(vals[i]>=peak*0.4) months++; }
+    var windowScore = months>=8?100:months>=6?90:months>=4?72:months>=2?52:35;
+    var n=vals.length, k=Math.max(1,Math.floor(n/3));
+    var first=vals.slice(0,k), last=vals.slice(n-k);
+    var avgF=first.reduce(function(a,b){return a+b;},0)/first.length;
+    var avgL=last.reduce(function(a,b){return a+b;},0)/last.length;
+    var growth = avgF>0?(avgL-avgF)/avgF:0;
+    var trendScore = growth>=0.25?100:growth>=0.05?78:growth>=-0.05?60:growth>=-0.25?42:25;
+    var pi=vals.indexOf(peak), peakMonth=null;
+    if(trend[pi]&&trend[pi].period){ var mm=String(trend[pi].period).split('-')[1]; peakMonth=mm?parseInt(mm,10):null; }
+    return { windowScore:windowScore, trendScore:trendScore, breadth:months, growth:Math.round(growth*100), peakMonth:peakMonth };
+  }
   function sellabilityV2(kw, season, curMonth, baseline){
     var sf = seasonFit(season, curMonth);
     if(!kw || kw.monthly==null){
-      var sc0 = Math.round(sf*0.6);
-      return { score:sc0, grade:grade(sc0), hasData:false, demand:null, comp:null, ratio:null, sellers:null, compLevel:null, percentile:null, relative:false, seasonFit:sf, avgMonthly:null };
+      var sc0 = Math.round(sf*0.5);
+      return { score:sc0, grade:grade(sc0), hasData:false, demand:null, demandSize:null, gate:null, comp:null, ratio:null, sellers:null, compLevel:null, percentile:null, relative:false, seasonFit:sf, windowScore:null, trendScore:null, growth:null, peakMonth:null, avgMonthly:null };
     }
     var avgMonthly = (typeof kw.annual==='number' && kw.annual>0) ? Math.round(kw.annual/12) : kw.monthly;
-    var d = demandScore(avgMonthly);
+    var dSize = demandSizeScore(avgMonthly);
+    var gate = demandGate(avgMonthly);
+    var dLegacy = demandScore(avgMonthly);
     var satRatio = (kw.productCount!=null && avgMonthly>0) ? Math.round((kw.productCount/avgMonthly)*100)/100 : null;
     var ci = (kw.productCount!=null) ? satCompInfo(kw.productCount, baseline) : null;
     var sellers = (typeof kw.sellerCount==='number') ? kw.sellerCount : null;
+    var ts = trendStats(kw.monthlyTrend);
+    var winS = ts?ts.windowScore:60, trS = ts?ts.trendScore:60;
     var c=null, compLevel=null, pct=null, rel=false;
     if(ci){ c=ci.score; compLevel=ci.level; pct=ci.percentile; rel=ci.relative; }
-    if(c==null){
-      var s2 = Math.round(0.7*d + 0.3*sf);
-      return { score:s2, grade:grade(s2), hasData:true, demand:d, comp:null, ratio:satRatio, sellers:sellers, compLevel:compLevel, percentile:pct, relative:rel, seasonFit:sf, avgMonthly:avgMonthly };
-    }
-    var s = Math.round(SELL2.demand*d + SELL2.competition*c + SELL2.season*sf);
-    return { score:s, grade:grade(s), hasData:true, demand:d, comp:c, ratio:satRatio, sellers:sellers, compLevel:compLevel, percentile:pct, relative:rel, seasonFit:sf, avgMonthly:avgMonthly };
+    var base;
+    if(c==null) base = 0.62*dSize + 0.23*sf + 0.15*winS;
+    else        base = SELL3.demand*dSize + SELL3.competition*c + SELL3.season*sf + SELL3.window*winS + SELL3.trend*trS;
+    var score = clamp(Math.round(base*gate),0,100);
+    return { score:score, grade:grade(score), hasData:true, demand:dLegacy, demandSize:dSize, gate:Math.round(gate*100)/100,
+      comp:c, ratio:satRatio, sellers:sellers, compLevel:compLevel, percentile:pct, relative:rel, seasonFit:sf,
+      windowScore:winS, trendScore:trS, growth:ts?ts.growth:null, peakMonth:ts?ts.peakMonth:null, avgMonthly:avgMonthly };
   }
 
   function parseSize(text){
@@ -15658,10 +15693,13 @@ _setupAiSectionEvents();
   function buildReason(r){
     var p=[];
     if(r.hasData){
-      p.push('월검색 '+(r.monthly!=null?r.monthly.toLocaleString():'-')+' ('+demandLabel(r.monthly)+')');
-      if(r.comp_level) p.push('경쟁 '+r.comp_level+'(포화도'+(r.comp_relative&&r.comp_pct!=null?'·후보중 '+(r.comp_pct>=50?'상위'+(100-r.comp_pct):'하위'+r.comp_pct)+'%':'')+')'+(r.sellers!=null?'·판매처'+r.sellers+'곳(참고)':''));
+      var am=(r.avg_monthly!=null?r.avg_monthly:r.monthly);
+      p.push('월평균 '+(am!=null?am.toLocaleString():'-')+'회 검색('+demandLabel(am)+')');
+      if(r.gate!=null && r.gate<0.5) p.push('검색량 적어 판매력 제한');
+      if(r.comp_level) p.push('경쟁 '+r.comp_level+(r.sellers!=null?'·판매처'+r.sellers+'곳(참고)':''));
       else if(r.ratio!=null) p.push('경쟁강도 '+r.ratio);
-      else p.push('상품수 미확인');
+      if(r.window_score!=null){ if(r.window_score>=90) p.push('연중 꾸준'); else if(r.window_score<=52) p.push('시즌 집중형'); }
+      if(r.growth!=null){ if(r.growth>=25) p.push('검색 상승세 +'+r.growth+'%'); else if(r.growth<=-25) p.push('검색 하락세 '+r.growth+'%'); }
     } else {
       p.push('검색량 미연동 — 설정 후 정확');
     }
@@ -15694,6 +15732,8 @@ _setupAiSectionEvents();
         monthly: kw?kw.monthly:null, annual: (kw&&typeof kw.annual==='number')?kw.annual:null, pc: kw?kw.pc:null, mobile: kw?kw.mobile:null,
         product_count: kw?kw.productCount:null, ratio: sell.ratio, sellers: sell.sellers, comp_level: sell.compLevel, comp_pct: sell.percentile, comp_relative: sell.relative,
         demand_score: sell.demand, competition_score: sell.comp, season_fit: sell.seasonFit,
+        avg_monthly: sell.avgMonthly, demand_size: sell.demandSize, gate: sell.gate,
+        window_score: sell.windowScore, trend_score: sell.trendScore, growth: sell.growth, peak_month: sell.peakMonth,
         sellability: sell.score, grade: sell.grade, hasData: sell.hasData,
         opportunity_gap: og, sourcing_score: sourcing,
         already_selling: already, is_winner: isW,
@@ -15979,6 +16019,9 @@ _setupAiSectionEvents();
     } else if(sell.ratio!=null){
       p.push('상품수 <b>'+nf(r.productCount)+'개</b> (매물량 참고).');
     }
+    if(sell.gate!=null && sell.gate<0.5){ p.push('다만 <b>검색량 자체가 적어</b>(월평균 '+nf(sell.avgMonthly)+'회) 경쟁이 낮아도 판매 규모는 제한적이에요 — 박리다매보다 <b>차별화·객단가</b>가 관건.'); }
+    if(sell.windowScore!=null){ if(sell.windowScore>=90) p.push('검색이 <b>연중 꾸준</b>해 상시 판매에 안정적이에요.'); else if(sell.windowScore<=52) p.push('<b>시즌 집중형</b>이라 성수기 타이밍이 특히 중요해요.'); }
+    if(sell.growth!=null){ if(sell.growth>=25) p.push('최근 검색 <b>상승세(+'+sell.growth+'%)</b> — 지금 들어갈 만해요.'); else if(sell.growth<=-25) p.push('최근 검색 <b>하락세('+sell.growth+'%)</b> — 신중히.'); }
     var tr=reorderTrend(r.monthlyTrend);
     if(tr&&tr.length){
       var peak=tr.reduce(function(a,b){return vof(b)>vof(a)?b:a;});
@@ -16004,8 +16047,8 @@ _setupAiSectionEvents();
         persist();
       }
       var ann=(r.annual!=null?r.annual:null);
-      var _kd=store().keywordData||{}; var _bl=Object.keys(_kd).map(function(id){return _kd[id]&&_kd[id].sellerCount;}).filter(function(s){return typeof s==='number';});
-      var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount}, p.season, new Date().getMonth()+1, _bl);
+      var _kd=store().keywordData||{}; var _bl=Object.keys(_kd).map(function(id){return _kd[id]&&_kd[id].productCount;}).filter(function(s){return typeof s==='number';});
+      var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount,monthlyTrend:r.monthlyTrend}, p.season, new Date().getMonth()+1, _bl);
       showModal(detailBody(p.name, p.type, p.season, r, _bl));
     }).catch(function(e){ showModal('<div class="empty" style="padding:24px">불러오기 실패: '+esc(e.message)+'</div>'); });
   }
@@ -16035,8 +16078,8 @@ _setupAiSectionEvents();
       if(r.monthly==null){ host.innerHTML='<div class="empty" style="padding:20px">검색 결과가 없거나 연동 오류예요. '+(r.error?esc(r.error):'')+'</div>'; return; }
       var type=$('src-kw-type').value, season=$('src-kw-season').value;
       var ann=(r.annual!=null?r.annual:null);
-      var _kd=store().keywordData||{}; var _bl=Object.keys(_kd).map(function(id){return _kd[id]&&_kd[id].sellerCount;}).filter(function(s){return typeof s==='number';});
-      var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount}, season, new Date().getMonth()+1, _bl);
+      var _kd=store().keywordData||{}; var _bl=Object.keys(_kd).map(function(id){return _kd[id]&&_kd[id].productCount;}).filter(function(s){return typeof s==='number';});
+      var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount,monthlyTrend:r.monthlyTrend}, season, new Date().getMonth()+1, _bl);
       var tc=sell.grade==='A'?'#2e7d32':sell.grade==='B'?'#558b2f':sell.grade==='C'?'#f9a825':'#9e9e9e';
       var h='<div class="card" style="border-left:5px solid '+tc+'">'
         +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:19px;font-weight:800">'+esc(kw)+'</span>'+gradeBadge(sell.grade)+'<span style="font-size:14px;font-weight:700;color:'+tc+'">판매가능성 '+sell.score+'점</span></div>'
@@ -16117,7 +16160,7 @@ _setupAiSectionEvents();
 
   function detailBody(name, type, season, r, baseline){
     var ann=(r.annual!=null?r.annual:null);
-    var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount}, season, new Date().getMonth()+1, baseline);
+    var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount,monthlyTrend:r.monthlyTrend}, season, new Date().getMonth()+1, baseline);
     var col=sell.grade==='A'?'#2e7d32':sell.grade==='B'?'#558b2f':sell.grade==='C'?'#f9a825':'#9e9e9e';
     var b='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px"><span style="font-size:19px;font-weight:800">'+esc(name)+'</span><span class="muted" style="font-size:12px">'+esc(type)+'·'+esc(season)+'</span>'+gradeBadge(sell.grade)+'<span style="font-size:14px;font-weight:700;color:'+col+'">판매가능성 '+sell.score+'점</span></div>'
       +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'
@@ -16141,7 +16184,7 @@ _setupAiSectionEvents();
   window._srcRemoveFav=removeFav;
   function renderFavBadge(){ var b=$('src-fav-count'); if(b) b.textContent=favs().length?(' '+favs().length):''; }
   function favRow(f, baseline){
-    var sell=S().sellabilityV2({monthly:f.monthly,productCount:f.productCount,annual:f.annual,sellerCount:f.sellerCount}, f.season||'LONG', new Date().getMonth()+1, baseline);
+    var sell=S().sellabilityV2({monthly:f.monthly,productCount:f.productCount,annual:f.annual,sellerCount:f.sellerCount,monthlyTrend:f.monthlyTrend}, f.season||'LONG', new Date().getMonth()+1, baseline);
     return { plant_id:'fav_'+f.name, name_kr:f.name, type:f.type||'-', season:f.season||'-', monthly:f.monthly, annual:f.annual, product_count:f.productCount, sellers:f.sellerCount,
       sellability:sell.score, grade:sell.grade, sourcing_score:sell.score, comp_level:sell.compLevel, comp_pct:sell.percentile, comp_relative:sell.relative, ratio:sell.ratio, hasData:true };
   }
@@ -16191,13 +16234,25 @@ _setupAiSectionEvents();
     var kd=store().keywordData||{}; var cur=new Date().getMonth()+1;
     var all=S().computeRecommendations(getPlants(),perf,kd,{curMonth:cur,scope:'시장전체',topN:9999});
     var hasData=all.some(function(r){return r.hasData;});
+    var pById={}; getPlants().forEach(function(p){pById[p.id]=p;});
+    var isDisc=function(r){ var p=pById[r.plant_id]; return !!(p&&p.discovered); };
     var byScore=function(a,b){return b.sellability-a.sellability||(a.plant_id<b.plant_id?-1:1);};
-    var sellable=all.filter(function(r){return !r.already_selling;}).slice().sort(byScore).slice(0,10);
-    var soon=all.filter(function(r){return r.season_fit===100;}).slice().sort(byScore).slice(0,10);
-    var next=all.filter(function(r){return r.season_fit===40;}).slice().sort(byScore).slice(0,8);
+    var discovered=all.filter(function(r){return !r.already_selling && isDisc(r);}).slice().sort(byScore).slice(0,12);
+    var restock=all.filter(function(r){return r.already_selling && r.is_winner && (r.season_fit>=70 || (r.growth!=null&&r.growth>=0));}).slice().sort(byScore).slice(0,10);
+    var sellable=all.filter(function(r){return !r.already_selling && !isDisc(r);}).slice().sort(byScore).slice(0,10);
+    var soon=all.filter(function(r){return r.season_fit===100 && !r.already_selling;}).slice().sort(byScore).slice(0,10);
+    var next=all.filter(function(r){return r.season_fit===40 && !r.already_selling;}).slice().sort(byScore).slice(0,8);
+    var hasPerf=all.some(function(r){return r.already_selling;});
     var h='<div class="card-title" style="border:none;padding-bottom:2px">✨ '+cur+'월 AI 추천 — 앱이 먼저 골라봤어요</div>';
-    if(!hasData) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px">💡 아직 검색량을 안 불러왔어요. <b>「판매가능성 추천」 탭 → 🔍 검색량·경쟁률 불러오기</b>를 누르면 "지금 팔릴 만한" 추천이 실제 데이터로 정확해져요. (지금은 시즌 기준 잠정)</div>';
-    h+=bucket('🔥 지금 팔릴 만한 (미보유)', '판매가능성 높은 순', sellable, '#e53935');
+    if(!hasData) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px">💡 아직 검색량을 안 불러왔어요. <b>「판매가능성 추천」 탭 → 🔍 검색량·경쟁률 불러오기</b>를 누르면 추천이 실제 데이터로 정확해져요. (지금은 시즌 기준 잠정)</div>';
+    // #3 재입고: 현재 판매중 + winner + 수요 여력
+    if(restock.length) h+=bucket('🔁 재입고 추천 (판매 여력 남음)', '잘 팔리는데 시즌·수요 아직 남음', restock, '#1e88e5');
+    else if(hasPerf) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 재입고 후보: 판매중 상품 중 \'아직 수요 여력 남은 winner\'가 잡히면 여기 떠요.</div>';
+    else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 <b>재입고 추천</b>을 보려면 <b>「판매가능성 추천」 탭 → 📥 쿠팡 리포트</b>로 판매 데이터를 올려주세요. (현재 판매중 상품 중 여력 남은 걸 골라줘요)</div>';
+    // #1 공급처 발굴 신규 (미보유)
+    if(discovered.length) h+=bucket('🆕 공급처 발굴 — 지금 팔릴 만한 (미보유)', '내가 등록한 공급처 상품 중 유망 신규', discovered, '#8e24aa');
+    else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🆕 <b>공급처 발굴</b>: 위 「🏪 공급처에서 상품 후보 가져오기」로 수집해 추가하면, 그 상품들 중 팔릴 만한 미보유 신규를 여기서 골라줘요.</div>';
+    h+=bucket('🔥 지금 팔릴 만한 (후보 전체, 미보유)', '판매가능성 높은 순', sellable, '#e53935');
     h+=bucket('⏳ 지금이 소싱 적기 (시즌 1~2달 임박)', '지금 떼오면 다음 시즌에 딱', soon, '#fb8c00');
     h+=bucket('🌱 아직 시즌 전 — 미리 찜 (약 3달 뒤)', '곧 시즌, 미리 준비', next, '#43a047');
     host.innerHTML=h;
@@ -16277,7 +16332,7 @@ _setupAiSectionEvents();
     var d=store(); if(!d.plantMaster)d.plantMaster=[];
     var exist={}; getPlants().forEach(function(p){exist[p.name]=1;}); var added=0;
     cbs.forEach(function(cb,i){ if(!cb.checked)return; var nm=(names[i].value||'').trim(); if(!nm||exist[nm])return; exist[nm]=1;
-      d.plantMaster.push({id:'u_'+Date.now().toString(36)+i, name:nm, type:type, season:season, aliases:[], kw:[nm], active:true}); added++; });
+      d.plantMaster.push({id:'u_'+Date.now().toString(36)+i, name:nm, type:type, season:season, aliases:[], kw:[nm], active:true, discovered:true}); added++; });
     persist(); toast('✓ '+added+'종 후보 추가됨'); renderReportStatus(); renderPicks();
     host.innerHTML='<div class="muted" style="padding:10px;background:#f5f8f5;border-radius:6px">✓ <b>'+added+'종</b>을 후보 목록에 추가했어요. ✨AI 추천에 반영됐어요. (타입·시즌은 나중에 다듬을 수 있어요) 검색량·경쟁은 「검색량 불러오기」로 채워져요.</div>';
   }
