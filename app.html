@@ -3022,46 +3022,36 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <section id="srctab-reco" class="src-pane">
           <div class="card">
             <div class="card-title">
-              소싱 추천 설정
+              판매가능성 진단 설정
               <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <button type="button" class="btn btn-secondary btn-sm" id="src-upload-btn" title="쿠팡 옵션별 판매 리포트(.xlsx/.csv): 상품명·조회·장바구니·주문·매출">📥 쿠팡 리포트 업로드</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="src-fetch-btn" title="식물별 네이버 월간검색수 + 쇼핑 상품수를 불러옵니다 (네이버 API 연동 설정 필요)">🔍 검색량·경쟁률 불러오기</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="src-upload-btn" title="쿠팡 옵션별 판매 리포트(.xlsx/.csv): winner 판정·가격대 분석용">📥 쿠팡 리포트</button>
                 <input type="file" id="src-report-file" accept=".xlsx,.xls,.csv" style="display:none">
                 <button type="button" class="btn btn-primary btn-sm" id="src-run-btn">▶ 추천 실행</button>
               </span>
             </div>
+            <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:12px;line-height:1.6">
+              <b>판매가능성 = 수요(월검색량) + 경쟁(검색량 대비 상품수) + 시즌</b>. 검색량·상품수는 네이버 공식 API를 연동하면 자동으로 채워져요(설정: <b>소싱_설정가이드.md</b>). 연동 전에는 시즌 기준으로 잠정 추천합니다.
+            </div>
             <div class="form-grid">
-              <div class="form-group">
-                <label class="form-label">기준 월</label>
-                <select id="src-month" class="form-control"></select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">후보 범위</label>
+              <div class="form-group"><label class="form-label">기준 월</label><select id="src-month" class="form-control"></select></div>
+              <div class="form-group"><label class="form-label">후보 범위</label>
                 <select id="src-scope" class="form-control">
                   <option value="시장전체">시장전체</option>
+                  <option value="데이터있는것만">검색량 있는 것만</option>
                   <option value="노지숙근관목">노지 숙근·관목</option>
                   <option value="미보유신규">미보유 신규만</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label class="form-label">추천 개수</label>
-                <input type="number" id="src-topn" class="form-control" value="20" min="1" max="100">
-              </div>
+              <div class="form-group"><label class="form-label">추천 개수</label><input type="number" id="src-topn" class="form-control" value="20" min="1" max="100"></div>
             </div>
-            <details style="margin-top:6px">
-              <summary style="cursor:pointer;font-size:12px;color:var(--muted)">가중치 조정 (합 1.0 권장)</summary>
-              <div class="form-grid" style="margin-top:8px">
-                <div class="form-group"><label class="form-label">시즌적합</label><input type="number" id="src-w-season" class="form-control" value="0.35" step="0.05" min="0" max="1"></div>
-                <div class="form-group"><label class="form-label">검색추세</label><input type="number" id="src-w-trend" class="form-control" value="0.30" step="0.05" min="0" max="1"></div>
-                <div class="form-group"><label class="form-label">winner유사</label><input type="number" id="src-w-winner" class="form-control" value="0.20" step="0.05" min="0" max="1"></div>
-                <div class="form-group"><label class="form-label">기회갭</label><input type="number" id="src-w-gap" class="form-control" value="0.15" step="0.05" min="0" max="1"></div>
-              </div>
-            </details>
-            <div id="src-report-status" style="margin-top:10px;font-size:12px"></div>
+            <div id="src-fetch-status" style="margin-top:8px;font-size:12px"></div>
+            <div id="src-report-status" style="margin-top:6px;font-size:12px"></div>
           </div>
           <div id="src-reco-result"></div>
         </section>
 
-        <section id="srctab-price" class="src-pane hidden">
+                <section id="srctab-price" class="src-pane hidden">
           <div class="card">
             <div class="card-title">내 가격, 시장에서 경쟁력 있나?</div>
             <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:12px;line-height:1.6">
@@ -4174,7 +4164,7 @@ function extractCodePrefix(code){
 
 const Store = (() => {
   const KEY = 'zerogardening_v1';
-  const DEFAULT = { receivings: [], companies: [], statements: [], orders: [], skus: [], cardPresets: [], manualCards: [], orderBatches: [], quoteRequests: [], plantMaster: [], myPerformance: null, competitorPrices: [], sourcingRuns: [] };
+  const DEFAULT = { receivings: [], companies: [], statements: [], orders: [], skus: [], cardPresets: [], manualCards: [], orderBatches: [], quoteRequests: [], plantMaster: [], myPerformance: null, competitorPrices: [], sourcingRuns: [], keywordData: {} };
 
   // 빌트인 프리셋 — 첫 로드 시 자동 시드
   const BUILTIN_PRESETS = [
@@ -4195,6 +4185,7 @@ const Store = (() => {
     if(!data.plantMaster) data.plantMaster = [];
     if(!data.competitorPrices) data.competitorPrices = [];
     if(!data.sourcingRuns) data.sourcingRuns = [];
+    if(!data.keywordData) data.keywordData = {};
     if(data.myPerformance === undefined) data.myPerformance = null;
     if(!data.cardPresets){
       data.cardPresets = BUILTIN_PRESETS.map((p,i) => ({
@@ -15465,545 +15456,438 @@ _setupAiSectionEvents();
 
 <script>
 /* === 소싱 추천 엔진 (자동 주입) === */
-
 /* ════════════════════════════════════════════════════════════════
-   식물 소싱 추천 & 가격 경쟁력 진단 — 순수 점수/가격 엔진
-   (사양서 §5 / §8 기반. DOM 비의존)
-
-   SeasonFit 해석 메모:
-   사양서 §1 은 SeasonFit 을 "다음 4~8주(=1~2달)가 수요 상승기인가" 로 정의하고,
-   §5.1 의사코드는 distance 0~1 을 100 으로 둔다. 두 정의가 살짝 충돌하는데,
-   §10 성공기준("month=7 → 가을식물 상위")은 §1(1~2달 선행=최고점) 해석에서만
-   통과한다. → 본 엔진은 §1 정의를 채택: 시즌이 1~2달 앞일 때 100(소싱 적기),
-   이미 시즌이면(0달) 70(약간 늦음).
+   식물 소싱 — 판매가능성 진단 엔진 v2 (검색량·경쟁률 중심)
+   판매가능성 = 수요(월검색량) + 경쟁(검색량 대비 상품수) + 시즌(보조).
+   검색량 데이터는 Supabase Edge Function(naver-keyword)이 네이버 공식
+   API 2개(검색광고 키워드도구 + 쇼핑검색)를 중계해 채워준다.
+   데이터 없으면 시즌만으로 잠정 진단(낮은 신뢰)으로 degrade.
 ═══════════════════════════════════════════════════════════════ */
 (function(global){
   'use strict';
-
-  var SEASON_LEAD = { SPR:3, ESU:6, MSU:7, AUT:9 };      // 대표 시작월
-  var DEFAULT_WEIGHTS = { season:0.35, trend:0.30, winner:0.20, gap:0.15 };
-  var SELL_WEIGHTS = { season:0.40, trend:0.30, winner:0.30 }; // 판매가능성(기회갭 제외)
-  var CHI_TO_CM = { '4':'10', '5':'15', '6':'18', '7':'21', '9':'27' };
+  var SEASON_LEAD = { SPR:3, ESU:6, MSU:7, AUT:9 };
+  var CHI_TO_CM = { '4':'10','5':'15','6':'18','7':'21','9':'27' };
+  var SELL2 = { demand:0.45, competition:0.45, season:0.10 };
 
   function norm(s){ return String(s==null?'':s).toLowerCase().replace(/[\s\-_()\[\].,/]/g,''); }
-  function num(v){
-    if(v==null) return 0;
-    var n = parseFloat(String(v).replace(/[^0-9.\-]/g,''));
-    return isFinite(n) ? n : 0;
-  }
-  function clamp(x,lo,hi){ return Math.max(lo, Math.min(hi, x)); }
+  function num(v){ if(v==null) return 0; var n=parseFloat(String(v).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:0; }
+  function clamp(x,lo,hi){ return Math.max(lo,Math.min(hi,x)); }
 
-  /* ── §5.1 SeasonFit (1~2달 선행 = 최고점) ── */
   function seasonFit(season, curMonth){
     if(season==='LONG') return 60;
-    var lead = SEASON_LEAD[season];
-    if(!lead) return 10;
-    var dist = ((lead - curMonth) % 12 + 12) % 12;   // 다음 시즌까지 남은 개월(순환)
-    if(dist===1 || dist===2) return 100;   // 1~2달 뒤 시즌 → 지금이 소싱 적기
-    if(dist===0)             return 70;    // 이미 시즌 → 소싱엔 약간 늦음
-    if(dist===3)             return 40;
-    return 10;                              // 한참 남음/지남
+    var lead = SEASON_LEAD[season]; if(!lead) return 10;
+    var dist = ((lead-curMonth)%12+12)%12;
+    if(dist===1||dist===2) return 100;
+    if(dist===0) return 70;
+    if(dist===3) return 40;
+    return 10;
   }
+  function winnerSimilarity(plant, wt, ws){
+    var s=0; if(wt&&wt.indexOf(plant.type)>=0)s+=60; if(ws&&ws.indexOf(plant.season)>=0)s+=40; return Math.min(s,100);
+  }
+  function opportunityGap(already, isW){ if(already&&isW)return 20; if(already)return 60; return 100; }
 
-  /* ── §5.2 TrendMomentum (YoY). trendMap 없으면 중립 50 ── */
-  function trendMomentum(plantId, trendMap){
-    if(trendMap && typeof trendMap[plantId] === 'number'){
-      var yoy = trendMap[plantId] / 100;            // 입력은 % (작년比)
-      return { score: clamp(50 + yoy*100, 0, 100), isNew:false };
+  /* ── 수요점수: 월검색량 로그스케일(30000→100) ── */
+  function demandScore(monthly){
+    if(monthly==null) return null;
+    if(monthly<=0) return 0;
+    return clamp(Math.round(Math.log10(monthly+1)/Math.log10(30000)*100),0,100);
+  }
+  /* ── 경쟁점수: 경쟁강도 r=상품수/월검색량, 낮을수록 블루오션 ── */
+  function competitionRatio(productCount, monthly){
+    if(productCount==null||monthly==null||monthly<=0) return null;
+    return Math.round((productCount/monthly)*100)/100;
+  }
+  function competitionScore(productCount, monthly){
+    var r = competitionRatio(productCount, monthly);
+    if(r==null) return null;
+    if(r<=0.3) return 100;
+    if(r<=1)   return 85;
+    if(r<=3)   return 70;
+    if(r<=10)  return 50;
+    if(r<=30)  return 30;
+    return 15;
+  }
+  function compLabel(r){
+    if(r==null) return '-';
+    if(r<=0.3) return '매우낮음(블루오션)';
+    if(r<=1)   return '낮음';
+    if(r<=3)   return '보통';
+    if(r<=10)  return '높음';
+    return '매우높음(레드오션)';
+  }
+  function demandLabel(m){
+    if(m==null) return '-';
+    if(m>=10000) return '매우많음';
+    if(m>=3000)  return '많음';
+    if(m>=800)   return '보통';
+    if(m>=100)   return '적음';
+    return '매우적음';
+  }
+  function grade(score){ if(score>=75)return'A'; if(score>=60)return'B'; if(score>=45)return'C'; return'D'; }
+
+  /* ── 판매가능성 v2 ── */
+  function sellabilityV2(kw, season, curMonth){
+    var sf = seasonFit(season, curMonth);
+    if(!kw || kw.monthly==null){
+      var sc0 = Math.round(sf*0.6);
+      return { score:sc0, grade:grade(sc0), hasData:false, demand:null, comp:null, ratio:null, seasonFit:sf };
     }
-    return { score:50, isNew:true };
+    var d = demandScore(kw.monthly);
+    var ratio = competitionRatio(kw.productCount, kw.monthly);
+    var c = competitionScore(kw.productCount, kw.monthly);
+    if(c==null){
+      var s2 = Math.round(0.7*d + 0.3*sf);
+      return { score:s2, grade:grade(s2), hasData:true, demand:d, comp:null, ratio:null, seasonFit:sf };
+    }
+    var s = Math.round(SELL2.demand*d + SELL2.competition*c + SELL2.season*sf);
+    return { score:s, grade:grade(s), hasData:true, demand:d, comp:c, ratio:ratio, seasonFit:sf };
   }
 
-  /* ── §5.3 WinnerSimilarity ── */
-  function winnerSimilarity(plant, winnerTypes, winnerSeasons){
-    var s = 0;
-    if(winnerTypes && winnerTypes.indexOf(plant.type) >= 0) s += 60;
-    if(winnerSeasons && winnerSeasons.indexOf(plant.season) >= 0) s += 40;
-    return Math.min(s, 100);
-  }
-
-  /* ── §5.4 OpportunityGap ── */
-  function opportunityGap(already, isWinner){
-    if(already && isWinner) return 20;
-    if(already) return 60;
-    return 100;
-  }
-
-  function grade(score){
-    if(score >= 78) return 'A';
-    if(score >= 62) return 'B';
-    if(score >= 46) return 'C';
-    return 'D';
-  }
-
-  /* ── 화분 사이즈 파싱 → 'NNcm' 버킷 (치→cm 통일) ── */
   function parseSize(text){
     if(!text) return '';
-    var s = String(text);
-    var m = s.match(/(\d+)\s*치/);
-    if(m && CHI_TO_CM[m[1]]) return CHI_TO_CM[m[1]] + 'cm';
-    m = s.match(/(\d+(?:\.\d+)?)\s*cm/i);
-    if(m) return String(Math.round(parseFloat(m[1]))) + 'cm';
+    var s=String(text), m=s.match(/(\d+)\s*치/);
+    if(m&&CHI_TO_CM[m[1]]) return CHI_TO_CM[m[1]]+'cm';
+    m=s.match(/(\d+(?:\.\d+)?)\s*cm/i); if(m) return String(Math.round(parseFloat(m[1])))+'cm';
     return '';
   }
-
-  /* ── 상품명 ↔ 식물 부분일치 (가장 긴 키워드 우선) ── */
   function matchPlant(productName, plants){
-    var t = norm(productName);
-    if(!t) return null;
-    var best=null, bestLen=0;
-    for(var i=0;i<plants.length;i++){
-      var p = plants[i];
-      var cands = [p.name].concat(p.aliases||[]).concat(p.kw||[]);
-      for(var j=0;j<cands.length;j++){
-        var nc = norm(cands[j]);
-        if(nc.length >= 2 && t.indexOf(nc) >= 0 && nc.length > bestLen){ best=p; bestLen=nc.length; }
-      }
-    }
+    var t=norm(productName); if(!t) return null;
+    var best=null,bl=0;
+    for(var i=0;i<plants.length;i++){ var p=plants[i], c=[p.name].concat(p.aliases||[]).concat(p.kw||[]);
+      for(var j=0;j<c.length;j++){ var nc=norm(c[j]); if(nc.length>=2&&t.indexOf(nc)>=0&&nc.length>bl){best=p;bl=nc.length;} } }
     return best;
   }
+  function percentile(a,p){ if(!a.length)return null; if(a.length===1)return a[0];
+    var idx=p*(a.length-1), lo=Math.floor(idx), hi=Math.ceil(idx);
+    return lo===hi?a[lo]:a[lo]+(a[hi]-a[lo])*(idx-lo); }
 
-  function percentile(sortedAsc, p){
-    if(!sortedAsc.length) return null;
-    if(sortedAsc.length===1) return sortedAsc[0];
-    var idx = p * (sortedAsc.length - 1);
-    var lo = Math.floor(idx), hi = Math.ceil(idx);
-    if(lo===hi) return sortedAsc[lo];
-    return sortedAsc[lo] + (sortedAsc[hi]-sortedAsc[lo])*(idx-lo);
-  }
-
-  /* ── 쿠팡 옵션 리포트 rows → 성과 집계 + 가격관측 + is_winner ──
-     reportRows: [{productName, views, cart, orders, revenue}]  (cvr 은 재계산)
-  */
   function buildPerformance(reportRows, plants){
-    var byPlant = {}, priceObs = [], unmatched = [];
+    var byP={},obs=[],un=[];
     reportRows.forEach(function(r){
-      var p = matchPlant(r.productName, plants);
-      var orders = num(r.orders), revenue = num(r.revenue), views = num(r.views), cart = num(r.cart);
-      var size = parseSize(r.productName);
-      var avg = orders > 0 ? revenue/orders : null;
-      if(avg != null && p) priceObs.push({ plantId:p.id, type:p.type, size:size, price:Math.round(avg), orders:orders, name:r.productName });
-      if(!p){ if(r.productName) unmatched.push(r.productName); return; }
-      var a = byPlant[p.id] || (byPlant[p.id] = { plantId:p.id, views:0, cart:0, orders:0, revenue:0, names:[] });
-      a.views += views; a.cart += cart; a.orders += orders; a.revenue += revenue;
-      if(a.names.length < 3 && r.productName) a.names.push(r.productName);
+      var p=matchPlant(r.productName,plants);
+      var o=num(r.orders),rev=num(r.revenue),v=num(r.views),ct=num(r.cart),size=parseSize(r.productName);
+      var avg=o>0?rev/o:null;
+      if(avg!=null&&p) obs.push({plantId:p.id,type:p.type,size:size,price:Math.round(avg),orders:o,name:r.productName});
+      if(!p){ if(r.productName)un.push(r.productName); return; }
+      var a=byP[p.id]||(byP[p.id]={plantId:p.id,views:0,cart:0,orders:0,revenue:0,names:[]});
+      a.views+=v;a.cart+=ct;a.orders+=o;a.revenue+=rev; if(a.names.length<3&&r.productName)a.names.push(r.productName);
     });
-    var perf = Object.keys(byPlant).map(function(k){ return byPlant[k]; });
-    perf.forEach(function(a){
-      a.cvr = a.views > 0 ? a.orders/a.views : 0;
-      a.avgPrice = a.orders > 0 ? Math.round(a.revenue/a.orders) : null;
-    });
-    // is_winner: 매출 상위(>=p70) + 전환 양호(>=중앙값)
-    var withRev = perf.filter(function(a){ return a.orders>0 && a.revenue>0; });
-    var revs = withRev.map(function(a){ return a.revenue; }).sort(function(x,y){ return x-y; });
-    var cvrs = withRev.map(function(a){ return a.cvr; }).sort(function(x,y){ return x-y; });
-    var revT = percentile(revs, 0.70), cvrM = percentile(cvrs, 0.50);
-    perf.forEach(function(a){
-      a.isWinner = !!(a.revenue>0 && revT!=null && a.revenue>=revT && cvrM!=null && a.cvr>=cvrM);
-    });
-    return { perf:perf, priceObs:priceObs, unmatched:unmatched,
-             winnerCount: perf.filter(function(a){return a.isWinner;}).length };
+    var perf=Object.keys(byP).map(function(k){return byP[k];});
+    perf.forEach(function(a){ a.cvr=a.views>0?a.orders/a.views:0; a.avgPrice=a.orders>0?Math.round(a.revenue/a.orders):null; });
+    var wr=perf.filter(function(a){return a.orders>0&&a.revenue>0;});
+    var revs=wr.map(function(a){return a.revenue;}).sort(function(x,y){return x-y;});
+    var cvrs=wr.map(function(a){return a.cvr;}).sort(function(x,y){return x-y;});
+    var rT=percentile(revs,0.70),cM=percentile(cvrs,0.50);
+    perf.forEach(function(a){ a.isWinner=!!(a.revenue>0&&rT!=null&&a.revenue>=rT&&cM!=null&&a.cvr>=cM); });
+    return { perf:perf, priceObs:obs, unmatched:un, winnerCount:perf.filter(function(a){return a.isWinner;}).length };
   }
 
   function buildReason(r){
-    var parts = [];
-    if(r.season_fit >= 100) parts.push('지금이 소싱 적기(시즌 1~2달 임박)');
-    else if(r.season_fit >= 70) parts.push((r.season==='LONG'?'상시 수요':'시즌 진행 중'));
-    else if(r.season_fit >= 40) parts.push('시즌 3달 앞');
-    else parts.push('시즌 한참 남음');
-    parts.push(r.trend_new ? '검색추세 데이터없음(중립)' : ('검색 작년比 '+(r.trend_momentum>=50?'+':'')+(r.trend_momentum-50)*2+'%'));
-    if(r.winner_similarity >= 100) parts.push('내 winner와 타입·시즌 동일');
-    else if(r.winner_similarity >= 60) parts.push('내 winner와 동일 '+r.type+'군');
-    else if(r.winner_similarity >= 40) parts.push('내 winner와 같은 시즌');
-    if(r.opportunity_gap >= 100) parts.push('미보유 신규');
-    else if(r.opportunity_gap >= 60) parts.push('판매중이나 약함→강화여지');
-    else parts.push('이미 잘 파는 품목');
-    return parts.join(' + ');
+    var p=[];
+    if(r.hasData){
+      p.push('월검색 '+(r.monthly!=null?r.monthly.toLocaleString():'-')+' ('+demandLabel(r.monthly)+')');
+      if(r.ratio!=null) p.push('경쟁강도 '+r.ratio+' ('+compLabel(r.ratio)+')');
+      else p.push('상품수 미확인');
+    } else {
+      p.push('검색량 미연동 — 설정 후 정확');
+    }
+    if(r.season_fit>=100) p.push('시즌 1~2달 임박(소싱 적기)');
+    else if(r.season_fit>=70) p.push(r.season==='LONG'?'상시 수요':'시즌 진행 중');
+    if(r.opportunity_gap>=100) p.push('미보유 신규');
+    else if(r.opportunity_gap>=60) p.push('판매중이나 약함');
+    else if(r.opportunity_gap>0) p.push('이미 잘 파는 품목');
+    return p.join(' + ');
   }
 
-  /* ── 핵심: 추천 계산 ──
-     plants: 식물 마스터,  perf: buildPerformance().perf,
-     opts: { curMonth, scope, topN, weights, trendMap }
-  */
-  function computeRecommendations(plants, perf, opts){
-    opts = opts || {};
-    var w = opts.weights || DEFAULT_WEIGHTS;
-    var curMonth = opts.curMonth || (new Date().getMonth()+1);
-    var pmap = {}; plants.forEach(function(p){ pmap[p.id]=p; });
-    var perfById = {}; (perf||[]).forEach(function(a){ perfById[a.plantId]=a; });
-    var winnerTypes = [], winnerSeasons = [];
-    (perf||[]).forEach(function(a){
-      if(!a.isWinner) return;
-      var pl = pmap[a.plantId]; if(!pl) return;
-      if(winnerTypes.indexOf(pl.type) < 0) winnerTypes.push(pl.type);
-      if(winnerSeasons.indexOf(pl.season) < 0) winnerSeasons.push(pl.season);
+  /* ── 추천 계산 v2 ──
+     plants, perf(buildPerformance), keywordData(map plantId->{monthly,productCount,...}), opts{curMonth,scope,topN} */
+  function computeRecommendations(plants, perf, keywordData, opts){
+    opts=opts||{}; keywordData=keywordData||{};
+    var curMonth=opts.curMonth||(new Date().getMonth()+1);
+    var pmap={}; plants.forEach(function(p){pmap[p.id]=p;});
+    var perfById={}; (perf||[]).forEach(function(a){perfById[a.plantId]=a;});
+    var wt=[],ws=[];
+    (perf||[]).forEach(function(a){ if(!a.isWinner)return; var pl=pmap[a.plantId]; if(!pl)return;
+      if(wt.indexOf(pl.type)<0)wt.push(pl.type); if(ws.indexOf(pl.season)<0)ws.push(pl.season); });
+    var rows=plants.filter(function(p){return p.active!==false;}).map(function(p){
+      var pr=perfById[p.id],already=!!pr,isW=pr?!!pr.isWinner:false;
+      var kw=keywordData[p.id]||null;
+      var sell=sellabilityV2(kw,p.season,curMonth);
+      var og=opportunityGap(already,isW);
+      var sourcing=Math.round((0.7*sell.score + 0.3*og)*10)/10;
+      var r={ plant_id:p.id,name_kr:p.name,type:p.type,season:p.season,
+        monthly: kw?kw.monthly:null, pc: kw?kw.pc:null, mobile: kw?kw.mobile:null,
+        product_count: kw?kw.productCount:null, ratio: sell.ratio,
+        demand_score: sell.demand, competition_score: sell.comp, season_fit: sell.seasonFit,
+        sellability: sell.score, grade: sell.grade, hasData: sell.hasData,
+        opportunity_gap: og, sourcing_score: sourcing,
+        already_selling: already, is_winner: isW,
+        winner_similarity: winnerSimilarity(p,wt,ws) };
+      r.reason=buildReason(r); return r;
     });
-    var rows = plants.filter(function(p){ return p.active !== false; }).map(function(p){
-      var pr = perfById[p.id], already = !!pr, isW = pr ? !!pr.isWinner : false;
-      var sf = seasonFit(p.season, curMonth);
-      var tm = trendMomentum(p.id, opts.trendMap);
-      var ws = winnerSimilarity(p, winnerTypes, winnerSeasons);
-      var og = opportunityGap(already, isW);
-      var sell = SELL_WEIGHTS.season*sf + SELL_WEIGHTS.trend*tm.score + SELL_WEIGHTS.winner*ws;
-      var sourcing = w.season*sf + w.trend*tm.score + w.winner*ws + w.gap*og;
-      var r = {
-        plant_id:p.id, name_kr:p.name, type:p.type, season:p.season,
-        season_fit:Math.round(sf), trend_momentum:Math.round(tm.score),
-        winner_similarity:Math.round(ws), opportunity_gap:og, trend_new:tm.isNew,
-        sellability:Math.round(sell), grade:grade(sell),
-        sourcing_score:Math.round(sourcing*10)/10,
-        already_selling:already,
-        my_orders: pr?pr.orders:0, my_revenue: pr?pr.revenue:0, my_avg_price: pr?pr.avgPrice:null,
-        is_winner:isW
-      };
-      r.reason = buildReason(r);
-      return r;
-    });
-    if(opts.scope === '노지숙근관목') rows = rows.filter(function(r){ return r.type==='숙근'||r.type==='관목'; });
-    else if(opts.scope === '미보유신규') rows = rows.filter(function(r){ return !r.already_selling; });
-    rows.sort(function(a,b){
-      return (b.sourcing_score - a.sourcing_score) ||
-             (a.plant_id < b.plant_id ? -1 : a.plant_id > b.plant_id ? 1 : 0);
-    });
-    return rows.slice(0, opts.topN || 20);
+    if(opts.scope==='노지숙근관목') rows=rows.filter(function(r){return r.type==='숙근'||r.type==='관목';});
+    else if(opts.scope==='미보유신규') rows=rows.filter(function(r){return !r.already_selling;});
+    else if(opts.scope==='데이터있는것만') rows=rows.filter(function(r){return r.hasData;});
+    rows.sort(function(a,b){ return (b.sourcing_score-a.sourcing_score)||(a.plant_id<b.plant_id?-1:a.plant_id>b.plant_id?1:0); });
+    return rows.slice(0,opts.topN||20);
   }
 
-  /* ── 가격 경쟁력: 타입×사이즈 밴드 ──
-     priceObs(내 판매데이터) + competitorPrices(수동) 결합.
-     key = type + '|' + size
-  */
-  function priceBands(priceObs, competitorPrices){
-    var bands = {};
-    function bucket(key){ return bands[key] || (bands[key] = { sold:[], comp:[], type:key.split('|')[0], size:key.split('|')[1] }); }
-    (priceObs||[]).forEach(function(o){
-      if(!o.size || o.price==null) return;
-      bucket(o.type+'|'+o.size).sold.push(o.price);
-    });
-    (competitorPrices||[]).forEach(function(c){
-      if(!c.size || c.price==null) return;
-      bucket(c.type+'|'+c.size).comp.push(num(c.price));
-    });
-    Object.keys(bands).forEach(function(k){
-      var b = bands[k];
-      var all = b.sold.concat(b.comp).slice().sort(function(x,y){ return x-y; });
-      b.all = all; b.n = all.length;
-      b.min = all.length?all[0]:null;
-      b.max = all.length?all[all.length-1]:null;
-      b.p25 = percentile(all, 0.25);
-      b.p50 = percentile(all, 0.50);
-      b.p75 = percentile(all, 0.75);
-    });
+  function priceBands(priceObs, comp){
+    var bands={};
+    function bk(k){ return bands[k]||(bands[k]={sold:[],comp:[],type:k.split('|')[0],size:k.split('|')[1]}); }
+    (priceObs||[]).forEach(function(o){ if(!o.size||o.price==null)return; bk(o.type+'|'+o.size).sold.push(o.price); });
+    (comp||[]).forEach(function(c){ if(!c.size||c.price==null)return; bk(c.type+'|'+c.size).comp.push(num(c.price)); });
+    Object.keys(bands).forEach(function(k){ var b=bands[k],all=b.sold.concat(b.comp).slice().sort(function(x,y){return x-y;});
+      b.all=all;b.n=all.length;b.min=all.length?all[0]:null;b.max=all.length?all[all.length-1]:null;
+      b.p25=percentile(all,0.25);b.p50=percentile(all,0.50);b.p75=percentile(all,0.75); });
     return bands;
   }
-
-  /* ── 가격 진단: 내가 정한 가격이 같은 타입×사이즈 밴드에서 경쟁력 있나 ── */
-  function diagnosePrice(type, size, myPrice, bands){
-    myPrice = num(myPrice);
-    var key = type+'|'+size, b = bands[key];
-    if(!b || b.n < 1){
-      return { status:'no-data', key:key, n:0,
-               message:'같은 타입·사이즈('+type+' '+size+') 비교 데이터가 없어요. 쿠팡 리포트를 올리거나 수동 경쟁가를 입력해 주세요.' };
-    }
-    var below = b.all.filter(function(x){ return x <= myPrice; }).length;
-    var pct = Math.round(below / b.n * 100);
-    var verdict, tone;
-    if(myPrice <= b.p25){ verdict='경쟁력 높음 (저가 구간)'; tone='good'; }
-    else if(myPrice <= b.p75){ verdict='적정 (시장 중간대)'; tone='ok'; }
-    else { verdict='비쌈 (경쟁력 낮음)'; tone='warn'; }
-    return {
-      status:'ok', key:key, type:type, size:size, n:b.n,
-      myPrice:myPrice, percentile:pct, verdict:verdict, tone:tone,
-      p25:Math.round(b.p25), p50:Math.round(b.p50), p75:Math.round(b.p75),
-      min:b.min, max:b.max,
-      recommend:[Math.round(b.p25), Math.round(b.p75)],
-      soldN:b.sold.length, compN:b.comp.length
-    };
+  function diagnosePrice(type,size,myPrice,bands){
+    myPrice=num(myPrice); var key=type+'|'+size,b=bands[key];
+    if(!b||b.n<1) return { status:'no-data',key:key,n:0,
+      message:'같은 타입·사이즈('+type+' '+size+') 비교 데이터가 없어요. 쿠팡 리포트를 올리거나 수동 경쟁가를 입력해 주세요.' };
+    var below=b.all.filter(function(x){return x<=myPrice;}).length, pct=Math.round(below/b.n*100);
+    var verdict,tone;
+    if(myPrice<=b.p25){verdict='경쟁력 높음 (저가 구간)';tone='good';}
+    else if(myPrice<=b.p75){verdict='적정 (시장 중간대)';tone='ok';}
+    else {verdict='비쌈 (경쟁력 낮음)';tone='warn';}
+    return { status:'ok',key:key,type:type,size:size,n:b.n,myPrice:myPrice,percentile:pct,verdict:verdict,tone:tone,
+      p25:Math.round(b.p25),p50:Math.round(b.p50),p75:Math.round(b.p75),min:b.min,max:b.max,
+      recommend:[Math.round(b.p25),Math.round(b.p75)],soldN:b.sold.length,compN:b.comp.length };
   }
 
   global.Sourcing = {
-    SEASON_LEAD: SEASON_LEAD, DEFAULT_WEIGHTS: DEFAULT_WEIGHTS,
-    norm:norm, num:num, seasonFit:seasonFit, trendMomentum:trendMomentum,
-    winnerSimilarity:winnerSimilarity, opportunityGap:opportunityGap, grade:grade,
-    parseSize:parseSize, matchPlant:matchPlant, buildPerformance:buildPerformance,
-    computeRecommendations:computeRecommendations, priceBands:priceBands,
-    diagnosePrice:diagnosePrice, percentile:percentile,
-    SEED: [{"id": "s_angae", "name": "안개나무", "type": "관목", "season": "ESU", "aliases": ["코티누스", "Cotinus"], "kw": ["안개나무", "스모크트리"], "active": true}, {"id": "s_jayeop_angae", "name": "자엽안개나무", "type": "관목", "season": "ESU", "aliases": ["자엽 코티누스"], "kw": ["자엽안개나무", "안개나무"], "active": true}, {"id": "s_rose_shrub", "name": "관목장미", "type": "관목", "season": "LONG", "aliases": ["Rose"], "kw": ["관목장미", "장미", "넝쿨장미"], "active": true}, {"id": "s_blueberry", "name": "블루베리", "type": "관목", "season": "SPR", "aliases": ["Blueberry"], "kw": ["블루베리", "블루베리묘목"], "active": true}, {"id": "s_mok_suguk", "name": "목수국", "type": "관목", "season": "MSU", "aliases": ["Hydrangea paniculata"], "kw": ["목수국", "수국"], "active": true}, {"id": "s_gogwang", "name": "고광나무", "type": "관목", "season": "ESU", "aliases": [], "kw": ["고광나무"], "active": true}, {"id": "s_yangguksu", "name": "양국수나무", "type": "관목", "season": "ESU", "aliases": ["피소카르푸스", "Physocarpus"], "kw": ["양국수나무", "양국수"], "active": true}, {"id": "s_byeongkkot", "name": "병꽃나무", "type": "관목", "season": "ESU", "aliases": [], "kw": ["병꽃나무", "병꽃"], "active": true}, {"id": "s_salix_wp", "name": "화이트핑크샐릭스", "type": "관목", "season": "ESU", "aliases": ["Salix"], "kw": ["화이트핑크샐릭스", "샐릭스"], "active": true}, {"id": "s_heuchera", "name": "휴케라", "type": "관엽", "season": "LONG", "aliases": ["Heuchera"], "kw": ["휴케라", "휴케라벨"], "active": true}, {"id": "s_lambsear", "name": "램스이어", "type": "관엽", "season": "LONG", "aliases": ["Stachys byzantina"], "kw": ["램스이어"], "active": true}, {"id": "s_baekmyo", "name": "백묘국", "type": "관엽", "season": "LONG", "aliases": ["더스티밀러", "Senecio"], "kw": ["백묘국", "더스티밀러"], "active": true}, {"id": "s_dunggulre", "name": "무늬둥굴레", "type": "숙근", "season": "SPR", "aliases": ["Polygonatum"], "kw": ["무늬둥굴레", "둥굴레"], "active": true}, {"id": "s_maehwa_heoltteok", "name": "매화헐떡이", "type": "숙근", "season": "SPR", "aliases": ["티아렐라", "Tiarella"], "kw": ["매화헐떡이", "헐떡이풀"], "active": true}, {"id": "s_eunsacho", "name": "은사초", "type": "그라스", "season": "LONG", "aliases": ["Carex"], "kw": ["은사초", "사초"], "active": true}, {"id": "s_gamdung", "name": "감둥사초", "type": "그라스", "season": "LONG", "aliases": ["Carex"], "kw": ["감둥사초", "사초"], "active": true}, {"id": "s_yeowoo_sacho", "name": "여우꼬리보리사초", "type": "그라스", "season": "LONG", "aliases": ["Carex"], "kw": ["여우꼬리보리사초", "보리사초"], "active": true}, {"id": "s_stipa", "name": "털수염풀", "type": "그라스", "season": "MSU", "aliases": ["스티파", "Stipa"], "kw": ["털수염풀", "스티파"], "active": true}, {"id": "s_echinacea", "name": "에키네시아", "type": "숙근", "season": "MSU", "aliases": ["Echinacea"], "kw": ["에키네시아", "에키네시아꽃"], "active": true}, {"id": "s_jeopsikkot", "name": "접시꽃", "type": "숙근", "season": "ESU", "aliases": ["Alcea"], "kw": ["접시꽃"], "active": true}, {"id": "s_baptisia", "name": "밥티시아", "type": "숙근", "season": "ESU", "aliases": ["Baptisia"], "kw": ["밥티시아"], "active": true}, {"id": "s_alchemilla", "name": "알케밀라", "type": "숙근", "season": "ESU", "aliases": ["레이디스맨틀", "Alchemilla"], "kw": ["알케밀라"], "active": true}, {"id": "s_shasta", "name": "샤스타데이지", "type": "숙근", "season": "ESU", "aliases": ["Shasta daisy"], "kw": ["샤스타데이지", "데이지"], "active": true}, {"id": "s_jeju_kkulpul", "name": "제주꿀풀", "type": "숙근", "season": "ESU", "aliases": [], "kw": ["제주꿀풀", "꿀풀"], "active": true}, {"id": "s_hanra_gae", "name": "한라개승마", "type": "숙근", "season": "ESU", "aliases": [], "kw": ["한라개승마", "개승마"], "active": true}, {"id": "s_baekdu_gosari", "name": "백두산고사리", "type": "숙근", "season": "ESU", "aliases": [], "kw": ["백두산고사리", "고사리"], "active": true}, {"id": "s_teori", "name": "터리풀", "type": "숙근", "season": "ESU", "aliases": ["Filipendula"], "kw": ["터리풀"], "active": true}, {"id": "s_russian_sage", "name": "러시안세이지", "type": "숙근", "season": "MSU", "aliases": ["페로브스키아", "Perovskia"], "kw": ["러시안세이지", "세이지"], "active": true}, {"id": "s_rudbeckia", "name": "루드베키아", "type": "숙근", "season": "MSU", "aliases": ["Rudbeckia"], "kw": ["루드베키아"], "active": true}, {"id": "s_eryngium", "name": "에린지움", "type": "숙근", "season": "MSU", "aliases": ["Eryngium"], "kw": ["에린지움"], "active": true}, {"id": "s_achillea", "name": "서양톱풀", "type": "숙근", "season": "MSU", "aliases": ["Achillea", "야로우"], "kw": ["서양톱풀", "미니톱풀", "톱풀"], "active": true}, {"id": "s_monarda", "name": "모나르다", "type": "숙근", "season": "MSU", "aliases": ["베르가못", "Monarda"], "kw": ["모나르다", "베르가못"], "active": true}, {"id": "s_coreopsis", "name": "솔잎금계국", "type": "숙근", "season": "MSU", "aliases": ["Coreopsis"], "kw": ["솔잎금계국", "금계국"], "active": true}, {"id": "s_echinops", "name": "절굿대", "type": "숙근", "season": "MSU", "aliases": ["Echinops"], "kw": ["절굿대"], "active": true}, {"id": "s_stokesia", "name": "스토케시아", "type": "숙근", "season": "MSU", "aliases": ["Stokesia"], "kw": ["스토케시아"], "active": true}, {"id": "s_caucasica", "name": "카우시카", "type": "숙근", "season": "MSU", "aliases": ["Caucasica"], "kw": ["카우시카"], "active": true}, {"id": "s_ruellia", "name": "루엘리아", "type": "숙근", "season": "MSU", "aliases": ["Ruellia"], "kw": ["루엘리아"], "active": true}, {"id": "s_turkey_sage", "name": "터키세이지", "type": "숙근", "season": "MSU", "aliases": ["Salvia"], "kw": ["터키세이지", "세이지"], "active": true}, {"id": "s_blue_sage", "name": "블루세이지", "type": "숙근", "season": "MSU", "aliases": ["Salvia", "살비아"], "kw": ["블루세이지", "세이지"], "active": true}, {"id": "s_lythrum", "name": "털부처꽃", "type": "숙근", "season": "MSU", "aliases": ["Lythrum"], "kw": ["털부처꽃", "부처꽃"], "active": true}, {"id": "s_verbena", "name": "마편초", "type": "숙근", "season": "MSU", "aliases": ["버베나", "Verbena"], "kw": ["마편초", "버들마편초", "버베나"], "active": true}, {"id": "s_liatris", "name": "리아트리스", "type": "숙근", "season": "MSU", "aliases": ["Liatris"], "kw": ["리아트리스"], "active": true}, {"id": "s_stachys", "name": "스타키스", "type": "숙근", "season": "MSU", "aliases": ["Stachys"], "kw": ["스타키스"], "active": true}, {"id": "s_lavender", "name": "라벤더", "type": "숙근", "season": "ESU", "aliases": ["Lavandula"], "kw": ["라벤더", "잉글리쉬라벤더", "프렌치라벤더"], "active": true}, {"id": "s_thalictrum", "name": "금꿩의다리", "type": "숙근", "season": "ESU", "aliases": ["Thalictrum"], "kw": ["금꿩의다리", "꿩의다리"], "active": true}, {"id": "s_penstemon", "name": "자엽펜스테몬", "type": "숙근", "season": "ESU", "aliases": ["Penstemon"], "kw": ["자엽펜스테몬", "펜스테몬"], "active": true}, {"id": "s_geum", "name": "뱀무", "type": "숙근", "season": "ESU", "aliases": ["Geum"], "kw": ["뱀무"], "active": true}, {"id": "s_margaret", "name": "목마가렛", "type": "숙근", "season": "ESU", "aliases": ["Argyranthemum"], "kw": ["목마가렛", "마가렛"], "active": true}, {"id": "s_trifolium", "name": "트리폴리움", "type": "숙근", "season": "ESU", "aliases": ["클로버", "Trifolium"], "kw": ["트리폴리움", "클로버"], "active": true}, {"id": "s_chumyeong", "name": "추명국", "type": "숙근", "season": "AUT", "aliases": ["대상화", "아네모네", "Anemone hupehensis"], "kw": ["추명국", "대상화", "아네모네"], "active": true}, {"id": "s_keun_sedum", "name": "큰꿩의비름", "type": "숙근", "season": "AUT", "aliases": ["세덤", "어텀조이", "Sedum"], "kw": ["큰꿩의비름", "세덤", "어텀조이"], "active": true}, {"id": "s_jaju_sedum", "name": "자주꿩의비름", "type": "숙근", "season": "AUT", "aliases": ["세덤", "Sedum"], "kw": ["자주꿩의비름", "세덤"], "active": true}, {"id": "s_jindae_aster", "name": "진다이개미취", "type": "숙근", "season": "AUT", "aliases": ["아스터", "Aster"], "kw": ["진다이개미취", "개미취", "아스터"], "active": true}, {"id": "s_solidago", "name": "주름미역취", "type": "숙근", "season": "AUT", "aliases": ["Solidago"], "kw": ["주름미역취", "미역취"], "active": true}, {"id": "s_eupatorium", "name": "향등골나물", "type": "숙근", "season": "AUT", "aliases": ["Eupatorium"], "kw": ["향등골나물", "등골나물"], "active": true}, {"id": "s_dumebuchu", "name": "두메부추", "type": "숙근", "season": "AUT", "aliases": ["Allium"], "kw": ["두메부추", "부추"], "active": true}, {"id": "s_sanguisorba", "name": "맨지스오이풀", "type": "숙근", "season": "AUT", "aliases": ["Sanguisorba"], "kw": ["맨지스오이풀", "오이풀"], "active": true}, {"id": "s_aquilegia", "name": "매발톱", "type": "숙근", "season": "SPR", "aliases": ["Aquilegia"], "kw": ["매발톱"], "active": true}, {"id": "s_mukdenia", "name": "돌단풍", "type": "숙근", "season": "SPR", "aliases": ["Mukdenia"], "kw": ["돌단풍"], "active": true}, {"id": "s_pink_dandelion", "name": "분홍민들레", "type": "숙근", "season": "SPR", "aliases": ["Taraxacum"], "kw": ["분홍민들레", "민들레"], "active": true}, {"id": "s_armeria", "name": "아르메리아", "type": "숙근", "season": "SPR", "aliases": ["Armeria"], "kw": ["아르메리아"], "active": true}, {"id": "s_gaura", "name": "흰가우라", "type": "숙근", "season": "LONG", "aliases": ["Gaura"], "kw": ["흰가우라", "가우라"], "active": true}]
+    norm:norm,num:num,seasonFit:seasonFit,winnerSimilarity:winnerSimilarity,opportunityGap:opportunityGap,
+    demandScore:demandScore,competitionRatio:competitionRatio,competitionScore:competitionScore,
+    compLabel:compLabel,demandLabel:demandLabel,grade:grade,sellabilityV2:sellabilityV2,
+    parseSize:parseSize,matchPlant:matchPlant,buildPerformance:buildPerformance,
+    computeRecommendations:computeRecommendations,priceBands:priceBands,diagnosePrice:diagnosePrice,
+    percentile:percentile, SEED: [{"id": "s_angae", "name": "안개나무", "type": "관목", "season": "ESU", "aliases": ["코티누스", "Cotinus"], "kw": ["안개나무", "스모크트리"], "active": true}, {"id": "s_jayeop_angae", "name": "자엽안개나무", "type": "관목", "season": "ESU", "aliases": ["자엽 코티누스"], "kw": ["자엽안개나무", "안개나무"], "active": true}, {"id": "s_rose_shrub", "name": "관목장미", "type": "관목", "season": "LONG", "aliases": ["Rose"], "kw": ["관목장미", "장미", "넝쿨장미"], "active": true}, {"id": "s_blueberry", "name": "블루베리", "type": "관목", "season": "SPR", "aliases": ["Blueberry"], "kw": ["블루베리", "블루베리묘목"], "active": true}, {"id": "s_mok_suguk", "name": "목수국", "type": "관목", "season": "MSU", "aliases": ["Hydrangea paniculata"], "kw": ["목수국", "수국"], "active": true}, {"id": "s_gogwang", "name": "고광나무", "type": "관목", "season": "ESU", "aliases": [], "kw": ["고광나무"], "active": true}, {"id": "s_yangguksu", "name": "양국수나무", "type": "관목", "season": "ESU", "aliases": ["피소카르푸스", "Physocarpus"], "kw": ["양국수나무", "양국수"], "active": true}, {"id": "s_byeongkkot", "name": "병꽃나무", "type": "관목", "season": "ESU", "aliases": [], "kw": ["병꽃나무", "병꽃"], "active": true}, {"id": "s_salix_wp", "name": "화이트핑크샐릭스", "type": "관목", "season": "ESU", "aliases": ["Salix"], "kw": ["화이트핑크샐릭스", "샐릭스"], "active": true}, {"id": "s_heuchera", "name": "휴케라", "type": "관엽", "season": "LONG", "aliases": ["Heuchera"], "kw": ["휴케라", "휴케라벨"], "active": true}, {"id": "s_lambsear", "name": "램스이어", "type": "관엽", "season": "LONG", "aliases": ["Stachys byzantina"], "kw": ["램스이어"], "active": true}, {"id": "s_baekmyo", "name": "백묘국", "type": "관엽", "season": "LONG", "aliases": ["더스티밀러", "Senecio"], "kw": ["백묘국", "더스티밀러"], "active": true}, {"id": "s_dunggulre", "name": "무늬둥굴레", "type": "숙근", "season": "SPR", "aliases": ["Polygonatum"], "kw": ["무늬둥굴레", "둥굴레"], "active": true}, {"id": "s_maehwa_heoltteok", "name": "매화헐떡이", "type": "숙근", "season": "SPR", "aliases": ["티아렐라", "Tiarella"], "kw": ["매화헐떡이", "헐떡이풀"], "active": true}, {"id": "s_eunsacho", "name": "은사초", "type": "그라스", "season": "LONG", "aliases": ["Carex"], "kw": ["은사초", "사초"], "active": true}, {"id": "s_gamdung", "name": "감둥사초", "type": "그라스", "season": "LONG", "aliases": ["Carex"], "kw": ["감둥사초", "사초"], "active": true}, {"id": "s_yeowoo_sacho", "name": "여우꼬리보리사초", "type": "그라스", "season": "LONG", "aliases": ["Carex"], "kw": ["여우꼬리보리사초", "보리사초"], "active": true}, {"id": "s_stipa", "name": "털수염풀", "type": "그라스", "season": "MSU", "aliases": ["스티파", "Stipa"], "kw": ["털수염풀", "스티파"], "active": true}, {"id": "s_echinacea", "name": "에키네시아", "type": "숙근", "season": "MSU", "aliases": ["Echinacea"], "kw": ["에키네시아", "에키네시아꽃"], "active": true}, {"id": "s_jeopsikkot", "name": "접시꽃", "type": "숙근", "season": "ESU", "aliases": ["Alcea"], "kw": ["접시꽃"], "active": true}, {"id": "s_baptisia", "name": "밥티시아", "type": "숙근", "season": "ESU", "aliases": ["Baptisia"], "kw": ["밥티시아"], "active": true}, {"id": "s_alchemilla", "name": "알케밀라", "type": "숙근", "season": "ESU", "aliases": ["레이디스맨틀", "Alchemilla"], "kw": ["알케밀라"], "active": true}, {"id": "s_shasta", "name": "샤스타데이지", "type": "숙근", "season": "ESU", "aliases": ["Shasta daisy"], "kw": ["샤스타데이지", "데이지"], "active": true}, {"id": "s_jeju_kkulpul", "name": "제주꿀풀", "type": "숙근", "season": "ESU", "aliases": [], "kw": ["제주꿀풀", "꿀풀"], "active": true}, {"id": "s_hanra_gae", "name": "한라개승마", "type": "숙근", "season": "ESU", "aliases": [], "kw": ["한라개승마", "개승마"], "active": true}, {"id": "s_baekdu_gosari", "name": "백두산고사리", "type": "숙근", "season": "ESU", "aliases": [], "kw": ["백두산고사리", "고사리"], "active": true}, {"id": "s_teori", "name": "터리풀", "type": "숙근", "season": "ESU", "aliases": ["Filipendula"], "kw": ["터리풀"], "active": true}, {"id": "s_russian_sage", "name": "러시안세이지", "type": "숙근", "season": "MSU", "aliases": ["페로브스키아", "Perovskia"], "kw": ["러시안세이지", "세이지"], "active": true}, {"id": "s_rudbeckia", "name": "루드베키아", "type": "숙근", "season": "MSU", "aliases": ["Rudbeckia"], "kw": ["루드베키아"], "active": true}, {"id": "s_eryngium", "name": "에린지움", "type": "숙근", "season": "MSU", "aliases": ["Eryngium"], "kw": ["에린지움"], "active": true}, {"id": "s_achillea", "name": "서양톱풀", "type": "숙근", "season": "MSU", "aliases": ["Achillea", "야로우"], "kw": ["서양톱풀", "미니톱풀", "톱풀"], "active": true}, {"id": "s_monarda", "name": "모나르다", "type": "숙근", "season": "MSU", "aliases": ["베르가못", "Monarda"], "kw": ["모나르다", "베르가못"], "active": true}, {"id": "s_coreopsis", "name": "솔잎금계국", "type": "숙근", "season": "MSU", "aliases": ["Coreopsis"], "kw": ["솔잎금계국", "금계국"], "active": true}, {"id": "s_echinops", "name": "절굿대", "type": "숙근", "season": "MSU", "aliases": ["Echinops"], "kw": ["절굿대"], "active": true}, {"id": "s_stokesia", "name": "스토케시아", "type": "숙근", "season": "MSU", "aliases": ["Stokesia"], "kw": ["스토케시아"], "active": true}, {"id": "s_caucasica", "name": "카우시카", "type": "숙근", "season": "MSU", "aliases": ["Caucasica"], "kw": ["카우시카"], "active": true}, {"id": "s_ruellia", "name": "루엘리아", "type": "숙근", "season": "MSU", "aliases": ["Ruellia"], "kw": ["루엘리아"], "active": true}, {"id": "s_turkey_sage", "name": "터키세이지", "type": "숙근", "season": "MSU", "aliases": ["Salvia"], "kw": ["터키세이지", "세이지"], "active": true}, {"id": "s_blue_sage", "name": "블루세이지", "type": "숙근", "season": "MSU", "aliases": ["Salvia", "살비아"], "kw": ["블루세이지", "세이지"], "active": true}, {"id": "s_lythrum", "name": "털부처꽃", "type": "숙근", "season": "MSU", "aliases": ["Lythrum"], "kw": ["털부처꽃", "부처꽃"], "active": true}, {"id": "s_verbena", "name": "마편초", "type": "숙근", "season": "MSU", "aliases": ["버베나", "Verbena"], "kw": ["마편초", "버들마편초", "버베나"], "active": true}, {"id": "s_liatris", "name": "리아트리스", "type": "숙근", "season": "MSU", "aliases": ["Liatris"], "kw": ["리아트리스"], "active": true}, {"id": "s_stachys", "name": "스타키스", "type": "숙근", "season": "MSU", "aliases": ["Stachys"], "kw": ["스타키스"], "active": true}, {"id": "s_lavender", "name": "라벤더", "type": "숙근", "season": "ESU", "aliases": ["Lavandula"], "kw": ["라벤더", "잉글리쉬라벤더", "프렌치라벤더"], "active": true}, {"id": "s_thalictrum", "name": "금꿩의다리", "type": "숙근", "season": "ESU", "aliases": ["Thalictrum"], "kw": ["금꿩의다리", "꿩의다리"], "active": true}, {"id": "s_penstemon", "name": "자엽펜스테몬", "type": "숙근", "season": "ESU", "aliases": ["Penstemon"], "kw": ["자엽펜스테몬", "펜스테몬"], "active": true}, {"id": "s_geum", "name": "뱀무", "type": "숙근", "season": "ESU", "aliases": ["Geum"], "kw": ["뱀무"], "active": true}, {"id": "s_margaret", "name": "목마가렛", "type": "숙근", "season": "ESU", "aliases": ["Argyranthemum"], "kw": ["목마가렛", "마가렛"], "active": true}, {"id": "s_trifolium", "name": "트리폴리움", "type": "숙근", "season": "ESU", "aliases": ["클로버", "Trifolium"], "kw": ["트리폴리움", "클로버"], "active": true}, {"id": "s_chumyeong", "name": "추명국", "type": "숙근", "season": "AUT", "aliases": ["대상화", "아네모네", "Anemone hupehensis"], "kw": ["추명국", "대상화", "아네모네"], "active": true}, {"id": "s_keun_sedum", "name": "큰꿩의비름", "type": "숙근", "season": "AUT", "aliases": ["세덤", "어텀조이", "Sedum"], "kw": ["큰꿩의비름", "세덤", "어텀조이"], "active": true}, {"id": "s_jaju_sedum", "name": "자주꿩의비름", "type": "숙근", "season": "AUT", "aliases": ["세덤", "Sedum"], "kw": ["자주꿩의비름", "세덤"], "active": true}, {"id": "s_jindae_aster", "name": "진다이개미취", "type": "숙근", "season": "AUT", "aliases": ["아스터", "Aster"], "kw": ["진다이개미취", "개미취", "아스터"], "active": true}, {"id": "s_solidago", "name": "주름미역취", "type": "숙근", "season": "AUT", "aliases": ["Solidago"], "kw": ["주름미역취", "미역취"], "active": true}, {"id": "s_eupatorium", "name": "향등골나물", "type": "숙근", "season": "AUT", "aliases": ["Eupatorium"], "kw": ["향등골나물", "등골나물"], "active": true}, {"id": "s_dumebuchu", "name": "두메부추", "type": "숙근", "season": "AUT", "aliases": ["Allium"], "kw": ["두메부추", "부추"], "active": true}, {"id": "s_sanguisorba", "name": "맨지스오이풀", "type": "숙근", "season": "AUT", "aliases": ["Sanguisorba"], "kw": ["맨지스오이풀", "오이풀"], "active": true}, {"id": "s_aquilegia", "name": "매발톱", "type": "숙근", "season": "SPR", "aliases": ["Aquilegia"], "kw": ["매발톱"], "active": true}, {"id": "s_mukdenia", "name": "돌단풍", "type": "숙근", "season": "SPR", "aliases": ["Mukdenia"], "kw": ["돌단풍"], "active": true}, {"id": "s_pink_dandelion", "name": "분홍민들레", "type": "숙근", "season": "SPR", "aliases": ["Taraxacum"], "kw": ["분홍민들레", "민들레"], "active": true}, {"id": "s_armeria", "name": "아르메리아", "type": "숙근", "season": "SPR", "aliases": ["Armeria"], "kw": ["아르메리아"], "active": true}, {"id": "s_gaura", "name": "흰가우라", "type": "숙근", "season": "LONG", "aliases": ["Gaura"], "kw": ["흰가우라", "가우라"], "active": true}]
   };
 })(typeof window !== 'undefined' ? window : globalThis);
 
-
 (function(){
   'use strict';
+  var SUPABASE_URL='https://vjqfhwrgrocapcyndgtx.supabase.co';
+  var ANON_KEY='sb_publishable_ds8hYFdqgj-vsotoaqtv4w_XhkL_DN2';
+  var SUPA_FN=SUPABASE_URL+'/functions/v1/naver-keyword';
+
   function $(id){ return document.getElementById(id); }
-  function won(n){ return n==null ? '-' : Number(n).toLocaleString('ko-KR')+'원'; }
+  function won(n){ return n==null?'-':Number(n).toLocaleString('ko-KR')+'원'; }
+  function nf(n){ return n==null?'–':Number(n).toLocaleString('ko-KR'); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function store(){ return window.Store.all(); }
+  function persist(){ if(window.Store&&window.Store.persist) window.Store.persist(); }
 
   function getPlants(){
-    var seed = (window.Sourcing && window.Sourcing.SEED) || [];
-    var d = (window.Store && window.Store.all) ? window.Store.all() : {};
-    var user = d.plantMaster || [];
+    var seed=(window.Sourcing&&window.Sourcing.SEED)||[];
+    var d=(window.Store&&window.Store.all)?window.Store.all():{};
+    var user=d.plantMaster||[];
     if(!user.length) return seed;
-    var map = {}; seed.forEach(function(p){ map[p.id]=p; });
-    user.forEach(function(p){ if(p && p.id) map[p.id]=Object.assign({}, map[p.id]||{}, p); });
-    return Object.keys(map).map(function(k){ return map[k]; });
+    var map={}; seed.forEach(function(p){map[p.id]=p;});
+    user.forEach(function(p){ if(p&&p.id) map[p.id]=Object.assign({},map[p.id]||{},p); });
+    return Object.keys(map).map(function(k){return map[k];});
   }
-  function store(){ return window.Store.all(); }
-  function persist(){ if(window.Store && window.Store.persist) window.Store.persist(); }
 
-  /* ── 쿠팡 리포트 컬럼 감지 ── */
+  /* ── 쿠팡 리포트 ── */
   function detectCols(headers){
-    var H = headers.map(function(h){ return String(h==null?'':h).replace(/\s/g,''); });
-    function find(preds){
-      for(var k=0;k<preds.length;k++){
-        for(var i=0;i<H.length;i++){ if(preds[k](H[i])) return i; }
-      }
-      return -1;
-    }
-    var c = {};
-    c.name = find([ function(h){return h.indexOf('상품명')>=0;}, function(h){return h.indexOf('옵션명')>=0;}, function(h){return h.indexOf('상품')>=0;} ]);
-    if(c.name < 0) c.name = 0;
-    c.views = find([ function(h){return h.indexOf('조회')>=0;}, function(h){return h.indexOf('노출')>=0;}, function(h){return h.indexOf('유입')>=0;} ]);
-    c.cart  = find([ function(h){return h.indexOf('장바구니')>=0;} ]);
-    c.orders= find([ function(h){return h.indexOf('주문')>=0 && h.indexOf('금액')<0;}, function(h){return h.indexOf('판매량')>=0;}, function(h){return h.indexOf('판매수')>=0;}, function(h){return h.indexOf('결제수량')>=0;} ]);
-    c.revenue=find([ function(h){return h.indexOf('매출')>=0;}, function(h){return h.indexOf('결제금액')>=0;}, function(h){return h.indexOf('결제액')>=0;}, function(h){return h.indexOf('판매금액')>=0;} ]);
+    var H=headers.map(function(h){return String(h==null?'':h).replace(/\s/g,'');});
+    function find(ps){ for(var k=0;k<ps.length;k++) for(var i=0;i<H.length;i++) if(ps[k](H[i])) return i; return -1; }
+    var c={};
+    c.name=find([function(h){return h.indexOf('상품명')>=0;},function(h){return h.indexOf('옵션명')>=0;},function(h){return h.indexOf('상품')>=0;}]); if(c.name<0)c.name=0;
+    c.views=find([function(h){return h.indexOf('조회')>=0;},function(h){return h.indexOf('노출')>=0;},function(h){return h.indexOf('유입')>=0;}]);
+    c.cart=find([function(h){return h.indexOf('장바구니')>=0;}]);
+    c.orders=find([function(h){return h.indexOf('주문')>=0&&h.indexOf('금액')<0;},function(h){return h.indexOf('판매량')>=0;},function(h){return h.indexOf('판매수')>=0;},function(h){return h.indexOf('결제수량')>=0;}]);
+    c.revenue=find([function(h){return h.indexOf('매출')>=0;},function(h){return h.indexOf('결제금액')>=0;},function(h){return h.indexOf('결제액')>=0;},function(h){return h.indexOf('판매금액')>=0;}]);
     return c;
   }
-
   function rowsToReport(rows){
-    if(!rows || rows.length < 2) return null;
-    var headers = rows[0], c = detectCols(headers);
-    var out = [];
-    for(var i=1;i<rows.length;i++){
-      var r = rows[i]; if(!r) continue;
-      var name = r[c.name];
-      if(!name || !String(name).trim()) continue;
-      out.push({
-        productName: String(name).trim(),
-        views: c.views>=0 ? r[c.views] : 0,
-        cart:  c.cart>=0  ? r[c.cart]  : 0,
-        orders:c.orders>=0? r[c.orders]: 0,
-        revenue:c.revenue>=0? r[c.revenue]:0
-      });
-    }
-    return { rows: out, cols: c, headers: headers };
+    if(!rows||rows.length<2) return null;
+    var c=detectCols(rows[0]),out=[];
+    for(var i=1;i<rows.length;i++){ var r=rows[i]; if(!r)continue; var name=r[c.name]; if(!name||!String(name).trim())continue;
+      out.push({productName:String(name).trim(),views:c.views>=0?r[c.views]:0,cart:c.cart>=0?r[c.cart]:0,orders:c.orders>=0?r[c.orders]:0,revenue:c.revenue>=0?r[c.revenue]:0}); }
+    return {rows:out,cols:c};
   }
-
   function handleReportFile(file){
-    if(typeof XLSX === 'undefined'){ toast('Excel 라이브러리가 로딩되지 않았습니다','error'); return; }
-    var reader = new FileReader();
-    reader.onload = function(ev){
-      try{
-        var data = new Uint8Array(ev.target.result);
-        var wb = XLSX.read(data, { type:'array' });
-        var ws = wb.Sheets[wb.SheetNames[0]];
-        var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
-        var parsed = rowsToReport(rows);
-        if(!parsed || !parsed.rows.length){ toast('리포트에서 데이터를 못 읽었어요','error'); return; }
-        var plants = getPlants();
-        var res = window.Sourcing.buildPerformance(parsed.rows, plants);
-        var d = store();
-        d.myPerformance = {
-          perf: res.perf, priceObs: res.priceObs,
-          unmatchedCount: res.unmatched.length, winnerCount: res.winnerCount,
-          rowCount: parsed.rows.length, generatedAt: Date.now()
-        };
-        persist();
-        renderReportStatus();
-        renderBands();
-        toast('✓ 리포트 반영: '+res.perf.length+'종 매칭 / winner '+res.winnerCount+'종');
-      }catch(err){ console.error(err); toast('리포트 처리 실패: '+err.message,'error'); }
-    };
+    if(typeof XLSX==='undefined'){ toast('Excel 라이브러리가 로딩되지 않았습니다','error'); return; }
+    var reader=new FileReader();
+    reader.onload=function(ev){ try{
+      var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+      var parsed=rowsToReport(rows);
+      if(!parsed||!parsed.rows.length){ toast('리포트에서 데이터를 못 읽었어요','error'); return; }
+      var res=window.Sourcing.buildPerformance(parsed.rows,getPlants());
+      var d=store();
+      d.myPerformance={perf:res.perf,priceObs:res.priceObs,unmatchedCount:res.unmatched.length,winnerCount:res.winnerCount,rowCount:parsed.rows.length,generatedAt:Date.now()};
+      persist(); renderReportStatus(); renderBands();
+      toast('✓ 리포트 반영: '+res.perf.length+'종 매칭 / winner '+res.winnerCount+'종');
+    }catch(err){ console.error(err); toast('리포트 처리 실패: '+err.message,'error'); } };
     reader.readAsArrayBuffer(file);
   }
 
-  function renderReportStatus(){
-    var el = $('src-report-status'); if(!el) return;
-    var mp = store().myPerformance;
-    if(!mp || !mp.generatedAt){
-      el.innerHTML = '<span class="muted">쿠팡 옵션별 리포트를 올리면 winner 판정·가격대 분석이 켜집니다. (없어도 추천은 동작 — 검색추세·winner는 중립)</span>';
-      return;
+  /* ── 네이버 검색량/경쟁률 (Edge Function) ── */
+  function callNaver(keywords){
+    return fetch(SUPA_FN,{ method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+ANON_KEY,'apikey':ANON_KEY},
+      body:JSON.stringify({keywords:keywords}) }).then(function(res){
+        if(!res.ok) return res.text().then(function(t){ throw new Error('연동 실패 '+res.status+' '+String(t).slice(0,100)); });
+        return res.json();
+      });
+  }
+  function fetchKeywordData(){
+    var plants=getPlants();
+    var btn=$('src-fetch-btn'), status=$('src-fetch-status');
+    var list=plants.map(function(p){return {id:p.id,kw:(p.kw&&p.kw[0])||p.name};});
+    var chunks=[]; for(var i=0;i<list.length;i+=15) chunks.push(list.slice(i,i+15));
+    var d=store(); if(!d.keywordData) d.keywordData={};
+    var done=0,failed=0;
+    if(btn) btn.disabled=true;
+    function step(ci){
+      if(ci>=chunks.length){
+        persist(); if(btn)btn.disabled=false;
+        if(status) status.textContent='✓ 검색량 갱신 완료 ('+(list.length-failed)+'/'+list.length+'종)'+(failed?' · 실패 '+failed:'');
+        renderReportStatus(); runReco(); return;
+      }
+      var ch=chunks[ci];
+      if(status) status.textContent='검색량 불러오는 중... '+done+'/'+list.length+'종';
+      callNaver(ch.map(function(x){return x.kw;})).then(function(res){
+        (res.results||[]).forEach(function(r,idx){
+          var pid=ch[idx].id;
+          if(r.monthly==null){ failed++; return; }
+          d.keywordData[pid]={monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,fetchedAt:res.fetchedAt};
+        });
+        done+=ch.length; step(ci+1);
+      }).catch(function(e){
+        if(btn)btn.disabled=false;
+        if(status) status.innerHTML='<span style="color:var(--danger)">✗ '+esc(e.message)+'</span><br><span class="muted">아직 Edge Function/네이버 키를 설정하지 않았다면 가이드(소싱_설정가이드.md)를 따라 주세요. 설정 없이도 시즌 기준 추천은 동작해요.</span>';
+        persist();
+      });
     }
-    var dt = new Date(mp.generatedAt);
-    el.innerHTML = '<span style="color:var(--primary-dark);font-weight:600">✓ 리포트 반영됨</span> · '
-      + (mp.perf?mp.perf.length:0)+'종 매칭, winner '+(mp.winnerCount||0)+'종, 미매칭 '+(mp.unmatchedCount||0)+'건 · '
-      + dt.toLocaleString('ko-KR');
+    step(0);
   }
 
-  function gradeBadge(g){
-    var col = {A:'#2e7d32',B:'#558b2f',C:'#f9a825',D:'#9e9e9e'}[g]||'#9e9e9e';
-    return '<span style="display:inline-block;min-width:20px;text-align:center;background:'+col+';color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px">'+g+'</span>';
-  }
-  function bar(v){
-    var c = v>=70?'#43a047':v>=40?'#fbc02d':'#e57373';
-    return '<div style="background:#eee;border-radius:4px;height:6px;width:46px;display:inline-block;vertical-align:middle;overflow:hidden"><div style="height:6px;width:'+Math.max(2,v)+'%;background:'+c+'"></div></div>';
-  }
-
+  /* ── 추천 ── */
   function runReco(){
-    var plants = getPlants();
-    var mp = store().myPerformance;
-    var perf = (mp && mp.perf) || [];
-    var weights = {
-      season: parseFloat($('src-w-season').value)||0.35,
-      trend:  parseFloat($('src-w-trend').value)||0.30,
-      winner: parseFloat($('src-w-winner').value)||0.20,
-      gap:    parseFloat($('src-w-gap').value)||0.15
-    };
-    var opts = {
-      curMonth: parseInt($('src-month').value,10) || (new Date().getMonth()+1),
-      scope: $('src-scope').value,
-      topN: parseInt($('src-topn').value,10) || 20,
-      weights: weights
-    };
-    var rows = window.Sourcing.computeRecommendations(plants, perf, opts);
-    renderRecoTable(rows, opts);
+    var perf=(store().myPerformance&&store().myPerformance.perf)||[];
+    var kd=store().keywordData||{};
+    var opts={ curMonth:parseInt($('src-month').value,10)||(new Date().getMonth()+1), scope:$('src-scope').value, topN:parseInt($('src-topn').value,10)||20 };
+    renderRecoTable(window.Sourcing.computeRecommendations(getPlants(),perf,kd,opts),opts);
   }
-
-  function renderRecoTable(rows, opts){
-    var host = $('src-reco-result'); if(!host) return;
-    if(!rows.length){ host.innerHTML = '<div class="empty">조건에 맞는 후보가 없어요.</div>'; return; }
-    var h = '<div class="card"><div class="card-title">추천 결과 — '+opts.curMonth+'월 기준 · '+esc(opts.scope)+' · 상위 '+rows.length+'종</div>'
-      + '<div style="overflow-x:auto"><table class="data-table"><thead><tr>'
-      + '<th>#</th><th>식물</th><th>타입</th><th>시즌</th>'
-      + '<th title="이 식물이 온라인에서 팔릴 가능성">판매가능성</th>'
-      + '<th title="지금 소싱할 우선순위(기회갭 포함)">소싱점수</th>'
-      + '<th>시즌</th><th>추세</th><th>winner</th><th>기회</th>'
-      + '<th>판매중</th><th>추천 이유</th></tr></thead><tbody>';
+  function gradeBadge(g){ var col={A:'#2e7d32',B:'#558b2f',C:'#f9a825',D:'#9e9e9e'}[g]||'#9e9e9e';
+    return '<span style="display:inline-block;min-width:20px;text-align:center;background:'+col+';color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px">'+g+'</span>'; }
+  function ratioCell(r){ if(r==null) return '<span class="muted">–</span>';
+    var c=r<=1?'#2e7d32':r<=3?'#1565c0':r<=10?'#ef6c00':'#c62828'; return '<span style="color:'+c+';font-weight:600">'+r+'</span>'; }
+  function renderRecoTable(rows,opts){
+    var host=$('src-reco-result'); if(!host) return;
+    if(!rows.length){ host.innerHTML='<div class="empty">조건에 맞는 후보가 없어요.</div>'; return; }
+    var any=rows.some(function(r){return r.hasData;});
+    var h='<div class="card"><div class="card-title">판매가능성 진단 — '+opts.curMonth+'월 · '+esc(opts.scope)+' · 상위 '+rows.length+'종'
+      +(any?'':' <span class="muted" style="font-weight:400;font-size:12px">(검색량 미연동 — 시즌 기준 잠정. 검색량 불러오면 정확해져요)</span>')+'</div>'
+      +'<div style="overflow-x:auto"><table class="data-table"><thead><tr>'
+      +'<th>#</th><th>식물</th><th>타입</th><th>시즌</th>'
+      +'<th title="네이버 월간검색수(PC+모바일)">월검색량</th><th title="네이버쇼핑 상품수">상품수</th>'
+      +'<th title="상품수÷검색량, 낮을수록 블루오션">경쟁강도</th>'
+      +'<th title="수요+경쟁+시즌 종합">판매가능성</th><th title="기회갭 포함 소싱 우선순위">소싱점수</th>'
+      +'<th>판매중</th><th>진단 근거</th></tr></thead><tbody>';
     rows.forEach(function(r,i){
-      h += '<tr>'
-        + '<td class="num">'+(i+1)+'</td>'
-        + '<td style="font-weight:600">'+esc(r.name_kr)+'</td>'
-        + '<td>'+esc(r.type)+'</td><td>'+esc(r.season)+'</td>'
-        + '<td>'+gradeBadge(r.grade)+' <b>'+r.sellability+'</b></td>'
-        + '<td class="num"><b>'+r.sourcing_score+'</b></td>'
-        + '<td>'+bar(r.season_fit)+' '+r.season_fit+'</td>'
-        + '<td>'+bar(r.trend_momentum)+' '+r.trend_momentum+(r.trend_new?'*':'')+'</td>'
-        + '<td>'+bar(r.winner_similarity)+' '+r.winner_similarity+'</td>'
-        + '<td>'+r.opportunity_gap+'</td>'
-        + '<td>'+(r.already_selling?(r.is_winner?'⭐winner':'판매중'):'<span class="muted">미보유</span>')+'</td>'
-        + '<td style="font-size:11.5px;color:#555;max-width:300px">'+esc(r.reason)+'</td>'
-        + '</tr>';
+      h+='<tr>'
+        +'<td class="num">'+(i+1)+'</td>'
+        +'<td style="font-weight:600">'+esc(r.name_kr)+(r.hasData?'':' <span class="muted" title="검색량 미연동">·</span>')+'</td>'
+        +'<td>'+esc(r.type)+'</td><td>'+esc(r.season)+'</td>'
+        +'<td class="num">'+nf(r.monthly)+'</td>'
+        +'<td class="num">'+nf(r.product_count)+'</td>'
+        +'<td class="num">'+ratioCell(r.ratio)+'</td>'
+        +'<td>'+gradeBadge(r.grade)+' <b>'+r.sellability+'</b></td>'
+        +'<td class="num"><b>'+r.sourcing_score+'</b></td>'
+        +'<td>'+(r.already_selling?(r.is_winner?'⭐winner':'판매중'):'<span class="muted">미보유</span>')+'</td>'
+        +'<td style="font-size:11.5px;color:#555;max-width:320px">'+esc(r.reason)+'</td>'
+        +'</tr>';
     });
-    h += '</tbody></table></div>'
-      + '<div class="muted" style="margin-top:8px;font-size:11px">* 추세=검색 데이터 없어 중립(50). 판매가능성=시즌·추세·winner유사도. 소싱점수=거기에 기회갭(미보유일수록↑) 가중.</div></div>';
-    host.innerHTML = h;
+    h+='</tbody></table></div>'
+      +'<div class="muted" style="margin-top:8px;font-size:11px">판매가능성 = 수요(월검색량 45%) + 경쟁(검색량 대비 상품수 45%) + 시즌(10%). 경쟁강도 낮을수록 블루오션. 소싱점수 = 판매가능성 70% + 기회갭 30%(미보유일수록↑).</div></div>';
+    host.innerHTML=h;
+  }
+  function renderReportStatus(){
+    var el=$('src-report-status'); if(!el) return;
+    var mp=store().myPerformance, kd=store().keywordData||{};
+    var kdN=Object.keys(kd).length;
+    var parts=[];
+    if(mp&&mp.generatedAt) parts.push('<span style="color:var(--primary-dark);font-weight:600">✓ 리포트</span> '+(mp.perf?mp.perf.length:0)+'종·winner '+(mp.winnerCount||0));
+    else parts.push('<span class="muted">쿠팡 리포트 미업로드(winner 판정 OFF)</span>');
+    parts.push(kdN?('<span style="color:var(--primary-dark);font-weight:600">✓ 검색량</span> '+kdN+'종'):'<span class="muted">검색량 미연동</span>');
+    el.innerHTML=parts.join(' · ');
   }
 
-  /* ── 가격 경쟁력 진단 ── */
-  function currentBands(){
-    var d = store();
-    var obs = (d.myPerformance && d.myPerformance.priceObs) || [];
-    return window.Sourcing.priceBands(obs, d.competitorPrices || []);
-  }
-
-  function fillTypeSelect(sel){
-    var types = ['관목','숙근','관엽','그라스','구근'];
-    sel.innerHTML = types.map(function(t){ return '<option>'+t+'</option>'; }).join('');
-  }
-
+  /* ── 가격 경쟁력 진단 (기존 유지) ── */
+  function currentBands(){ var d=store(); return window.Sourcing.priceBands((d.myPerformance&&d.myPerformance.priceObs)||[],d.competitorPrices||[]); }
+  function fillTypeSelect(sel){ if(!sel)return; sel.innerHTML=['관목','숙근','관엽','그라스','구근'].map(function(t){return '<option>'+t+'</option>';}).join(''); }
   function diagnose(){
-    var type = $('src-diag-type').value;
-    var size = window.Sourcing.parseSize($('src-diag-size').value) || $('src-diag-size').value.trim();
-    var price = $('src-diag-price').value;
-    var res = window.Sourcing.diagnosePrice(type, size, price, currentBands());
-    var host = $('src-price-diag'); if(!host) return;
-    if(res.status==='no-data'){ host.innerHTML = '<div class="empty" style="padding:24px">'+esc(res.message)+'</div>'; return; }
-    var toneCol = { good:'#2e7d32', ok:'#1565c0', warn:'#c62828' }[res.tone]||'#555';
-    host.innerHTML =
-      '<div class="card" style="border-left:4px solid '+toneCol+'">'
-      + '<div style="font-size:15px;font-weight:700;color:'+toneCol+'">'+esc(res.verdict)+'</div>'
-      + '<div style="margin:8px 0;font-size:13px">내 가격 <b>'+won(res.myPrice)+'</b> 은 같은 <b>'+esc(res.type)+' '+esc(res.size)+'</b> 비교군('+res.n+'개)에서 하위 <b>'+res.percentile+'%</b> 지점이에요.</div>'
-      + '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#444">'
-      + '<span>최저 '+won(res.min)+'</span><span>25% '+won(res.p25)+'</span><span>중앙 '+won(res.p50)+'</span><span>75% '+won(res.p75)+'</span><span>최고 '+won(res.max)+'</span>'
-      + '</div>'
-      + '<div style="margin-top:10px;font-size:13px">👉 경쟁력 있는 가격대: <b>'+won(res.recommend[0])+' ~ '+won(res.recommend[1])+'</b></div>'
-      + '<div class="muted" style="font-size:11px;margin-top:6px">비교기준: 내 판매데이터 '+res.soldN+'개 + 수동 경쟁가 '+res.compN+'개. (외부 시장가 자동수집 아님)</div>'
-      + '</div>';
+    var type=$('src-diag-type').value, size=window.Sourcing.parseSize($('src-diag-size').value)||$('src-diag-size').value.trim();
+    var res=window.Sourcing.diagnosePrice(type,size,$('src-diag-price').value,currentBands());
+    var host=$('src-price-diag'); if(!host)return;
+    if(res.status==='no-data'){ host.innerHTML='<div class="empty" style="padding:24px">'+esc(res.message)+'</div>'; return; }
+    var tc={good:'#2e7d32',ok:'#1565c0',warn:'#c62828'}[res.tone]||'#555';
+    host.innerHTML='<div class="card" style="border-left:4px solid '+tc+'">'
+      +'<div style="font-size:15px;font-weight:700;color:'+tc+'">'+esc(res.verdict)+'</div>'
+      +'<div style="margin:8px 0;font-size:13px">내 가격 <b>'+won(res.myPrice)+'</b> 은 같은 <b>'+esc(res.type)+' '+esc(res.size)+'</b> 비교군('+res.n+'개)에서 하위 <b>'+res.percentile+'%</b> 지점이에요.</div>'
+      +'<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#444"><span>최저 '+won(res.min)+'</span><span>25% '+won(res.p25)+'</span><span>중앙 '+won(res.p50)+'</span><span>75% '+won(res.p75)+'</span><span>최고 '+won(res.max)+'</span></div>'
+      +'<div style="margin-top:10px;font-size:13px">👉 경쟁력 있는 가격대: <b>'+won(res.recommend[0])+' ~ '+won(res.recommend[1])+'</b></div>'
+      +'<div class="muted" style="font-size:11px;margin-top:6px">비교기준: 내 판매데이터 '+res.soldN+'개 + 수동 경쟁가 '+res.compN+'개</div></div>';
   }
-
   function addCompetitor(){
-    var type = $('src-comp-type').value;
-    var size = window.Sourcing.parseSize($('src-comp-size').value) || $('src-comp-size').value.trim();
-    var price = window.Sourcing.num($('src-comp-price').value);
-    var src = $('src-comp-src').value.trim();
-    if(!size || !price){ toast('사이즈와 가격을 입력해주세요','error'); return; }
-    var d = store();
-    if(!d.competitorPrices) d.competitorPrices = [];
-    d.competitorPrices.push({ id:'cp_'+Date.now(), type:type, size:size, price:price, source:src, addedAt:Date.now() });
-    persist();
-    $('src-comp-price').value=''; $('src-comp-src').value='';
-    renderCompetitorList(); renderBands();
-    toast('✓ 경쟁가 추가됨');
+    var type=$('src-comp-type').value, size=window.Sourcing.parseSize($('src-comp-size').value)||$('src-comp-size').value.trim(), price=window.Sourcing.num($('src-comp-price').value), src=$('src-comp-src').value.trim();
+    if(!size||!price){ toast('사이즈와 가격을 입력해주세요','error'); return; }
+    var d=store(); if(!d.competitorPrices)d.competitorPrices=[];
+    d.competitorPrices.push({id:'cp_'+Date.now(),type:type,size:size,price:price,source:src,addedAt:Date.now()});
+    persist(); $('src-comp-price').value='';$('src-comp-src').value=''; renderCompetitorList(); renderBands(); toast('✓ 경쟁가 추가됨');
   }
-
-  function removeCompetitor(id){
-    var d = store();
-    d.competitorPrices = (d.competitorPrices||[]).filter(function(c){ return c.id!==id; });
-    persist(); renderCompetitorList(); renderBands();
-  }
-  window._srcRemoveComp = removeCompetitor;
-
+  function removeCompetitor(id){ var d=store(); d.competitorPrices=(d.competitorPrices||[]).filter(function(c){return c.id!==id;}); persist(); renderCompetitorList(); renderBands(); }
+  window._srcRemoveComp=removeCompetitor;
   function renderCompetitorList(){
-    var host = $('src-comp-list'); if(!host) return;
-    var list = store().competitorPrices || [];
-    if(!list.length){ host.innerHTML = '<span class="muted">아직 수동 입력 경쟁가가 없어요.</span>'; return; }
-    var h = '<table class="data-table"><thead><tr><th>타입</th><th>사이즈</th><th>가격</th><th>출처</th><th></th></tr></thead><tbody>';
-    list.slice().reverse().forEach(function(c){
-      h += '<tr><td>'+esc(c.type)+'</td><td>'+esc(c.size)+'</td><td class="num">'+won(c.price)+'</td><td>'+esc(c.source||'-')+'</td>'
-        + '<td><button class="btn btn-secondary btn-sm" onclick="_srcRemoveComp(\''+c.id+'\')">삭제</button></td></tr>';
-    });
-    host.innerHTML = h + '</tbody></table>';
+    var host=$('src-comp-list'); if(!host)return; var list=store().competitorPrices||[];
+    if(!list.length){ host.innerHTML='<span class="muted">아직 수동 입력 경쟁가가 없어요.</span>'; return; }
+    var h='<table class="data-table"><thead><tr><th>타입</th><th>사이즈</th><th>가격</th><th>출처</th><th></th></tr></thead><tbody>';
+    list.slice().reverse().forEach(function(c){ h+='<tr><td>'+esc(c.type)+'</td><td>'+esc(c.size)+'</td><td class="num">'+won(c.price)+'</td><td>'+esc(c.source||'-')+'</td><td><button class="btn btn-secondary btn-sm" onclick="_srcRemoveComp(\''+c.id+'\')">삭제</button></td></tr>'; });
+    host.innerHTML=h+'</tbody></table>';
   }
-
   function renderBands(){
-    var host = $('src-band-table'); if(!host) return;
-    var bands = currentBands();
-    var keys = Object.keys(bands).filter(function(k){ return bands[k].n>0; });
-    if(!keys.length){ host.innerHTML = '<span class="muted">가격대 데이터가 없어요. 쿠팡 리포트를 올리거나 수동 경쟁가를 입력하세요.</span>'; return; }
+    var host=$('src-band-table'); if(!host)return; var bands=currentBands();
+    var keys=Object.keys(bands).filter(function(k){return bands[k].n>0;});
+    if(!keys.length){ host.innerHTML='<span class="muted">가격대 데이터가 없어요. 쿠팡 리포트를 올리거나 수동 경쟁가를 입력하세요.</span>'; return; }
     keys.sort();
-    var h = '<table class="data-table"><thead><tr><th>타입</th><th>사이즈</th><th>표본</th><th>최저</th><th>25%</th><th>중앙</th><th>75%</th><th>최고</th></tr></thead><tbody>';
-    keys.forEach(function(k){
-      var b = bands[k];
-      h += '<tr><td>'+esc(b.type)+'</td><td>'+esc(b.size)+'</td>'
-        + '<td class="num">'+b.n+' <span class="muted" style="font-size:10px">(판매'+b.sold.length+'/경쟁'+b.comp.length+')</span></td>'
-        + '<td class="num">'+won(b.min)+'</td><td class="num">'+won(Math.round(b.p25))+'</td><td class="num">'+won(Math.round(b.p50))+'</td>'
-        + '<td class="num">'+won(Math.round(b.p75))+'</td><td class="num">'+won(b.max)+'</td></tr>';
-    });
-    host.innerHTML = h + '</tbody></table>';
+    var h='<table class="data-table"><thead><tr><th>타입</th><th>사이즈</th><th>표본</th><th>최저</th><th>25%</th><th>중앙</th><th>75%</th><th>최고</th></tr></thead><tbody>';
+    keys.forEach(function(k){ var b=bands[k]; h+='<tr><td>'+esc(b.type)+'</td><td>'+esc(b.size)+'</td><td class="num">'+b.n+' <span class="muted" style="font-size:10px">(판매'+b.sold.length+'/경쟁'+b.comp.length+')</span></td><td class="num">'+won(b.min)+'</td><td class="num">'+won(Math.round(b.p25))+'</td><td class="num">'+won(Math.round(b.p50))+'</td><td class="num">'+won(Math.round(b.p75))+'</td><td class="num">'+won(b.max)+'</td></tr>'; });
+    host.innerHTML=h+'</tbody></table>';
   }
 
   function switchSubTab(name){
-    document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.classList.toggle('active', t.dataset.srctab===name); });
+    document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.classList.toggle('active',t.dataset.srctab===name); });
     document.querySelectorAll('#route-sourcing .src-pane').forEach(function(p){ p.classList.add('hidden'); });
-    var pane = $('srctab-'+name); if(pane) pane.classList.remove('hidden');
+    var pane=$('srctab-'+name); if(pane)pane.classList.remove('hidden');
     if(name==='price'){ renderBands(); renderCompetitorList(); }
   }
 
-  window.setupSourcing = function(){
-    if(!$('route-sourcing')) return;
-    // 서브탭
-    document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){
-      t.addEventListener('click', function(){ switchSubTab(t.dataset.srctab); });
-    });
-    // 월 셀렉트 채우기
-    var ms = $('src-month');
-    if(ms && !ms.options.length){
-      var cur = new Date().getMonth()+1;
-      for(var m=1;m<=12;m++){ var o=document.createElement('option'); o.value=m; o.textContent=m+'월'; if(m===cur)o.selected=true; ms.appendChild(o); }
-    }
-    fillTypeSelect($('src-diag-type'));
-    fillTypeSelect($('src-comp-type'));
-    // 업로드
-    var up=$('src-upload-btn'), f=$('src-report-file');
-    if(up&&f){ up.addEventListener('click',function(){ f.click(); }); f.addEventListener('change',function(e){ if(e.target.files[0]) handleReportFile(e.target.files[0]); e.target.value=''; }); }
-    var rb=$('src-run-btn'); if(rb) rb.addEventListener('click', runReco);
-    var db=$('src-diag-btn'); if(db) db.addEventListener('click', diagnose);
-    var cb=$('src-comp-add'); if(cb) cb.addEventListener('click', addCompetitor);
-    renderReportStatus();
-  };
-
-  window.renderSourcing = function(){
-    renderReportStatus(); renderBands(); renderCompetitorList();
-  };
+  /* ── 견고한 이벤트 바인딩(중복 방지). init 타이밍과 무관하게 동작 ── */
+  function ensureBindings(){
+    var root=$('route-sourcing'); if(!root||root.dataset.bound==='1') return;
+    root.dataset.bound='1';
+    document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.addEventListener('click',function(){ switchSubTab(t.dataset.srctab); }); });
+    var up=$('src-upload-btn'),f=$('src-report-file');
+    if(up&&f){ up.addEventListener('click',function(){f.click();}); f.addEventListener('change',function(e){ if(e.target.files[0])handleReportFile(e.target.files[0]); e.target.value=''; }); }
+    var fb=$('src-fetch-btn'); if(fb) fb.addEventListener('click',fetchKeywordData);
+    var rb=$('src-run-btn'); if(rb) rb.addEventListener('click',runReco);
+    var db=$('src-diag-btn'); if(db) db.addEventListener('click',diagnose);
+    var cb=$('src-comp-add'); if(cb) cb.addEventListener('click',addCompetitor);
+  }
+  function fillMonth(){
+    var ms=$('src-month'); if(!ms||ms.options.length) return;
+    var cur=new Date().getMonth()+1;
+    for(var m=1;m<=12;m++){ var o=document.createElement('option'); o.value=m;o.textContent=m+'월'; if(m===cur)o.selected=true; ms.appendChild(o); }
+  }
+  window.setupSourcing=function(){ if(!$('route-sourcing'))return; fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); ensureBindings(); renderReportStatus(); };
+  window.renderSourcing=function(){ if(!$('route-sourcing'))return; fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); };
 })();
 
 </script>
