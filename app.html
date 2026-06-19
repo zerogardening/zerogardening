@@ -15542,17 +15542,17 @@ _setupAiSectionEvents();
   /* ── 경쟁 = "시장 포화도 = 상품수 ÷ 월평균검색" 을 내 후보군 안에서 상대 백분위로.
      수국 같은 대형키워드(상품 폭증)는 포화로, 모나르다는 여유로 잡힘. 판매처 수는 점수에 안 쓰고 참고로만 노출.
      baseline = 비교군 식물들의 satRatio 배열. 5개+면 상대(백분위), 미만이면 절대 tier. */
-  function satCompInfo(satRatio, baseline){
-    if(satRatio==null) return null;
+  function satCompInfo(value, baseline){
+    if(value==null) return null;
     if(baseline && baseline.length>=5){
-      var below=0; for(var i=0;i<baseline.length;i++){ if(baseline[i]<=satRatio) below++; }
-      var pct=Math.round(below/baseline.length*100); // 높을수록 포화(경쟁 심함)
+      var below=0; for(var i=0;i<baseline.length;i++){ if(baseline[i]<=value) below++; }
+      var pct=Math.round(below/baseline.length*100); // 높을수록 매물 많음(묻힘=경쟁 심함)
       var lv=pct<=20?'매우낮음':pct<=40?'낮음':pct<=60?'보통':pct<=80?'높음':'매우높음';
       var sc=pct<=20?100:pct<=40?80:pct<=60?60:pct<=80?35:15;
       return { percentile:pct, level:lv, score:sc, relative:true };
     }
-    var l2=satRatio<=0.5?'매우낮음':satRatio<=2?'낮음':satRatio<=5?'보통':satRatio<=15?'높음':'매우높음';
-    var s2=satRatio<=0.5?100:satRatio<=2?80:satRatio<=5?60:satRatio<=15?35:15;
+    var l2=value<=300?'매우낮음':value<=2000?'낮음':value<=10000?'보통':value<=100000?'높음':'매우높음';
+    var s2=value<=300?100:value<=2000?80:value<=10000?60:value<=100000?35:15;
     return { percentile:null, level:l2, score:s2, relative:false };
   }
   function sellabilityV2(kw, season, curMonth, baseline){
@@ -15564,7 +15564,7 @@ _setupAiSectionEvents();
     var avgMonthly = (typeof kw.annual==='number' && kw.annual>0) ? Math.round(kw.annual/12) : kw.monthly;
     var d = demandScore(avgMonthly);
     var satRatio = (kw.productCount!=null && avgMonthly>0) ? Math.round((kw.productCount/avgMonthly)*100)/100 : null;
-    var ci = satRatio!=null ? satCompInfo(satRatio, baseline) : null;
+    var ci = (kw.productCount!=null) ? satCompInfo(kw.productCount, baseline) : null;
     var sellers = (typeof kw.sellerCount==='number') ? kw.sellerCount : null;
     var c=null, compLevel=null, pct=null, rel=false;
     if(ci){ c=ci.score; compLevel=ci.level; pct=ci.percentile; rel=ci.relative; }
@@ -15643,7 +15643,7 @@ _setupAiSectionEvents();
     var wt=[],ws=[];
     (perf||[]).forEach(function(a){ if(!a.isWinner)return; var pl=pmap[a.plantId]; if(!pl)return;
       if(wt.indexOf(pl.type)<0)wt.push(pl.type); if(ws.indexOf(pl.season)<0)ws.push(pl.season); });
-    var baseline=[]; plants.forEach(function(p){ var k=keywordData[p.id]; if(k&&k.monthly!=null&&k.productCount!=null){ var am=(typeof k.annual==='number'&&k.annual>0)?k.annual/12:k.monthly; if(am>0) baseline.push(Math.round((k.productCount/am)*100)/100); } });
+    var baseline=[]; plants.forEach(function(p){ var k=keywordData[p.id]; if(k&&k.productCount!=null) baseline.push(k.productCount); });
     var rows=plants.filter(function(p){return p.active!==false;}).map(function(p){
       var pr=perfById[p.id],already=!!pr,isW=pr?!!pr.isWinner:false;
       var kw=keywordData[p.id]||null;
@@ -15815,7 +15815,7 @@ _setupAiSectionEvents();
     var c=r<=1?'#2e7d32':r<=3?'#1565c0':r<=10?'#ef6c00':'#c62828'; return '<span style="color:'+c+';font-weight:600">'+r+'</span>'; }
   function compSub(sell){
     var parts=[];
-    if(sell.relative&&sell.percentile!=null) parts.push('후보중 '+(sell.percentile>=50?'포화상위'+(100-sell.percentile):'여유하위'+sell.percentile)+'%');
+    if(sell.relative&&sell.percentile!=null) parts.push('후보중 '+(sell.percentile>=50?'매물상위'+(100-sell.percentile):'매물하위'+sell.percentile)+'%');
     else if(sell.ratio!=null) parts.push('상품/검색 '+sell.ratio);
     if(sell.sellers!=null) parts.push('판매처'+sell.sellers+'곳(참고)');
     return parts.join(' · ');
@@ -15836,7 +15836,7 @@ _setupAiSectionEvents();
       +'<div style="overflow-x:auto"><table class="data-table"><thead><tr>'
       +'<th>#</th><th>식물</th><th>타입</th><th>시즌</th>'
       +'<th title="데이터랩 연동 시 연간 실제합, 미연동 시 최근월">검색량</th><th title="네이버쇼핑 상품수">상품수</th>'
-      +'<th title="시장 포화도=상품수÷검색량, 내 후보군 상대. 판매처수는 참고">경쟁(포화도)</th>'
+      +'<th title="등록 상품수(매물량), 내 후보군 상대. 많을수록 묻힘=레드오션. 판매처수는 참고">경쟁(매물량)</th>'
       +'<th title="수요+경쟁+시즌 종합">판매가능성</th><th title="기회갭 포함 소싱 우선순위">소싱점수</th>'
       +'<th>판매중</th><th>진단 근거</th></tr></thead><tbody>';
     rows.forEach(function(r,i){
@@ -15920,12 +15920,13 @@ _setupAiSectionEvents();
     p.push('<b>'+esc(name)+'</b>는 연간 약 <b>'+nf(annual)+'회</b> 검색되는 수요 <b>'+demandLevel(annual)+'</b> 품목이에요.');
     if(sell.compLevel){
       var ref=(sell.sellers!=null)?(' <span class="muted">(상위 노출 판매처 '+nf(sell.sellers)+'곳 — 참고)</span>'):'';
-      var rel=(sell.relative&&sell.percentile!=null)?('내 후보 중 '+(sell.percentile>=50?'포화 상위 '+(100-sell.percentile)+'%':'여유 하위 '+sell.percentile+'%')):'';
-      if(sell.compLevel==='매우낮음'||sell.compLevel==='낮음') p.push('수요 대비 등록 상품이 적어 시장이 <b>덜 포화('+sell.compLevel+')</b>'+(rel?', '+rel:'')+' — 들어갈 자리가 있어요.'+ref);
-      else if(sell.compLevel==='보통') p.push('시장 포화도 <b>보통</b>'+(rel?' ('+rel+')':'')+' — 가격·옵션 차별화로 승산 있어요.'+ref);
-      else p.push('수요 대비 상품이 많아 <b>포화('+sell.compLevel+')</b>'+(rel?', '+rel:'')+' — 상위를 소수 대형셀러가 잡고 있을 수 있어 진입은 신중히.'+ref);
+      var rel=(sell.relative&&sell.percentile!=null)?('내 후보 중 '+(sell.percentile>=50?'매물 상위 '+(100-sell.percentile)+'%':'매물 하위 '+sell.percentile+'%')):'';
+      var n=nf(r.productCount);
+      if(sell.compLevel==='매우낮음'||sell.compLevel==='낮음') p.push('등록 상품이 <b>'+n+'개</b>로 매물이 적어 내 상품이 노출되기 좋아요 (경쟁 '+sell.compLevel+')'+(rel?', '+rel:'')+'.'+ref);
+      else if(sell.compLevel==='보통') p.push('등록 상품 <b>'+n+'개</b>, 매물량 보통'+(rel?' ('+rel+')':'')+' — 가격·옵션 차별화로 승산 있어요.'+ref);
+      else p.push('등록 상품이 <b>'+n+'개</b>로 매물이 많아 <b>내 상품이 묻히기 쉬워요(경쟁 '+sell.compLevel+')</b>'+(rel?', '+rel:'')+' — 진입은 신중히.'+ref);
     } else if(sell.ratio!=null){
-      p.push('상품수 <b>'+nf(r.productCount)+'개</b> (포화도 참고).');
+      p.push('상품수 <b>'+nf(r.productCount)+'개</b> (매물량 참고).');
     }
     var tr=reorderTrend(r.monthlyTrend);
     if(tr&&tr.length){
@@ -15959,7 +15960,7 @@ _setupAiSectionEvents();
         +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'
         +statBox('연간검색', (ann!=null?nf(ann):nf(r.monthly)+' /월'), (ann!=null?'추정':'최근월'))
         +statBox('상품수', nf(r.productCount), '네이버쇼핑')
-        +statBox('경쟁(포화도)', (sell.compLevel||'–'), compSub(sell))
+        +statBox('경쟁(매물량)', (sell.compLevel||'–'), compSub(sell))
         +'</div>';
       if(r.monthlyTrend&&r.monthlyTrend.length){
         body+='<div style="font-weight:700;font-size:12.5px;margin:8px 0 4px;color:#555">📈 월별 검색추이 <span class="muted" style="font-weight:400">(1~12월 · 점 위에 커서를 올리면 수치)</span></div>'
@@ -16006,7 +16007,7 @@ _setupAiSectionEvents();
         +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'
         +statBox('연간검색', (ann!=null?nf(ann):nf(r.monthly)+' /월'), 'PC '+nf(r.pc)+'/모바일 '+nf(r.mobile))
         +statBox('상품수', nf(r.productCount), '네이버쇼핑')
-        +statBox('경쟁(포화도)', (sell.compLevel||'–'), compSub(sell))
+        +statBox('경쟁(매물량)', (sell.compLevel||'–'), compSub(sell))
         +'</div>';
       if(r.monthlyTrend&&r.monthlyTrend.length) h+='<div style="font-weight:700;font-size:12.5px;margin:8px 0 4px;color:#555">📈 월별 검색추이 <span class="muted" style="font-weight:400">(1~12월 · 점 위 커서=수치)</span></div>'+trendSVG(r.monthlyTrend)+'<div class="muted" style="font-size:11px;margin-top:4px">월별=추정치(데이터랩×최근검색량)</div>';
       else h+='<div class="muted" style="font-size:12px;padding:8px 0">월별 그래프: 데이터랩 API 추가 시 표시'+(r.trendError?' ('+esc(r.trendError)+')':'')+'</div>';
