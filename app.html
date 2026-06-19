@@ -15629,7 +15629,7 @@ _setupAiSectionEvents();
       var og=opportunityGap(already,isW);
       var sourcing=Math.round((0.7*sell.score + 0.3*og)*10)/10;
       var r={ plant_id:p.id,name_kr:p.name,type:p.type,season:p.season,
-        monthly: kw?kw.monthly:null, pc: kw?kw.pc:null, mobile: kw?kw.mobile:null,
+        monthly: kw?kw.monthly:null, annual: (kw&&typeof kw.annual==='number')?kw.annual:null, pc: kw?kw.pc:null, mobile: kw?kw.mobile:null,
         product_count: kw?kw.productCount:null, ratio: sell.ratio,
         demand_score: sell.demand, competition_score: sell.comp, season_fit: sell.seasonFit,
         sellability: sell.score, grade: sell.grade, hasData: sell.hasData,
@@ -15765,11 +15765,11 @@ _setupAiSectionEvents();
       }
       var ch=chunks[ci];
       if(status) status.textContent='검색량 불러오는 중... '+done+'/'+list.length+'종';
-      callNaver(ch.map(function(x){return x.kw;}), false).then(function(res){
+      callNaver(ch.map(function(x){return x.kw;}), true).then(function(res){
         (res.results||[]).forEach(function(r,idx){
           var pid=ch[idx].id;
           if(r.monthly==null){ failed++; return; }
-          d.keywordData[pid]={monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:r.monthly*12,fetchedAt:res.fetchedAt};
+          d.keywordData[pid]={monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:(r.annual!=null?r.annual:null),monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt};
         });
         done+=ch.length; step(ci+1);
       }).catch(function(e){
@@ -15800,17 +15800,17 @@ _setupAiSectionEvents();
       +(any?' <span class="muted" style="font-weight:400;font-size:12px">(행을 클릭하면 월별 검색추이)</span>':' <span class="muted" style="font-weight:400;font-size:12px">(검색량 미연동 — 시즌 기준 잠정)</span>')+'</div>'
       +'<div style="overflow-x:auto"><table class="data-table"><thead><tr>'
       +'<th>#</th><th>식물</th><th>타입</th><th>시즌</th>'
-      +'<th title="연간 추정 검색량(월×12 또는 데이터랩 합)">연간검색량</th><th title="네이버쇼핑 상품수">상품수</th>'
+      +'<th title="데이터랩 연동 시 연간 실제합, 미연동 시 최근월">검색량</th><th title="네이버쇼핑 상품수">상품수</th>'
       +'<th title="상품수÷월검색량, 낮을수록 블루오션">경쟁강도</th>'
       +'<th title="수요+경쟁+시즌 종합">판매가능성</th><th title="기회갭 포함 소싱 우선순위">소싱점수</th>'
       +'<th>판매중</th><th>진단 근거</th></tr></thead><tbody>';
     rows.forEach(function(r,i){
-      var ann = r.monthly!=null ? r.monthly*12 : null;
+      var volCell = (r.annual!=null) ? (nf(r.annual)+' <span class="muted" style="font-size:9px">/년</span>') : (r.monthly!=null ? nf(r.monthly)+' <span class="muted" style="font-size:9px">/월</span>' : '–');
       h+='<tr style="cursor:pointer" onclick="_srcDetail(\''+r.plant_id+'\')" title="클릭: 월별 검색추이">'
         +'<td class="num">'+(i+1)+'</td>'
         +'<td style="font-weight:600">'+esc(r.name_kr)+'</td>'
         +'<td>'+esc(r.type)+'</td><td>'+esc(r.season)+'</td>'
-        +'<td class="num">'+nf(ann)+'</td>'
+        +'<td class="num">'+volCell+'</td>'
         +'<td class="num">'+nf(r.product_count)+'</td>'
         +'<td class="num">'+ratioCell(r.ratio)+'</td>'
         +'<td>'+gradeBadge(r.grade)+' <b>'+r.sellability+'</b></td>'
@@ -15868,16 +15868,15 @@ _setupAiSectionEvents();
       var r=(res.results&&res.results[0])||{};
       var d=store(); if(!d.keywordData)d.keywordData={};
       if(r.monthly!=null){
-        d.keywordData[plantId]=Object.assign({}, d.keywordData[plantId]||{}, {monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:r.annual!=null?r.annual:r.monthly*12,monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt});
+        d.keywordData[plantId]=Object.assign({}, d.keywordData[plantId]||{}, {monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:(r.annual!=null?r.annual:null),monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt});
         persist();
       }
-      var ann=r.annual!=null?r.annual:(r.monthly!=null?r.monthly*12:null);
+      var ann=(r.annual!=null?r.annual:null);
       var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount}, p.season, new Date().getMonth()+1);
       var body='<div class="modal-title" style="margin-bottom:6px">📈 '+esc(p.name)+' <span style="font-size:12px;color:#888">('+esc(p.type)+'·'+esc(p.season)+')</span></div>'
         +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px">'
         +'<span>판매가능성 '+gradeBadge(sell.grade)+' <b>'+sell.score+'</b></span>'
-        +'<span>연간검색 <b>'+nf(ann)+'</b></span>'
-        +'<span>월(최근) '+nf(r.monthly)+'</span>'
+        +'<span>'+(ann!=null?'연간검색 <b>'+nf(ann)+'</b>':'월검색(최근) <b>'+nf(r.monthly)+'</b>')+'</span>'
         +'<span>상품수 '+nf(r.productCount)+'</span>'
         +'<span>경쟁강도 '+ratioCell(r.competition)+'</span></div>';
       if(r.monthlyTrend&&r.monthlyTrend.length){
@@ -15914,13 +15913,13 @@ _setupAiSectionEvents();
       var r=(res.results&&res.results[0])||{};
       if(r.monthly==null){ host.innerHTML='<div class="empty" style="padding:20px">검색 결과가 없거나 연동 오류예요. '+(r.error?esc(r.error):'')+'</div>'; return; }
       var type=$('src-kw-type').value, season=$('src-kw-season').value;
-      var ann=r.annual!=null?r.annual:r.monthly*12;
+      var ann=(r.annual!=null?r.annual:null);
       var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount}, season, new Date().getMonth()+1);
       var tc=sell.grade==='A'?'#2e7d32':sell.grade==='B'?'#558b2f':sell.grade==='C'?'#f9a825':'#9e9e9e';
       var h='<div class="card" style="border-left:4px solid '+tc+'">'
         +'<div style="font-size:15px;font-weight:700">'+esc(kw)+' &nbsp;'+gradeBadge(sell.grade)+' 판매가능성 <b>'+sell.score+'</b></div>'
         +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px">'
-        +'<span>연간검색 <b>'+nf(ann)+'</b></span><span>월(최근) '+nf(r.monthly)+' <span class="muted">(PC '+nf(r.pc)+'/모바일 '+nf(r.mobile)+')</span></span>'
+        +'<span>'+(ann!=null?'연간검색 <b>'+nf(ann)+'</b>':'월검색(최근) <b>'+nf(r.monthly)+'</b>')+'</span><span class="muted" style="font-size:11px">PC '+nf(r.pc)+'/모바일 '+nf(r.mobile)+' (최근월)</span>'
         +'<span>상품수 <b>'+nf(r.productCount)+'</b></span><span>경쟁강도 '+ratioCell(r.competition)+' ('+esc(S().compLabel(r.competition))+')</span></div>';
       if(r.monthlyTrend&&r.monthlyTrend.length) h+=trendSVG(r.monthlyTrend)+trendTable(r.monthlyTrend)+'<div class="muted" style="font-size:11px;margin-top:4px">월별=추정치(데이터랩 지수×최근검색량)</div>';
       else h+='<div class="muted" style="font-size:12px">월별 그래프: 데이터랩 API 추가 시 표시'+(r.trendError?' ('+esc(r.trendError)+')':'')+'</div>';
