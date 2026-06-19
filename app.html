@@ -3017,6 +3017,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         <div class="tabs">
           <button class="tab active" data-srctab="reco">🌱 판매가능성 추천</button>
           <button class="tab" data-srctab="price">💰 가격 경쟁력 진단</button>
+          <button class="tab" data-srctab="fav">⭐ 즐겨찾기<span id="src-fav-count"></span></button>
         </div>
 
         <section id="srctab-reco" class="src-pane">
@@ -3055,6 +3056,21 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
                 </select>
               </div>
               <div class="form-group"><label class="form-label">추천 개수</label><input type="number" id="src-topn" class="form-control" value="20" min="1" max="100"></div>
+              <div class="form-group"><label class="form-label">정렬 기준</label>
+                <select id="src-sort-key" class="form-control">
+                  <option value="sourcing">소싱점수</option>
+                  <option value="sellability">판매가능성</option>
+                  <option value="annual">연간검색량</option>
+                  <option value="products">상품수(매물량)</option>
+                  <option value="comp">경쟁(매물 순위)</option>
+                </select>
+              </div>
+              <div class="form-group"><label class="form-label">정렬 방향</label>
+                <select id="src-sort-dir" class="form-control">
+                  <option value="desc">높은순 ▼</option>
+                  <option value="asc">낮은순 ▲</option>
+                </select>
+              </div>
             </div>
             <div id="src-fetch-status" style="margin-top:8px;font-size:12px"></div>
             <div id="src-report-status" style="margin-top:6px;font-size:12px"></div>
@@ -3094,6 +3110,10 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
             <div class="card-title">타입 × 사이즈 가격대 (현재 비교 데이터)</div>
             <div id="src-band-table"></div>
           </div>
+        </section>
+
+        <section id="srctab-fav" class="src-pane hidden">
+          <div id="src-fav-result"></div>
         </section>
       </div>
 
@@ -15803,11 +15823,22 @@ _setupAiSectionEvents();
     step(0);
   }
 
+  function getSort(){ var k=$('src-sort-key'),d=$('src-sort-dir'); return {key:k?k.value:'sourcing', dir:d?d.value:'desc'}; }
+  function sortRows(rows, srt){
+    var g={ sellability:function(r){return r.sellability;}, sourcing:function(r){return r.sourcing_score;},
+      annual:function(r){return r.annual!=null?r.annual:(r.monthly!=null?r.monthly*12:-1);},
+      products:function(r){return r.product_count!=null?r.product_count:-1;},
+      comp:function(r){return r.comp_pct!=null?r.comp_pct:-1;} }[srt.key]||function(r){return r.sourcing_score;};
+    var s=rows.slice().sort(function(a,b){ var d=g(b)-g(a); return d!==0?d:(a.plant_id<b.plant_id?-1:1); });
+    if(srt.dir==='asc') s.reverse();
+    return s;
+  }
   function runReco(){
     var perf=(store().myPerformance&&store().myPerformance.perf)||[];
     var kd=store().keywordData||{};
-    var opts={ curMonth:parseInt($('src-month').value,10)||(new Date().getMonth()+1), scope:$('src-scope').value, topN:parseInt($('src-topn').value,10)||20 };
-    renderRecoTable(S().computeRecommendations(getPlants(),perf,kd,opts),opts);
+    var topN=parseInt($('src-topn').value,10)||20;
+    var all=S().computeRecommendations(getPlants(),perf,kd,{curMonth:parseInt($('src-month').value,10)||(new Date().getMonth()+1), scope:$('src-scope').value, topN:9999});
+    renderRecoTable(sortRows(all,getSort()).slice(0,topN), {curMonth:parseInt($('src-month').value,10)||(new Date().getMonth()+1), scope:$('src-scope').value});
   }
   function gradeBadge(g){ var col={A:'#2e7d32',B:'#558b2f',C:'#f9a825',D:'#9e9e9e'}[g]||'#9e9e9e';
     return '<span style="display:inline-block;min-width:20px;text-align:center;background:'+col+';color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px">'+g+'</span>'; }
@@ -15955,22 +15986,7 @@ _setupAiSectionEvents();
       var ann=(r.annual!=null?r.annual:null);
       var _kd=store().keywordData||{}; var _bl=Object.keys(_kd).map(function(id){return _kd[id]&&_kd[id].sellerCount;}).filter(function(s){return typeof s==='number';});
       var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount}, p.season, new Date().getMonth()+1, _bl);
-      var col=sell.grade==='A'?'#2e7d32':sell.grade==='B'?'#558b2f':sell.grade==='C'?'#f9a825':'#9e9e9e';
-      var body='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px"><span style="font-size:19px;font-weight:800">'+esc(p.name)+'</span><span class="muted" style="font-size:12px">'+esc(p.type)+'·'+esc(p.season)+'</span>'+gradeBadge(sell.grade)+'<span style="font-size:14px;font-weight:700;color:'+col+'">판매가능성 '+sell.score+'점</span></div>'
-        +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'
-        +statBox('연간검색', (ann!=null?nf(ann):nf(r.monthly)+' /월'), (ann!=null?'추정':'최근월'))
-        +statBox('상품수', nf(r.productCount), '네이버쇼핑')
-        +statBox('경쟁(매물량)', (sell.compLevel||'–'), compSub(sell))
-        +'</div>';
-      if(r.monthlyTrend&&r.monthlyTrend.length){
-        body+='<div style="font-weight:700;font-size:12.5px;margin:8px 0 4px;color:#555">📈 월별 검색추이 <span class="muted" style="font-weight:400">(1~12월 · 점 위에 커서를 올리면 수치)</span></div>'
-          +trendSVG(r.monthlyTrend)
-          +'<div class="muted" style="font-size:11px;margin-top:6px">월별 수치 = 데이터랩 추세 × 최근월 검색량 환산 <b>추정치</b>.</div>';
-      } else {
-        body+='<div class="empty" style="padding:20px">월별 그래프는 <b>네이버 데이터랩(검색어트렌드)</b> 연동이 필요해요.'+(r.trendError?'<br><span class="muted">('+esc(r.trendError)+')</span>':'')+'</div>';
-      }
-      body+=buildDiagnosis(p.name, sell, r);
-      showModal(body);
+      showModal(detailBody(p.name, p.type, p.season, r, _bl));
     }).catch(function(e){ showModal('<div class="empty" style="padding:24px">불러오기 실패: '+esc(e.message)+'</div>'); });
   }
   window._srcDetail=openDetail;
@@ -16014,7 +16030,8 @@ _setupAiSectionEvents();
       h+=buildDiagnosis(kw, sell, r);
       h+='<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px">'
         +'<span class="muted" style="font-size:12px">소싱 후보로 저장:</span>'
-        +'<button type="button" class="btn btn-primary btn-sm" id="src-kw-save">+ 내 식물 목록에 추가 ('+esc(type)+'·'+esc(season)+')</button></div>';
+        +'<button type="button" class="btn btn-primary btn-sm" id="src-kw-save">+ 내 식물 목록에 추가 ('+esc(type)+'·'+esc(season)+')</button>'
+        +'<button type="button" class="btn btn-secondary btn-sm" id="src-kw-star">'+(isFav(kw)?'★ 즐겨찾기됨':'⭐ 즐겨찾기')+'</button></div>';
       h+='</div>';
       host.innerHTML=h;
       var sv=$('src-kw-save');
@@ -16022,6 +16039,8 @@ _setupAiSectionEvents();
         addPlant(kw, type, season, {monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,sellerCount:r.sellerCount,annual:ann,monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt});
         sv.disabled=true; sv.textContent='✓ 추가됨';
       });
+      var st=$('src-kw-star');
+      if(st) st.addEventListener('click',function(){ var on=toggleFav({name:kw,type:type,season:season,monthly:r.monthly,pc:r.pc,mobile:r.mobile,annual:ann,productCount:r.productCount,sellerCount:r.sellerCount,monthlyTrend:r.monthlyTrend||null}); st.textContent=on?'★ 즐겨찾기됨':'⭐ 즐겨찾기'; });
     }).catch(function(e){ if(btn)btn.disabled=false; host.innerHTML='<div class="empty" style="padding:20px">불러오기 실패: '+esc(e.message)+'</div>'; });
   }
   function addPlant(name, type, season, kw){
@@ -16076,11 +16095,64 @@ _setupAiSectionEvents();
     host.innerHTML=h+'</tbody></table>';
   }
 
+  function detailBody(name, type, season, r, baseline){
+    var ann=(r.annual!=null?r.annual:null);
+    var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount,annual:r.annual,sellerCount:r.sellerCount}, season, new Date().getMonth()+1, baseline);
+    var col=sell.grade==='A'?'#2e7d32':sell.grade==='B'?'#558b2f':sell.grade==='C'?'#f9a825':'#9e9e9e';
+    var b='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:2px"><span style="font-size:19px;font-weight:800">'+esc(name)+'</span><span class="muted" style="font-size:12px">'+esc(type)+'·'+esc(season)+'</span>'+gradeBadge(sell.grade)+'<span style="font-size:14px;font-weight:700;color:'+col+'">판매가능성 '+sell.score+'점</span></div>'
+      +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0">'
+      +statBox('연간검색', (ann!=null?nf(ann):nf(r.monthly)+' /월'), (ann!=null?'추정':'최근월'))
+      +statBox('상품수', nf(r.productCount), '네이버쇼핑')
+      +statBox('경쟁(매물량)', (sell.compLevel||'–'), compSub(sell))+'</div>';
+    if(r.monthlyTrend&&r.monthlyTrend.length) b+='<div style="font-weight:700;font-size:12.5px;margin:8px 0 4px;color:#555">📈 월별 검색추이 <span class="muted" style="font-weight:400">(1~12월 · 점 위 커서=수치)</span></div>'+trendSVG(r.monthlyTrend)+'<div class="muted" style="font-size:11px;margin-top:6px">월별 수치 = 추정치(데이터랩×최근검색량).</div>';
+    else b+='<div class="empty" style="padding:20px">월별 그래프는 <b>네이버 데이터랩</b> 연동 필요'+(r.trendError?' ('+esc(r.trendError)+')':'')+'.</div>';
+    return b+buildDiagnosis(name, sell, r);
+  }
+  /* ── 즐겨찾기(별표) ── */
+  function favs(){ var d=store(); if(!d.favorites)d.favorites=[]; return d.favorites; }
+  function isFav(name){ return favs().some(function(f){return f.name===name;}); }
+  function toggleFav(data){
+    var d=store(); if(!d.favorites)d.favorites=[];
+    var i=-1; for(var k=0;k<d.favorites.length;k++){ if(d.favorites[k].name===data.name){i=k;break;} }
+    if(i>=0){ d.favorites.splice(i,1); persist(); renderFavBadge(); toast('별표 해제: '+data.name); return false; }
+    d.favorites.push(Object.assign({addedAt:Date.now()}, data)); persist(); renderFavBadge(); toast('⭐ 즐겨찾기 추가: '+data.name); return true;
+  }
+  function removeFav(name){ var d=store(); d.favorites=(d.favorites||[]).filter(function(f){return f.name!==name;}); persist(); renderFavorites(); renderFavBadge(); }
+  window._srcRemoveFav=removeFav;
+  function renderFavBadge(){ var b=$('src-fav-count'); if(b) b.textContent=favs().length?(' '+favs().length):''; }
+  function favRow(f, baseline){
+    var sell=S().sellabilityV2({monthly:f.monthly,productCount:f.productCount,annual:f.annual,sellerCount:f.sellerCount}, f.season||'LONG', new Date().getMonth()+1, baseline);
+    return { plant_id:'fav_'+f.name, name_kr:f.name, type:f.type||'-', season:f.season||'-', monthly:f.monthly, annual:f.annual, product_count:f.productCount, sellers:f.sellerCount,
+      sellability:sell.score, grade:sell.grade, sourcing_score:sell.score, comp_level:sell.compLevel, comp_pct:sell.percentile, comp_relative:sell.relative, ratio:sell.ratio, hasData:true };
+  }
+  function renderFavorites(){
+    var host=$('src-fav-result'); if(!host) return; var list=favs();
+    if(!list.length){ host.innerHTML='<div class="empty" style="padding:28px">⭐ 즐겨찾기가 비어있어요.<br><span class="muted">키워드 검색 → 결과 카드의 [⭐ 즐겨찾기] 버튼으로 모아보세요.</span></div>'; return; }
+    var baseline=list.map(function(f){return f.productCount;}).filter(function(v){return typeof v==='number';});
+    var rows=sortRows(list.map(function(f){return favRow(f,baseline);}), getSort());
+    var h='<div class="card"><div class="card-title">⭐ 즐겨찾기 — '+rows.length+'종 <span class="muted" style="font-weight:400;font-size:12px">(식물명 클릭=월별추세 · ★=해제 · 상단 정렬 적용)</span></div>'
+      +'<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>★</th><th>식물</th><th>타입</th><th>시즌</th><th>연간검색</th><th>상품수</th><th>경쟁(매물량)</th><th>판매가능성</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var ann=r.annual!=null?r.annual:(r.monthly!=null?r.monthly*12:null);
+      h+='<tr><td><span style="cursor:pointer;color:#f9a825;font-size:15px" onclick="_srcRemoveFav(\''+esc(r.name_kr)+'\')" title="즐겨찾기 해제">★</span></td>'
+        +'<td style="font-weight:600;cursor:pointer;color:var(--primary-dark)" onclick="_srcFavDetail(\''+esc(r.name_kr)+'\')">'+esc(r.name_kr)+'</td>'
+        +'<td>'+esc(r.type)+'</td><td>'+esc(r.season)+'</td><td class="num">'+nf(ann)+'</td><td class="num">'+nf(r.product_count)+'</td>'
+        +'<td>'+sellerCell(r)+'</td><td>'+gradeBadge(r.grade)+' <b>'+r.sellability+'</b></td></tr>';
+    });
+    host.innerHTML=h+'</tbody></table></div></div>';
+  }
+  window._srcFavDetail=function(name){
+    var f=null, L=favs(); for(var i=0;i<L.length;i++){ if(L[i].name===name){f=L[i];break;} } if(!f) return;
+    var baseline=L.map(function(x){return x.productCount;}).filter(function(v){return typeof v==='number';});
+    showModal(detailBody(f.name, f.type||'-', f.season||'LONG', {monthly:f.monthly,pc:f.pc,mobile:f.mobile,productCount:f.productCount,annual:f.annual,sellerCount:f.sellerCount,monthlyTrend:f.monthlyTrend}, baseline));
+  };
+
   function switchSubTab(name){
     document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.classList.toggle('active',t.dataset.srctab===name); });
     document.querySelectorAll('#route-sourcing .src-pane').forEach(function(p){ p.classList.add('hidden'); });
     var pane=$('srctab-'+name); if(pane)pane.classList.remove('hidden');
     if(name==='price'){ renderBands(); renderCompetitorList(); }
+    if(name==='fav'){ renderFavorites(); }
   }
   function ensureBindings(){
     var root=$('route-sourcing'); if(!root||root.dataset.bound==='1') return;
@@ -16094,6 +16166,8 @@ _setupAiSectionEvents();
     var ki=$('src-kw-input'); if(ki) ki.addEventListener('keydown',function(e){ if(e.key==='Enter') searchKeyword(); });
     var db=$('src-diag-btn'); if(db) db.addEventListener('click',diagnose);
     var cb=$('src-comp-add'); if(cb) cb.addEventListener('click',addCompetitor);
+    var sk=$('src-sort-key'); if(sk) sk.addEventListener('change',runReco);
+    var sd=$('src-sort-dir'); if(sd) sd.addEventListener('change',runReco);
   }
   function fillMonth(){
     var ms=$('src-month'); if(!ms||ms.options.length) return;
@@ -16102,7 +16176,7 @@ _setupAiSectionEvents();
   }
   function initFills(){ fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); fillTypeSelect($('src-kw-type')); fillSeasonSelect($('src-kw-season')); }
   window.setupSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); };
-  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); };
+  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); renderFavBadge(); };
 })();
 
 </script>
