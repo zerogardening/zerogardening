@@ -3015,12 +3015,17 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
       <!-- 식물 소싱 추천 & 가격 경쟁력 진단 -->
       <div id="route-sourcing" class="hidden">
         <div class="tabs">
-          <button class="tab active" data-srctab="reco">🌱 판매가능성 추천</button>
+          <button class="tab active" data-srctab="picks">✨ AI 추천</button>
+          <button class="tab" data-srctab="reco">🌱 판매가능성 추천</button>
           <button class="tab" data-srctab="price">💰 가격 경쟁력 진단</button>
           <button class="tab" data-srctab="fav">⭐ 즐겨찾기<span id="src-fav-count"></span></button>
         </div>
 
-        <section id="srctab-reco" class="src-pane">
+        <section id="srctab-picks" class="src-pane">
+          <div id="src-picks-result"></div>
+        </section>
+
+        <section id="srctab-reco" class="src-pane hidden">
           <div class="card">
             <div class="card-title">🔎 키워드 직접 검색 <span class="muted" style="font-weight:400;font-size:12px">(아무 식물·키워드나 입력 → 소싱 가능성 즉시 진단)</span></div>
             <div class="form-grid">
@@ -16147,12 +16152,49 @@ _setupAiSectionEvents();
     showModal(detailBody(f.name, f.type||'-', f.season||'LONG', {monthly:f.monthly,pc:f.pc,mobile:f.mobile,productCount:f.productCount,annual:f.annual,sellerCount:f.sellerCount,monthlyTrend:f.monthlyTrend}, baseline));
   };
 
+  /* ── ✨ AI 추천 픽 (앱이 먼저 골라줌) ── */
+  function pickItem(r){
+    var ann=r.annual!=null?r.annual:(r.monthly!=null?r.monthly*12:null);
+    var meta=[];
+    if(r.hasData){ if(ann!=null)meta.push('검색 '+nf(ann)); if(r.comp_level)meta.push('경쟁 '+r.comp_level); }
+    meta.push('시즌 '+r.season);
+    if(!r.already_selling)meta.push('미보유'); else if(r.is_winner)meta.push('⭐winner'); else meta.push('판매중');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid #f0f2f0;cursor:pointer" onclick="_srcDetail(\''+esc(r.plant_id)+'\')" title="클릭: 월별추세">'
+      +gradeBadge(r.grade)+'<span style="font-weight:700;min-width:86px;font-size:13px">'+esc(r.name_kr)+'</span>'
+      +'<span class="muted" style="font-size:11px;white-space:nowrap">'+esc(meta.join(' · '))+'</span>'
+      +'<span style="font-size:11px;color:#666;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">'+esc(r.reason)+'</span></div>';
+  }
+  function bucket(title, sub, rows, color){
+    if(!rows.length) return '';
+    var h='<div class="card" style="border-top:3px solid '+color+'"><div class="card-title">'+title+' <span class="muted" style="font-weight:400;font-size:12px">'+sub+' · '+rows.length+'종</span></div>';
+    rows.forEach(function(r){ h+=pickItem(r); });
+    return h+'</div>';
+  }
+  function renderPicks(){
+    var host=$('src-picks-result'); if(!host) return;
+    var perf=(store().myPerformance&&store().myPerformance.perf)||[];
+    var kd=store().keywordData||{}; var cur=new Date().getMonth()+1;
+    var all=S().computeRecommendations(getPlants(),perf,kd,{curMonth:cur,scope:'시장전체',topN:9999});
+    var hasData=all.some(function(r){return r.hasData;});
+    var byScore=function(a,b){return b.sellability-a.sellability||(a.plant_id<b.plant_id?-1:1);};
+    var sellable=all.filter(function(r){return !r.already_selling;}).slice().sort(byScore).slice(0,10);
+    var soon=all.filter(function(r){return r.season_fit===100;}).slice().sort(byScore).slice(0,10);
+    var next=all.filter(function(r){return r.season_fit===40;}).slice().sort(byScore).slice(0,8);
+    var h='<div class="card-title" style="border:none;padding-bottom:2px">✨ '+cur+'월 AI 추천 — 앱이 먼저 골라봤어요</div>';
+    if(!hasData) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px">💡 아직 검색량을 안 불러왔어요. <b>「판매가능성 추천」 탭 → 🔍 검색량·경쟁률 불러오기</b>를 누르면 "지금 팔릴 만한" 추천이 실제 데이터로 정확해져요. (지금은 시즌 기준 잠정)</div>';
+    h+=bucket('🔥 지금 팔릴 만한 (미보유)', '판매가능성 높은 순', sellable, '#e53935');
+    h+=bucket('⏳ 지금이 소싱 적기 (시즌 1~2달 임박)', '지금 떼오면 다음 시즌에 딱', soon, '#fb8c00');
+    h+=bucket('🌱 아직 시즌 전 — 미리 찜 (약 3달 뒤)', '곧 시즌, 미리 준비', next, '#43a047');
+    host.innerHTML=h;
+  }
+
   function switchSubTab(name){
     document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.classList.toggle('active',t.dataset.srctab===name); });
     document.querySelectorAll('#route-sourcing .src-pane').forEach(function(p){ p.classList.add('hidden'); });
     var pane=$('srctab-'+name); if(pane)pane.classList.remove('hidden');
     if(name==='price'){ renderBands(); renderCompetitorList(); }
     if(name==='fav'){ renderFavorites(); }
+    if(name==='picks'){ renderPicks(); }
   }
   function ensureBindings(){
     var root=$('route-sourcing'); if(!root||root.dataset.bound==='1') return;
@@ -16175,8 +16217,8 @@ _setupAiSectionEvents();
     for(var m=1;m<=12;m++){ var o=document.createElement('option'); o.value=m;o.textContent=m+'월'; if(m===cur)o.selected=true; ms.appendChild(o); }
   }
   function initFills(){ fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); fillTypeSelect($('src-kw-type')); fillSeasonSelect($('src-kw-season')); }
-  window.setupSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); };
-  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); renderFavBadge(); };
+  window.setupSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderPicks(); };
+  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); renderFavBadge(); renderPicks(); };
 })();
 
 </script>
