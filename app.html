@@ -3022,6 +3022,21 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         </div>
 
         <section id="srctab-picks" class="src-pane">
+          <div class="card">
+            <div class="card-title">🏪 공급처에서 상품 후보 가져오기 <span class="muted" style="font-weight:400;font-size:12px">(공식 네이버 쇼핑 API로 수집 → 후보 목록 확장)</span></div>
+            <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px;line-height:1.6">
+              공급처(판매처명)를 등록하면 그 판매처 상품만, 비우면 전체 원예상품에서 상품명을 모아 후보로 만들어요. <b>수동 버튼 누를 때만</b> 동작하고 결과를 모아 보여줘서 상대 사이트에 무리가 없어요.
+            </div>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column:span 2"><label class="form-label">공급처(판매처명) 추가 <span class="muted">(선택)</span></label>
+                <div style="display:flex;gap:6px"><input type="text" id="src-vendor-input" class="form-control" placeholder="예: 데코가드닝"><button type="button" class="btn btn-secondary" id="src-vendor-add">+ 추가</button></div>
+              </div>
+              <div class="form-group" style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="src-collect-btn">🌱 상품 수집</button></div>
+            </div>
+            <div id="src-vendor-list" style="margin-top:6px"></div>
+            <div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
+            <div id="src-collect-review" style="margin-top:8px"></div>
+          </div>
           <div id="src-picks-result"></div>
         </section>
 
@@ -16188,6 +16203,85 @@ _setupAiSectionEvents();
     host.innerHTML=h;
   }
 
+  /* ── 공급처 관리 + 공식 쇼핑 API로 상품 후보 수집 ── */
+  var GARDEN_QUERIES=['정원식물','노지 숙근','숙근초','다년초','노지 다년초','정원 관목','낙엽관목','상록관목','정원 그라스','억새','사초','관상용 그라스','구근식물','알뿌리 식물','야생화','숙근 야생화','정원 허브','허브 모종','지피식물','화단 식물','정원 묘목','꽃나무 묘목','관목 묘목','수국 묘목','장미 묘목','노지 화초','숙근 화초','조경수 묘목','관상수','정원 초화','토종 야생화','외래 숙근','정원용 식물','화분 노지식물','우리꽃 야생화','다년생 화초'];
+  function vendors(){ var d=store(); if(!d.vendors)d.vendors=[]; return d.vendors; }
+  function addVendorMall(){ var inp=$('src-vendor-input'); var v=(inp.value||'').trim(); if(!v){toast('공급처(판매처명)를 입력하세요','error');return;} var d=store(); if(!d.vendors)d.vendors=[]; if(d.vendors.indexOf(v)<0)d.vendors.push(v); persist(); inp.value=''; renderVendorList(); toast('✓ 공급처 추가: '+v); }
+  function removeVendorMall(v){ var d=store(); d.vendors=(d.vendors||[]).filter(function(x){return x!==v;}); persist(); renderVendorList(); }
+  window._srcRemoveVendor=removeVendorMall;
+  function renderVendorList(){ var host=$('src-vendor-list'); if(!host)return; var list=vendors();
+    if(!list.length){ host.innerHTML='<span class="muted" style="font-size:11px">등록된 공급처 없음 — 비우면 전체 원예상품에서 수집해요. (예: 데코가드닝)</span>'; return; }
+    host.innerHTML='<span class="muted" style="font-size:11px">수집 대상 판매처: </span>'+list.map(function(v){return '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary-dark);padding:3px 8px;border-radius:12px;font-size:12px;margin:2px">'+esc(v)+' <span style="cursor:pointer;font-weight:700" onclick="_srcRemoveVendor(\''+esc(v)+'\')">×</span></span>';}).join('');
+  }
+  function callCollect(queries, malls){
+    return fetch(SUPA_FN,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ANON_KEY,'apikey':ANON_KEY},body:JSON.stringify({collect:true,queries:queries,malls:malls})})
+      .then(function(res){ if(!res.ok) return res.text().then(function(t){throw new Error('수집 실패 '+res.status+' '+String(t).slice(0,90));}); return res.json(); });
+  }
+  function chunkArr(arr,n){ var c=[]; for(var i=0;i<arr.length;i+=n)c.push(arr.slice(i,i+n)); return c; }
+  function extractName(title){
+    var t=' '+String(title)+' ';
+    t=t.replace(/\([^)]*\)/g,' ').replace(/\[[^\]]*\]/g,' ').replace(/<[^>]+>/g,' ');
+    t=t.replace(/\d+\s*(cm|CM|치|호|구|포트|화분|색|개|주|년생|년|월|호분|인치|p|P)/g,' ');
+    t=t.replace(/[0-9]+/g,' ');
+    var stop=['묘목','모종','화분','포트','키우기','공기정화','반려식물','반려','실내','베란다','정원','노지','야생화','허브','다년초','숙근초','숙근','구근','세트','특가','무료배송','당일발송','대품','중품','소품','개화주','개화','나무','식물','관상용','관상','희귀','신상','인기','정원식물','지피','조경수','조경','이벤트','상품','판매','직판','농장','농원','전용','튼튼한','예쁜','초보','대형','특대','왕특대','중형','소형','화초','다년생'];
+    stop.forEach(function(w){ t=t.split(w).join(' '); });
+    t=t.replace(/[^가-힣a-zA-Z ]/g,' ').replace(/\s+/g,' ').trim();
+    var toks=t.split(' ').filter(function(x){return x.length>=1;});
+    return toks.slice(0,2).join(' ').slice(0,16);
+  }
+  function collectProducts(){
+    var btn=$('src-collect-btn'),status=$('src-collect-status');
+    var malls=vendors(); var chunks=chunkArr(GARDEN_QUERIES,10);
+    if(btn)btn.disabled=true; var all=[],ci=0;
+    function step(){
+      if(ci>=chunks.length){ if(btn)btn.disabled=false; finishCollect(all); return; }
+      if(status)status.textContent='상품 수집 중... '+Math.round(ci/chunks.length*100)+'% ('+all.length+'개)';
+      callCollect(chunks[ci],malls).then(function(res){ (res.collected||[]).forEach(function(x){all.push(x);}); ci++; step(); })
+        .catch(function(e){ if(btn)btn.disabled=false; if(status)status.innerHTML='<span style="color:var(--danger)">✗ '+esc(e.message)+'</span><br><span class="muted">Edge Function 재배포(collect 기능 추가) 후 다시 시도해 주세요.</span>'; });
+    }
+    step();
+  }
+  function finishCollect(items){
+    var status=$('src-collect-status'); var map={};
+    items.forEach(function(it){ var nm=extractName(it.title); if(!nm||nm.length<2)return; var k=nm.replace(/\s/g,''); if(!map[k])map[k]={name:nm,title:it.title,mall:it.mall,n:0}; map[k].n++; });
+    var cands=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.n-a.n;}).slice(0,150);
+    if(status)status.textContent='✓ 상품 '+items.length+'개 수집 → 후보 식물 '+cands.length+'종 (아래에서 골라 추가)';
+    renderReview(cands);
+  }
+  function renderReview(cands){
+    var host=$('src-collect-review'); if(!host)return;
+    if(!cands.length){ host.innerHTML='<div class="muted" style="padding:8px">추출된 후보가 없어요. 공급처명을 확인하거나 비우고(전체) 다시 시도해보세요.</div>'; return; }
+    var exist={}; getPlants().forEach(function(p){exist[p.name]=1;});
+    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 — 추가할 것 선택 <span class="muted" style="font-weight:400;font-size:11px">(이름 수정 가능 · 추출은 자동이라 일부 다듬어야 함)</span></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px">'
+      +'<label style="font-size:12px">기본 타입 <select id="src-add-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
+      +'<label style="font-size:12px">기본 시즌 <select id="src-add-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
+      +'<button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button>'
+      +'<button type="button" class="btn btn-primary btn-sm" id="src-rev-add">✓ 선택 식물 후보 추가</button></div>'
+      +'<div style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">';
+    cands.forEach(function(c,i){ var dup=exist[c.name];
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-bottom:1px solid #f3f5f3">'
+        +'<input type="checkbox" class="src-rev-cb" data-i="'+i+'" '+(dup?'':'checked')+'>'
+        +'<input type="text" class="form-control src-rev-name" data-i="'+i+'" value="'+esc(c.name)+'" style="width:150px;font-size:12px;padding:3px 6px">'
+        +'<span class="muted" style="font-size:10.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.title)+(dup?' <b style="color:#999">(이미 목록)</b>':'')+'</span>'
+        +'<span class="muted" style="font-size:10px">'+c.n+'건</span></div>';
+    });
+    host.innerHTML=h+'</div></div>';
+    fillTypeSelect($('src-add-type')); fillSeasonSelect($('src-add-season'));
+    $('src-rev-all').addEventListener('click',function(){ var cbs=host.querySelectorAll('.src-rev-cb'),off=false; cbs.forEach(function(cb){if(!cb.checked)off=true;}); cbs.forEach(function(cb){cb.checked=off;}); });
+    $('src-rev-add').addEventListener('click',function(){ addReviewSelected(host); });
+  }
+  function addReviewSelected(host){
+    var type=$('src-add-type').value, season=$('src-add-season').value;
+    var names=host.querySelectorAll('.src-rev-name'), cbs=host.querySelectorAll('.src-rev-cb');
+    var d=store(); if(!d.plantMaster)d.plantMaster=[];
+    var exist={}; getPlants().forEach(function(p){exist[p.name]=1;}); var added=0;
+    cbs.forEach(function(cb,i){ if(!cb.checked)return; var nm=(names[i].value||'').trim(); if(!nm||exist[nm])return; exist[nm]=1;
+      d.plantMaster.push({id:'u_'+Date.now().toString(36)+i, name:nm, type:type, season:season, aliases:[], kw:[nm], active:true}); added++; });
+    persist(); toast('✓ '+added+'종 후보 추가됨'); renderReportStatus(); renderPicks();
+    host.innerHTML='<div class="muted" style="padding:10px;background:#f5f8f5;border-radius:6px">✓ <b>'+added+'종</b>을 후보 목록에 추가했어요. ✨AI 추천에 반영됐어요. (타입·시즌은 나중에 다듬을 수 있어요) 검색량·경쟁은 「검색량 불러오기」로 채워져요.</div>';
+  }
+
   function switchSubTab(name){
     document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.classList.toggle('active',t.dataset.srctab===name); });
     document.querySelectorAll('#route-sourcing .src-pane').forEach(function(p){ p.classList.add('hidden'); });
@@ -16210,6 +16304,9 @@ _setupAiSectionEvents();
     var cb=$('src-comp-add'); if(cb) cb.addEventListener('click',addCompetitor);
     var sk=$('src-sort-key'); if(sk) sk.addEventListener('change',runReco);
     var sd=$('src-sort-dir'); if(sd) sd.addEventListener('change',runReco);
+    var va=$('src-vendor-add'); if(va) va.addEventListener('click',addVendorMall);
+    var vi=$('src-vendor-input'); if(vi) vi.addEventListener('keydown',function(e){ if(e.key==='Enter') addVendorMall(); });
+    var co=$('src-collect-btn'); if(co) co.addEventListener('click',collectProducts);
   }
   function fillMonth(){
     var ms=$('src-month'); if(!ms||ms.options.length) return;
@@ -16217,8 +16314,8 @@ _setupAiSectionEvents();
     for(var m=1;m<=12;m++){ var o=document.createElement('option'); o.value=m;o.textContent=m+'월'; if(m===cur)o.selected=true; ms.appendChild(o); }
   }
   function initFills(){ fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); fillTypeSelect($('src-kw-type')); fillSeasonSelect($('src-kw-season')); }
-  window.setupSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderPicks(); };
-  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); renderFavBadge(); renderPicks(); };
+  window.setupSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderVendorList(); renderPicks(); };
+  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); renderFavBadge(); renderVendorList(); renderPicks(); };
 })();
 
 </script>
