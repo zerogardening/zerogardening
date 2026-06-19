@@ -3021,20 +3021,31 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
         <section id="srctab-reco" class="src-pane">
           <div class="card">
+            <div class="card-title">🔎 키워드 직접 검색 <span class="muted" style="font-weight:400;font-size:12px">(아무 식물·키워드나 입력 → 소싱 가능성 즉시 진단)</span></div>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column:span 2"><label class="form-label">키워드</label><input type="text" id="src-kw-input" class="form-control" placeholder="예: 라넌큘러스, 무스카리, 사철나무..."></div>
+              <div class="form-group"><label class="form-label">타입 <span class="muted">(저장용)</span></label><select id="src-kw-type" class="form-control"></select></div>
+              <div class="form-group"><label class="form-label">시즌 <span class="muted">(저장용)</span></label><select id="src-kw-season" class="form-control"></select></div>
+              <div class="form-group" style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="src-kw-btn">🔍 진단</button></div>
+            </div>
+            <div id="src-search-result" style="margin-top:10px"></div>
+          </div>
+
+          <div class="card">
             <div class="card-title">
-              판매가능성 진단 설정
+              내 식물 전체 진단 설정
               <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <button type="button" class="btn btn-secondary btn-sm" id="src-fetch-btn" title="식물별 네이버 월간검색수 + 쇼핑 상품수를 불러옵니다 (네이버 API 연동 설정 필요)">🔍 검색량·경쟁률 불러오기</button>
-                <button type="button" class="btn btn-secondary btn-sm" id="src-upload-btn" title="쿠팡 옵션별 판매 리포트(.xlsx/.csv): winner 판정·가격대 분석용">📥 쿠팡 리포트</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="src-fetch-btn" title="식물별 네이버 월간검색수 + 쇼핑 상품수를 불러옵니다">🔍 검색량·경쟁률 불러오기</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="src-upload-btn" title="쿠팡 옵션별 판매 리포트(.xlsx/.csv)">📥 쿠팡 리포트</button>
                 <input type="file" id="src-report-file" accept=".xlsx,.xls,.csv" style="display:none">
                 <button type="button" class="btn btn-primary btn-sm" id="src-run-btn">▶ 추천 실행</button>
               </span>
             </div>
             <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:12px;line-height:1.6">
-              <b>판매가능성 = 수요(월검색량) + 경쟁(검색량 대비 상품수) + 시즌</b>. 검색량·상품수는 네이버 공식 API를 연동하면 자동으로 채워져요(설정: <b>소싱_설정가이드.md</b>). 연동 전에는 시즌 기준으로 잠정 추천합니다.
+              <b>판매가능성 = 수요(연간검색량) + 경쟁(검색량 대비 상품수) + 시즌</b>. 표의 <b>행을 클릭</b>하면 월별 검색추이 그래프가 떠요. 기준 월은 시즌 점수에만 영향.
             </div>
             <div class="form-grid">
-              <div class="form-group"><label class="form-label">기준 월</label><select id="src-month" class="form-control"></select></div>
+              <div class="form-group"><label class="form-label">기준 월 <span class="muted">(시즌용)</span></label><select id="src-month" class="form-control"></select></div>
               <div class="form-group"><label class="form-label">후보 범위</label>
                 <select id="src-scope" class="form-control">
                   <option value="시장전체">시장전체</option>
@@ -15680,18 +15691,28 @@ _setupAiSectionEvents();
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function store(){ return window.Store.all(); }
   function persist(){ if(window.Store&&window.Store.persist) window.Store.persist(); }
+  var S=function(){ return window.Sourcing; };
 
   function getPlants(){
     var seed=(window.Sourcing&&window.Sourcing.SEED)||[];
-    var d=(window.Store&&window.Store.all)?window.Store.all():{};
-    var user=d.plantMaster||[];
+    var d=store(); var user=d.plantMaster||[];
     if(!user.length) return seed;
     var map={}; seed.forEach(function(p){map[p.id]=p;});
     user.forEach(function(p){ if(p&&p.id) map[p.id]=Object.assign({},map[p.id]||{},p); });
     return Object.keys(map).map(function(k){return map[k];});
   }
+  function annualOf(kw){ if(!kw)return null; if(kw.annual!=null)return kw.annual; if(kw.monthly!=null)return kw.monthly*12; return null; }
 
-  /* ── 쿠팡 리포트 ── */
+  function callNaver(keywords, trend){
+    return fetch(SUPA_FN,{ method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+ANON_KEY,'apikey':ANON_KEY},
+      body:JSON.stringify({keywords:keywords, trend:!!trend}) }).then(function(res){
+        if(!res.ok) return res.text().then(function(t){ throw new Error('연동 실패 '+res.status+' '+String(t).slice(0,100)); });
+        return res.json();
+      });
+  }
+
+  /* ── 쿠팡 리포트 (기존) ── */
   function detectCols(headers){
     var H=headers.map(function(h){return String(h==null?'':h).replace(/\s/g,'');});
     function find(ps){ for(var k=0;k<ps.length;k++) for(var i=0;i<H.length;i++) if(ps[k](H[i])) return i; return -1; }
@@ -15708,18 +15729,17 @@ _setupAiSectionEvents();
     var c=detectCols(rows[0]),out=[];
     for(var i=1;i<rows.length;i++){ var r=rows[i]; if(!r)continue; var name=r[c.name]; if(!name||!String(name).trim())continue;
       out.push({productName:String(name).trim(),views:c.views>=0?r[c.views]:0,cart:c.cart>=0?r[c.cart]:0,orders:c.orders>=0?r[c.orders]:0,revenue:c.revenue>=0?r[c.revenue]:0}); }
-    return {rows:out,cols:c};
+    return {rows:out};
   }
   function handleReportFile(file){
     if(typeof XLSX==='undefined'){ toast('Excel 라이브러리가 로딩되지 않았습니다','error'); return; }
     var reader=new FileReader();
     reader.onload=function(ev){ try{
       var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
-      var ws=wb.Sheets[wb.SheetNames[0]];
-      var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+      var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false,defval:''});
       var parsed=rowsToReport(rows);
       if(!parsed||!parsed.rows.length){ toast('리포트에서 데이터를 못 읽었어요','error'); return; }
-      var res=window.Sourcing.buildPerformance(parsed.rows,getPlants());
+      var res=S().buildPerformance(parsed.rows,getPlants());
       var d=store();
       d.myPerformance={perf:res.perf,priceObs:res.priceObs,unmatchedCount:res.unmatched.length,winnerCount:res.winnerCount,rowCount:parsed.rows.length,generatedAt:Date.now()};
       persist(); renderReportStatus(); renderBands();
@@ -15728,15 +15748,7 @@ _setupAiSectionEvents();
     reader.readAsArrayBuffer(file);
   }
 
-  /* ── 네이버 검색량/경쟁률 (Edge Function) ── */
-  function callNaver(keywords){
-    return fetch(SUPA_FN,{ method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+ANON_KEY,'apikey':ANON_KEY},
-      body:JSON.stringify({keywords:keywords}) }).then(function(res){
-        if(!res.ok) return res.text().then(function(t){ throw new Error('연동 실패 '+res.status+' '+String(t).slice(0,100)); });
-        return res.json();
-      });
-  }
+  /* ── 전체 검색량 불러오기 (62종 일괄) ── */
   function fetchKeywordData(){
     var plants=getPlants();
     var btn=$('src-fetch-btn'), status=$('src-fetch-status');
@@ -15753,63 +15765,65 @@ _setupAiSectionEvents();
       }
       var ch=chunks[ci];
       if(status) status.textContent='검색량 불러오는 중... '+done+'/'+list.length+'종';
-      callNaver(ch.map(function(x){return x.kw;})).then(function(res){
+      callNaver(ch.map(function(x){return x.kw;}), false).then(function(res){
         (res.results||[]).forEach(function(r,idx){
           var pid=ch[idx].id;
           if(r.monthly==null){ failed++; return; }
-          d.keywordData[pid]={monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,fetchedAt:res.fetchedAt};
+          d.keywordData[pid]={monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:r.monthly*12,fetchedAt:res.fetchedAt};
         });
         done+=ch.length; step(ci+1);
       }).catch(function(e){
         if(btn)btn.disabled=false;
-        if(status) status.innerHTML='<span style="color:var(--danger)">✗ '+esc(e.message)+'</span><br><span class="muted">아직 Edge Function/네이버 키를 설정하지 않았다면 가이드(소싱_설정가이드.md)를 따라 주세요. 설정 없이도 시즌 기준 추천은 동작해요.</span>';
+        if(status) status.innerHTML='<span style="color:var(--danger)">✗ '+esc(e.message)+'</span>';
         persist();
       });
     }
     step(0);
   }
 
-  /* ── 추천 ── */
   function runReco(){
     var perf=(store().myPerformance&&store().myPerformance.perf)||[];
     var kd=store().keywordData||{};
     var opts={ curMonth:parseInt($('src-month').value,10)||(new Date().getMonth()+1), scope:$('src-scope').value, topN:parseInt($('src-topn').value,10)||20 };
-    renderRecoTable(window.Sourcing.computeRecommendations(getPlants(),perf,kd,opts),opts);
+    renderRecoTable(S().computeRecommendations(getPlants(),perf,kd,opts),opts);
   }
   function gradeBadge(g){ var col={A:'#2e7d32',B:'#558b2f',C:'#f9a825',D:'#9e9e9e'}[g]||'#9e9e9e';
     return '<span style="display:inline-block;min-width:20px;text-align:center;background:'+col+';color:#fff;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px">'+g+'</span>'; }
   function ratioCell(r){ if(r==null) return '<span class="muted">–</span>';
     var c=r<=1?'#2e7d32':r<=3?'#1565c0':r<=10?'#ef6c00':'#c62828'; return '<span style="color:'+c+';font-weight:600">'+r+'</span>'; }
+
   function renderRecoTable(rows,opts){
     var host=$('src-reco-result'); if(!host) return;
     if(!rows.length){ host.innerHTML='<div class="empty">조건에 맞는 후보가 없어요.</div>'; return; }
     var any=rows.some(function(r){return r.hasData;});
     var h='<div class="card"><div class="card-title">판매가능성 진단 — '+opts.curMonth+'월 · '+esc(opts.scope)+' · 상위 '+rows.length+'종'
-      +(any?'':' <span class="muted" style="font-weight:400;font-size:12px">(검색량 미연동 — 시즌 기준 잠정. 검색량 불러오면 정확해져요)</span>')+'</div>'
+      +(any?' <span class="muted" style="font-weight:400;font-size:12px">(행을 클릭하면 월별 검색추이)</span>':' <span class="muted" style="font-weight:400;font-size:12px">(검색량 미연동 — 시즌 기준 잠정)</span>')+'</div>'
       +'<div style="overflow-x:auto"><table class="data-table"><thead><tr>'
       +'<th>#</th><th>식물</th><th>타입</th><th>시즌</th>'
-      +'<th title="네이버 월간검색수(PC+모바일)">월검색량</th><th title="네이버쇼핑 상품수">상품수</th>'
-      +'<th title="상품수÷검색량, 낮을수록 블루오션">경쟁강도</th>'
+      +'<th title="연간 추정 검색량(월×12 또는 데이터랩 합)">연간검색량</th><th title="네이버쇼핑 상품수">상품수</th>'
+      +'<th title="상품수÷월검색량, 낮을수록 블루오션">경쟁강도</th>'
       +'<th title="수요+경쟁+시즌 종합">판매가능성</th><th title="기회갭 포함 소싱 우선순위">소싱점수</th>'
       +'<th>판매중</th><th>진단 근거</th></tr></thead><tbody>';
     rows.forEach(function(r,i){
-      h+='<tr>'
+      var ann = r.monthly!=null ? r.monthly*12 : null;
+      h+='<tr style="cursor:pointer" onclick="_srcDetail(\''+r.plant_id+'\')" title="클릭: 월별 검색추이">'
         +'<td class="num">'+(i+1)+'</td>'
-        +'<td style="font-weight:600">'+esc(r.name_kr)+(r.hasData?'':' <span class="muted" title="검색량 미연동">·</span>')+'</td>'
+        +'<td style="font-weight:600">'+esc(r.name_kr)+'</td>'
         +'<td>'+esc(r.type)+'</td><td>'+esc(r.season)+'</td>'
-        +'<td class="num">'+nf(r.monthly)+'</td>'
+        +'<td class="num">'+nf(ann)+'</td>'
         +'<td class="num">'+nf(r.product_count)+'</td>'
         +'<td class="num">'+ratioCell(r.ratio)+'</td>'
         +'<td>'+gradeBadge(r.grade)+' <b>'+r.sellability+'</b></td>'
         +'<td class="num"><b>'+r.sourcing_score+'</b></td>'
         +'<td>'+(r.already_selling?(r.is_winner?'⭐winner':'판매중'):'<span class="muted">미보유</span>')+'</td>'
-        +'<td style="font-size:11.5px;color:#555;max-width:320px">'+esc(r.reason)+'</td>'
+        +'<td style="font-size:11.5px;color:#555;max-width:300px">'+esc(r.reason)+'</td>'
         +'</tr>';
     });
     h+='</tbody></table></div>'
-      +'<div class="muted" style="margin-top:8px;font-size:11px">판매가능성 = 수요(월검색량 45%) + 경쟁(검색량 대비 상품수 45%) + 시즌(10%). 경쟁강도 낮을수록 블루오션. 소싱점수 = 판매가능성 70% + 기회갭 30%(미보유일수록↑).</div></div>';
+      +'<div class="muted" style="margin-top:8px;font-size:11px">판매가능성 = 수요(연간검색량) + 경쟁(검색량 대비 상품수) + 시즌. 연간검색량은 추정치. 행 클릭 시 월별 추세 그래프.</div></div>';
     host.innerHTML=h;
   }
+
   function renderReportStatus(){
     var el=$('src-report-status'); if(!el) return;
     var mp=store().myPerformance, kd=store().keywordData||{};
@@ -15821,12 +15835,124 @@ _setupAiSectionEvents();
     el.innerHTML=parts.join(' · ');
   }
 
+  /* ── 월별 추세 SVG 꺾은선 ── */
+  function trendSVG(trend){
+    if(!trend||!trend.length) return '';
+    var W=560,H=170,pad=34, n=trend.length;
+    var vals=trend.map(function(p){return p.est!=null?p.est:p.ratio;});
+    var max=Math.max.apply(null,vals)||1;
+    var x=function(i){return pad+i*(W-2*pad)/Math.max(1,n-1);};
+    var y=function(v){return H-pad-(v/max)*(H-2*pad);};
+    var pts=trend.map(function(p,i){return x(i)+','+y(p.est!=null?p.est:p.ratio);}).join(' ');
+    var dots=trend.map(function(p,i){var v=p.est!=null?p.est:p.ratio;return '<circle cx="'+x(i)+'" cy="'+y(v)+'" r="3" fill="#2e7d32"/>';}).join('');
+    var labels=trend.map(function(p,i){return '<text x="'+x(i)+'" y="'+(H-10)+'" font-size="9" text-anchor="middle" fill="#999">'+p.period.slice(5,7)+'</text>';}).join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;height:auto;background:#fafbfa;border-radius:6px"><polyline points="'+pts+'" fill="none" stroke="#43a047" stroke-width="2"/>'+dots+labels+'</svg>';
+  }
+  function trendTable(trend){
+    if(!trend||!trend.length) return '';
+    var h='<div style="overflow-x:auto;margin-top:8px"><table class="data-table" style="font-size:11px"><thead><tr><th>월</th>';
+    trend.forEach(function(p){ h+='<th>'+p.period.slice(2,7)+'</th>'; });
+    h+='</tr></thead><tbody><tr><td style="font-weight:600">추정검색</td>';
+    trend.forEach(function(p){ h+='<td class="num">'+(p.est!=null?nf(p.est):p.ratio)+'</td>'; });
+    h+='</tr></tbody></table></div>';
+    return h;
+  }
+
+  /* ── 상세 모달 (행 클릭) — 월별 트렌드 on-demand ── */
+  function openDetail(plantId){
+    var plants=getPlants(); var p=null; for(var i=0;i<plants.length;i++){if(plants[i].id===plantId){p=plants[i];break;}}
+    if(!p) return;
+    var kw=(p.kw&&p.kw[0])||p.name;
+    showModal('<div style="text-align:center;padding:30px" class="muted">📈 '+esc(p.name)+' 월별 검색추이 불러오는 중...</div>');
+    callNaver([kw], true).then(function(res){
+      var r=(res.results&&res.results[0])||{};
+      var d=store(); if(!d.keywordData)d.keywordData={};
+      if(r.monthly!=null){
+        d.keywordData[plantId]=Object.assign({}, d.keywordData[plantId]||{}, {monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:r.annual!=null?r.annual:r.monthly*12,monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt});
+        persist();
+      }
+      var ann=r.annual!=null?r.annual:(r.monthly!=null?r.monthly*12:null);
+      var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount}, p.season, new Date().getMonth()+1);
+      var body='<div class="modal-title" style="margin-bottom:6px">📈 '+esc(p.name)+' <span style="font-size:12px;color:#888">('+esc(p.type)+'·'+esc(p.season)+')</span></div>'
+        +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px">'
+        +'<span>판매가능성 '+gradeBadge(sell.grade)+' <b>'+sell.score+'</b></span>'
+        +'<span>연간검색 <b>'+nf(ann)+'</b></span>'
+        +'<span>월(최근) '+nf(r.monthly)+'</span>'
+        +'<span>상품수 '+nf(r.productCount)+'</span>'
+        +'<span>경쟁강도 '+ratioCell(r.competition)+'</span></div>';
+      if(r.monthlyTrend&&r.monthlyTrend.length){
+        body+=trendSVG(r.monthlyTrend)+trendTable(r.monthlyTrend)
+          +'<div class="muted" style="font-size:11px;margin-top:6px">월별 수치는 데이터랩 추세지수 × 최근월 검색량으로 환산한 <b>추정치</b>예요.</div>';
+      } else {
+        body+='<div class="empty" style="padding:20px">월별 그래프는 <b>네이버 데이터랩(검색어트렌드) API</b> 연동이 필요해요.'+(r.trendError?'<br><span class="muted">('+esc(r.trendError)+')</span>':'')+'<br><span class="muted">앱 검색 앱에 "데이터랩(검색어트렌드)" API를 추가하면 켜져요.</span></div>';
+      }
+      showModal(body);
+    }).catch(function(e){ showModal('<div class="empty" style="padding:24px">불러오기 실패: '+esc(e.message)+'</div>'); });
+  }
+  window._srcDetail=openDetail;
+
+  function showModal(inner){
+    var m=$('src-modal');
+    if(!m){ m=document.createElement('div'); m.id='src-modal'; m.className='modal-back';
+      m.innerHTML='<div class="modal" style="max-width:640px"><button class="modal-close" id="src-modal-x">×</button><div id="src-modal-body"></div></div>';
+      document.body.appendChild(m);
+      m.addEventListener('click',function(e){ if(e.target===m) m.classList.add('hidden'); });
+      m.querySelector('#src-modal-x').addEventListener('click',function(){ m.classList.add('hidden'); });
+    }
+    $('src-modal-body').innerHTML=inner; m.classList.remove('hidden');
+  }
+
+  /* ── 키워드 직접 검색 (신규 소싱) ── */
+  function searchKeyword(){
+    var inp=$('src-kw-input'); var kw=(inp.value||'').trim();
+    if(!kw){ toast('검색할 키워드를 입력하세요','error'); return; }
+    var host=$('src-search-result'); var btn=$('src-kw-btn');
+    if(btn)btn.disabled=true;
+    host.innerHTML='<div class="muted" style="padding:16px">"'+esc(kw)+'" 검색량·경쟁·월별추세 불러오는 중...</div>';
+    callNaver([kw], true).then(function(res){
+      if(btn)btn.disabled=false;
+      var r=(res.results&&res.results[0])||{};
+      if(r.monthly==null){ host.innerHTML='<div class="empty" style="padding:20px">검색 결과가 없거나 연동 오류예요. '+(r.error?esc(r.error):'')+'</div>'; return; }
+      var type=$('src-kw-type').value, season=$('src-kw-season').value;
+      var ann=r.annual!=null?r.annual:r.monthly*12;
+      var sell=S().sellabilityV2({monthly:r.monthly,productCount:r.productCount}, season, new Date().getMonth()+1);
+      var tc=sell.grade==='A'?'#2e7d32':sell.grade==='B'?'#558b2f':sell.grade==='C'?'#f9a825':'#9e9e9e';
+      var h='<div class="card" style="border-left:4px solid '+tc+'">'
+        +'<div style="font-size:15px;font-weight:700">'+esc(kw)+' &nbsp;'+gradeBadge(sell.grade)+' 판매가능성 <b>'+sell.score+'</b></div>'
+        +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:13px">'
+        +'<span>연간검색 <b>'+nf(ann)+'</b></span><span>월(최근) '+nf(r.monthly)+' <span class="muted">(PC '+nf(r.pc)+'/모바일 '+nf(r.mobile)+')</span></span>'
+        +'<span>상품수 <b>'+nf(r.productCount)+'</b></span><span>경쟁강도 '+ratioCell(r.competition)+' ('+esc(S().compLabel(r.competition))+')</span></div>';
+      if(r.monthlyTrend&&r.monthlyTrend.length) h+=trendSVG(r.monthlyTrend)+trendTable(r.monthlyTrend)+'<div class="muted" style="font-size:11px;margin-top:4px">월별=추정치(데이터랩 지수×최근검색량)</div>';
+      else h+='<div class="muted" style="font-size:12px">월별 그래프: 데이터랩 API 추가 시 표시'+(r.trendError?' ('+esc(r.trendError)+')':'')+'</div>';
+      h+='<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px">'
+        +'<span class="muted" style="font-size:12px">소싱 후보로 저장:</span>'
+        +'<button type="button" class="btn btn-primary btn-sm" id="src-kw-save">+ 내 식물 목록에 추가 ('+esc(type)+'·'+esc(season)+')</button></div>';
+      h+='</div>';
+      host.innerHTML=h;
+      var sv=$('src-kw-save');
+      if(sv) sv.addEventListener('click',function(){
+        addPlant(kw, type, season, {monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,annual:ann,monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt});
+        sv.disabled=true; sv.textContent='✓ 추가됨';
+      });
+    }).catch(function(e){ if(btn)btn.disabled=false; host.innerHTML='<div class="empty" style="padding:20px">불러오기 실패: '+esc(e.message)+'</div>'; });
+  }
+  function addPlant(name, type, season, kw){
+    var d=store(); if(!d.plantMaster)d.plantMaster=[];
+    var exists=d.plantMaster.some(function(p){return p.name===name;});
+    if(exists){ toast('이미 목록에 있어요: '+name,'warn'); return; }
+    var id='u_'+Date.now().toString(36);
+    d.plantMaster.push({id:id,name:name,type:type,season:season,aliases:[],kw:[name],active:true});
+    if(kw){ if(!d.keywordData)d.keywordData={}; d.keywordData[id]=kw; }
+    persist(); renderReportStatus(); toast('✓ 내 목록에 추가: '+name);
+  }
+
   /* ── 가격 경쟁력 진단 (기존 유지) ── */
-  function currentBands(){ var d=store(); return window.Sourcing.priceBands((d.myPerformance&&d.myPerformance.priceObs)||[],d.competitorPrices||[]); }
+  function currentBands(){ var d=store(); return S().priceBands((d.myPerformance&&d.myPerformance.priceObs)||[],d.competitorPrices||[]); }
   function fillTypeSelect(sel){ if(!sel)return; sel.innerHTML=['관목','숙근','관엽','그라스','구근'].map(function(t){return '<option>'+t+'</option>';}).join(''); }
+  function fillSeasonSelect(sel){ if(!sel)return; sel.innerHTML=[['SPR','봄'],['ESU','초여름'],['MSU','한여름'],['AUT','가을'],['LONG','상시']].map(function(t){return '<option value="'+t[0]+'">'+t[1]+'('+t[0]+')</option>';}).join(''); }
   function diagnose(){
-    var type=$('src-diag-type').value, size=window.Sourcing.parseSize($('src-diag-size').value)||$('src-diag-size').value.trim();
-    var res=window.Sourcing.diagnosePrice(type,size,$('src-diag-price').value,currentBands());
+    var type=$('src-diag-type').value, size=S().parseSize($('src-diag-size').value)||$('src-diag-size').value.trim();
+    var res=S().diagnosePrice(type,size,$('src-diag-price').value,currentBands());
     var host=$('src-price-diag'); if(!host)return;
     if(res.status==='no-data'){ host.innerHTML='<div class="empty" style="padding:24px">'+esc(res.message)+'</div>'; return; }
     var tc={good:'#2e7d32',ok:'#1565c0',warn:'#c62828'}[res.tone]||'#555';
@@ -15834,11 +15960,10 @@ _setupAiSectionEvents();
       +'<div style="font-size:15px;font-weight:700;color:'+tc+'">'+esc(res.verdict)+'</div>'
       +'<div style="margin:8px 0;font-size:13px">내 가격 <b>'+won(res.myPrice)+'</b> 은 같은 <b>'+esc(res.type)+' '+esc(res.size)+'</b> 비교군('+res.n+'개)에서 하위 <b>'+res.percentile+'%</b> 지점이에요.</div>'
       +'<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#444"><span>최저 '+won(res.min)+'</span><span>25% '+won(res.p25)+'</span><span>중앙 '+won(res.p50)+'</span><span>75% '+won(res.p75)+'</span><span>최고 '+won(res.max)+'</span></div>'
-      +'<div style="margin-top:10px;font-size:13px">👉 경쟁력 있는 가격대: <b>'+won(res.recommend[0])+' ~ '+won(res.recommend[1])+'</b></div>'
-      +'<div class="muted" style="font-size:11px;margin-top:6px">비교기준: 내 판매데이터 '+res.soldN+'개 + 수동 경쟁가 '+res.compN+'개</div></div>';
+      +'<div style="margin-top:10px;font-size:13px">👉 경쟁력 있는 가격대: <b>'+won(res.recommend[0])+' ~ '+won(res.recommend[1])+'</b></div></div>';
   }
   function addCompetitor(){
-    var type=$('src-comp-type').value, size=window.Sourcing.parseSize($('src-comp-size').value)||$('src-comp-size').value.trim(), price=window.Sourcing.num($('src-comp-price').value), src=$('src-comp-src').value.trim();
+    var type=$('src-comp-type').value, size=S().parseSize($('src-comp-size').value)||$('src-comp-size').value.trim(), price=S().num($('src-comp-price').value), src=$('src-comp-src').value.trim();
     if(!size||!price){ toast('사이즈와 가격을 입력해주세요','error'); return; }
     var d=store(); if(!d.competitorPrices)d.competitorPrices=[];
     d.competitorPrices.push({id:'cp_'+Date.now(),type:type,size:size,price:price,source:src,addedAt:Date.now()});
@@ -15869,8 +15994,6 @@ _setupAiSectionEvents();
     var pane=$('srctab-'+name); if(pane)pane.classList.remove('hidden');
     if(name==='price'){ renderBands(); renderCompetitorList(); }
   }
-
-  /* ── 견고한 이벤트 바인딩(중복 방지). init 타이밍과 무관하게 동작 ── */
   function ensureBindings(){
     var root=$('route-sourcing'); if(!root||root.dataset.bound==='1') return;
     root.dataset.bound='1';
@@ -15879,6 +16002,8 @@ _setupAiSectionEvents();
     if(up&&f){ up.addEventListener('click',function(){f.click();}); f.addEventListener('change',function(e){ if(e.target.files[0])handleReportFile(e.target.files[0]); e.target.value=''; }); }
     var fb=$('src-fetch-btn'); if(fb) fb.addEventListener('click',fetchKeywordData);
     var rb=$('src-run-btn'); if(rb) rb.addEventListener('click',runReco);
+    var kb=$('src-kw-btn'); if(kb) kb.addEventListener('click',searchKeyword);
+    var ki=$('src-kw-input'); if(ki) ki.addEventListener('keydown',function(e){ if(e.key==='Enter') searchKeyword(); });
     var db=$('src-diag-btn'); if(db) db.addEventListener('click',diagnose);
     var cb=$('src-comp-add'); if(cb) cb.addEventListener('click',addCompetitor);
   }
@@ -15887,8 +16012,9 @@ _setupAiSectionEvents();
     var cur=new Date().getMonth()+1;
     for(var m=1;m<=12;m++){ var o=document.createElement('option'); o.value=m;o.textContent=m+'월'; if(m===cur)o.selected=true; ms.appendChild(o); }
   }
-  window.setupSourcing=function(){ if(!$('route-sourcing'))return; fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); ensureBindings(); renderReportStatus(); };
-  window.renderSourcing=function(){ if(!$('route-sourcing'))return; fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); };
+  function initFills(){ fillMonth(); fillTypeSelect($('src-diag-type')); fillTypeSelect($('src-comp-type')); fillTypeSelect($('src-kw-type')); fillSeasonSelect($('src-kw-season')); }
+  window.setupSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); };
+  window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); };
 })();
 
 </script>
