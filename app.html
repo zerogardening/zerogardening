@@ -3040,7 +3040,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <label style="font-size:12px">시즌 <select id="src-flt-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
               <label style="font-size:12px">최소 연간검색 <input type="number" id="src-flt-min" class="form-control" value="1000" min="0" step="500" style="display:inline-block;width:86px;padding:3px 6px"></label>
             </div>
-            <div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
+            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)"><label style="font-size:12px;color:var(--muted)">또는 공급처 상품명 직접 붙여넣기 <span class="muted">(한 줄에 하나 — 위 타입·시즌·검색량 조건으로 선별)</span></label><textarea id="src-paste-list" class="form-control" rows="3" placeholder="예) 수국 목수국&#10;라벤더 잉글리시&#10;에키네시아" style="font-size:12px;margin-top:4px;width:100%"></textarea><button type="button" class="btn btn-secondary btn-sm" id="src-paste-btn" style="margin-top:6px">📋 붙여넣은 목록으로 선별</button></div><div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
             <div id="src-collect-review" style="margin-top:8px"></div>
           </div>
           <div id="src-picks-result"></div>
@@ -16286,6 +16286,16 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
       .then(function(res){ if(!res.ok) return res.text().then(function(t){throw new Error('수집 실패 '+res.status+' '+String(t).slice(0,90));}); return res.json(); });
   }
   function chunkArr(arr,n){ var c=[]; for(var i=0;i<arr.length;i+=n)c.push(arr.slice(i,i+n)); return c; }
+  function pasteScreen(){
+    var ta=$('src-paste-list'); var txt=(ta&&ta.value||'').trim();
+    if(!txt){ toast('공급처 상품명을 붙여넣으세요','error'); return; }
+    var lines=txt.split(/[\n,]+/).map(function(x){return x.trim();}).filter(Boolean);
+    var seen={}, cands=[];
+    lines.forEach(function(ln){ var nm=extractName(ln)||ln; nm=(nm||'').trim(); if(nm.length<2)return; var k=nm.replace(/\s/g,''); if(seen[k])return; seen[k]=1; cands.push({name:nm,title:ln,n:1}); });
+    if(!cands.length){ toast('인식된 상품명이 없어요','error'); return; }
+    var st=$('src-collect-status'); if(st)st.textContent='붙여넣은 '+cands.length+'종 → 위 조건으로 선별 중...';
+    _collectCands=cands; renderReview(cands); screenCandidates();
+  }
   function extractName(title){
     var t=' '+String(title)+' ';
     t=t.replace(/\([^)]*\)/g,' ').replace(/\[[^\]]*\]/g,' ').replace(/<[^>]+>/g,' ');
@@ -16468,6 +16478,7 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
     var va=$('src-vendor-add'); if(va) va.addEventListener('click',addVendorMall);
     var vi=$('src-vendor-input'); if(vi) vi.addEventListener('keydown',function(e){ if(e.key==='Enter') addVendorMall(); });
     var co=$('src-collect-btn'); if(co) co.addEventListener('click',collectProducts);
+    var pb=$('src-paste-btn'); if(pb) pb.addEventListener('click',pasteScreen);
   }
   function fillMonth(){
     var ms=$('src-month'); if(!ms||ms.options.length) return;
