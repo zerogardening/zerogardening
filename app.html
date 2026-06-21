@@ -3023,24 +3023,18 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
         <section id="srctab-picks" class="src-pane">
           <div class="card">
-            <div class="card-title">🏪 공급처에서 상품 후보 가져오기 <span class="muted" style="font-weight:400;font-size:12px">(공식 네이버 쇼핑 API로 수집 → 후보 목록 확장)</span></div>
+            <div class="card-title">🌱 식물 키워드로 후보 찾기 <span class="muted" style="font-weight:400;font-size:12px">(식물 이름들을 붙여넣으면 검색량·시즌으로 선별)</span></div>
             <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px;line-height:1.6">
-              공급처(판매처명)를 등록하면 그 판매처 상품만, 비우면 전체 원예상품에서 상품명을 모아 후보로 만들어요. <b>수동 버튼 누를 때만</b> 동작하고 결과를 모아 보여줘서 상대 사이트에 무리가 없어요.
+              팔 만한 <b>식물 이름들을 한 줄에 하나씩 붙여넣으면</b>, 네이버 검색량을 돌려 아래 조건(타입·시즌·검색량)에 맞는 걸 골라 <b>판매가능성 높은 순</b>으로 보여줘요.
             </div>
-            <div class="form-grid">
-              <div class="form-group" style="grid-column:span 2"><label class="form-label">공급처(판매처명) 추가 <span class="muted">(선택)</span></label>
-                <div style="display:flex;gap:6px"><input type="text" id="src-vendor-input" class="form-control" placeholder="예: 데코가드닝"><button type="button" class="btn btn-secondary" id="src-vendor-add">+ 추가</button></div>
-              </div>
-              <div class="form-group" style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="src-collect-btn">🌱 상품 수집</button></div>
-            </div>
-            <div id="src-vendor-list" style="margin-top:6px"></div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
-              <span style="font-size:11px;color:var(--muted);width:100%">수집 후 이 조건으로 자동 선별 — 그 시즌(해당 월)에 검색 잘 되는 식물만 골라줘요:</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px">
               <label style="font-size:12px">타입 <select id="src-flt-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
               <label style="font-size:12px">시즌 <select id="src-flt-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
               <label style="font-size:12px">최소 연간검색 <input type="number" id="src-flt-min" class="form-control" value="1000" min="0" step="500" style="display:inline-block;width:86px;padding:3px 6px"></label>
             </div>
-            <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)"><label style="font-size:12px;color:var(--muted)">또는 공급처 상품명 직접 붙여넣기 <span class="muted">(한 줄에 하나 — 위 타입·시즌·검색량 조건으로 선별)</span></label><textarea id="src-paste-list" class="form-control" rows="3" placeholder="예) 수국 목수국&#10;라벤더 잉글리시&#10;에키네시아" style="font-size:12px;margin-top:4px;width:100%"></textarea><button type="button" class="btn btn-secondary btn-sm" id="src-paste-btn" style="margin-top:6px">📋 붙여넣은 목록으로 선별</button></div><div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
+            <textarea id="src-paste-list" class="form-control" rows="4" placeholder="식물 이름을 한 줄에 하나씩&#10;예) 수국&#10;라벤더&#10;에키네시아&#10;무스카리" style="font-size:12px;width:100%"></textarea>
+            <button type="button" class="btn btn-primary btn-sm" id="src-paste-btn" style="margin-top:6px">🔍 이 목록으로 선별</button>
+            <div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
             <div id="src-collect-review" style="margin-top:8px"></div>
           </div>
           <div id="src-picks-result"></div>
