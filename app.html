@@ -3034,6 +3034,12 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
               <div class="form-group" style="display:flex;align-items:flex-end"><button type="button" class="btn btn-primary" id="src-collect-btn">🌱 상품 수집</button></div>
             </div>
             <div id="src-vendor-list" style="margin-top:6px"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)">
+              <span style="font-size:11px;color:var(--muted);width:100%">수집 후 이 조건으로 자동 선별 — 그 시즌(해당 월)에 검색 잘 되는 식물만 골라줘요:</span>
+              <label style="font-size:12px">타입 <select id="src-flt-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
+              <label style="font-size:12px">시즌 <select id="src-flt-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
+              <label style="font-size:12px">최소 연간검색 <input type="number" id="src-flt-min" class="form-control" value="1000" min="0" step="500" style="display:inline-block;width:86px;padding:3px 6px"></label>
+            </div>
             <div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
             <div id="src-collect-review" style="margin-top:8px"></div>
           </div>
@@ -16259,12 +16265,13 @@ _setupAiSectionEvents();
   }
 
   /* ── 공급처 관리 + 공식 쇼핑 API로 상품 후보 수집 ── */
+var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗','봄 개화 구근','튤립 무스카리','수선화 구근','팬지 비올라','봄 야생화'],ESU:['초여름 정원식물','수국 모종','장미 묘목','라벤더 허브','작약 모종','초여름 숙근'],MSU:['여름 정원식물','여름꽃 모종','에키네시아','루드베키아','버베나','여름 야생화'],AUT:['가을 정원식물','가을 야생화','국화 모종','억새 그라스','구절초 개미취','핑크뮬리','가을 단풍 관목'],LONG:[]};
   var GARDEN_QUERIES=['정원식물','노지 숙근','숙근초','다년초','노지 다년초','정원 관목','낙엽관목','상록관목','정원 그라스','억새','사초','관상용 그라스','구근식물','알뿌리 식물','야생화','숙근 야생화','정원 허브','허브 모종','지피식물','화단 식물','정원 묘목','꽃나무 묘목','관목 묘목','수국 묘목','장미 묘목','노지 화초','숙근 화초','조경수 묘목','관상수','정원 초화','토종 야생화','외래 숙근','정원용 식물','화분 노지식물','우리꽃 야생화','다년생 화초'];
   function vendors(){ var d=store(); if(!d.vendors)d.vendors=[]; return d.vendors; }
   function addVendorMall(){ var inp=$('src-vendor-input'); var v=(inp.value||'').trim(); if(!v){toast('공급처(판매처명)를 입력하세요','error');return;} var d=store(); if(!d.vendors)d.vendors=[]; if(d.vendors.indexOf(v)<0)d.vendors.push(v); persist(); inp.value=''; renderVendorList(); toast('✓ 공급처 추가: '+v); }
   function removeVendorMall(v){ var d=store(); d.vendors=(d.vendors||[]).filter(function(x){return x!==v;}); persist(); renderVendorList(); }
   window._srcRemoveVendor=removeVendorMall;
-  function renderVendorList(){ var host=$('src-vendor-list'); if(!host)return; var list=vendors();
+  function renderVendorList(){ fillTypeSelectAll($('src-flt-type')); fillSeasonSelectAll($('src-flt-season')); var host=$('src-vendor-list'); if(!host)return; var list=vendors();
     if(!list.length){ host.innerHTML='<span class="muted" style="font-size:11px">등록된 공급처 없음 — 비우면 전체 원예상품에서 수집해요. (예: 데코가드닝)</span>'; return; }
     host.innerHTML='<span class="muted" style="font-size:11px">수집 대상 판매처: </span>'+list.map(function(v){return '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--primary-light);color:var(--primary-dark);padding:3px 8px;border-radius:12px;font-size:12px;margin:2px">'+esc(v)+' <span style="cursor:pointer;font-weight:700" onclick="_srcRemoveVendor(\''+esc(v)+'\')">×</span></span>';}).join('');
   }
@@ -16286,7 +16293,9 @@ _setupAiSectionEvents();
   }
   function collectProducts(){
     var btn=$('src-collect-btn'),status=$('src-collect-status');
-    var malls=vendors(); var chunks=chunkArr(GARDEN_QUERIES,10);
+    var malls=vendors();
+    var sf=($('src-flt-season')||{}).value; var qs=(sf&&SEASON_QUERIES[sf]?SEASON_QUERIES[sf]:[]).concat(GARDEN_QUERIES);
+    var chunks=chunkArr(qs,10);
     if(btn)btn.disabled=true; var all=[],ci=0;
     function step(){
       if(ci>=chunks.length){ if(btn)btn.disabled=false; finishCollect(all); return; }
@@ -16300,12 +16309,13 @@ _setupAiSectionEvents();
     var status=$('src-collect-status'); var map={};
     items.forEach(function(it){ var nm=extractName(it.title); if(!nm||nm.length<2)return; var k=nm.replace(/\s/g,''); if(!map[k])map[k]={name:nm,title:it.title,mall:it.mall,n:0}; map[k].n++; });
     var cands=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.n-a.n;}).slice(0,150);
-    if(status)status.textContent='✓ 상품 '+items.length+'개 수집 → 후보 식물 '+cands.length+'종 (아래에서 골라 추가)';
+    if(status)status.textContent='✓ 상품 '+items.length+'개 수집 → 후보 '+cands.length+'종. 위 조건으로 선별 중...';
     renderReview(cands);
+    if(cands.length) screenCandidates();
   }
   var _collectCands=[], _screenRows=[];
-  function fillTypeSelectAll(sel){ if(!sel)return; sel.innerHTML='<option>전체</option>'+['관목','숙근','관엽','그라스','구근'].map(function(t){return '<option>'+t+'</option>';}).join(''); }
-  function fillSeasonSelectAll(sel){ if(!sel)return; sel.innerHTML='<option value="전체">전체</option>'+[['SPR','봄'],['ESU','초여름'],['MSU','한여름'],['AUT','가을'],['LONG','상시']].map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>';}).join(''); }
+  function fillTypeSelectAll(sel){ if(!sel||sel.options.length)return; sel.innerHTML='<option>전체</option>'+['관목','숙근','관엽','그라스','구근'].map(function(t){return '<option>'+t+'</option>';}).join(''); }
+  function fillSeasonSelectAll(sel){ if(!sel||sel.options.length)return; sel.innerHTML='<option value="전체">전체</option>'+[['SPR','봄'],['ESU','초여름'],['MSU','한여름'],['AUT','가을'],['LONG','상시']].map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>';}).join(''); }
   function inferType(text){
     var t=String(text||'');
     if(/구근|알뿌리|튤립|수선화|무스카리|히아신스|크로커스|라넌|프리지아|상사화|무릇|아네모네/.test(t)) return '구근';
@@ -16317,20 +16327,23 @@ _setupAiSectionEvents();
   }
   function seasonMonths(code){ return {SPR:[3,4,5],ESU:[5,6,7],MSU:[6,7,8],AUT:[9,10,11]}[code]||null; }
   function seasonOfMonth(m){ if(!m)return 'LONG'; if(m>=3&&m<=5)return 'SPR'; if(m===6)return 'ESU'; if(m===7||m===8)return 'MSU'; if(m>=9&&m<=11)return 'AUT'; return 'LONG'; }
+  /* 시즌 판정: 피크월 하나가 아니라 '그 시즌 검색이 연평균 대비 얼마나 강한가'(1.0=평균). 트렌드 없으면 null=판정불가→통과 */
+  function seasonScore(trend, code){
+    if(!trend||!trend.length) return null;
+    var mo=seasonMonths(code); if(!mo) return 1;
+    var vals=trend.map(function(p){return p.est!=null?p.est:(p.ratio||0);});
+    var all=vals.reduce(function(a,b){return a+b;},0)/vals.length; if(!(all>0)) return 0;
+    var sm=0,cnt=0; trend.forEach(function(p){ var m=parseInt(String(p.period).split('-')[1],10); if(mo.indexOf(m)>=0){ sm+=(p.est!=null?p.est:(p.ratio||0)); cnt++; } });
+    return cnt?((sm/cnt)/all):0;
+  }
 
   function renderReview(cands){
     var host=$('src-collect-review'); if(!host)return;
     _collectCands=cands;
     if(!cands.length){ host.innerHTML='<div class="muted" style="padding:8px">추출된 후보가 없어요. 공급처명을 확인하거나 비우고(전체) 다시 시도해보세요.</div>'; return; }
     var exist={}; getPlants().forEach(function(p){exist[p.name]=1;});
-    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 <span class="muted" style="font-weight:400;font-size:11px">(타입·시즌·검색량으로 선별하거나, 그냥 골라 추가)</span></div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px">'
-      +'<label style="font-size:12px">타입 <select id="src-flt-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
-      +'<label style="font-size:12px">시즌 <select id="src-flt-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
-      +'<label style="font-size:12px">최소 연간검색 <input type="number" id="src-flt-min" class="form-control" value="3000" min="0" step="1000" style="display:inline-block;width:88px;padding:3px 6px"></label>'
-      +'<button type="button" class="btn btn-primary btn-sm" id="src-screen-btn">🔍 검색량 조회 + 선별</button></div>'
-      +'<div class="muted" style="font-size:11px;margin-bottom:8px;line-height:1.5">선별: 상위 40개 후보에 네이버 검색을 돌려 <b>타입 + 시즌(실제 성수기 월) + 검색량</b>으로 거르고 <b>판매가능성 높은순</b>으로 정렬해요. 시간이 조금 걸려요. (아래 목록에서 선별 없이 바로 골라 추가도 가능)</div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-add">선별 없이 선택 추가</button></div>'
+    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 <span class="muted" style="font-weight:400;font-size:11px">(위 필터 조건으로 선별 · 그냥 골라 추가도 가능)</span></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn btn-primary btn-sm" id="src-screen-btn">🔍 위 조건으로 선별</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-add">선별 없이 선택 추가</button></div>'
       +'<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">';
     cands.forEach(function(c,i){ var dup=exist[c.name];
       h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-bottom:1px solid #f3f5f3">'
@@ -16340,7 +16353,6 @@ _setupAiSectionEvents();
         +'<span class="muted" style="font-size:10px">'+c.n+'건</span></div>';
     });
     host.innerHTML=h+'</div></div>';
-    fillTypeSelectAll($('src-flt-type')); fillSeasonSelectAll($('src-flt-season'));
     $('src-screen-btn').addEventListener('click', screenCandidates);
     $('src-rev-all').addEventListener('click',function(){ var cbs=host.querySelectorAll('.src-rev-cb'),off=false; cbs.forEach(function(cb){if(!cb.checked)off=true;}); cbs.forEach(function(cb){cb.checked=off;}); });
     $('src-rev-add').addEventListener('click',function(){ addReviewSelected(host); });
@@ -16352,7 +16364,7 @@ _setupAiSectionEvents();
     nameInputs.forEach(function(inp){ var i=+inp.dataset.i; var c=_collectCands[i]; if(c){ var nm=(inp.value||'').trim()||c.name; cands.push({name:nm,title:c.title,n:c.n}); } });
     var typeF=$('src-flt-type').value, seasonF=$('src-flt-season').value, minAnnual=parseInt($('src-flt-min').value,10)||0;
     if(typeF!=='전체') cands=cands.filter(function(c){ var t=inferType(c.name+' '+c.title); return t===null||t===typeF; });
-    cands=cands.filter(function(c){return c.name.length>=2;}).slice(0,40);
+    cands=cands.filter(function(c){return c.name.length>=2;}).slice(0,80); window._srcScreened=cands.length;
     var st=$('src-collect-status'), btn=$('src-screen-btn');
     if(!cands.length){ if(st)st.textContent='해당 타입 후보가 없어요. 타입을 전체로 바꿔보세요.'; return; }
     if(btn)btn.disabled=true;
@@ -16375,14 +16387,14 @@ _setupAiSectionEvents();
         type:(typeF!=='전체'?typeF:(inferType(c.name+' '+c.title)||'숙근')),
         kw:{monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,sellerCount:r.sellerCount,annual:(r.annual!=null?r.annual:null),monthlyTrend:r.monthlyTrend||null,competition:r.competition,fetchedAt:Date.now()} });
     });
-    if(seasonF!=='전체' && seasonF!=='LONG'){ var mo=seasonMonths(seasonF); if(mo) rows=rows.filter(function(x){return x.peakMonth && mo.indexOf(x.peakMonth)>=0;}); }
+    if(seasonF!=='전체' && seasonF!=='LONG'){ rows=rows.filter(function(x){ var sh=seasonScore(x.kw&&x.kw.monthlyTrend, seasonF); return sh===null || sh>=0.9; }); }
     if(minAnnual>0) rows=rows.filter(function(x){return x.annual>=minAnnual;});
     rows.sort(function(a,b){return b.score-a.score || b.annual-a.annual;});
     renderScreened(rows, typeF, seasonF);
   }
   function renderScreened(rows, typeF, seasonF){
     var host=$('src-collect-review'); if(!host)return; var st=$('src-collect-status');
-    if(st)st.textContent='✓ 선별 완료 — 조건 맞는 '+rows.length+'종';
+    if(st)st.textContent='✓ 선별 완료 — 조건 맞는 '+rows.length+'종 (검색 '+(window._srcScreened||rows.length)+'종 중)';
     if(!rows.length){ host.innerHTML='<div class="muted" style="padding:12px;background:#fff7f0;border-radius:6px">조건(타입·시즌·검색량)에 맞는 상품이 없어요. <b>최소 검색량을 낮추거나</b> 시즌/타입을 바꿔보세요. <button type="button" class="btn btn-secondary btn-sm" id="src-scr-back">← 후보로 돌아가기</button></div>'; var b=$('src-scr-back'); if(b)b.addEventListener('click',function(){renderReview(_collectCands);}); return; }
     _screenRows=rows;
     var exist={}; getPlants().forEach(function(p){exist[p.name]=1;});
