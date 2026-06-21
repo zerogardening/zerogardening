@@ -15811,10 +15811,10 @@ _setupAiSectionEvents();
   }
   function annualOf(kw){ if(!kw)return null; if(kw.annual!=null)return kw.annual; if(kw.monthly!=null)return kw.monthly*12; return null; }
 
-  function callNaver(keywords, trend){
+  function callNaver(keywords, trend, related){
     return fetch(SUPA_FN,{ method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+ANON_KEY,'apikey':ANON_KEY},
-      body:JSON.stringify({keywords:keywords, trend:!!trend}) }).then(function(res){
+      body:JSON.stringify({keywords:keywords, trend:!!trend, related:!!related}) }).then(function(res){
         if(!res.ok) return res.text().then(function(t){ throw new Error('연동 실패 '+res.status+' '+String(t).slice(0,100)); });
         return res.json();
       });
@@ -16077,8 +16077,8 @@ _setupAiSectionEvents();
     if(!kw){ toast('검색할 키워드를 입력하세요','error'); return; }
     var host=$('src-search-result'); var btn=$('src-kw-btn');
     if(btn)btn.disabled=true;
-    host.innerHTML='<div class="muted" style="padding:16px">"'+esc(kw)+'" 검색량·경쟁·월별추세 불러오는 중...</div>';
-    callNaver([kw], true).then(function(res){
+    host.innerHTML='<div class="muted" style="padding:16px">"'+esc(kw)+'" 검색량·경쟁·월별추세·연관키워드 불러오는 중...</div>';
+    callNaver([kw], true, true).then(function(res){
       if(btn)btn.disabled=false;
       var r=(res.results&&res.results[0])||{};
       if(r.monthly==null){ host.innerHTML='<div class="empty" style="padding:20px">검색 결과가 없거나 연동 오류예요. '+(r.error?esc(r.error):'')+'</div>'; return; }
@@ -16097,12 +16097,18 @@ _setupAiSectionEvents();
       if(r.monthlyTrend&&r.monthlyTrend.length) h+='<div style="font-weight:700;font-size:12.5px;margin:8px 0 4px;color:#555">📈 월별 검색추이 <span class="muted" style="font-weight:400">(1~12월 · 점 위 커서=수치)</span></div>'+trendSVG(r.monthlyTrend)+'<div class="muted" style="font-size:11px;margin-top:4px">월별=추정치(데이터랩×최근검색량)</div>';
       else h+='<div class="muted" style="font-size:12px;padding:8px 0">월별 그래프: 데이터랩 API 추가 시 표시'+(r.trendError?' ('+esc(r.trendError)+')':'')+'</div>';
       h+=buildDiagnosis(kw, sell, r);
+      if(r.related && r.related.length){
+        h+='<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px"><div style="font-weight:700;font-size:12.5px;margin-bottom:8px;color:#555">🔗 연관 키워드 <span class="muted" style="font-weight:400">(검색량 순 · 클릭하면 그 키워드로 진단)</span></div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+        r.related.forEach(function(rk){ h+='<button type="button" class="src-relkw btn btn-secondary btn-sm" data-kw="'+esc(rk.keyword)+'" style="font-size:11px;padding:4px 9px">'+esc(rk.keyword)+' <span style="color:#2e7d32;font-weight:700">'+nf(rk.monthly)+'</span>'+(rk.comp?' <span class="muted">·'+esc(rk.comp)+'</span>':'')+'</button>'; });
+        h+='</div></div>';
+      }
       h+='<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:12px">'
         +'<span class="muted" style="font-size:12px">소싱 후보로 저장:</span>'
         +'<button type="button" class="btn btn-primary btn-sm" id="src-kw-save">+ 내 식물 목록에 추가 ('+esc(type)+'·'+esc(season)+')</button>'
         +'<button type="button" class="btn btn-secondary btn-sm" id="src-kw-star">'+(isFav(kw)?'★ 즐겨찾기됨':'⭐ 즐겨찾기')+'</button></div>';
       h+='</div>';
       host.innerHTML=h;
+      host.querySelectorAll('.src-relkw').forEach(function(b){ b.addEventListener('click',function(){ $('src-kw-input').value=this.dataset.kw; searchKeyword(); }); });
       var sv=$('src-kw-save');
       if(sv) sv.addEventListener('click',function(){
         addPlant(kw, type, season, {monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,competition:r.competition,sellerCount:r.sellerCount,annual:ann,monthlyTrend:r.monthlyTrend||null,fetchedAt:res.fetchedAt});
