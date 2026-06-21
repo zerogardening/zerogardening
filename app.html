@@ -16303,17 +16303,35 @@ _setupAiSectionEvents();
     if(status)status.textContent='✓ 상품 '+items.length+'개 수집 → 후보 식물 '+cands.length+'종 (아래에서 골라 추가)';
     renderReview(cands);
   }
+  var _collectCands=[], _screenRows=[];
+  function fillTypeSelectAll(sel){ if(!sel)return; sel.innerHTML='<option>전체</option>'+['관목','숙근','관엽','그라스','구근'].map(function(t){return '<option>'+t+'</option>';}).join(''); }
+  function fillSeasonSelectAll(sel){ if(!sel)return; sel.innerHTML='<option value="전체">전체</option>'+[['SPR','봄'],['ESU','초여름'],['MSU','한여름'],['AUT','가을'],['LONG','상시']].map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>';}).join(''); }
+  function inferType(text){
+    var t=String(text||'');
+    if(/구근|알뿌리|튤립|수선화|무스카리|히아신스|크로커스|라넌|프리지아|상사화|무릇|아네모네/.test(t)) return '구근';
+    if(/그라스|억새|사초|수크령|팜파스|핑크뮬리|새풀|기장|moor/i.test(t)) return '그라스';
+    if(/관엽|실내식물|공기정화|몬스테라|스킨답서스|고무나무|테이블야자|아레카|디펜바키아|싱고늄/.test(t)) return '관엽';
+    if(/나무|묘목|관목|수국|장미|조경|관상수|단풍|철쭉|병꽃|회양목|남천|사철|동백|라일락|수형/.test(t)) return '관목';
+    if(/숙근|야생화|다년초|숙근초|초화|들꽃|구절초|개미취|에키네시아|루드베키아|꽃잔디|비비추|원추리/.test(t)) return '숙근';
+    return null;
+  }
+  function seasonMonths(code){ return {SPR:[3,4,5],ESU:[5,6,7],MSU:[6,7,8],AUT:[9,10,11]}[code]||null; }
+  function seasonOfMonth(m){ if(!m)return 'LONG'; if(m>=3&&m<=5)return 'SPR'; if(m===6)return 'ESU'; if(m===7||m===8)return 'MSU'; if(m>=9&&m<=11)return 'AUT'; return 'LONG'; }
+
   function renderReview(cands){
     var host=$('src-collect-review'); if(!host)return;
+    _collectCands=cands;
     if(!cands.length){ host.innerHTML='<div class="muted" style="padding:8px">추출된 후보가 없어요. 공급처명을 확인하거나 비우고(전체) 다시 시도해보세요.</div>'; return; }
     var exist={}; getPlants().forEach(function(p){exist[p.name]=1;});
-    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 — 추가할 것 선택 <span class="muted" style="font-weight:400;font-size:11px">(이름 수정 가능 · 추출은 자동이라 일부 다듬어야 함)</span></div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px">'
-      +'<label style="font-size:12px">기본 타입 <select id="src-add-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
-      +'<label style="font-size:12px">기본 시즌 <select id="src-add-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
-      +'<button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button>'
-      +'<button type="button" class="btn btn-primary btn-sm" id="src-rev-add">✓ 선택 식물 후보 추가</button></div>'
-      +'<div style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">';
+    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 <span class="muted" style="font-weight:400;font-size:11px">(타입·시즌·검색량으로 선별하거나, 그냥 골라 추가)</span></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px">'
+      +'<label style="font-size:12px">타입 <select id="src-flt-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
+      +'<label style="font-size:12px">시즌 <select id="src-flt-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>'
+      +'<label style="font-size:12px">최소 연간검색 <input type="number" id="src-flt-min" class="form-control" value="3000" min="0" step="1000" style="display:inline-block;width:88px;padding:3px 6px"></label>'
+      +'<button type="button" class="btn btn-primary btn-sm" id="src-screen-btn">🔍 검색량 조회 + 선별</button></div>'
+      +'<div class="muted" style="font-size:11px;margin-bottom:8px;line-height:1.5">선별: 상위 40개 후보에 네이버 검색을 돌려 <b>타입 + 시즌(실제 성수기 월) + 검색량</b>으로 거르고 <b>판매가능성 높은순</b>으로 정렬해요. 시간이 조금 걸려요. (아래 목록에서 선별 없이 바로 골라 추가도 가능)</div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-add">선별 없이 선택 추가</button></div>'
+      +'<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">';
     cands.forEach(function(c,i){ var dup=exist[c.name];
       h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-bottom:1px solid #f3f5f3">'
         +'<input type="checkbox" class="src-rev-cb" data-i="'+i+'" '+(dup?'':'checked')+'>'
@@ -16322,21 +16340,91 @@ _setupAiSectionEvents();
         +'<span class="muted" style="font-size:10px">'+c.n+'건</span></div>';
     });
     host.innerHTML=h+'</div></div>';
-    fillTypeSelect($('src-add-type')); fillSeasonSelect($('src-add-season'));
+    fillTypeSelectAll($('src-flt-type')); fillSeasonSelectAll($('src-flt-season'));
+    $('src-screen-btn').addEventListener('click', screenCandidates);
     $('src-rev-all').addEventListener('click',function(){ var cbs=host.querySelectorAll('.src-rev-cb'),off=false; cbs.forEach(function(cb){if(!cb.checked)off=true;}); cbs.forEach(function(cb){cb.checked=off;}); });
     $('src-rev-add').addEventListener('click',function(){ addReviewSelected(host); });
   }
+
+  function screenCandidates(){
+    var host=$('src-collect-review'); if(!host)return;
+    var nameInputs=host.querySelectorAll('.src-rev-name'); var cands=[];
+    nameInputs.forEach(function(inp){ var i=+inp.dataset.i; var c=_collectCands[i]; if(c){ var nm=(inp.value||'').trim()||c.name; cands.push({name:nm,title:c.title,n:c.n}); } });
+    var typeF=$('src-flt-type').value, seasonF=$('src-flt-season').value, minAnnual=parseInt($('src-flt-min').value,10)||0;
+    if(typeF!=='전체') cands=cands.filter(function(c){ var t=inferType(c.name+' '+c.title); return t===null||t===typeF; });
+    cands=cands.filter(function(c){return c.name.length>=2;}).slice(0,40);
+    var st=$('src-collect-status'), btn=$('src-screen-btn');
+    if(!cands.length){ if(st)st.textContent='해당 타입 후보가 없어요. 타입을 전체로 바꿔보세요.'; return; }
+    if(btn)btn.disabled=true;
+    var chunks=chunkArr(cands,15), ci=0, results=[];
+    function step(){
+      if(ci>=chunks.length){ if(btn)btn.disabled=false; finishScreen(cands,results,typeF,seasonF,minAnnual); return; }
+      if(st)st.textContent='검색량 조회 중... '+Math.round(ci/chunks.length*100)+'% ('+cands.length+'종)';
+      callNaver(chunks[ci].map(function(c){return c.name;}), true).then(function(res){ (res.results||[]).forEach(function(r){results.push(r);}); ci++; step(); })
+        .catch(function(e){ if(btn)btn.disabled=false; if(st)st.innerHTML='<span style="color:var(--danger)">✗ '+esc(e.message)+'</span><br><span class="muted">Edge Function 재배포 필요할 수 있어요.</span>'; });
+    }
+    step();
+  }
+  function finishScreen(cands, results, typeF, seasonF, minAnnual){
+    var baseline=results.map(function(r){return r&&r.productCount;}).filter(function(v){return typeof v==='number';});
+    var cur=new Date().getMonth()+1; var rows=[];
+    cands.forEach(function(c,i){ var r=results[i]||{}; if(r.monthly==null) return;
+      var sell=S().sellabilityV2({monthly:r.monthly,annual:r.annual,productCount:r.productCount,sellerCount:r.sellerCount,monthlyTrend:r.monthlyTrend}, 'LONG', cur, baseline);
+      var annual=(r.annual!=null?r.annual:(r.monthly!=null?r.monthly*12:0));
+      rows.push({ name:c.name, title:c.title, annual:annual, peakMonth:sell.peakMonth, grade:sell.grade, score:sell.score, compLevel:sell.compLevel,
+        type:(typeF!=='전체'?typeF:(inferType(c.name+' '+c.title)||'숙근')),
+        kw:{monthly:r.monthly,pc:r.pc,mobile:r.mobile,productCount:r.productCount,sellerCount:r.sellerCount,annual:(r.annual!=null?r.annual:null),monthlyTrend:r.monthlyTrend||null,competition:r.competition,fetchedAt:Date.now()} });
+    });
+    if(seasonF!=='전체' && seasonF!=='LONG'){ var mo=seasonMonths(seasonF); if(mo) rows=rows.filter(function(x){return x.peakMonth && mo.indexOf(x.peakMonth)>=0;}); }
+    if(minAnnual>0) rows=rows.filter(function(x){return x.annual>=minAnnual;});
+    rows.sort(function(a,b){return b.score-a.score || b.annual-a.annual;});
+    renderScreened(rows, typeF, seasonF);
+  }
+  function renderScreened(rows, typeF, seasonF){
+    var host=$('src-collect-review'); if(!host)return; var st=$('src-collect-status');
+    if(st)st.textContent='✓ 선별 완료 — 조건 맞는 '+rows.length+'종';
+    if(!rows.length){ host.innerHTML='<div class="muted" style="padding:12px;background:#fff7f0;border-radius:6px">조건(타입·시즌·검색량)에 맞는 상품이 없어요. <b>최소 검색량을 낮추거나</b> 시즌/타입을 바꿔보세요. <button type="button" class="btn btn-secondary btn-sm" id="src-scr-back">← 후보로 돌아가기</button></div>'; var b=$('src-scr-back'); if(b)b.addEventListener('click',function(){renderReview(_collectCands);}); return; }
+    _screenRows=rows;
+    var exist={}; getPlants().forEach(function(p){exist[p.name]=1;});
+    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">선별 결과 '+rows.length+'종 <span class="muted" style="font-weight:400;font-size:11px">('+(typeF!=='전체'?typeF+' · ':'')+(seasonF!=='전체'&&seasonF!=='LONG'?'시즌맞춤 · ':'')+'판매가능성 높은순)</span></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn btn-secondary btn-sm" id="src-scr-all">전체선택/해제</button><button type="button" class="btn btn-primary btn-sm" id="src-scr-add">✓ 선택 식물 후보 추가</button><button type="button" class="btn btn-secondary btn-sm" id="src-scr-back">← 후보 목록</button></div>'
+      +'<div style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">';
+    rows.forEach(function(r,i){ var dup=exist[r.name];
+      h+='<div style="display:flex;align-items:center;gap:7px;padding:4px;border-bottom:1px solid #f3f5f3">'
+        +'<input type="checkbox" class="src-scr-cb" data-i="'+i+'" '+(dup?'':'checked')+'>'
+        +gradeBadge(r.grade)
+        +'<input type="text" class="form-control src-scr-name" data-i="'+i+'" value="'+esc(r.name)+'" style="width:120px;font-size:12px;padding:3px 6px">'
+        +'<span style="font-size:11px;color:#2e7d32;font-weight:700;white-space:nowrap">연간 '+nf(r.annual)+'</span>'
+        +'<span class="muted" style="font-size:10.5px;white-space:nowrap">'+(r.peakMonth?'· '+r.peakMonth+'월↑':'')+(r.compLevel?' · 경쟁'+r.compLevel:'')+'</span>'
+        +'<span class="muted" style="font-size:10px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">'+esc(r.title)+(dup?' (이미)':'')+'</span></div>';
+    });
+    host.innerHTML=h+'</div></div>';
+    $('src-scr-all').addEventListener('click',function(){var cbs=host.querySelectorAll('.src-scr-cb'),off=false;cbs.forEach(function(c){if(!c.checked)off=true;});cbs.forEach(function(c){c.checked=off;});});
+    $('src-scr-add').addEventListener('click',function(){addScreenedSelected(host);});
+    $('src-scr-back').addEventListener('click',function(){renderReview(_collectCands);});
+  }
+  function addScreenedSelected(host){
+    var cbs=host.querySelectorAll('.src-scr-cb'), names=host.querySelectorAll('.src-scr-name');
+    var d=store(); if(!d.plantMaster)d.plantMaster=[]; if(!d.keywordData)d.keywordData={};
+    var exist={}; getPlants().forEach(function(p){exist[p.name]=1;}); var added=0;
+    cbs.forEach(function(cb,idx){ if(!cb.checked)return; var r=_screenRows[+cb.dataset.i]; if(!r)return; var nm=(names[idx].value||'').trim(); if(!nm||exist[nm])return; exist[nm]=1;
+      var id='u_'+Date.now().toString(36)+idx;
+      d.plantMaster.push({id:id, name:nm, type:r.type, season:seasonOfMonth(r.peakMonth), aliases:[], kw:[nm], active:true, discovered:true});
+      d.keywordData[id]=r.kw; added++; });
+    persist(); toast('✓ '+added+'종 추가(검색량 포함)'); renderReportStatus(); renderPicks();
+    host.innerHTML='<div class="muted" style="padding:10px;background:#f5f8f5;border-radius:6px">✓ <b>'+added+'종</b> 추가 완료 — 검색량·성수기까지 같이 저장돼서 ✨AI 추천에 바로 반영됐어요.</div>';
+  }
   function addReviewSelected(host){
-    var type=$('src-add-type').value, season=$('src-add-season').value;
+    var tf=($('src-flt-type')||{}).value, sf=($('src-flt-season')||{}).value;
+    var type=(tf&&tf!=='전체')?tf:'숙근', season=(sf&&sf!=='전체')?sf:'LONG';
     var names=host.querySelectorAll('.src-rev-name'), cbs=host.querySelectorAll('.src-rev-cb');
     var d=store(); if(!d.plantMaster)d.plantMaster=[];
     var exist={}; getPlants().forEach(function(p){exist[p.name]=1;}); var added=0;
     cbs.forEach(function(cb,i){ if(!cb.checked)return; var nm=(names[i].value||'').trim(); if(!nm||exist[nm])return; exist[nm]=1;
       d.plantMaster.push({id:'u_'+Date.now().toString(36)+i, name:nm, type:type, season:season, aliases:[], kw:[nm], active:true, discovered:true}); added++; });
     persist(); toast('✓ '+added+'종 후보 추가됨'); renderReportStatus(); renderPicks();
-    host.innerHTML='<div class="muted" style="padding:10px;background:#f5f8f5;border-radius:6px">✓ <b>'+added+'종</b>을 후보 목록에 추가했어요. ✨AI 추천에 반영됐어요. (타입·시즌은 나중에 다듬을 수 있어요) 검색량·경쟁은 「검색량 불러오기」로 채워져요.</div>';
+    host.innerHTML='<div class="muted" style="padding:10px;background:#f5f8f5;border-radius:6px">✓ <b>'+added+'종</b>을 후보 목록에 추가했어요. (검색량은 「검색량 불러오기」로 채워져요)</div>';
   }
-
   function switchSubTab(name){
     document.querySelectorAll('#route-sourcing > .tabs .tab[data-srctab]').forEach(function(t){ t.classList.toggle('active',t.dataset.srctab===name); });
     document.querySelectorAll('#route-sourcing .src-pane').forEach(function(p){ p.classList.add('hidden'); });
