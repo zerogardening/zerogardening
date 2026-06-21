@@ -3023,17 +3023,20 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
         <section id="srctab-picks" class="src-pane">
           <div class="card">
-            <div class="card-title">🌱 식물 키워드로 후보 찾기 <span class="muted" style="font-weight:400;font-size:12px">(식물 이름들을 붙여넣으면 검색량·시즌으로 선별)</span></div>
+            <div class="card-title">🌱 시즌에 팔릴 식물 찾기 <span class="muted" style="font-weight:400;font-size:12px">(앱이 검색량으로 골라줘요)</span></div>
             <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px;line-height:1.6">
-              팔 만한 <b>식물 이름들을 한 줄에 하나씩 붙여넣으면</b>, 네이버 검색량을 돌려 아래 조건(타입·시즌·검색량)에 맞는 걸 골라 <b>판매가능성 높은 순</b>으로 보여줘요.
+              타입·시즌을 고르고 버튼을 누르면, 앱이 가진 <b>정원식물 후보들을 네이버 검색량으로 돌려</b> 그 시즌에 <b>검색이 오르는(수요 느는)</b> 식물을 <b>판매가능성 높은 순</b>으로 골라줘요.
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:6px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:8px">
               <label style="font-size:12px">타입 <select id="src-flt-type" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
               <label style="font-size:12px">시즌 <select id="src-flt-season" class="form-control" style="display:inline-block;width:auto;padding:3px 6px"></select></label>
               <label style="font-size:12px">최소 연간검색 <input type="number" id="src-flt-min" class="form-control" value="1000" min="0" step="500" style="display:inline-block;width:86px;padding:3px 6px"></label>
+              <button type="button" class="btn btn-primary" id="src-find-btn">🔍 이 시즌에 검색 느는 식물 찾기</button>
             </div>
-            <textarea id="src-paste-list" class="form-control" rows="4" placeholder="식물 이름을 한 줄에 하나씩&#10;예) 수국&#10;라벤더&#10;에키네시아&#10;무스카리" style="font-size:12px;width:100%"></textarea>
-            <button type="button" class="btn btn-primary btn-sm" id="src-paste-btn" style="margin-top:6px">🔍 이 목록으로 선별</button>
+            <details style="margin-bottom:4px"><summary class="muted" style="font-size:11px;cursor:pointer">또는 특정 식물 이름 직접 입력 ▾</summary>
+              <textarea id="src-paste-list" class="form-control" rows="3" placeholder="식물 이름을 한 줄에 하나씩&#10;예) 수국&#10;라벤더" style="font-size:12px;margin-top:6px;width:100%"></textarea>
+              <button type="button" class="btn btn-secondary btn-sm" id="src-paste-btn" style="margin-top:6px">📋 붙여넣은 목록으로 선별</button>
+            </details>
             <div id="src-collect-status" class="muted" style="font-size:12px;margin-top:8px"></div>
             <div id="src-collect-review" style="margin-top:8px"></div>
           </div>
@@ -16280,6 +16283,36 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
       .then(function(res){ if(!res.ok) return res.text().then(function(t){throw new Error('수집 실패 '+res.status+' '+String(t).slice(0,90));}); return res.json(); });
   }
   function chunkArr(arr,n){ var c=[]; for(var i=0;i<arr.length;i+=n)c.push(arr.slice(i,i+n)); return c; }
+  /* 내장 정원식물 사전(약 130종) — 앱이 이걸 검색량 돌려 그 시즌에 검색 느는 식물을 찾아줌 */
+  var PLANT_DICT=(function(){ var L=[]; function add(se,ty,names){ names.split(',').forEach(function(n){ n=n.trim(); if(n)L.push({name:n,type:ty,season:se}); }); }
+    add('SPR','구근','튤립,수선화,무스카리,히아신스,크로커스,라넌큘러스,프리지아,아네모네');
+    add('SPR','숙근','팬지,비올라,프리뮬러,앵초,매발톱꽃,할미꽃,금낭화,제비꽃,금잔화,잉글리시데이지,모란,꽃잔디');
+    add('SPR','관목','라일락,미스김라일락,진달래,철쭉,영산홍,개나리,산수유,매화나무,명자나무,박태기나무,황매화');
+    add('ESU','관목','수국,장미,클레마티스,인동덩굴,산수국');
+    add('ESU','숙근','작약,라벤더,디기탈리스,델피니움,루피너스,아스틸베,붓꽃,꽃창포,카네이션,제라늄,양귀비,샤스타데이지,마가렛,페튜니아,베고니아');
+    add('MSU','숙근','에키네시아,루드베키아,백일홍,천일홍,해바라기,맨드라미,채송화,봉숭아,한련화,메리골드,가우라,모나르다,톱풀,사루비아,버베나,부처꽃');
+    add('MSU','관목','능소화,무궁화,배롱나무,부들레아');
+    add('MSU','구근','칸나,다알리아,백합,글라디올러스,아가판투스');
+    add('AUT','숙근','국화,구절초,벌개미취,쑥부쟁이,감국,산국,추명국,꿩의비름,코스모스,아스타');
+    add('AUT','그라스','억새,핑크뮬리,수크령,팜파스그라스,모닝라이트,무늬억새');
+    add('AUT','관목','단풍나무,화살나무,남천,안개나무,꽃댕강나무');
+    add('AUT','구근','상사화,콜키쿰,꽃무릇');
+    add('LONG','숙근','비비추,호스타,휴케라,옥잠화,둥굴레,램스이어,아주가,로즈마리,타임,세이지,애플민트');
+    add('LONG','관목','회양목,사철나무,블루베리,마삭줄,수국');
+    add('LONG','관엽','맥문동,수호초,아이비,송악');
+    var seen={},out=[]; L.forEach(function(p){ if(!seen[p.name]){seen[p.name]=1;out.push(p);} }); return out; })();
+  function findSeasonPlants(){
+    var typeF=($('src-flt-type')||{}).value, seasonF=($('src-flt-season')||{}).value;
+    var dict=PLANT_DICT.filter(function(p){
+      if(typeF && typeF!=='전체' && p.type!==typeF) return false;
+      if(seasonF && seasonF!=='전체' && seasonF!=='LONG' && p.season!==seasonF && p.season!=='LONG') return false;
+      return true; });
+    var st=$('src-collect-status');
+    if(!dict.length){ if(st)st.textContent='해당 타입/시즌에 맞는 사전 후보가 없어요. 조건을 넓혀보세요.'; return; }
+    if(st)st.textContent='정원식물 '+dict.length+'종을 네이버 검색량으로 확인 중... (조금 걸려요)';
+    var cands=dict.map(function(p){return {name:p.name,title:p.name,n:1};});
+    _collectCands=cands; renderReview(cands); screenCandidates();
+  }
   function pasteScreen(){
     var ta=$('src-paste-list'); var txt=(ta&&ta.value||'').trim();
     if(!txt){ toast('공급처 상품명을 붙여넣으세요','error'); return; }
@@ -16473,6 +16506,7 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
     var vi=$('src-vendor-input'); if(vi) vi.addEventListener('keydown',function(e){ if(e.key==='Enter') addVendorMall(); });
     var co=$('src-collect-btn'); if(co) co.addEventListener('click',collectProducts);
     var pb=$('src-paste-btn'); if(pb) pb.addEventListener('click',pasteScreen);
+    var fb=$('src-find-btn'); if(fb) fb.addEventListener('click',findSeasonPlants);
   }
   function fillMonth(){
     var ms=$('src-month'); if(!ms||ms.options.length) return;
