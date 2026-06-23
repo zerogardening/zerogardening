@@ -2076,6 +2076,38 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 .active-date-filter button{border:none;background:transparent;color:#7a5b00;cursor:pointer;font-size:16px;padding:0;line-height:1;font-weight:bold}
 .active-date-filter button:hover{color:#c33}
 </style>
+<style id="mobile-responsive">
+/* ===== 모바일 반응형 (데스크톱 영향 없음: 전부 @media 내부) ===== */
+.mobile-nav-toggle{display:none;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--primary-dark);padding:2px 8px;margin-right:2px}
+.mobile-nav-backdrop{display:none}
+@media (max-width:760px){
+  .mobile-nav-toggle{display:inline-flex;align-items:center}
+  .app{display:block;height:auto;min-height:100vh}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:80%;max-width:300px;z-index:1200;transform:translateX(-100%);transition:transform .25s ease;will-change:transform}
+  .sidebar.open{transform:translateX(0);box-shadow:6px 0 28px rgba(0,0,0,.35)}
+  .mobile-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;display:none}
+  .mobile-nav-backdrop.show{display:block}
+  .main{display:block;overflow:visible;height:auto}
+  .topbar{position:sticky;top:0;z-index:60;padding:9px 12px;gap:6px;flex-wrap:wrap}
+  .topbar h2{font-size:16px}
+  .topbar .meta{font-size:11px}
+  .topbar .btn{font-size:11px;padding:5px 8px}
+  .content{padding:14px 12px}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{white-space:nowrap;flex-shrink:0;padding:9px 12px;font-size:13px}
+  .card{padding:14px 12px}
+  .form-grid{grid-template-columns:1fr !important}
+  /* 표 -> 카드: thead 숨기고 각 행을 카드로, td 는 라벨(::before)+값 */
+  table.data-table,table.orders-table,table.inv-table,table.inv-restock-table,table.picklist-table,table.sku-table,table.price-coupang-table{display:block;width:100%}
+  table.data-table thead,table.orders-table thead,table.inv-table thead,table.inv-restock-table thead,table.picklist-table thead,table.sku-table thead,table.price-coupang-table thead{display:none}
+  table.data-table tbody,table.orders-table tbody,table.inv-table tbody,table.inv-restock-table tbody,table.picklist-table tbody,table.sku-table tbody,table.price-coupang-table tbody{display:block}
+  table.data-table tr,table.orders-table tr,table.inv-table tr,table.inv-restock-table tr,table.picklist-table tr,table.sku-table tr,table.price-coupang-table tr{display:block;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;padding:6px 10px;background:#fff}
+  table.data-table td,table.orders-table td,table.inv-table td,table.inv-restock-table td,table.picklist-table td,table.sku-table td,table.price-coupang-table td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:none !important;padding:5px 0;text-align:right;font-size:13px}
+  table.data-table td::before,table.orders-table td::before,table.inv-table td::before,table.inv-restock-table td::before,table.picklist-table td::before,table.sku-table td::before,table.price-coupang-table td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;flex:0 0 40%;white-space:nowrap;font-size:12px}
+  table.data-table td:empty{display:none}
+}
+</style>
 </head>
 <body>
 
@@ -2091,6 +2123,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 </div>
 
 <div class="app">
+  <div class="mobile-nav-backdrop" id="mobile-nav-backdrop"></div>
   <!-- ============ Sidebar ============ -->
   <aside class="sidebar">
     <div class="sidebar-header">
@@ -2135,6 +2168,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
   <!-- ============ Main ============ -->
   <main class="main">
     <header class="topbar">
+      <button class="mobile-nav-toggle" id="mobile-nav-toggle" aria-label="메뉴">☰</button>
       <div>
         <h2 id="page-title">상품 관리</h2>
         <div class="meta" id="page-meta">입고 데이터를 등록하고 검색합니다</div>
@@ -16589,6 +16623,34 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
   window.renderSourcing=function(){ if(!$('route-sourcing'))return; initFills(); ensureBindings(); renderReportStatus(); renderBands(); renderCompetitorList(); renderFavBadge(); renderVendorList(); renderPicks(); };
 })();
 
+</script>
+<script>
+/* ===== 모바일: 햄버거 드로어 + 표 카드 라벨 ===== */
+(function(){
+  var sb=document.querySelector('.sidebar'), bd=document.getElementById('mobile-nav-backdrop'), tg=document.getElementById('mobile-nav-toggle');
+  function openD(){ if(sb)sb.classList.add('open'); if(bd)bd.classList.add('show'); }
+  function closeD(){ if(sb)sb.classList.remove('open'); if(bd)bd.classList.remove('show'); }
+  if(tg) tg.addEventListener('click',function(e){ e.stopPropagation(); (sb&&sb.classList.contains('open'))?closeD():openD(); });
+  if(bd) bd.addEventListener('click',closeD);
+  var nav=document.getElementById('nav');
+  if(nav) nav.addEventListener('click',function(e){ if(e.target.closest('.nav-item')) closeD(); });
+  var SEL='table.data-table,table.orders-table,table.inv-table,table.inv-restock-table,table.picklist-table,table.sku-table,table.price-coupang-table';
+  function labelTables(){
+    document.querySelectorAll(SEL).forEach(function(t){
+      var ths=t.querySelectorAll('thead th'); if(!ths.length) return;
+      var labels=[]; ths.forEach(function(th){ labels.push(th.textContent.trim()); });
+      t.querySelectorAll('tbody tr').forEach(function(tr){
+        var tds=tr.children;
+        for(var i=0;i<tds.length;i++){ if(labels[i]!=null && labels[i]!=='' && !tds[i].hasAttribute('data-label')) tds[i].setAttribute('data-label',labels[i]); }
+      });
+    });
+  }
+  var _t=null; function schedule(){ if(_t)return; _t=setTimeout(function(){ _t=null; labelTables(); },150); }
+  var content=document.getElementById('content');
+  if(content && window.MutationObserver){ new MutationObserver(schedule).observe(content,{childList:true,subtree:true}); }
+  if(document.readyState!=='loading') labelTables(); else document.addEventListener('DOMContentLoaded',labelTables);
+  setTimeout(labelTables,600);
+})();
 </script>
 </body>
 </html>
