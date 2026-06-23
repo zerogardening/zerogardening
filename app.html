@@ -16246,11 +16246,12 @@ _setupAiSectionEvents();
     var pById={}; getPlants().forEach(function(p){pById[p.id]=p;});
     var isDisc=function(r){ var p=pById[r.plant_id]; return !!(p&&p.discovered); };
     var byScore=function(a,b){return b.sellability-a.sellability||(a.plant_id<b.plant_id?-1:1);};
-    var discovered=all.filter(function(r){return !r.already_selling && isDisc(r);}).slice().sort(byScore).slice(0,12);
+    var isNew=function(r){ return isDisc(r) && !r.already_selling; };
+    var discovered=all.filter(isNew).slice().sort(byScore).slice(0,12);
     var restock=all.filter(function(r){return r.already_selling && r.is_winner && (r.season_fit>=70 || (r.growth!=null&&r.growth>=0));}).slice().sort(byScore).slice(0,10);
-    var sellable=all.filter(function(r){return !r.already_selling && !isDisc(r);}).slice().sort(byScore).slice(0,10);
-    var soon=all.filter(function(r){return r.season_fit===100 && !r.already_selling;}).slice().sort(byScore).slice(0,10);
-    var next=all.filter(function(r){return r.season_fit===40 && !r.already_selling;}).slice().sort(byScore).slice(0,8);
+    var pushOwned=all.filter(function(r){return !isDisc(r) && !r.already_selling && r.season_fit>=70;}).slice().sort(byScore).slice(0,10);
+    var soon=all.filter(function(r){return isNew(r) && r.season_fit===100;}).slice().sort(byScore).slice(0,10);
+    var next=all.filter(function(r){return isNew(r) && r.season_fit===40;}).slice().sort(byScore).slice(0,8);
     var hasPerf=all.some(function(r){return r.already_selling;});
     var h='<div class="card-title" style="border:none;padding-bottom:2px">✨ '+cur+'월 AI 추천 — 앱이 먼저 골라봤어요</div>';
     if(!hasData) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px">💡 아직 검색량을 안 불러왔어요. <b>「판매가능성 추천」 탭 → 🔍 검색량·경쟁률 불러오기</b>를 누르면 추천이 실제 데이터로 정확해져요. (지금은 시즌 기준 잠정)</div>';
@@ -16259,11 +16260,11 @@ _setupAiSectionEvents();
     else if(hasPerf) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 재입고 후보: 판매중 상품 중 \'아직 수요 여력 남은 winner\'가 잡히면 여기 떠요.</div>';
     else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 <b>재입고 추천</b>을 보려면 <b>「판매가능성 추천」 탭 → 📥 쿠팡 리포트</b>로 판매 데이터를 올려주세요. (현재 판매중 상품 중 여력 남은 걸 골라줘요)</div>';
     // #1 공급처 발굴 신규 (미보유)
-    if(discovered.length) h+=bucket('🆕 공급처 발굴 — 지금 팔릴 만한 (미보유)', '내가 등록한 공급처 상품 중 유망 신규', discovered, '#8e24aa');
-    else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🆕 <b>공급처 발굴</b>: 위 「🏪 공급처에서 상품 후보 가져오기」로 수집해 추가하면, 그 상품들 중 팔릴 만한 미보유 신규를 여기서 골라줘요.</div>';
-    h+=bucket('🔥 지금 팔릴 만한 (후보 전체, 미보유)', '판매가능성 높은 순', sellable, '#e53935');
-    h+=bucket('⏳ 지금이 소싱 적기 (시즌 1~2달 임박)', '지금 떼오면 다음 시즌에 딱', soon, '#fb8c00');
-    h+=bucket('🌱 아직 시즌 전 — 미리 찜 (약 3달 뒤)', '곧 시즌, 미리 준비', next, '#43a047');
+    if(discovered.length) h+=bucket('🆕 미보유 발굴 — 지금 떼오면 팔릴 (내 목록에 없음)', '수집한 시장 상품 중 유망 신규', discovered, '#8e24aa');
+    else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🆕 <b>미보유 발굴</b>: 위 「🏪 공급처에서 상품 후보 가져오기」로 수집해 추가하면, 내 목록에 <b>없는</b> 유망 신규를 여기서 골라줘요.</div>';
+    if(soon.length) h+=bucket('⏳ 지금이 소싱 적기 (미보유 · 시즌 1~2달 임박)', '지금 떼오면 다음 시즌에 딱', soon, '#fb8c00');
+    if(next.length) h+=bucket('🌱 아직 시즌 전 — 미리 찜 (미보유 · 약 3달 뒤)', '곧 시즌, 미리 준비', next, '#43a047');
+    if(pushOwned.length) h+=bucket('📦 보유 품목 — 이번 시즌 밀기 (재입고·물량↑)', '내 목록 중 시즌 맞는 것 (판매가능성 높은순)', pushOwned, '#00897b');
     host.innerHTML=h;
   }
 
