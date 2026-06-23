@@ -16301,6 +16301,31 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
     add('LONG','관목','회양목,사철나무,블루베리,마삭줄,수국');
     add('LONG','관엽','맥문동,수호초,아이비,송악');
     var seen={},out=[]; L.forEach(function(p){ if(!seen[p.name]){seen[p.name]=1;out.push(p);} }); return out; })();
+  /* ── 식물명 정규화: 농원/브랜드명·씨앗·쓰레기 제거 + 사전(SEED+PLANT_DICT)으로 종 단위 정식명 매칭 ── */
+  var _CANON=(function(){ var m={}; var seed=(window.Sourcing&&window.Sourcing.SEED)||[];
+    seed.forEach(function(p){ [p.name].concat(p.aliases||[],p.kw||[]).forEach(function(t){ if(t&&!m[t])m[t]=p.name; }); });
+    PLANT_DICT.forEach(function(p){ if(!m[p.name])m[p.name]=p.name; });
+    function nz(s){ return String(s==null?'':s).toLowerCase().replace(/\s/g,''); }
+    var terms=Object.keys(m).filter(function(t){return nz(t).length>=2;}).map(function(t){return {n:nz(t),can:m[t]};}).sort(function(a,b){return b.n.length-a.n.length;});
+    return { terms:terms, nz:nz }; })();
+  var _BRANDRE=/정원|농원|가든|garden|마켓|센터|농장|원예|조경|월드|나라|화훼|꽃집|스토어|쌀롱|살롱|교감/i;
+  var SEED_PROD_RE=/씨앗|종자|종근|파종|seed/i;
+  function heurName(title, mall){
+    var t=' '+String(title)+' '; if(mall) t=t.split(mall).join(' ');
+    t=t.replace(/\([^)]*\)/g,' ').replace(/\[[^\]]*\]/g,' ').replace(/<[^>]+>/g,' ');
+    t=t.replace(/\d+\s*(cm|CM|치|호|구|포트|화분|색|개|주|년생|년|월|호분|인치|p|P)/g,' ').replace(/[0-9]+/g,' ');
+    var stop=['낙엽성','반상록성','상록성','낙엽관목','상록관목','반상록','사계절관목','겨울정원','내한성관목','향기나무','울타리식물','색감식물','꽃관목','묘목','모종','화분','포트','키우기','공기정화','반려식물','반려','실내','베란다','정원','노지','야생화','허브','다년초','숙근초','숙근','구근','세트','특가','무료배송','당일발송','대품','중품','소품','개화주','개화','나무','식물','관상용','관상','희귀','신상','인기','정원식물','지피','조경수','조경','이벤트','상품','판매','직판','농장','농원','전용','튼튼한','예쁜','초보','대형','특대','왕특대','중형','소형','화초','다년생'];
+    stop.forEach(function(w){ t=t.split(w).join(' '); });
+    t=t.replace(/[^가-힣a-zA-Z ]/g,' ').replace(/\s+/g,' ').trim();
+    var toks=t.split(' ').filter(function(x){return x.length>=1;});
+    while(toks.length>1 && _BRANDRE.test(toks[0])) toks.shift();
+    return toks.slice(0,2).join(' ').slice(0,16);
+  }
+  function canonName(title, mall){
+    var tn=_CANON.nz(title); if(mall) tn=tn.split(_CANON.nz(mall)).join(' ');
+    for(var i=0;i<_CANON.terms.length;i++){ if(tn.indexOf(_CANON.terms[i].n)>=0) return {name:_CANON.terms[i].can, known:true}; }
+    return {name:heurName(title,mall), known:false};
+  }
   function findSeasonPlants(){
     var typeF=($('src-flt-type')||{}).value, seasonF=($('src-flt-season')||{}).value;
     var dict=PLANT_DICT.filter(function(p){
@@ -16349,14 +16374,21 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
     step();
   }
   function finishCollect(items){
-    var status=$('src-collect-status'); var map={};
-    items.forEach(function(it){ var nm=extractName(it.title); if(!nm||nm.length<2)return; var k=nm.replace(/\s/g,''); if(!map[k])map[k]={name:nm,title:it.title,mall:it.mall,n:0}; map[k].n++; });
-    var cands=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.n-a.n;}).slice(0,150);
-    if(status)status.textContent='✓ 상품 '+items.length+'개 수집 → 후보 '+cands.length+'종. 위 조건으로 선별 중...';
+    _rawCollected=items||[];
+    var status=$('src-collect-status'); var map={}; var seedSkip=0;
+    (items||[]).forEach(function(it){
+      if(_noSeed && SEED_PROD_RE.test(it.title)){ seedSkip++; return; }
+      var c=canonName(it.title, it.mall); var nm=c.name; if(!nm||nm.length<2)return;
+      var k=nm.replace(/\s/g,'');
+      if(!map[k])map[k]={name:nm,title:it.title,mall:it.mall,n:0,known:c.known};
+      map[k].n++;
+    });
+    var cands=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.n-a.n;}).slice(0,200);
+    if(status)status.textContent='✓ 상품 '+((items||[]).length)+'개 → 종 '+cands.length+'개'+(seedSkip?' (씨앗 '+seedSkip+' 제외)':'')+'. 위 조건으로 선별 중...';
     renderReview(cands);
     if(cands.length) screenCandidates();
   }
-  var _collectCands=[], _screenRows=[];
+  var _collectCands=[], _screenRows=[], _rawCollected=[], _onlyNew=false, _noSeed=true;
   function fillTypeSelectAll(sel){ if(!sel||sel.options.length)return; sel.innerHTML='<option>전체</option>'+['관목','숙근','관엽','그라스','구근'].map(function(t){return '<option>'+t+'</option>';}).join(''); }
   function fillSeasonSelectAll(sel){ if(!sel||sel.options.length)return; sel.innerHTML='<option value="전체">전체</option>'+[['SPR','봄'],['ESU','초여름'],['MSU','한여름'],['AUT','가을'],['LONG','상시']].map(function(t){return '<option value="'+t[0]+'">'+t[1]+'</option>';}).join(''); }
   function inferType(text){
@@ -16385,20 +16417,23 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
     _collectCands=cands;
     if(!cands.length){ host.innerHTML='<div class="muted" style="padding:8px">추출된 후보가 없어요. 공급처명을 확인하거나 비우고(전체) 다시 시도해보세요.</div>'; return; }
     var exist={}; getPlants().forEach(function(p){exist[p.name]=1;});
-    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 <span class="muted" style="font-weight:400;font-size:11px">(위 필터 조건으로 선별 · 그냥 골라 추가도 가능)</span></div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn btn-primary btn-sm" id="src-screen-btn">🔍 위 조건으로 선별</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-add">선별 없이 선택 추가</button></div>'
+    var newCnt=cands.filter(function(c){return !exist[c.name];}).length;
+    var h='<div class="card" style="background:#fbfdfb"><div class="card-title">후보 식물 '+cands.length+'종 <span style="color:#8e24aa;font-weight:600;font-size:11px">· 미보유 '+newCnt+'종</span> <span class="muted" style="font-weight:400;font-size:11px">(품종은 종 단위로 합침)</span></div>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn btn-primary btn-sm" id="src-screen-btn">🔍 위 조건으로 선별</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-all">전체선택/해제</button><button type="button" class="btn btn-secondary btn-sm" id="src-rev-add">선별 없이 선택 추가</button>'+'<label style="font-size:11px;display:inline-flex;align-items:center;gap:3px;margin-left:6px"><input type="checkbox" id="src-only-new" '+(_onlyNew?'checked':'')+'>미보유만</label>'+'<label style="font-size:11px;display:inline-flex;align-items:center;gap:3px"><input type="checkbox" id="src-no-seed" '+(_noSeed?'checked':'')+'>씨앗 제외</label></div>'
       +'<div style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">';
-    cands.forEach(function(c,i){ var dup=exist[c.name];
+    cands.forEach(function(c,i){ var dup=exist[c.name]; if(_onlyNew&&dup)return;
       h+='<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;border-bottom:1px solid #f3f5f3">'
         +'<input type="checkbox" class="src-rev-cb" data-i="'+i+'" '+(dup?'':'checked')+'>'
         +'<input type="text" class="form-control src-rev-name" data-i="'+i+'" value="'+esc(c.name)+'" style="width:150px;font-size:12px;padding:3px 6px">'
         +'<span class="muted" style="font-size:10.5px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.title)+(dup?' <b style="color:#999">(이미 목록)</b>':'')+'</span>'
-        +'<span class="muted" style="font-size:10px">'+c.n+'건</span></div>';
+        +'<span class="muted" style="font-size:10px">'+(dup?'':'<span style="color:#8e24aa;font-weight:700">신규 </span>')+c.n+'건</span></div>';
     });
     host.innerHTML=h+'</div></div>';
     $('src-screen-btn').addEventListener('click', screenCandidates);
     $('src-rev-all').addEventListener('click',function(){ var cbs=host.querySelectorAll('.src-rev-cb'),off=false; cbs.forEach(function(cb){if(!cb.checked)off=true;}); cbs.forEach(function(cb){cb.checked=off;}); });
     $('src-rev-add').addEventListener('click',function(){ addReviewSelected(host); });
+    var _on=$('src-only-new'); if(_on) _on.addEventListener('change',function(){ _onlyNew=_on.checked; renderReview(_collectCands); });
+    var _ns=$('src-no-seed'); if(_ns) _ns.addEventListener('change',function(){ _noSeed=_ns.checked; if(_rawCollected&&_rawCollected.length) finishCollect(_rawCollected); });
   }
 
   function screenCandidates(){
