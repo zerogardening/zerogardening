@@ -16363,7 +16363,7 @@ var SEASON_QUERIES={SPR:['봄꽃 모종','봄 정원식물','봄 파종 씨앗',
   }
   function collectProducts(){
     var btn=$('src-collect-btn'),status=$('src-collect-status');
-    var malls=vendors();
+    var malls=[]; /* 🌐 시장 전체 발굴 — 공급처 필터 무시(네이버는 특정 업체 카탈로그 전체를 못 줌) */
     var sf=($('src-flt-season')||{}).value; var qs=(sf&&SEASON_QUERIES[sf]?SEASON_QUERIES[sf]:[]).concat(GARDEN_QUERIES);
     var chunks=chunkArr(qs,10);
     if(btn)btn.disabled=true; var all=[],ci=0;
