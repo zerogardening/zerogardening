@@ -2081,30 +2081,41 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 .mobile-nav-toggle{display:none;background:none;border:none;font-size:22px;line-height:1;cursor:pointer;color:var(--primary-dark);padding:2px 8px;margin-right:2px}
 .mobile-nav-backdrop{display:none}
 @media (max-width:760px){
+  /* 가로 넘침 차단 — 한 화면에 다 들어오게 */
+  html,body{overflow-x:hidden;max-width:100%}
+  .app{display:block;height:auto;min-height:100vh;overflow-x:hidden;width:100%}
   .mobile-nav-toggle{display:inline-flex;align-items:center}
-  .app{display:block;height:auto;min-height:100vh}
-  .sidebar{position:fixed;top:0;left:0;bottom:0;width:80%;max-width:300px;z-index:1200;transform:translateX(-100%);transition:transform .25s ease;will-change:transform}
+  /* 사이드바 = 슬라이드 드로어 */
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:300px;z-index:1200;transform:translateX(-100%);transition:transform .25s ease;will-change:transform}
   .sidebar.open{transform:translateX(0);box-shadow:6px 0 28px rgba(0,0,0,.35)}
   .mobile-nav-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;display:none}
   .mobile-nav-backdrop.show{display:block}
-  .main{display:block;overflow:visible;height:auto}
+  .main{display:block;overflow:visible;height:auto;width:100%;max-width:100%}
+  /* 상단바: 버튼 줄바꿈 + 중복 버튼 숨김 */
   .topbar{position:sticky;top:0;z-index:60;padding:9px 12px;gap:6px;flex-wrap:wrap}
+  .topbar>div{flex-wrap:wrap;min-width:0}
   .topbar h2{font-size:16px}
   .topbar .meta{font-size:11px}
   .topbar .btn{font-size:11px;padding:5px 8px}
-  .content{padding:14px 12px}
+  #btn-cleanup-top{display:none}
+  .content{padding:14px 12px;max-width:100%;overflow-x:hidden;width:100%;box-sizing:border-box}
+  /* 카드/폼 전부 1열 + 폭 맞춤 */
+  .card{padding:14px 12px;max-width:100%;box-sizing:border-box}
+  .card-title{flex-wrap:wrap}
+  .form-grid{grid-template-columns:1fr !important;gap:12px}
+  .content input,.content select,.content textarea{max-width:100%;box-sizing:border-box}
+  .form-control{width:100%}
+  /* 탭 가로스크롤 */
   .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .tabs::-webkit-scrollbar{display:none}
   .tab{white-space:nowrap;flex-shrink:0;padding:9px 12px;font-size:13px}
-  .card{padding:14px 12px}
-  .form-grid{grid-template-columns:1fr !important}
-  /* 표 -> 카드: thead 숨기고 각 행을 카드로, td 는 라벨(::before)+값 */
+  /* 표 -> 카드 */
   table.data-table,table.orders-table,table.inv-table,table.inv-restock-table,table.picklist-table,table.sku-table,table.price-coupang-table{display:block;width:100%}
   table.data-table thead,table.orders-table thead,table.inv-table thead,table.inv-restock-table thead,table.picklist-table thead,table.sku-table thead,table.price-coupang-table thead{display:none}
   table.data-table tbody,table.orders-table tbody,table.inv-table tbody,table.inv-restock-table tbody,table.picklist-table tbody,table.sku-table tbody,table.price-coupang-table tbody{display:block}
   table.data-table tr,table.orders-table tr,table.inv-table tr,table.inv-restock-table tr,table.picklist-table tr,table.sku-table tr,table.price-coupang-table tr{display:block;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;padding:6px 10px;background:#fff}
-  table.data-table td,table.orders-table td,table.inv-table td,table.inv-restock-table td,table.picklist-table td,table.sku-table td,table.price-coupang-table td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:none !important;padding:5px 0;text-align:right;font-size:13px}
-  table.data-table td::before,table.orders-table td::before,table.inv-table td::before,table.inv-restock-table td::before,table.picklist-table td::before,table.sku-table td::before,table.price-coupang-table td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;flex:0 0 40%;white-space:nowrap;font-size:12px}
+  table.data-table td,table.orders-table td,table.inv-table td,table.inv-restock-table td,table.picklist-table td,table.sku-table td,table.price-coupang-table td{display:flex;justify-content:space-between;align-items:center;gap:12px;border:none !important;padding:5px 0;text-align:right;font-size:13px;max-width:100%}
+  table.data-table td::before,table.orders-table td::before,table.inv-table td::before,table.inv-restock-table td::before,table.picklist-table td::before,table.sku-table td::before,table.price-coupang-table td::before{content:attr(data-label);font-weight:600;color:var(--muted);text-align:left;flex:0 0 38%;white-space:nowrap;font-size:12px}
   table.data-table td:empty{display:none}
 }
 </style>
