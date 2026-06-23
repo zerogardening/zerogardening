@@ -3016,7 +3016,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
       <div id="route-sourcing" class="hidden">
         <div class="tabs">
           <button class="tab active" data-srctab="picks">✨ AI 추천</button>
-          <button class="tab" data-srctab="reco">🌱 판매가능성 추천</button>
+          <button class="tab" data-srctab="reco">🔍 키워드검색</button>
           <button class="tab" data-srctab="price">💰 가격 경쟁력 진단</button>
           <button class="tab" data-srctab="fav">⭐ 즐겨찾기<span id="src-fav-count"></span></button>
         </div>
@@ -16255,11 +16255,11 @@ _setupAiSectionEvents();
     var next=all.filter(function(r){return isNew(r) && r.season_fit===40;}).slice().sort(byScore).slice(0,8);
     var hasPerf=all.some(function(r){return r.already_selling;});
     var h='<div class="card-title" style="border:none;padding-bottom:2px">✨ '+cur+'월 AI 추천 — 앱이 먼저 골라봤어요</div>';
-    if(!hasData) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px">💡 아직 검색량을 안 불러왔어요. <b>「판매가능성 추천」 탭 → 🔍 검색량·경쟁률 불러오기</b>를 누르면 추천이 실제 데이터로 정확해져요. (지금은 시즌 기준 잠정)</div>';
+    if(!hasData) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px">💡 아직 검색량을 안 불러왔어요. <b>「키워드검색」 탭 → 🔍 검색량·경쟁률 불러오기</b>를 누르면 추천이 실제 데이터로 정확해져요. (지금은 시즌 기준 잠정)</div>';
     // #3 재입고: 현재 판매중 + winner + 수요 여력
     if(restock.length) h+=bucket('🔁 재입고 추천 (판매 여력 남음)', '잘 팔리는데 시즌·수요 아직 남음', restock, '#1e88e5');
     else if(hasPerf) h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 재입고 후보: 판매중 상품 중 \'아직 수요 여력 남은 winner\'가 잡히면 여기 떠요.</div>';
-    else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 <b>재입고 추천</b>을 보려면 <b>「판매가능성 추천」 탭 → 📥 쿠팡 리포트</b>로 판매 데이터를 올려주세요. (현재 판매중 상품 중 여력 남은 걸 골라줘요)</div>';
+    else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🔁 <b>재입고 추천</b>을 보려면 <b>「키워드검색」 탭 → 📥 쿠팡 리포트</b>로 판매 데이터를 올려주세요. (현재 판매중 상품 중 여력 남은 걸 골라줘요)</div>';
     // #1 공급처 발굴 신규 (미보유)
     if(discovered.length) h+=bucket('🆕 미보유 발굴 — 지금 떼오면 팔릴 (내 목록에 없음)', '수집한 시장 상품 중 유망 신규', discovered, '#8e24aa');
     else h+='<div class="muted" style="font-size:12px;background:var(--bg);padding:9px 12px;border-radius:6px;margin-bottom:10px">🆕 <b>미보유 발굴</b>: 위 「🏪 공급처에서 상품 후보 가져오기」로 수집해 추가하면, 내 목록에 <b>없는</b> 유망 신규를 여기서 골라줘요.</div>';
