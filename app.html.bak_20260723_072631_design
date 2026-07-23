@@ -10,27 +10,26 @@
 <!-- Supabase JS 클라이언트 (클라우드 DB + 인증) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
   --primary:#2d6a4f;
   --primary-dark:#1b4332;
-  --primary-light:#e4f3e9;
+  --primary-light:#d8f3dc;
   --accent:#95d5b2;
-  --danger:#dc2626;
-  --danger-light:#fee2e2;
-  --warning:#d97706;
-  --bg:#f6f8f7;
+  --danger:#d62828;
+  --danger-light:#ffe5e5;
+  --warning:#f77f00;
+  --bg:#f5f7f6;
   --card:#ffffff;
-  --text:#1a2620;
-  --muted:#68766e;
-  --border:#e3e8e5;
-  --shadow:0 1px 2px rgba(16,24,20,0.04);
+  --text:#212529;
+  --muted:#6c757d;
+  --border:#e0e4e2;
+  --shadow:0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
-  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR","맑은 고딕",sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Noto Sans KR","맑은 고딕",sans-serif;
   background:var(--bg);
   color:var(--text);
   font-size:14px;
@@ -2076,46 +2075,6 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 .active-date-filter.hidden{display:none}
 .active-date-filter button{border:none;background:transparent;color:#7a5b00;cursor:pointer;font-size:16px;padding:0;line-height:1;font-weight:bold}
 .active-date-filter button:hover{color:#c33}
-
-/* ===== Design Refresh 2026-07 — modern SaaS pass (screen only) ===== */
-@media screen{
-  body{ letter-spacing:-0.01em; }
-  /* 버튼 */
-  .btn{ border-radius:8px; font-weight:600; transition:background .15s,border-color .15s,box-shadow .15s,transform .06s; }
-  .btn:active{ transform:translateY(1px); }
-  .btn:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(45,106,79,.25); }
-  .btn-primary{ box-shadow:0 1px 2px rgba(27,67,50,.25); }
-  .btn-secondary{ box-shadow:0 1px 2px rgba(16,24,20,.04); }
-  .btn-secondary:hover{ border-color:#c9d2cd; background:#fbfcfb; }
-  /* 카드 */
-  .card{ border:1px solid var(--border); border-radius:12px; box-shadow:0 1px 2px rgba(16,24,20,.03); }
-  .card-title{ color:var(--text); font-weight:700; letter-spacing:-0.015em; }
-  /* 데이터 테이블 — 민트 헤더 → 중립 헤더 */
-  table.data-table{ border:1px solid var(--border); border-radius:10px; box-shadow:none; }
-  table.data-table th{ background:#fafbfa; color:var(--muted); font-size:11.5px; font-weight:600; letter-spacing:.02em; }
-  table.data-table tr:hover{ background:#f7faf8; }
-  /* 입력 */
-  input:focus,select:focus,textarea:focus{ outline:none; }
-  /* 탭 */
-  .tabs{ gap:4px; }
-  .tab{ border-radius:7px 7px 0 0; }
-  .tab:hover{ background:#f1f4f2; }
-  /* 사이드바 — 필 스타일 */
-  .nav-item{ margin:1px 10px; padding:9px 12px; border-radius:8px; border-left:none; gap:11px; font-size:13.5px; }
-  .nav-item.active{ background:rgba(255,255,255,.13); border-left:none; }
-  .nav-icon{ display:inline-flex; align-items:center; justify-content:center; width:18px; opacity:.9; }
-  .nav-icon svg{ display:block; }
-  .nav-section{ letter-spacing:.08em; padding:16px 22px 6px; }
-  /* 배지 */
-  .badge{ border-radius:6px; padding:2.5px 7px; font-size:10.5px; }
-  /* 탑바 */
-  .topbar h2{ font-weight:700; letter-spacing:-0.02em; }
-  /* 스크롤바 */
-  ::-webkit-scrollbar{ width:10px; height:10px; }
-  ::-webkit-scrollbar-thumb{ background:#c9d2cd; border-radius:8px; border:2px solid transparent; background-clip:content-box; }
-  ::-webkit-scrollbar-thumb:hover{ background:#aeb9b3; border:2px solid transparent; background-clip:content-box; }
-  ::-webkit-scrollbar-track{ background:transparent; }
-}
 </style>
 <style id="mobile-responsive">
 /* ===== 모바일 반응형 (데스크톱 영향 없음: 전부 @media 내부) ===== */
@@ -2187,29 +2146,29 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
     <nav class="nav" id="nav">
       <div class="nav-section">상품 관리</div>
       <div class="nav-item active" data-route="receiving">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span><span>상품 관리</span>
+        <span class="nav-icon">📦</span><span>상품 관리</span>
       </div>
       <div class="nav-item" data-route="statement">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg></span><span>명세서 발행</span>
+        <span class="nav-icon">📋</span><span>명세서 발행</span>
       </div>
       <div class="nav-section">거래처 관리</div>
       <div class="nav-item" data-route="companies">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg></span><span>업체 관리</span>
+        <span class="nav-icon">🏢</span><span>업체 관리</span>
       </div>
       <div class="nav-section">판매 관리</div>
       <div class="nav-item" data-route="orders">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span><span>주문 관리</span>
+        <span class="nav-icon">🛒</span><span>주문 관리</span>
       </div>
       <div class="nav-item" data-route="sourcing">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg></span><span>소싱 추천</span>
+        <span class="nav-icon">🌱</span><span>소싱 추천</span>
       </div>
       <!-- 추후 추가될 카테고리 -->
       <div class="nav-section">예정 카테고리</div>
       <div class="nav-item" data-route="placeholder" data-name="재고 관리">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span><span>재고 관리</span>
+        <span class="nav-icon">📊</span><span>재고 관리</span>
       </div>
       <div class="nav-item" data-route="placeholder" data-name="고객 관리">
-        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>고객 관리</span>
+        <span class="nav-icon">👥</span><span>고객 관리</span>
       </div>
     </nav>
     <div style="padding:12px 18px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(255,255,255,0.5)">
