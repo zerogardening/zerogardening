@@ -14558,6 +14558,7 @@ function _renderAiFieldsHtml(s){
           ${charLimit}
         </div>
         <textarea name="ai_${f.id}" rows="${f.rows||2}" placeholder="${phEsc}"${lenAttr} style="width:100%;font-family:inherit;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12.5px;line-height:1.5;box-sizing:border-box;resize:vertical">${vEsc}</textarea>
+        <input type="text" class="ai-field-request" data-field="${f.id}" placeholder="이 항목 요청사항 (선택, 예: 시적으로 / 짧게 / 전문용어 빼고)" style="width:100%;font-family:inherit;padding:4px 8px;border:1px dashed #cfd8e3;border-radius:4px;font-size:11px;color:#5a6776;margin-top:4px;box-sizing:border-box;background:#fafbfd">
       </div>`;
     }).join('');
     return `<div class="ai-platform-panel" data-platform="${p.id}" style="display:${idx===0?'block':'none'}">
