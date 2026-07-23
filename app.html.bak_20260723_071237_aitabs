@@ -14484,7 +14484,7 @@ const AI_FIELDS = [
     guide:'200~300자. 재배 핵심 2~3문장 + 활용 시나리오 1~2문장 + 출하/배송 한 줄. 키워드 자연스럽게 분산.' },
   { id:'cafe24_searchTerms', platform:'cafe24', label:'검색어 (정확히 20개)',
     maxChars:null, rows:3,
-    guide:'카페24 자사몰 내부 검색용 키워드 정확히 20개, 쉼표 구분. 7개 카테고리 분배: 일반명+변형(3~4) / 품종명+변형(2~3) / 카테고리(2~3) / 용도(2~3) / 규격(1~2) / 시즌(1~2) / 특성(3~4). 어뷰징/경쟁사 브랜드명 금지.' },
+    guide:'카페24 자사몰 내부 검색용 키워드 정확히 20개, 쉼표 구분. 7개 카테고리 분배: 일반명+변형(3~4) / 품종명+변형(2~3) / 카테고리(2~3) / 용도(2~3) / 규격(1~2) / 시즌(1~2) / 특성(3~4). 어뷰징/경쟁사 브랜드명 금지. coupang_searchTerms 와 거의 동일한 내용으로 작성 가능.' },
   { id:'cafe24_browserTitle',platform:'cafe24', label:'브라우저 타이틀 (Title)',
     maxChars:60, rows:1,
     guide:'50~60자. [일반명+품종명] [용도/특징] | [브랜드명] 형태. 메인 키워드 앞쪽.' },
@@ -14501,7 +14501,24 @@ const AI_FIELDS = [
     maxChars:30, rows:1,
     guide:'15~30자. 그 사진이 무엇을 보여주는지 구체적으로. 키워드 1~2개 자연스럽게. 템플릿: [품종명] [상태/장면] [부가 디테일]' },
 
+  // 쿠팡
+  { id:'coupang_searchTerms',platform:'coupang', label:'검색어 (정확히 20개)',
+    maxChars:null, rows:3,
+    guide:'정확히 20개, 쉼표 구분. 7개 카테고리에 분배: 일반명+변형(3~4) / 품종명+변형(2~3) / 카테고리(2~3) / 용도(2~3) / 규격(1~2) / 시즌(1~2) / 특성(3~4). 어뷰징/경쟁사 브랜드명 금지.' },
 
+  // 스마트스토어
+  { id:'naver_summary40',    platform:'naver', label:'요약설명 (40자)',
+    maxChars:40, rows:1,
+    guide:'정확히 40자 이내(공백 포함). 핵심 베네핏 1개 + 키워드 1~2개. 마침표 없이 끊어 읽히게. 템플릿: [핵심특징] [용도/규격] [핵심키워드]' },
+  { id:'naver_tags',         platform:'naver', label:'태그 (정확히 10개)',
+    maxChars:null, rows:2,
+    guide:'정확히 10개, 쉼표 구분. 메인 1: 일반명 / 보조 2~3: 품종명·용도·시즌 / 롱테일 3~4: 결합어·시나리오 / 변형 1~2: 표기 다양화. 11개 이상 금지.' },
+  { id:'naver_pageTitle',    platform:'naver', label:'Page Title',
+    maxChars:60, rows:1,
+    guide:'50~60자. 메인 키워드 앞쪽. [일반명] [품종명] [핵심특징] [용도] | [브랜드명]' },
+  { id:'naver_metaDesc',     platform:'naver', label:'Meta Description',
+    maxChars:120, rows:2,
+    guide:'80~120자. 1문장 식물 정체성 + 1문장 베네핏/용도. 키워드 1~2개 자연스럽게.' },
 
   // 상세페이지 제작
   { id:'detail_intro',       platform:'detailpage', label:'식물 전반 소개 (1-2줄)',
@@ -14520,6 +14537,8 @@ const AI_FIELDS = [
 
 const AI_PLATFORMS = [
   { id:'cafe24',     label:'🛒 카페24',         open:true },
+  { id:'coupang',    label:'🛍 쿠팡',            open:true },
+  { id:'naver',      label:'🟢 스마트스토어',    open:true },
   { id:'detailpage', label:'📄 상세페이지 제작', open:true },
 ];
 
