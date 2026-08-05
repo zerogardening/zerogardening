@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실데이터 이사 — 제로가드닝 통합관리</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/공통.css?v=3">
+<style>
+  .이사판 { max-width: 760px; margin: 0 auto; padding: 24px 16px 80px; }
+  .이사판 h1 { font-size: 20px; margin: 0 0 4px; }
+  .이사판 p.설명 { color: var(--muted, #6b7280); font-size: 13px; line-height: 1.6; margin: 0 0 20px; }
+  .칸 { border: 1px solid var(--line, #e5e7eb); border-radius: 10px; padding: 16px; margin-bottom: 16px; background: #fff; }
+  .칸 h2 { font-size: 14px; margin: 0 0 10px; }
+  table.셈 { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.셈 th, table.셈 td { padding: 6px 8px; border-bottom: 1px solid var(--line, #e5e7eb); text-align: left; }
+  table.셈 td.수 { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  ul.경고 { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: #b45309; line-height: 1.7; }
+  .위험 { background: #fef2f2; border-color: #fecaca; color: #991b1b; font-size: 13px; line-height: 1.6; }
+  button { font: inherit; padding: 10px 18px; border-radius: 8px; border: 1px solid var(--line, #e5e7eb); background: #fff; cursor: pointer; }
+  button.주 { background: #2F9E44; border-color: #2F9E44; color: #fff; font-weight: 600; }
+  button[disabled] { opacity: .45; cursor: default; }
+  .숨김 { display: none; }
+  pre.표본 { font-size: 11px; background: #f9fafb; padding: 10px; border-radius: 6px; overflow-x: auto; max-height: 240px; }
+</style>
+</head>
+<body>
+<div class="이사판">
+  <h1>실데이터 이사</h1>
+  <p class="설명">
+    구 프로그램(<code>app.html</code>) 백업 JSON 을 골라 v3 저장소로 옮깁니다.
+    이 브라우저의 v3 데이터만 바뀝니다 — <b>Supabase 실서비스는 건드리지 않습니다.</b>
+  </p>
+
+  <div class="칸">
+    <h2>1. 백업 파일 고르기</h2>
+    <input type="file" id="파일" accept=".json,application/json">
+    <p class="설명" style="margin:10px 0 0">
+      <code>통합관리/백업/제로가드닝_백업_2026-08-02.json</code>
+    </p>
+  </div>
+
+  <div class="칸 숨김" id="결과칸">
+    <h2>2. 이렇게 옮깁니다 — 확인하세요</h2>
+    <table class="셈"><tbody id="셈"></tbody></table>
+    <ul class="경고 숨김" id="경고"></ul>
+    <h2 style="margin-top:16px">품목 첫 줄 표본</h2>
+    <pre class="표본" id="표본"></pre>
+  </div>
+
+  <div class="칸 위험 숨김" id="넣기칸">
+    <b>🔴 지금 이 브라우저의 v3 데이터를 통째로 바꿉니다.</b><br>
+    목데이터는 사라지고 되돌릴 수 없습니다. 다시 목데이터로 돌아가려면
+    <code>index.html?reset=1</code> 을 여시면 됩니다.
+    <div style="margin-top:12px">
+      <button class="주" id="넣기">넣습니다</button>
+      <span id="끝" style="margin-left:10px;font-weight:600"></span>
+    </div>
+  </div>
+</div>
+
+<script src="js/02-품목코드.js?v=3"></script>
+<script src="js/01-저장소.js?v=3"></script>
+<script src="js/99-이사.js?v=3"></script>
+<script>
+(function () {
+  'use strict';
+  var 결과 = null;
+  var 셈칸 = document.getElementById('셈');
+
+  document.getElementById('파일').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (!f) return;
+    var 리더 = new FileReader();
+    리더.onload = function () {
+      var 구;
+      try { 구 = JSON.parse(리더.result); }
+      catch (err) { alert('JSON 을 못 읽었습니다: ' + err.message); return; }
+      // Supabase app_meta 로 받은 것은 [{value:{...}}] 모양이다
+      if (Array.isArray(구) && 구[0] && 구[0].value) 구 = 구[0].value;
+      try { 결과 = ZG.이사.변환(구); }
+      catch (err) { alert('변환 중 멈췄습니다: ' + err.message); throw err; }
+      그리기();
+    };
+    리더.readAsText(f);
+  });
+
+  function 그리기() {
+    var 줄 = ['품목', '입고', '출고', '재고조정', '업체', '주문', '주문묶음', '명세서', '견적요청', '즐겨찾기', '분류폴더'];
+    셈칸.innerHTML = 줄.map(function (k) {
+      return '<tr><th>' + k + '</th><td class="수">' + (결과[k] || []).length + '건</td></tr>';
+    }).join('') +
+      '<tr><th>키워드 검색량</th><td class="수">' + Object.keys(결과.키워드 || {}).length + '개</td></tr>';
+
+    var 경고칸 = document.getElementById('경고');
+    if (결과.경고.length) {
+      경고칸.innerHTML = 결과.경고.map(function (w) { return '<li>' + w + '</li>'; }).join('');
+      경고칸.classList.remove('숨김');
+    } else { 경고칸.classList.add('숨김'); }
+
+    document.getElementById('표본').textContent = JSON.stringify(결과.품목[0] || {}, null, 1);
+    document.getElementById('결과칸').classList.remove('숨김');
+    document.getElementById('넣기칸').classList.remove('숨김');
+  }
+
+  document.getElementById('넣기').addEventListener('click', function () {
+    if (!결과) return;
+    if (!confirm('이 브라우저의 v3 데이터를 실데이터로 바꿉니다. 계속할까요?')) return;
+    try { ZG.이사.넣기(결과); }
+    catch (err) { alert('저장에 실패했습니다: ' + err.message); throw err; }
+    this.disabled = true;
+    document.getElementById('끝').textContent = '✅ 끝났습니다 — 상품 화면·주문 화면을 열어보세요';
+  });
+})();
+</script>
+</body>
+</html>
