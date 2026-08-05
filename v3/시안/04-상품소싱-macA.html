@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품소싱 (macOS A안 · 브랜드 초록)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ── 이 화면에서만 쓰는 부품 ── */
+  .phones{display:flex; gap:26px; flex-wrap:wrap; justify-content:center; align-items:flex-start}
+  .phwrap{display:flex; flex-direction:column; gap:var(--space-sm)}
+  .phcap{font-size:var(--font-sm); font-weight:var(--weight-bold); color:#3C3E44; letter-spacing:-.02em}
+  .phcap span{font-weight:var(--weight-medium); color:#5C5E66}
+
+  /* 키 없음 안내 */
+  .nokey{
+    background:#FFF8E6; border:var(--border-width) solid #EFDFAE; color:#7A5A12;
+    border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg);
+    font-size:var(--font-xs); line-height:1.65; font-weight:var(--weight-semibold);
+  }
+  .nokey b{color:#8A5A00}
+  .phone .nokey{font-size:var(--font-sm)}
+
+  /* 검색칸 */
+  .srch{position:relative}
+  .srch .inp{padding-left:36px; font-weight:var(--weight-semibold)}
+  .srch .mg{
+    position:absolute; left:12px; top:0; height:var(--h-input); display:flex; align-items:center;
+    font-size:var(--font-lg); color:var(--color-text-hint);
+  }
+
+  /* 키워드 결과 목록 (폰) */
+  .kwlist{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); box-shadow:var(--shadow-card); overflow:hidden;
+  }
+  .kwlist .hd{
+    padding:var(--space-sm) var(--space-lg); font-size:var(--font-xs); color:var(--color-text-muted);
+    font-weight:var(--weight-semibold); background:#F7F7F9;
+    border-bottom:var(--border-width) solid var(--color-border-faint);
+    display:flex; align-items:center; gap:var(--space-sm);
+  }
+  .kwlist .hd .r{margin-left:auto}
+  .kw{
+    display:flex; align-items:center; gap:var(--space-lg); padding:var(--space-md) var(--space-lg);
+    border-bottom:var(--border-width) solid var(--color-border-faint);
+  }
+  .kw:last-child{border-bottom:none}
+  .kw .star{font-size:21px; line-height:1; color:var(--color-text-faint); width:22px; text-align:center; flex-shrink:0}
+  .kw .star.on{color:#F5A623}
+  .kw .t{font-size:var(--font-lg); font-weight:var(--weight-semibold); letter-spacing:-.02em}
+  .kw .t .fd{
+    display:block; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-accent-dark); margin-top:2px;
+  }
+  .kw .v{
+    margin-left:auto; text-align:right; font-size:var(--font-2xs); color:var(--color-text-hint);
+    font-weight:var(--weight-medium); line-height:1.45; white-space:nowrap;
+  }
+  .kw .v b{display:block; font-size:var(--font-md); color:var(--color-text-faint); font-weight:var(--weight-bold)}
+
+  /* 폴더 타일 */
+  .folders{display:grid; grid-template-columns:repeat(2, 1fr); gap:var(--space-lg)}
+  .ftile{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint);
+    border-radius:var(--radius-lg); padding:var(--space-lg) var(--space-xl); box-shadow:var(--shadow-card);
+    display:flex; flex-direction:column; gap:var(--space-4xs); min-height:96px;
+  }
+  .ftile .ico{font-size:24px; line-height:1.1}
+  .ftile .nm{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; margin-top:var(--space-3xs)}
+  .ftile .n{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .ftile.new{
+    border:var(--border-width) dashed var(--color-accent-border); background:var(--color-accent-bg);
+    align-items:center; justify-content:center; text-align:center; box-shadow:none; gap:var(--space-3xs);
+  }
+  .ftile.new .ico{font-size:22px; color:var(--color-accent-dark)}
+  .ftile.new .nm{margin:0; color:var(--color-accent-dark); font-size:var(--font-md)}
+  .ftile.etc{background:var(--color-bg); box-shadow:none}
+
+  /* PC 폴더 목록(왼쪽 칸) */
+  .fsplit{display:flex; gap:var(--space-2xl); align-items:flex-start}
+  .flist{width:208px; flex-shrink:0}
+  .flist .it{
+    display:flex; align-items:center; gap:var(--space-md); padding:var(--space-md) var(--space-lg);
+    border-radius:var(--radius-md); font-size:var(--font-md); font-weight:var(--weight-semibold);
+    color:var(--color-text-sub); cursor:pointer;
+  }
+  .flist .it.on{background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-btn-main)}
+  .flist .it .n{margin-left:auto; font-size:var(--font-xs); font-weight:var(--weight-semibold); opacity:.72; font-variant-numeric:tabular-nums}
+  .flist .it.add{color:var(--color-accent-dark); border:var(--border-width) dashed var(--color-accent-border); margin-top:var(--space-sm)}
+  .flist .sep{height:1px; background:var(--color-border-faint); margin:var(--space-sm) var(--space-lg)}
+
+  /* 표 안 별표 · 선택칸 */
+  td .star{font-size:17px; color:#F5A623; line-height:1}
+  td .star.off{color:var(--color-text-faint)}
+  .sel{
+    display:inline-flex; align-items:center; gap:var(--space-sm); height:30px; padding:0 var(--space-md);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-sm);
+    background:var(--color-surface); box-shadow:var(--shadow-btn);
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); white-space:nowrap;
+  }
+  .sel .cv{color:var(--color-text-hint); font-size:var(--font-3xs)}
+  td.none{color:var(--color-text-faint); font-weight:var(--weight-medium); font-variant-numeric:tabular-nums}
+  td.dim{white-space:nowrap; font-variant-numeric:tabular-nums}
+
+  /* 폰 아래에서 올라오는 시트 */
+  .phstage{position:relative; overflow:hidden; border-radius:var(--radius-phone)}
+  .phscrim{position:absolute; inset:0; background:rgba(0,0,0,.34); z-index:2}
+  .phsheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:3;
+    background:var(--color-ios-bg); border-radius:var(--radius-phone) var(--radius-phone) 0 0;
+    padding:var(--space-3xl) var(--space-3xl) 30px; display:flex; flex-direction:column; gap:var(--space-lg);
+    box-shadow:0 -12px 30px rgba(0,0,0,.20);
+  }
+  .phsheet .grab{width:38px; height:5px; border-radius:3px; background:var(--color-text-faint); align-self:center; margin-bottom:var(--space-xs)}
+  .phsheet h3{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.03em}
+  .phsheet .exp{font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-medium); line-height:1.6; margin-top:-6px}
+  .phsheet .btnrow{display:flex; gap:var(--space-md); margin-top:var(--space-xs)}
+  .phsheet .btnrow .btn{flex:1; min-height:46px; font-size:var(--font-xl)}
+  .phsheet .btn.main{font-size:var(--font-xl)}
+
+  /* 폰 목록 카드 안 별표 */
+  .ph-card .star{font-size:20px; color:#F5A623; line-height:1; margin-right:var(--space-2xs)}
+  .ph-card .star.off{color:var(--color-text-faint)}
+
+  .noteblk{width:1120px}
+  .noteblk h4{
+    font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-text-muted);
+    letter-spacing:.06em; padding-bottom:var(--space-xs); margin-bottom:var(--space-lg);
+    border-bottom:var(--border-width) solid var(--color-border);
+  }
+  .noteblk{background:var(--color-bg); border-radius:var(--radius-win); padding:var(--pad-parts); box-shadow:var(--shadow-panel)}
+  .noteblk h2{font-size:var(--font-4xl); font-weight:var(--weight-bold); margin-bottom:var(--space-3xs); letter-spacing:-.025em}
+  .noteblk .lead{font-size:var(--font-sm); color:var(--color-text-muted); margin-bottom:var(--space-3xl)}
+  .ncols{display:flex; gap:var(--gap-parts-col); align-items:flex-start}
+  .ncols > div{flex:1}
+  .steps{display:flex; flex-direction:column; gap:var(--space-md)}
+  .steps div{display:flex; gap:var(--space-md); font-size:var(--font-sm); color:var(--color-text-sub); line-height:1.5}
+  .steps i{
+    font-style:normal; flex-shrink:0; width:20px; height:20px; border-radius:50%;
+    background:var(--color-accent); color:var(--color-on-accent);
+    font-size:var(--font-2xs); font-weight:var(--weight-bold);
+    display:flex; align-items:center; justify-content:center;
+  }
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════ 폰 ══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 밭에서·이동 중에 씁니다 <span class="tag">상품소싱 · macOS A안</span></div>
+  <div class="phones">
+
+    <!-- ① 키워드 검색 -->
+    <div class="phwrap">
+      <div class="phcap">① 키워드 검색 <span>— 치고 ★만 누른다</span></div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top">
+          <h1>상품소싱</h1>
+          <span class="pcbtn">🖥 PC화면으로</span>
+        </div>
+        <div class="ph-sub">
+          <span>더보기 › 상품소싱</span>
+          <span>즐겨찾기 <b>38</b></span>
+        </div>
+        <div class="ph-body" style="gap:var(--space-lg)">
+          <div class="toggle" style="height:36px">
+            <button class="on" style="flex:1; padding:0">키워드 검색</button>
+            <button style="flex:1; padding:0">상품분류</button>
+          </div>
+          <div class="srch">
+            <span class="mg">🔍</span>
+            <input class="inp" value="수국">
+          </div>
+          <div class="nokey">검색량은 <b>아직 안 나옵니다</b> — 네이버 API 키가 붙으면 채워집니다.</div>
+          <div class="kwlist">
+            <div class="hd">연관 키워드 <b style="color:var(--color-text-sub)">24</b><span class="r">월간검색수</span></div>
+            <div class="kw"><span class="star on">★</span><span class="t">수국 묘목<span class="fd">📁 그늘 식물</span></span><span class="v"><b>—</b>키 없음</span></div>
+            <div class="kw"><span class="star on">★</span><span class="t">목수국<span class="fd">📁 미분류</span></span><span class="v"><b>—</b>키 없음</span></div>
+            <div class="kw"><span class="star">☆</span><span class="t">떡갈잎수국</span><span class="v"><b>—</b>키 없음</span></div>
+            <div class="kw"><span class="star">☆</span><span class="t">수국 화분</span><span class="v"><b>—</b>키 없음</span></div>
+            <div class="kw"><span class="star">☆</span><span class="t">산수국</span><span class="v"><b>—</b>키 없음</span></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>상품</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 상품분류 — 폴더 목록 -->
+    <div class="phwrap">
+      <div class="phcap">② 상품분류 <span>— 폴더 목록</span></div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top">
+          <h1>상품소싱</h1>
+          <span class="pcbtn">🖥 PC화면으로</span>
+        </div>
+        <div class="ph-sub">
+          <span>폴더 <b>5</b>개</span>
+          <span>즐겨찾기 <b>38</b></span>
+        </div>
+        <div class="ph-body" style="gap:var(--space-lg)">
+          <div class="toggle" style="height:36px">
+            <button style="flex:1; padding:0">키워드 검색</button>
+            <button class="on" style="flex:1; padding:0">상품분류</button>
+          </div>
+          <div class="folders">
+            <div class="ftile"><span class="ico">📁</span><span class="nm">그늘 식물</span><span class="n">12개</span></div>
+            <div class="ftile"><span class="ico">📁</span><span class="nm">봄 화단</span><span class="n">9개</span></div>
+            <div class="ftile"><span class="ico">📁</span><span class="nm">관목·울타리</span><span class="n">7개</span></div>
+            <div class="ftile"><span class="ico">📁</span><span class="nm">실내 화분</span><span class="n">4개</span></div>
+            <div class="ftile etc"><span class="ico">🗂</span><span class="nm">미분류</span><span class="n">6개</span></div>
+            <div class="ftile new"><span class="ico">＋</span><span class="nm">새 폴더</span></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>상품</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 폴더 안 -->
+    <div class="phwrap">
+      <div class="phcap">③ 폴더 안 <span>— 담긴 키워드</span></div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top" style="align-items:flex-start; flex-direction:column; gap:2px">
+          <span class="ph-back">‹ 폴더 목록</span>
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; width:100%">
+            <h1>📁 그늘 식물</h1>
+            <span class="pcbtn">이름 바꾸기</span>
+          </div>
+        </div>
+        <div class="ph-sub">
+          <span>키워드 <b>12</b>개</span>
+          <span>2026-08-05 만듦</span>
+        </div>
+        <div class="ph-body" style="gap:var(--space-md)">
+          <div class="ph-sec">담긴 키워드<span class="r">★ 눌러 빼기</span></div>
+          <div class="ph-list">
+            <div class="ph-card">
+              <div class="r1"><span class="star">★</span><span class="nm">수국 묘목</span><span class="chev">›</span></div>
+              <div class="r2">월간검색수 <b style="color:var(--color-text-faint)">—</b> 키 없음</div>
+            </div>
+            <div class="ph-card">
+              <div class="r1"><span class="star">★</span><span class="nm">호스타</span><span class="chev">›</span></div>
+              <div class="r2">월간검색수 <b style="color:var(--color-text-faint)">—</b> 키 없음</div>
+            </div>
+            <div class="ph-card">
+              <div class="r1"><span class="star">★</span><span class="nm">비비추 묘목</span><span class="chev">›</span></div>
+              <div class="r2">월간검색수 <b style="color:var(--color-text-faint)">—</b> 키 없음</div>
+            </div>
+            <div class="ph-card">
+              <div class="r1"><span class="star">★</span><span class="nm">휴케라</span><span class="chev">›</span></div>
+              <div class="r2">월간검색수 <b style="color:var(--color-text-faint)">—</b> 키 없음</div>
+            </div>
+            <div class="ph-card">
+              <div class="r1"><span class="star">★</span><span class="nm">아이비 화분</span><span class="chev">›</span></div>
+              <div class="r2">월간검색수 <b style="color:var(--color-text-faint)">—</b> 키 없음</div>
+            </div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>상품</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 새 폴더 만들기 -->
+    <div class="phwrap">
+      <div class="phcap">④ 새 폴더 만들기 <span>— 아래에서 올라오는 시트</span></div>
+      <div class="phone phstage">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top">
+          <h1>상품소싱</h1>
+          <span class="pcbtn">🖥 PC화면으로</span>
+        </div>
+        <div class="ph-sub">
+          <span>폴더 <b>5</b>개</span>
+          <span>즐겨찾기 <b>38</b></span>
+        </div>
+        <div class="ph-body" style="gap:var(--space-lg)">
+          <div class="toggle" style="height:36px">
+            <button style="flex:1; padding:0">키워드 검색</button>
+            <button class="on" style="flex:1; padding:0">상품분류</button>
+          </div>
+          <div class="folders">
+            <div class="ftile"><span class="ico">📁</span><span class="nm">그늘 식물</span><span class="n">12개</span></div>
+            <div class="ftile"><span class="ico">📁</span><span class="nm">봄 화단</span><span class="n">9개</span></div>
+            <div class="ftile"><span class="ico">📁</span><span class="nm">관목·울타리</span><span class="n">7개</span></div>
+            <div class="ftile"><span class="ico">📁</span><span class="nm">실내 화분</span><span class="n">4개</span></div>
+            <div class="ftile etc"><span class="ico">🗂</span><span class="nm">미분류</span><span class="n">6개</span></div>
+            <div class="ftile new"><span class="ico">＋</span><span class="nm">새 폴더</span></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>상품</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">⋯</span>더보기</div>
+        </div>
+        <div class="phscrim"></div>
+        <div class="phsheet">
+          <div class="grab"></div>
+          <h3>새 폴더</h3>
+          <div class="exp">폴더 이름만 지으면 됩니다. 만든 뒤 키워드를 끌어다 넣습니다.</div>
+          <div class="field">
+            <label>폴더 이름 <span class="req">*</span></label>
+            <input class="inp" value="여름 그늘">
+          </div>
+          <div class="btnrow">
+            <button class="btn">취소</button>
+            <button class="btn main">만들기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════ PC — 키워드 검색 ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 사무실에서 씁니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span> · 첫째 탭 <b>키워드 검색</b></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 상품소싱</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a class="on"><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>상품소싱</h2>
+          <div class="path">상품소싱 › 키워드 검색</div>
+        </div>
+        <div class="pc-tabs">
+          <span class="on">키워드 검색</span>
+          <span>상품분류</span>
+        </div>
+
+        <div class="nokey">
+          🔑 <b>네이버 검색광고 API 키가 아직 연결되지 않았습니다.</b>
+          키워드 목록은 나오지만 <b>월간검색수 · 상품수 칸은 비어 있습니다(—)</b>. 키를 넣으면 그 자리에 숫자가 채워집니다.
+        </div>
+
+        <div class="card">
+          <h3>키워드 검색 <span class="hint">치면 연관 키워드가 나옵니다 · ★을 눌러 바로 즐겨찾기</span></h3>
+          <div class="row bottom" style="margin-bottom:0">
+            <div class="field srch" style="flex:1">
+              <label>검색할 키워드</label>
+              <span class="mg" style="top:22px">🔍</span>
+              <input class="inp" value="수국">
+            </div>
+            <div class="field" style="width:190px">
+              <label>담을 폴더 <span class="auto">★ 누를 때 들어갈 곳</span></label>
+              <div class="sel" style="height:var(--h-input); font-size:var(--font-md); width:100%; justify-content:space-between">📁 그늘 식물 <span class="cv">▾</span></div>
+            </div>
+            <button class="btn main wide">검색</button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">「수국」 연관 키워드 <span class="hint">24개 · ★ 2개 담김</span>
+            <span class="right"><span class="chip">숫자 칸 비어 있음</span></span>
+          </h3>
+          <table>
+            <colgroup>
+              <col style="width:46px"><col><col style="width:130px">
+              <col style="width:130px"><col style="width:100px"><col style="width:172px">
+            </colgroup>
+            <tr>
+              <th style="text-align:center">★</th><th>키워드</th>
+              <th class="r">월간검색수 PC</th><th class="r">월간검색수 모바일</th><th class="r">상품수</th><th>담긴 폴더</th>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star">★</span></td>
+              <td style="font-weight:var(--weight-bold)">수국 묘목</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star">★</span></td>
+              <td style="font-weight:var(--weight-bold)">목수국</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td><span class="sel">🗂 미분류 <span class="cv">▾</span></span></td>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star off">☆</span></td>
+              <td>떡갈잎수국</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td style="font-size:var(--font-xs); color:var(--color-text-hint)">★을 누르면 담깁니다</td>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star off">☆</span></td>
+              <td>수국 화분</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td style="font-size:var(--font-xs); color:var(--color-text-hint)">★을 누르면 담깁니다</td>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star off">☆</span></td>
+              <td>산수국</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td style="font-size:var(--font-xs); color:var(--color-text-hint)">★을 누르면 담깁니다</td>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star off">☆</span></td>
+              <td>아나벨수국</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td style="font-size:var(--font-xs); color:var(--color-text-hint)">★을 누르면 담깁니다</td>
+            </tr>
+            <tr>
+              <td style="text-align:center"><span class="star off">☆</span></td>
+              <td>수국 키우기</td>
+              <td class="r none">—</td><td class="r none">—</td><td class="r none">—</td>
+              <td style="font-size:var(--font-xs); color:var(--color-text-hint)">★을 누르면 담깁니다</td>
+            </tr>
+          </table>
+          <div class="pager"><i>‹</i><b>1</b><i>2</i><i>3</i><i>›</i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PC — 상품분류 ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> · 둘째 탭 <b>상품분류</b> — 왼쪽이 폴더, 오른쪽이 그 폴더 안입니다</div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 상품소싱</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a class="on"><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>상품소싱</h2>
+          <div class="path">상품소싱 › 상품분류 › 그늘 식물</div>
+        </div>
+        <div class="pc-tabs">
+          <span>키워드 검색</span>
+          <span class="on">상품분류</span>
+        </div>
+
+        <div class="fsplit">
+          <div class="card flist" style="padding:var(--space-lg) var(--space-sm)">
+            <h3 style="padding:0 var(--space-md); margin-bottom:var(--space-md)">폴더 <span class="hint">5개</span></h3>
+            <div class="it on"><span>📁</span>그늘 식물<span class="n">12</span></div>
+            <div class="it"><span>📁</span>봄 화단<span class="n">9</span></div>
+            <div class="it"><span>📁</span>관목·울타리<span class="n">7</span></div>
+            <div class="it"><span>📁</span>실내 화분<span class="n">4</span></div>
+            <div class="sep"></div>
+            <div class="it"><span>🗂</span>미분류<span class="n">6</span></div>
+            <div class="it add"><span>＋</span>새 폴더 만들기</div>
+          </div>
+
+          <div style="flex:1; display:flex; flex-direction:column; gap:var(--space-2xl)">
+            <div class="card table-card">
+              <h3 style="padding:0 var(--space-sm)">📁 그늘 식물 <span class="hint">12개 · 2026-08-05 만듦</span>
+                <span class="right" style="display:flex; gap:var(--space-sm)">
+                  <button class="btn sm">이름 바꾸기</button>
+                  <button class="btn sm">폴더 삭제</button>
+                </span>
+              </h3>
+              <table>
+                <colgroup>
+                  <col style="width:44px"><col><col style="width:112px">
+                  <col style="width:104px"><col style="width:158px">
+                </colgroup>
+                <tr>
+                  <th style="text-align:center">★</th><th>키워드</th><th>담은 날</th>
+                  <th class="r">월간검색수</th><th>폴더 옮기기</th>
+                </tr>
+                <tr>
+                  <td style="text-align:center"><span class="star">★</span></td>
+                  <td style="font-weight:var(--weight-bold)">수국 묘목</td><td class="dim">2026-08-05</td>
+                  <td class="r none">—</td>
+                  <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+                </tr>
+                <tr>
+                  <td style="text-align:center"><span class="star">★</span></td>
+                  <td style="font-weight:var(--weight-bold)">호스타</td><td class="dim">2026-08-04</td>
+                  <td class="r none">—</td>
+                  <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+                </tr>
+                <tr>
+                  <td style="text-align:center"><span class="star">★</span></td>
+                  <td style="font-weight:var(--weight-bold)">비비추 묘목</td><td class="dim">2026-08-04</td>
+                  <td class="r none">—</td>
+                  <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+                </tr>
+                <tr>
+                  <td style="text-align:center"><span class="star">★</span></td>
+                  <td style="font-weight:var(--weight-bold)">휴케라</td><td class="dim">2026-07-30</td>
+                  <td class="r none">—</td>
+                  <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+                </tr>
+                <tr>
+                  <td style="text-align:center"><span class="star">★</span></td>
+                  <td style="font-weight:var(--weight-bold)">아이비 화분</td><td class="dim">2026-07-28</td>
+                  <td class="r none">—</td>
+                  <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+                </tr>
+                <tr>
+                  <td style="text-align:center"><span class="star">★</span></td>
+                  <td style="font-weight:var(--weight-bold)">맥문동</td><td class="dim">2026-07-26</td>
+                  <td class="r none">—</td>
+                  <td><span class="sel">📁 그늘 식물 <span class="cv">▾</span></span></td>
+                </tr>
+              </table>
+              <div class="pager"><i>‹</i><b>1</b><i>2</i><i>›</i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ 짚는 것 ══════════════════ -->
+<div class="noteblk">
+  <h2>상품소싱 — 이번에 만드는 것은 두 가지뿐입니다</h2>
+  <div class="lead">키워드 검색 · 상품분류(폴더). 옛 소싱추천의 추천 점수 · 랭킹 · 수익성 계산은 이번에 넣지 않았습니다.</div>
+  <div class="ncols">
+
+    <div>
+      <h4>우람님이 하시는 순서</h4>
+      <div class="steps">
+        <div><i>1</i><span>검색창에 <b>키워드 한 개</b>를 칩니다 — 예: 수국</span></div>
+        <div><i>2</i><span>연관 키워드가 줄줄이 나옵니다</span></div>
+        <div><i>3</i><span>쓸 만한 줄의 <b>★을 한 번</b> 누릅니다 — 그 자리에서 즐겨찾기에 담깁니다</span></div>
+        <div><i>4</i><span>담을 폴더를 미리 골라두면 <b>★ 한 번으로 폴더까지</b> 들어갑니다</span></div>
+        <div><i>5</i><span>「상품분류」 탭에서 폴더를 만들고, 담긴 키워드를 옮깁니다</span></div>
+      </div>
+      <p class="note">
+        손놀림은 <b class="accent">★ 한 번</b>입니다 — 창을 띄우거나 확인 버튼을 누르지 않습니다.<br>
+        폴더를 미리 고르는 칸을 검색창 옆에 둔 것이 그래서입니다.
+      </p>
+    </div>
+
+    <div>
+      <h4>검색량 칸을 비워둔 이유</h4>
+      <p class="note" style="margin-top:0">
+        네이버 검색광고 <b>API 키가 아직 없습니다.</b> 없는 숫자를 그럴듯하게 채우면<br>
+        나중에 진짜 숫자가 들어올 때 화면을 다시 짜야 합니다.<br><br>
+        그래서 <b class="accent">칸은 미리 만들어 두고 「—」과 「키 없음」</b>만 넣었습니다.<br>
+        위 노란 띠가 <b>왜 비었는지</b>를 그 자리에서 알려줍니다.<br>
+        키가 붙는 날 <b class="accent">「—」이 숫자로 바뀌는 것</b>이 전부입니다.
+      </p>
+      <div class="nokey" style="margin-top:var(--space-lg)">
+        🔑 <b>네이버 검색광고 API 키가 아직 연결되지 않았습니다.</b>
+        월간검색수 · 상품수 칸은 비어 있습니다(—).
+      </div>
+    </div>
+
+    <div>
+      <h4>메뉴 자리</h4>
+      <p class="note" style="margin-top:0">
+        PC 왼쪽 메뉴의 <b>다섯째 「🌱 소싱 추천」</b>이 지금까지 <b>눌리지 않는 회색</b>이었습니다.<br>
+        이번에 <b class="accent">「🌱 상품소싱」</b>으로 이름을 바꿔 <b>살아납니다.</b><br><br>
+        폰은 메뉴 자리가 <b>넷뿐</b>이라 상품·재고·주문을 밀어낼 수 없습니다.<br>
+        <b class="accent">「⋯ 더보기」 안</b>에 들어가고, 들어가 있는 동안 더보기가 초록으로 켜집니다.<br>
+        폰에서 못 하는 일이 생기면 오른쪽 위 <b class="accent">「🖥 PC화면으로」</b>로 빠져나갑니다.
+      </p>
+      <div style="display:flex; gap:var(--space-lg); margin-top:var(--space-2xl); align-items:flex-start">
+        <div style="width:206px; background:var(--color-sidebar); border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md); padding:var(--space-sm) 0">
+          <a class="x" style="display:flex; align-items:center; gap:var(--gap-side-icon); margin:2px var(--pad-side-x); padding:8px 10px; border-radius:var(--radius-md); font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-faint)"><span class="ic" style="width:18px; text-align:center">🌱</span>소싱 추천</a>
+          <div style="text-align:center; font-size:var(--font-2xs); color:var(--color-text-muted); padding:var(--space-xs) 0">↓ 바뀝니다</div>
+          <a style="display:flex; align-items:center; gap:var(--gap-side-icon); margin:2px var(--pad-side-x); padding:8px 10px; border-radius:var(--radius-md); font-size:var(--font-md); font-weight:var(--weight-bold); background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-btn-main)"><span class="ic" style="width:18px; text-align:center">🌱</span>상품소싱</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

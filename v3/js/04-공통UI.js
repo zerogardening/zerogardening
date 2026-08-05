@@ -94,6 +94,117 @@ window.ZG = window.ZG || {};
     setTimeout(function () { 예.focus(); }, 20);
   }
 
+  /* ── 물음 — 한 줄만 받는 대화상자. window.prompt 를 쓰지 않는다 (4단계 설계 §3-2) ──
+     답을 받으면 그때(글), 취소면 그때(null). 폰에서는 아래에서 올라오는 시트 모양이다. */
+  function 물음(옵션, 그때) {
+    if (document.querySelector('.askbox')) return;
+    var 되돌릴포커스 = document.activeElement;
+
+    var 칸 = 만들기('input', {
+      class: 'inp', type: 'text', value: 옵션.값 || '',
+      placeholder: 옵션.자리표시 || '', maxlength: String(옵션.최대 || 40)
+    });
+
+    function 닫기(답) {
+      document.removeEventListener('keydown', 열쇠);
+      막.remove(); 상자.remove();
+      if (되돌릴포커스 && 되돌릴포커스.focus) 되돌릴포커스.focus();
+      그때(답);
+    }
+    function 확정() {
+      var v = 칸.value.trim();
+      if (!v) { 흔들기(칸); 칸.focus(); return; }
+      닫기(v);
+    }
+    function 열쇠(e) { if (e.key === 'Escape') { e.preventDefault(); 닫기(null); } }
+
+    // 조합 중 Enter 는 글자 확정이지 제출이 아니다
+    칸.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+      e.preventDefault(); 확정();
+    });
+
+    var 막 = 만들기('div', { class: 'askscrim' });
+    막.addEventListener('click', function () { 닫기(null); });
+
+    var 아니오 = 만들기('button', { class: 'btn', type: 'button', text: '취소' });
+    아니오.addEventListener('click', function () { 닫기(null); });
+    var 예 = 만들기('button', { class: 'btn main', type: 'button', text: 옵션.확인글 || '확인' });
+    예.addEventListener('click', 확정);
+
+    var 상자 = 만들기('div', {
+      class: 'askbox' + (폰인가() ? ' sheetup' : ''), role: 'dialog', 'aria-modal': 'true'
+    }, [
+      만들기('h4', { text: 옵션.제목 }),
+      옵션.본문 ? 만들기('p', { html: 옵션.본문 }) : null,
+      만들기('div', { class: 'field' }, [
+        만들기('label', { text: 옵션.이름 || '이름' }), 칸
+      ]),
+      만들기('div', { class: 'btnrow' }, [아니오, 예])
+    ]);
+
+    document.body.appendChild(막);
+    document.body.appendChild(상자);
+    document.addEventListener('keydown', 열쇠);
+    setTimeout(function () { 칸.focus(); 칸.select(); }, 20);
+  }
+
+  /* ── 고르기 시트 — 항목 하나를 고른다. 취소면 그때(null) ── */
+  function 고르기(옵션, 그때) {
+    if (document.querySelector('.askbox')) return;
+    var 되돌릴포커스 = document.activeElement;
+
+    function 닫기(값) {
+      document.removeEventListener('keydown', 열쇠);
+      막.remove(); 상자.remove();
+      if (되돌릴포커스 && 되돌릴포커스.focus) 되돌릴포커스.focus();
+      그때(값);
+    }
+    function 열쇠(e) { if (e.key === 'Escape') { e.preventDefault(); 닫기(null); } }
+
+    var 막 = 만들기('div', { class: 'askscrim' });
+    막.addEventListener('click', function () { 닫기(null); });
+
+    var 목록 = 만들기('div', { class: 'picklist' });
+    (옵션.항목 || []).forEach(function (it) {
+      var b = 만들기('button', { type: 'button', class: it.켬 ? 'on' : '', text: it.글 });
+      b.addEventListener('click', function () { 닫기(it.값); });
+      목록.appendChild(b);
+    });
+
+    var 닫기버튼 = 만들기('button', { class: 'btn', type: 'button', text: '닫기' });
+    닫기버튼.addEventListener('click', function () { 닫기(null); });
+
+    var 상자 = 만들기('div', {
+      class: 'askbox' + (폰인가() ? ' sheetup' : ''), role: 'dialog', 'aria-modal': 'true'
+    }, [
+      만들기('h4', { text: 옵션.제목 }),
+      옵션.본문 ? 만들기('p', { html: 옵션.본문 }) : null,
+      목록,
+      만들기('div', { class: 'btnrow' }, [닫기버튼])
+    ]);
+
+    document.body.appendChild(막);
+    document.body.appendChild(상자);
+    document.addEventListener('keydown', 열쇠);
+  }
+
+  /* ── 폰 아래 「⋯ 더보기」 ── 갈 곳이 둘이라 화면마다 제 시트를 만들면 네 벌이 어긋난다.
+     네 화면(상품·주문·업체·소싱)이 이 하나를 같이 쓴다 (4단계 설계 §7) */
+  function 더보기시트(지금) {
+    고르기({
+      제목: '더보기',
+      본문: '폰 아래 탭에 자리가 없어 여기 모았습니다.',
+      항목: [
+        { 값: '업체', 글: '🏢 업체 관리', 켬: 지금 === '업체' },
+        { 값: '소싱', 글: '🌱 상품소싱', 켬: 지금 === '소싱' }
+      ]
+    }, function (값) {
+      if (값 === '업체') location.href = '업체.html';
+      else if (값 === '소싱') location.href = '소싱.html';
+    });
+  }
+
   /* ── 창 Esc 는 주인이 하나다 ──
      창(.pcsheet)은 한 번에 하나만 뜬다. 그런데 모듈마다 document 에 제 리스너를 걸어 두면
      앞 창 것이 안 떨어진 채로 남아, 확인 상자 위에서 Esc 를 눌렀을 때 그 창까지 같이 닫혔다.
@@ -328,7 +439,7 @@ window.ZG = window.ZG || {};
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
     콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자,
     폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔,
-    토스트: 토스트, 확인: 확인, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
+    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
     조합안전입력: 조합안전입력

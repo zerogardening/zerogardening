@@ -664,6 +664,28 @@ div.sci{
 .askbox .btnrow{display:flex; gap:var(--space-sm); justify-content:flex-end}
 .askbox .btnrow .btn{min-width:96px}
 
+/* 물음(한 줄 입력) · 고르기 시트 — 폰에서는 아래에서 올라온다 (4단계 설계 §6) */
+.askbox .picklist{display:flex; flex-direction:column; gap:var(--space-sm)}
+.askbox .picklist button{
+  display:flex; align-items:center; gap:var(--space-md); width:100%;
+  padding:var(--space-md) var(--space-lg); border-radius:var(--radius-md);
+  border:var(--border-width) solid var(--color-border); background:var(--color-surface);
+  font-family:inherit; font-size:var(--font-lg); font-weight:var(--weight-semibold);
+  color:var(--color-text-sub); cursor:pointer; text-align:left;
+}
+.askbox .picklist button.on{
+  background:var(--color-accent-bg); border-color:var(--color-accent-border); color:var(--color-accent-dark);
+}
+.askbox .picklist button:active{transform:scale(var(--scale-tap))}
+.askbox.sheetup{
+  top:auto; bottom:0; left:0; transform:none;
+  width:100vw; max-width:none; max-height:88vh;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+  padding-bottom:calc(var(--space-3xl) + env(safe-area-inset-bottom));
+  animation:시트올라옴 var(--dur-enter) var(--ease-ios);
+}
+.askbox.sheetup .btnrow .btn{flex:1; min-height:46px}
+
 /* 토스트 */
 #토스트칸{
   position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom)); transform:translateX(-50%);
@@ -680,6 +702,7 @@ div.sci{
 @keyframes 들어옴위{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none}}
 @keyframes 목록등장{from{opacity:0; transform:translateY(var(--list-y))} to{opacity:1; transform:none}}
 @keyframes 시트들어옴{from{transform:translateX(var(--sheet-x))} to{transform:none}}
+@keyframes 시트올라옴{from{transform:translateY(100%)} to{transform:none}}
 @keyframes 스크림{from{opacity:0} to{opacity:1}}
 @keyframes 토스트들어옴{from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none}}
 @keyframes 토스트나감{to{opacity:0; transform:translateY(12px)}}

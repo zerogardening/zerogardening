@@ -9,7 +9,6 @@ window.ZG = window.ZG || {};
     { 이름: '재고', 아이콘: '📦', 모듈: function () { return ZG.재고; } }
   ];
   // 「명세서 발행」은 업체 관리 안 세 번째 탭이 됐다 — 왼쪽 메뉴는 4개다 (3단계 설계)
-  var 죽은메뉴 = [['🌱', '소싱 추천', '소싱']];
   var 지금 = '입고';
   var 뿌리, 본문;
 
@@ -39,12 +38,9 @@ window.ZG = window.ZG || {};
     var 업체메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🏢</span>업체 관리' });
     업체메뉴.addEventListener('click', function () { location.href = '업체.html'; });
     옆.appendChild(업체메뉴);
-    죽은메뉴.forEach(function (셋) {
-      옆.appendChild(만들기('button', {
-        type: 'button', 'aria-disabled': 'true', title: '다음 단계에서 만듭니다',
-        html: '<span class="ic">' + 셋[0] + '</span>' + 셋[1]
-      }));
-    });
+    var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
+    소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
+    옆.appendChild(소싱메뉴);
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '상품' }),
@@ -109,7 +105,7 @@ window.ZG = window.ZG || {};
     주문탭.addEventListener('click', function () { location.href = '주문.html'; });
     바.appendChild(주문탭);
     var 더보기 = 만들기('button', { type: 'button', html: '<span class="ic">⋯</span>더보기' });
-    더보기.addEventListener('click', function () { location.href = '업체.html'; });
+    더보기.addEventListener('click', function () { u.더보기시트(''); });
     바.appendChild(더보기);
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, [위, 아래, 본문, 바]));

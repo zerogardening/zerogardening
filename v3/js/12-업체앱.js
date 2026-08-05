@@ -34,10 +34,9 @@ window.ZG = window.ZG || {};
       옆.appendChild(b);
     });
     옆.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🏢</span>업체 관리' }));
-    옆.appendChild(만들기('button', {
-      type: 'button', 'aria-disabled': 'true', title: '다음 단계에서 만듭니다',
-      html: '<span class="ic">🌱</span>소싱 추천'
-    }));
+    var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
+    소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
+    옆.appendChild(소싱메뉴);
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '업체 관리' }), 만들기('div', { class: 'path', text: 길() })
@@ -108,7 +107,9 @@ window.ZG = window.ZG || {};
       b.addEventListener('click', function () { location.href = 셋[2]; });
       바.appendChild(b);
     });
-    바.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">⋯</span>더보기' }));
+    var 더보기 = 만들기('button', { type: 'button', class: 'on', html: '<span class="ic">⋯</span>더보기' });
+    더보기.addEventListener('click', function () { u.더보기시트('업체'); });
+    바.appendChild(더보기);
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, [위, 아래, 본문, 바]));
   }
