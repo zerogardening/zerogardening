@@ -57,6 +57,8 @@ td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(-
 
 /* 출고리스트 — 품목 밑 규격 */
 .rgs{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+/* 품목코드가 안 붙은 수정 카드 — 그 줄은 원본 그대로 남는다는 표시 */
+.rgs.nocode{color:var(--color-danger)}
 /* 옵션 곱셈 (2 × 4개입) */
 .mul{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
 
