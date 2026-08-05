@@ -118,19 +118,24 @@ window.ZG = window.ZG || {};
     return {
       id: 줄.id, 접두: 코드.slice(0, 5), 유통명: 줄.유통명 || '', 학명: 줄.학명 || '',
       cm: Number(코드.split('-')[1]) || Number(String(줄.규격 || '').replace(/[^0-9]/g, '')) || 0,
-      수량: ZG.주문자료.수량(줄) || 1, 단가: Number(줄.단가) || 0, 원코드: 코드
+      // 카드가 다루는 것은 「주문수량」뿐이다 — 옵션입수(4개입)를 곱한 값을 넣으면 저장할 때 수량이 배로 뛴다 (설계 §1-2).
+      // 수량 0은 「빼는 대신 0으로 둔 줄」이라 다시 열 때 1로 되살리면 안 된다 (설계 §1-5)
+      수량: 줄.주문수량 == null ? 1 : (Number(줄.주문수량) || 0),
+      단가: Number(줄.단가) || 0, 원코드: 코드
     };
   }
 
   /* 옵션.수량숨김 — 동봉카드는 품목마다 특성만 적고 수량은 쓰지 않는다(09-동봉카드 식물들()).
-     수동 카드 창에서 묻지 않는다 */
+     수동 카드 창에서 묻지 않는다
+     옵션.뺄수없음 · 옵션.영수량허용 — 올린 파일에서 온 건. 줄을 지우는 대신 수량 0으로 남긴다 (설계 §1-5) */
   function 품목카드묶음(처음줄들, 옵션) {
+    옵션 = 옵션 || {};
     var 목록 = [];
     var 판 = 만들기('div', { class: 'itemcards' });
 
     function 넣기(줄) {
       var st = 카드값(줄);
-      var el = 카드하나(st, function () { 빼기(st); }, 옵션 || {});
+      var el = 카드하나(st, function () { 빼기(st); }, 옵션);
       목록.push({ st: st, el: el });
       판.appendChild(el);
     }
@@ -154,7 +159,9 @@ window.ZG = window.ZG || {};
       처음id들: (처음줄들 || []).map(function (r) { return r.id; }),
       읽기: function () {
         return 목록.map(function (x) { return x.st; })
-          .filter(function (st) { return st.접두 && st.cm > 0 && st.수량 > 0; });
+          .filter(function (st) {
+            return st.접두 && st.cm > 0 && (st.수량 > 0 || (옵션.영수량허용 && st.id && st.수량 === 0));
+          });
       }
     };
   }
@@ -168,7 +175,17 @@ window.ZG = window.ZG || {};
     var 코드줄 = 만들기('div', { class: 'rgs' });
 
     var 지움 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '이 품목 빼기' });
-    지움.addEventListener('click', 지움눌림);
+    if (옵션.뺄수없음 && st.id) {
+      // 올린 주문의 원래 줄은 지우지 않는다(업무규칙 §8). 대신 수량 0으로 남긴다
+      지움.style.opacity = '.3';
+      지움.style.cursor = 'default';
+      지움.setAttribute('aria-disabled', 'true');
+      지움.addEventListener('click', function () {
+        u.토스트('올린 주문의 품목은 뺄 수 없습니다. 수량을 0으로 바꿔 주세요.');
+      });
+    } else {
+      지움.addEventListener('click', 지움눌림);
+    }
 
     /* 화분 크기 — 고정 목록 */
     var 크기 = 만들기('select', { class: 'inp', 'aria-label': '화분 사이즈' });
@@ -285,31 +302,64 @@ window.ZG = window.ZG || {};
     return 줄;
   }
 
-  /* ══ 수동주문 고치기 — 폰 화면 · PC 창이 같은 저장 처리를 쓴다 ══ */
+  /* 값이 실제로 달라진 줄에만 「고쳤다」를 남긴다.
+     원본* 셋은 처음 고칠 때 한 번만 — 두 번 세 번 고쳐도 맨 처음 값이 보여야 한다 (설계 §1-1) */
+  function 수정표시(옛, 새) {
+    if (!옛) return;
+    var 바뀜 = false;
+
+    function 견주기(칸, 원본칸, 숫자) {
+      var a = 숫자 ? (Number(옛[칸]) || 0) : (옛[칸] || '');
+      var b = 숫자 ? (Number(새[칸]) || 0) : (새[칸] || '');
+      if (a === b) return;
+      바뀜 = true;
+      if (원본칸 && 옛[원본칸] == null) 새[원본칸] = 옛[칸];
+    }
+    견주기('품목코드', '원본품목코드', false);
+    견주기('주문수량', '원본수량', true);
+    견주기('단가', '원본단가', true);
+    ['유통명', '학명', '규격', '수령인', '수령인전화', '수령인주소'].forEach(function (k) {
+      견주기(k, null, false);
+    });
+
+    if (!바뀜) return;
+    새.수정됨 = true;
+    새.수정시각 = Date.now();
+  }
+
+  /* ══ 주문 고치기 — 폰 화면 · PC 창이 같은 저장 처리를 쓴다 ══
+     🔴 올린 파일에서 온 식별값(묶음id·주문번호·판매처·출처·원본코드·옵션원문·옵션입수·등록일시·id)은
+        아래 `바뀔것` 표에 없어야 한다. 저장소.바꾸기()가 Object.assign 이라 표에 없는 칸은 그대로 남는다 (설계 §1-2) */
   function 고쳐넣기(g, 사람, 묶음) {
     var 것 = 사람.값();
     if (!막지않나(사람, 것)) return false;
     var 카드들 = 묶음.읽기();
     if (!카드들.length) { u.흔들기(묶음.요소); u.토스트('품목을 하나 이상 남겨 주세요.'); return false; }
 
-    var 저 = ZG.저장소, 남은 = {};
+    var 저 = ZG.저장소, 남은 = {}, 옛줄 = {};
+    (g.줄들 || []).forEach(function (r) { 옛줄[r.id] = r; });
+
     카드들.forEach(function (st) {
       var 정보 = 코드정보(st);
       if (st.id) {
         남은[st.id] = 1;
         var 바뀔것 = {
-          품목코드: 정보.품목코드, 원본코드: 정보.품목코드,
+          품목코드: 정보.품목코드,
           유통명: st.유통명, 학명: st.학명, 규격: 정보.규격,
-          주문수량: st.수량, 옵션입수: 1, 단가: 정보.단가,
+          주문수량: st.수량, 단가: 정보.단가,
           수령인: 것.이름, 수령인전화: 것.전화, 수령인주소: 것.주소
         };
         바뀔것.묶음키 = ZG.주문자료.묶음키(바뀔것);
+        수정표시(옛줄[st.id], 바뀔것);
         저.바꾸기(저.키.주문, st.id, 바뀔것);
       } else {
         저.덧붙이기(저.키.주문, 줄만들기(st, 것, g.주문일, g.판매처 || '기타'));
       }
     });
-    묶음.처음id들.forEach(function (id) { if (id && !남은[id]) 저.지우기(저.키.주문, id); });
+    // 올린 건은 줄을 지우지 않는다 — 수량 0으로 남는다 (설계 §1-5)
+    if (g.출처 === '수동') {
+      묶음.처음id들.forEach(function (id) { if (id && !남은[id]) 저.지우기(저.키.주문, id); });
+    }
     u.토스트(것.이름 + ' 주문을 고쳤습니다.');
     return true;
   }
@@ -327,17 +377,23 @@ window.ZG = window.ZG || {};
     });
   }
 
-  /* 폰 — 수동주문 수정 화면 */
+  /* 올린 건이면 원래 줄을 지울 수 없다. 그 차이만 옵션으로 넘긴다 (설계 §1-5) */
+  function 수정옵션(g) {
+    var 올린것 = g.출처 !== '수동';
+    return { 뺄수없음: 올린것, 영수량허용: 올린것 };
+  }
+
+  /* 폰 — 주문 수정 화면 */
   function 수정뷰(상태, g) {
     return {
-      제목: '수동주문 수정',
+      제목: g.출처 === '수동' ? '수동주문 수정' : '주문 수정',
       왼: '‹ 주문',
       오: 상태.날짜 + ' · ' + (g.판매처 || '기타'),
       그리기: function (칸) {
         var 사람 = 사람칸(g);
         칸.appendChild(사람.요소);
         칸.appendChild(만들기('div', { class: 'ph-sec', text: '주문 품목' }));
-        var 묶음 = 품목카드묶음(g.줄들);
+        var 묶음 = 품목카드묶음(g.줄들, 수정옵션(g));
         칸.appendChild(묶음.요소);
 
         var 저장 = 만들기('button', { class: 'ph-save', type: 'button', text: '저장' });
@@ -346,11 +402,13 @@ window.ZG = window.ZG || {};
         });
         칸.appendChild(저장);
 
-        var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
-        삭제.addEventListener('click', function () {
-          수동삭제(g, function () { ZG.주문.열기('목록'); });
-        });
-        칸.appendChild(삭제);
+        if (g.출처 === '수동') {
+          var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
+          삭제.addEventListener('click', function () {
+            수동삭제(g, function () { ZG.주문.열기('목록'); });
+          });
+          칸.appendChild(삭제);
+        }
       }
     };
   }
@@ -362,25 +420,30 @@ window.ZG = window.ZG || {};
     막.addEventListener('click', 닫기창);
 
     var 사람 = 사람칸(g);
-    var 묶음 = 품목카드묶음(g.줄들);
+    var 묶음 = 품목카드묶음(g.줄들, 수정옵션(g));
 
     var 저장 = 만들기('button', { class: 'btn sm main', type: 'button', text: '저장' });
     저장.addEventListener('click', function () {
       if (!고쳐넣기(g, 사람, 묶음)) return;
       닫기창(); ZG.주문.다시그리기();
     });
-    var 삭제 = 만들기('button', { class: 'btn sm warn', type: 'button', text: '삭제' });
-    삭제.addEventListener('click', function () {
-      수동삭제(g, function () { 닫기창(); ZG.주문.다시그리기(); });
-    });
+    var 오른것들 = [];
+    if (g.출처 === '수동') {
+      var 삭제 = 만들기('button', { class: 'btn sm warn', type: 'button', text: '삭제' });
+      삭제.addEventListener('click', function () {
+        수동삭제(g, function () { 닫기창(); ZG.주문.다시그리기(); });
+      });
+      오른것들.push(삭제);
+    }
     var 닫기 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     닫기.addEventListener('click', 닫기창);
+    오른것들.push(저장, 닫기);
 
     var 창 = 만들기('div', { class: 'pcsheet', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
-        만들기('h3', { text: '수동주문 수정' }),
+        만들기('h3', { text: g.출처 === '수동' ? '수동주문 수정' : '주문 수정' }),
         만들기('span', { class: 'hint', text: g.주문일 + ' · ' + (g.판매처 || '기타') }),
-        만들기('span', { class: 'right' }, [삭제, 저장, 닫기])
+        만들기('span', { class: 'right' }, 오른것들)
       ]),
       만들기('div', { class: 'bd' }, [사람.요소, 묶음.요소])
     ]);

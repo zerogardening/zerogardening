@@ -47,7 +47,7 @@ window.ZG = window.ZG || {};
     if (상태.뷰 === '상세') return 상세뷰();
     if (상태.뷰 === '수동수정') {
       var g = 찾은건();
-      if (g && g.출처 === '수동') return ZG.주문입력.수정뷰(상태, g);
+      if (g) return ZG.주문입력.수정뷰(상태, g);
       상태.뷰 = '목록';
     }
     return { 제목: '주문', 그리기: 폰목록 };
@@ -309,25 +309,29 @@ window.ZG = window.ZG || {};
       상자.appendChild(만들기('div', { class: 'dline' }, [
         만들기('span', {}, [
           만들기('div', { class: 'nm', text: r.유통명 || r.원본코드 || '(품목 없음)' }),
-          만들기('div', { class: 'rg', text: (r.규격 || '') + ' · ' + u.콤마(r.단가) + '원' })
+          만들기('div', {
+            class: 'rg',
+            text: (r.규격 || '') + ' · ' + u.콤마(r.단가) + '원' + (r.수정됨 ? ' · ✎ 수정됨' : '')
+          })
         ]),
         만들기('span', { class: 'q', text: 자.수량(r) + '주' })
       ]));
     });
     칸.appendChild(상자);
 
-    // 손으로 넣은 주문만 고치고 지운다. 카페24·스토어 건은 올린 파일이 원본이라 여기서 못 연다
-    if (g.출처 !== '수동') {
-      칸.appendChild(만들기('div', { class: 'rgs', text: '🔒 ' + (g.판매처 || '외부') + ' 주문은 여기서 고칠 수 없습니다.' }));
-      return;
-    }
+    // 올린 파일에서 온 건도 고칠 수 있다. 다만 지우는 것은 수동 건만 —
+    // 매입·주문 기록은 지우지 않는다(업무규칙 §8, 6단계 설계 §1-5)
     var 수정 = 만들기('button', { class: 'btn', type: 'button', text: '수정' });
     수정.addEventListener('click', function () { 열기('수동수정', g.묶음키); });
-    var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
-    삭제.addEventListener('click', function () {
-      ZG.주문입력.수동삭제(g, function () { 열기('목록'); });
-    });
-    칸.appendChild(만들기('div', { class: 'topbtns' }, [수정, 삭제]));
+    var 버튼들 = [수정];
+    if (g.출처 === '수동') {
+      var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
+      삭제.addEventListener('click', function () {
+        ZG.주문입력.수동삭제(g, function () { 열기('목록'); });
+      });
+      버튼들.push(삭제);
+    }
+    칸.appendChild(만들기('div', { class: 'topbtns' }, 버튼들));
   }
 
   /* ══ PC — 표 ══ */
@@ -465,7 +469,9 @@ window.ZG = window.ZG || {};
           tr.appendChild(누구칸(g, n));
           tr.appendChild(만들기('td', { rowspan: n }, [만들기('span', { class: 'mall', text: g.판매처 || '기타' })]));
         }
-        tr.appendChild(만들기('td', { class: 'code', text: r.품목코드 || r.원본코드 || '—' }));
+        var 코드칸 = 만들기('td', { class: 'code', text: r.품목코드 || r.원본코드 || '—' });
+        if (r.원본품목코드 && r.원본품목코드 !== r.품목코드) 코드칸.appendChild(원래줄(r.원본품목코드));
+        tr.appendChild(코드칸);
 
         var 품목칸 = 만들기('td', {}, [
           document.createTextNode(r.유통명 || '(품목 없음)'),
@@ -480,13 +486,35 @@ window.ZG = window.ZG || {};
         tr.appendChild(만들기('td', { class: 'dim', text: r.규격 || '' }));
         var 수칸 = 만들기('td', { class: 'r' + (모 ? ' zero' : ''), text: String(자.수량(r)) });
         if ((Number(r.옵션입수) || 1) > 1) 수칸.appendChild(만들기('div', { class: 'mul', text: r.주문수량 + ' × ' + r.옵션입수 + '개입' }));
+        if (r.원본수량 != null && Number(r.원본수량) !== Number(r.주문수량)) 수칸.appendChild(원래줄(r.원본수량));
         tr.appendChild(수칸);
-        tr.appendChild(만들기('td', { class: 'r', text: u.콤마(r.단가) }));
+        var 단가칸 = 만들기('td', { class: 'r', text: u.콤마(r.단가) });
+        if (r.원본단가 != null && Number(r.원본단가) !== Number(r.단가)) 단가칸.appendChild(원래줄(u.콤마(r.원본단가)));
+        tr.appendChild(단가칸);
         tr.appendChild(만들기('td', { class: 'r', text: u.콤마(자.금액(r)) }));
         표.appendChild(tr);
       });
     });
     return 표;
+  }
+
+  function 원래줄(값) { return 만들기('div', { class: 'was', text: '원래 ' + 값 }); }
+
+  /* 그 건 안에 고친 줄이 하나라도 있으면 마지막으로 고친 때를 돌려준다 */
+  function 고친때(g) {
+    var 있 = false, t = 0;
+    g.줄들.forEach(function (r) {
+      if (!r.수정됨) return;
+      있 = true;
+      t = Math.max(t, Number(r.수정시각) || 0);
+    });
+    return 있 ? t : -1;
+  }
+
+  function 짧은시각(ms) {
+    var d = new Date(ms);
+    function 두자리(n) { return (n < 10 ? '0' : '') + n; }
+    return 두자리(d.getMonth() + 1) + '-' + 두자리(d.getDate()) + ' ' + 두자리(d.getHours()) + ':' + 두자리(d.getMinutes());
   }
 
   function 누구칸(g, n) {
@@ -496,17 +524,26 @@ window.ZG = window.ZG || {};
       만들기('div', { class: 'd', text: g.주소 || '' }),
       만들기('div', { class: 'cnt', text: g.줄들.length + '품목 · ' + u.콤마(g.총액) + '원' })
     ]);
-    var 표;
-    if (g.묶음id) {
-      표 = 만들기('span', { class: 'rnd', text: 회차글(g.묶음id) });
-    } else if (g.출처 === '수동') {
-      // 손으로 넣은 건만 여기서 연다. 올린 파일에서 온 건은 원본이 따로 있어 못 고친다
-      표 = 만들기('button', { class: 'rnd hand click', type: 'button', text: '직접입력 ✎', title: '수동주문 수정' });
-      표.addEventListener('click', function (e) { e.stopPropagation(); ZG.주문입력.PC수정창(g); });
-    } else {
-      표 = 만들기('span', { class: 'rnd hand', text: '직접입력' });
-    }
-    칸.appendChild(만들기('div', { style: 'margin-top:5px' }, [표]));
+    // 회차 정보는 어떤 경우에도 지우지 않는다. 「✎ 수정」은 그 옆에 따로 붙인다 (6단계 설계 §1-4)
+    var 꼬리 = [g.묶음id
+      ? 만들기('span', { class: 'rnd', text: 회차글(g.묶음id) })
+      : 만들기('span', { class: 'rnd hand', text: '직접입력' })];
+
+    var 때 = 고친때(g);
+    if (때 >= 0) 꼬리.push(만들기('span', {
+      class: 'rnd edited', text: '✎ 수정됨', title: 때 ? '수정 ' + 짧은시각(때) : '수정됨'
+    }));
+
+    var 고치기 = 만들기('button', {
+      class: 'rnd hand click', type: 'button', text: '✎ 수정',
+      title: (g.출처 === '수동' ? '수동주문' : '주문') + ' 수정'
+    });
+    고치기.addEventListener('click', function (e) { e.stopPropagation(); ZG.주문입력.PC수정창(g); });
+    꼬리.push(고치기);
+
+    칸.appendChild(만들기('div', {
+      style: 'margin-top:5px; display:flex; flex-wrap:wrap; gap:3px'
+    }, 꼬리));
     return 칸;
   }
 
