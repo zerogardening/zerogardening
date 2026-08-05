@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 주문 관리 › 견적 요청 · macOS A안</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ── 이 화면에서만 쓰는 것 (뼈대 부품에 없는 것만) ── */
+
+  /* 드롭다운 — 업체 관리 시안과 같은 것 */
+  select.inp{
+    appearance:none; -webkit-appearance:none; padding-right:30px; cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path d='M1 1.5l4 4 4-4' stroke='%2386868B' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 11px center;
+  }
+  select.inp.sm{height:34px; font-size:var(--font-md)}
+  .inp.ta{height:auto; padding:10px 12px; line-height:1.6; font-size:var(--font-md); resize:none}
+
+  /* 검색줄 */
+  .sbar{display:flex; gap:var(--space-sm); align-items:center; flex-wrap:wrap}
+  .sbar .grow{flex:1; min-width:200px}
+
+  /* 등록 폼 격자 — 요청일자·고객명·연락처가 한 줄, 내용이 아래 한 줄 */
+  .fgrid{display:grid; grid-template-columns:170px 250px 250px 1fr; gap:var(--space-xl)}
+  .fgrid .s4{grid-column:1 / -1}
+  .formfoot{display:flex; gap:var(--space-sm); justify-content:flex-end; margin-top:var(--space-3xl)}
+
+  /* 2단 탭 (업체 관리 · 명세서와 같은 부품) */
+  .subtabs{
+    display:inline-flex; gap:var(--space-3xs); background:var(--color-seg-bg);
+    padding:var(--space-4xs); border-radius:var(--radius-md); align-self:flex-start;
+  }
+  .subtabs span{
+    padding:var(--space-2xs) var(--space-2xl); border-radius:var(--radius-sm);
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); cursor:pointer;
+  }
+  .subtabs span.on{background:var(--color-surface); color:var(--color-accent-dark); box-shadow:var(--shadow-seg)}
+
+  /* 상태 칩 — 요청 / 완료 / 취소 세 가지뿐입니다 */
+  .st{
+    display:inline-flex; align-items:center; gap:var(--space-3xs);
+    padding:var(--pad-chip); border-radius:var(--radius-badge);
+    font-size:var(--font-2xs); font-weight:var(--weight-bold); white-space:nowrap;
+    border:var(--border-width) solid transparent;
+  }
+  .st::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:currentColor}
+  .st.wait{background:#FFF7E0; color:#8A6100; border-color:#F0DFAE}
+  .st.done{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  .st.cancel{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+
+  /* 표 — 요청 내용은 줄바꿈을 그대로 살립니다 (기존 white-space:pre-wrap) */
+  td.memo{
+    white-space:pre-wrap; line-height:1.6; font-size:var(--font-sm);
+    color:var(--color-text); font-weight:var(--weight-medium);
+  }
+  td.tel{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-sub)}
+  td.day{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-sub)}
+  tr.editing td{background:var(--color-accent-bg)}
+  .btn.del{color:var(--color-danger)}
+
+  .empty{
+    text-align:center; padding:var(--space-5xl) 0; color:var(--color-text-hint);
+    font-size:var(--font-sm); font-weight:var(--weight-medium);
+  }
+
+  /* ── 폰 ── */
+  .phrow{display:flex; gap:var(--space-3xl); flex-wrap:wrap; justify-content:center; align-items:flex-start}
+  .phrow .phone{height:844px}
+  .phone .ph-body.tight{gap:var(--space-md)}
+  .phone .sbar .inp{height:38px; font-size:var(--font-md)}
+  /* 견적 요청 카드 — 내용이 주인공이라 두 줄까지 그대로 보여줍니다 */
+  .phone .qcard .r1{align-items:baseline}
+  .phone .qcard .day{margin-left:auto; font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .phone .qcard .memo{
+    font-size:var(--font-md); color:var(--color-text); line-height:1.55; margin-top:var(--space-sm);
+    white-space:pre-wrap;
+  }
+  .phone .qcard .foot{
+    display:flex; align-items:center; gap:var(--space-sm); margin-top:var(--space-md);
+    padding-top:var(--space-md); border-top:var(--border-width) solid var(--color-border-faint);
+  }
+  .phone .qcard .foot .tel{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .phone .qcard .foot .call{
+    margin-left:auto; font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-accent-dark);
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-pill); padding:var(--pad-tag);
+  }
+  .phone .noteline{
+    font-size:var(--font-xs); color:var(--color-text-muted); background:var(--color-bg);
+    border:var(--border-width) dashed var(--color-border); border-radius:var(--radius-md);
+    padding:var(--space-md) var(--space-lg); line-height:1.6;
+  }
+  .phone .addbtn{
+    height:44px; border-radius:var(--radius-md); background:var(--color-surface);
+    border:var(--border-width) dashed var(--color-border); color:var(--color-accent-dark);
+    font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-semibold); cursor:pointer;
+  }
+  /* 상태 바꾸기 — 폰에서는 드롭다운 대신 세 칸 토글 (장갑 낀 손) */
+  .phone .stpick{display:flex; gap:var(--space-3xs); background:var(--color-seg-bg); padding:2px; border-radius:var(--radius-md)}
+  .phone .stpick span{
+    flex:1; text-align:center; padding:var(--space-2xs) 0; border-radius:var(--radius-sm);
+    font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub); cursor:pointer;
+  }
+  .phone .stpick span.on{background:var(--color-surface); color:var(--color-accent-dark); box-shadow:var(--shadow-seg)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════════ 폰 ══════════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 주문 관리 · 견적 요청 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+  <div class="phrow">
+
+    <!-- ① 견적 요청 목록 -->
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top">
+        <div>
+          <div class="ph-back">‹ 주문</div>
+          <h1>견적 요청</h1>
+        </div>
+        <span class="pcbtn">🖥 PC화면으로</span>
+      </div>
+      <div class="ph-sub"><span>전체 <b>6</b>건</span><span>요청 중 <b>5</b>건</span></div>
+      <div class="ph-body tight">
+        <div class="subtabs" style="align-self:stretch">
+          <span style="flex:1; text-align:center">주문 조회</span>
+          <span class="on" style="flex:1; text-align:center">견적 요청</span>
+        </div>
+        <div class="sbar">
+          <input class="inp" style="flex:1; min-width:150px" placeholder="🔍 고객명 · 내용">
+          <select class="inp sm" style="width:118px"><option>전체 상태</option><option>요청</option><option>완료</option><option>취소</option></select>
+        </div>
+        <div class="ph-list">
+          <div class="ph-card qcard">
+            <div class="r1"><span class="nm">한울종합건설</span><span class="st wait">요청</span><span class="day">05-11</span></div>
+            <div class="memo">함안 전체 재고 일괄 견적 요청</div>
+            <div class="foot"><span class="tel">010-9490-0482</span><span class="call">📞 전화</span></div>
+          </div>
+          <div class="ph-card qcard">
+            <div class="r1"><span class="nm">고객님</span><span class="st wait">요청</span><span class="day">05-11</span></div>
+            <div class="memo">품종 잘 못 보냄
+함안가면 리틀자언트 72구 한 판 보내드리기러 함</div>
+            <div class="foot"><span class="tel">010-3411-2174</span><span class="call">📞 전화</span></div>
+          </div>
+          <div class="ph-card qcard">
+            <div class="r1"><span class="nm">횡성 고객님</span><span class="st wait">요청</span><span class="day">05-08</span></div>
+            <div class="memo">리틀자이언트or 데니카 15-20포트 7개 구매 문의 함안갈떄 연락</div>
+            <div class="foot"><span class="tel">010-8100-2309</span><span class="call">📞 전화</span></div>
+          </div>
+        </div>
+        <button class="addbtn">＋ 새 견적 요청</button>
+      </div>
+      <div class="ph-nav">
+        <div><span class="ic">🌿</span>입고</div>
+        <div><span class="ic">📦</span>재고</div>
+        <div class="on"><span class="ic">🛒</span>주문</div>
+        <div><span class="ic">⋯</span>더보기</div>
+      </div>
+    </div>
+
+    <!-- ② 새 견적 요청 등록 -->
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top">
+        <div>
+          <div class="ph-back">‹ 견적 요청</div>
+          <h1>새 견적 요청</h1>
+        </div>
+        <span class="pcbtn">🖥 PC화면으로</span>
+      </div>
+      <div class="ph-sub"><span>* 표시는 꼭 채워주세요</span><span>오늘 접수 <b>2</b>건</span></div>
+      <div class="ph-body tight">
+        <div class="field"><label>요청일자 <span class="req">*</span></label><input class="inp num" value="2026-08-05"></div>
+        <div class="field"><label>고객명 <span class="req">*</span></label><input class="inp" placeholder="예: 홍길동 / OO조경" value="한울종합건설"></div>
+        <div class="field"><label>연락처</label><input class="inp num" placeholder="010-0000-0000" value="010-9490-0482"></div>
+        <div class="field">
+          <label>요청 내용 / 메모 <span class="req">*</span></label>
+          <textarea class="inp ta" rows="5" placeholder="문의한 식물·수량·납기·예산을 들리는 대로 적으시면 됩니다">함안 전체 재고 일괄 견적 요청</textarea>
+        </div>
+        <button class="ph-save">등록</button>
+        <div class="noteline">등록하면 상태는 <b>「요청」</b>으로 시작합니다. 견적을 드린 뒤 목록에서 <b>완료</b>로 바꿉니다.</div>
+      </div>
+      <div class="ph-nav">
+        <div><span class="ic">🌿</span>입고</div>
+        <div><span class="ic">📦</span>재고</div>
+        <div class="on"><span class="ic">🛒</span>주문</div>
+        <div><span class="ic">⋯</span>더보기</div>
+      </div>
+    </div>
+
+    <!-- ③ 카드를 눌렀을 때 — 상태 바꾸기 · 수정 · 삭제 -->
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top">
+        <div>
+          <div class="ph-back">‹ 견적 요청</div>
+          <h1>횡성 고객님</h1>
+        </div>
+        <span class="pcbtn">🖥 PC화면으로</span>
+      </div>
+      <div class="ph-sub"><span>요청일 <b>2026-05-08</b></span><span>수정 05-11</span></div>
+      <div class="ph-body tight">
+        <div class="field"><label>상태</label>
+          <div class="stpick"><span class="on">요청</span><span>완료</span><span>취소</span></div>
+        </div>
+        <div class="field"><label>연락처</label><input class="inp num" value="010-8100-2309"></div>
+        <div class="field"><label>요청 내용 / 메모</label>
+          <textarea class="inp ta" rows="6">리틀자이언트or 데니카 15-20포트 7개 구매 문의 함안갈떄 연락</textarea>
+        </div>
+        <button class="ph-save">저장</button>
+        <button class="addbtn" style="border-color:var(--color-danger-border); color:var(--color-danger)">🗑 이 견적 요청 삭제</button>
+        <div class="noteline">고객명·요청일자를 고치시려면 <b>PC화면</b>에서 여시면 한 화면에 다 나옵니다.</div>
+      </div>
+      <div class="ph-nav">
+        <div><span class="ic">🌿</span>입고</div>
+        <div><span class="ic">📦</span>재고</div>
+        <div class="on"><span class="ic">🛒</span>주문</div>
+        <div><span class="ic">⋯</span>더보기</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════ PC ① 견적 요청 — 등록 + 목록 ══════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 견적 요청 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문 관리</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>주문 관리</h2>
+          <div class="path">주문 관리 › 견적 요청</div>
+        </div>
+        <div class="pc-tabs">
+          <span>주문 조회</span>
+          <span class="on">견적 요청</span>
+        </div>
+
+        <div class="card">
+          <h3>새 견적 요청 등록 <span class="hint">* 표시는 꼭 채워주세요 · 즉시 견적이 어려운 문의를 메모로 남깁니다</span></h3>
+          <div class="fgrid">
+            <div class="field"><label>요청일자 <span class="req">*</span></label><input class="inp num" value="2026-08-05"></div>
+            <div class="field"><label>고객명 <span class="req">*</span></label><input class="inp" placeholder="예: 홍길동 / OO조경"></div>
+            <div class="field"><label>연락처</label><input class="inp num" placeholder="010-0000-0000 / email"></div>
+            <div class="field s4"><label>요청 내용 / 메모 <span class="req">*</span></label>
+              <textarea class="inp ta" rows="3" placeholder="고객이 문의한 식물·수량·납기·예산 등을 자유롭게 적습니다"></textarea>
+            </div>
+          </div>
+          <div class="formfoot">
+            <button class="btn">초기화</button>
+            <button class="btn main wide">＋ 등록</button>
+          </div>
+        </div>
+
+        <div class="stat">
+          <div><div class="k">전체 요청</div><div class="v">6</div></div>
+          <div><div class="k">요청 중</div><div class="v">5</div></div>
+          <div><div class="k">완료</div><div class="v">0</div></div>
+          <div><div class="k">취소</div><div class="v">1</div></div>
+        </div>
+
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">견적 요청 목록 <span class="hint">최근 등록순 · 총 6건</span></h3>
+          <div class="sbar" style="padding:0 var(--space-sm) var(--space-lg)">
+            <input class="inp grow" placeholder="🔍 고객명 · 내용 · 연락처 검색…">
+            <select class="inp" style="width:150px"><option>전체 상태</option><option>요청</option><option>완료</option><option>취소</option></select>
+            <button class="btn">↺ 초기화</button>
+          </div>
+          <table>
+            <colgroup>
+              <col style="width:104px"><col style="width:132px"><col style="width:132px">
+              <col><col style="width:118px"><col style="width:132px">
+            </colgroup>
+            <tr>
+              <th>요청일자</th><th>고객명</th><th>연락처</th><th>요청 내용</th><th>상태</th><th></th>
+            </tr>
+            <tr>
+              <td class="day">2026-05-11</td><td><b>한울종합건설</b></td><td class="tel">010-9490-0482</td>
+              <td class="memo">함안 전체 재고 일괄 견적 요청</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr>
+              <td class="day">2026-05-11</td><td><b>고객님</b></td><td class="tel">010-3411-2174</td>
+              <td class="memo">품종 잘 못 보냄
+함안가면 리틀자언트 72구 한 판 보내드리기러 함</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr>
+              <td class="day">2026-05-11</td><td><b>고객님</b></td><td class="tel">010-3560-2575</td>
+              <td class="memo">금송 40개 견적요청 7만원 견적드림</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr>
+              <td class="day">2026-05-11</td><td><b>고객님</b></td><td class="tel">010-6401-2806</td>
+              <td class="memo">반펠츠 72구 한판 문의</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr>
+              <td class="day">2026-05-08</td><td><b>횡성 고객님</b></td><td class="tel">010-8100-2309</td>
+              <td class="memo">리틀자이언트or 데니카 15-20포트 7개 구매 문의 함안갈떄 연락</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr>
+              <td class="day">2026-05-07</td><td><b>고객님</b></td><td class="tel">010-2027-0384</td>
+              <td class="memo">잣나무 1m 200개 견적문의
+A급 16,000원
+B급 12,000원 안내
+
+5천원 단가 말씀하심</td>
+              <td><span class="st cancel">취소</span></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+          </table>
+          <div class="pager"><i>‹</i><b>1</b><i>›</i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PC ② 수정 · 상태 필터 ══════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 견적 요청 › 수정 중 <span style="opacity:.65">(「수정」을 누르면 위 등록칸이 그 건으로 바뀝니다)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문 관리</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>주문 관리</h2>
+          <div class="path">주문 관리 › 견적 요청 › 수정</div>
+        </div>
+        <div class="pc-tabs">
+          <span>주문 조회</span>
+          <span class="on">견적 요청</span>
+        </div>
+
+        <div class="card">
+          <h3>견적 요청 수정 <span class="hint">2026-05-08 접수 · 마지막 수정 2026-05-11</span>
+            <span class="right"><span class="st wait">요청</span></span>
+          </h3>
+          <div class="fgrid">
+            <div class="field"><label>요청일자 <span class="req">*</span></label><input class="inp num" value="2026-05-08"></div>
+            <div class="field"><label>고객명 <span class="req">*</span></label><input class="inp" value="횡성 고객님"></div>
+            <div class="field"><label>연락처</label><input class="inp num" value="010-8100-2309"></div>
+            <div class="field s4"><label>요청 내용 / 메모 <span class="req">*</span></label>
+              <textarea class="inp ta" rows="3">리틀자이언트or 데니카 15-20포트 7개 구매 문의 함안갈떄 연락</textarea>
+            </div>
+          </div>
+          <div class="formfoot">
+            <button class="btn">취소</button>
+            <button class="btn main wide">💾 수정 저장</button>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">견적 요청 목록 <span class="hint">상태 「요청」만 보는 중 · 5건</span></h3>
+          <div class="sbar" style="padding:0 var(--space-sm) var(--space-lg)">
+            <input class="inp grow" placeholder="🔍 고객명 · 내용 · 연락처 검색…">
+            <select class="inp" style="width:150px"><option>요청</option></select>
+            <button class="btn">↺ 초기화</button>
+          </div>
+          <table>
+            <colgroup>
+              <col style="width:104px"><col style="width:132px"><col style="width:132px">
+              <col><col style="width:118px"><col style="width:132px">
+            </colgroup>
+            <tr>
+              <th>요청일자</th><th>고객명</th><th>연락처</th><th>요청 내용</th><th>상태</th><th></th>
+            </tr>
+            <tr>
+              <td class="day">2026-05-11</td><td><b>한울종합건설</b></td><td class="tel">010-9490-0482</td>
+              <td class="memo">함안 전체 재고 일괄 견적 요청</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr>
+              <td class="day">2026-05-11</td><td><b>고객님</b></td><td class="tel">010-6401-2806</td>
+              <td class="memo">반펠츠 72구 한판 문의</td>
+              <td><select class="inp sm" style="width:96px"><option>요청</option><option>완료</option><option>취소</option></select></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+            <tr class="editing">
+              <td class="day">2026-05-08</td><td><b>횡성 고객님</b></td><td class="tel">010-8100-2309</td>
+              <td class="memo">리틀자이언트or 데니카 15-20포트 7개 구매 문의 함안갈떄 연락</td>
+              <td><span class="st wait">수정 중</span></td>
+              <td><button class="btn sm">수정</button> <button class="btn sm del">삭제</button></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ 이 화면에서 정한 것 ══════════════════════ -->
+<div class="parts">
+  <h2>견적 요청 — 이 화면에서 정한 것</h2>
+  <div class="lead">기존 프로그램(주문 관리 › 📝 견적 요청 탭)에 있던 것을 macOS A안 뼈대로 옮겨 그렸습니다. 새로 만든 기능은 없습니다.</div>
+  <div class="pgrid">
+    <div style="flex:1">
+      <h4>담는 것은 다섯 칸뿐</h4>
+      <p class="note" style="margin-top:0">
+        <b class="accent">요청일자 · 고객명 · 연락처 · 요청 내용 · 상태</b>.
+        품목도 수량도 칸이 없습니다 — <b>전화로 들은 말을 그대로 적는 메모장</b>입니다.
+        요청일자·고객명·내용이 필수, 연락처는 비워도 됩니다.
+        줄바꿈은 표에서도 그대로 살립니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>상태는 셋</h4>
+      <div style="display:flex; gap:var(--space-sm); margin-bottom:var(--space-lg)">
+        <span class="st wait">요청</span><span class="st done">완료</span><span class="st cancel">취소</span>
+      </div>
+      <p class="note" style="margin-top:0">
+        등록하면 무조건 <b class="accent">「요청」</b>으로 시작합니다.
+        목록의 드롭다운을 바꾸는 즉시 저장됩니다 — 따로 저장 버튼이 없습니다.
+        견적을 드렸으면 완료, 없던 일이 되면 취소입니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>주문 관리 안 두 번째 탭</h4>
+      <p class="note" style="margin-top:0">
+        업체 관리 안의 <b>명세서 탭과 똑같은 방식</b>입니다 —
+        왼쪽 메뉴는 4개 그대로 두고, 주문 관리 머리 아래
+        <b class="accent">「주문 조회 · 견적 요청」</b> 탭 두 칸을 답니다.
+        견적 요청은 <b>아직 주문이 되기 전의 주문</b>이라 같은 자리에 있는 게 맞습니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>폰에서는</h4>
+      <p class="note" style="margin-top:0">
+        밭에서 전화를 받으며 적는 화면이라 <b class="accent">내용 글씨를 제일 크게</b> 뒀습니다.
+        표 대신 카드, 상태 드롭다운 대신 <b>세 칸 토글</b>입니다.
+        연락처 옆 <b class="accent">📞 전화</b>를 누르면 바로 걸립니다.
+        고객명·요청일자 수정처럼 잔손질은 PC로 넘깁니다.
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
