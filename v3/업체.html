@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>제로가드닝 통합관리 — 주문</title>
+<title>제로가드닝 통합관리 — 업체</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2F9E44">
@@ -15,26 +15,27 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 
 <link rel="stylesheet" href="css/공통.css?v=5">
-<link rel="stylesheet" href="css/주문.css?v=5">
+<link rel="stylesheet" href="css/업체.css?v=5">
 </head>
 <body>
 
 <div id="앱"></div>
 <div id="토스트칸" aria-live="polite"></div>
 
-<!-- 상품(index.html)과 같은 공통 뼈대 위에 주문만 얹는다. 05~07(입고·재고)은 싣지 않는다 -->
-<script src="js/lib/xlsx.min.js"></script>
+<!-- 공통 뼈대(00~04b) 위에 업체·명세서만 얹는다. 05~09(입고·재고·주문)은 싣지 않는다 -->
 <script src="js/00-시드.js?v=5"></script>
 <script src="js/01-저장소.js?v=5"></script>
 <script src="js/02-품목코드.js?v=5"></script>
 <script src="js/03-계산.js?v=5"></script>
 <script src="js/04-공통UI.js?v=5"></script>
 <script src="js/04b-특성.js?v=5"></script>
-<script src="js/08a-주문자료.js?v=5"></script>
-<script src="js/08b-주문목록.js?v=5"></script>
-<script src="js/08c-주문입력.js?v=5"></script>
-<script src="js/08d-주문파일.js?v=5"></script>
-<script src="js/09-동봉카드.js?v=5"></script>
-<script src="js/09b-카드설정.js?v=5"></script>
+<script src="js/10a-업체자료.js?v=5"></script>
+<script src="js/10b-업체목록.js?v=5"></script>
+<script src="js/10c-업체폼.js?v=5"></script>
+<script src="js/11a-명세서계산.js?v=5"></script>
+<script src="js/11b-명세서작성.js?v=5"></script>
+<script src="js/11c-명세서이력.js?v=5"></script>
+<script src="js/11d-명세서품목.js?v=5"></script>
+<script src="js/12-업체앱.js?v=5"></script>
 </body>
 </html>

@@ -78,7 +78,9 @@ window.ZG = window.ZG || {};
       바.appendChild(b);
     });
     바.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🛒</span>주문' }));
-    바.appendChild(만들기('button', { type: 'button', 'aria-disabled': 'true', html: '<span class="ic">⋯</span>더보기' }));
+    var 더보기 = 만들기('button', { type: 'button', html: '<span class="ic">⋯</span>더보기' });
+    더보기.addEventListener('click', function () { location.href = '업체.html'; });
+    바.appendChild(더보기);
     조각.push(바);
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, 조각));
@@ -100,12 +102,14 @@ window.ZG = window.ZG || {};
     상품.addEventListener('click', function () { location.href = 'index.html'; });
     옆.appendChild(상품);
     옆.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🛒</span>주문 관리' }));
-    [['📄', '명세서 발행'], ['🏢', '업체 관리'], ['🌱', '소싱 추천']].forEach(function (쌍) {
-      옆.appendChild(만들기('button', {
-        type: 'button', 'aria-disabled': 'true', title: '다음 단계에서 만듭니다',
-        html: '<span class="ic">' + 쌍[0] + '</span>' + 쌍[1]
-      }));
-    });
+    // 「명세서 발행」은 업체 관리 안 세 번째 탭이 됐다 — 왼쪽 메뉴는 4개다 (3단계 설계)
+    var 업체메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🏢</span>업체 관리' });
+    업체메뉴.addEventListener('click', function () { location.href = '업체.html'; });
+    옆.appendChild(업체메뉴);
+    옆.appendChild(만들기('button', {
+      type: 'button', 'aria-disabled': 'true', title: '다음 단계에서 만듭니다',
+      html: '<span class="ic">🌱</span>소싱 추천'
+    }));
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('div', {}, [만들기('h2', { text: '주문 관리' }), 만들기('div', { class: 'path', text: '주문 › 주문 조회' })]),

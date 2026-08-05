@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>실데이터 이사 — 제로가드닝 통합관리</title>
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/공통.css?v=3">
+<link rel="stylesheet" href="css/공통.css?v=4">
 <style>
   .이사판 { max-width: 760px; margin: 0 auto; padding: 24px 16px 80px; }
   .이사판 h1 { font-size: 20px; margin: 0 0 4px; }
@@ -59,9 +59,9 @@
   </div>
 </div>
 
-<script src="js/02-품목코드.js?v=3"></script>
-<script src="js/01-저장소.js?v=3"></script>
-<script src="js/99-이사.js?v=3"></script>
+<script src="js/02-품목코드.js?v=4"></script>
+<script src="js/01-저장소.js?v=4"></script>
+<script src="js/99-이사.js?v=4"></script>
 <script>
 (function () {
   'use strict';
@@ -86,7 +86,7 @@
   });
 
   function 그리기() {
-    var 줄 = ['품목', '입고', '출고', '재고조정', '업체', '주문', '주문묶음', '명세서', '견적요청', '즐겨찾기', '분류폴더'];
+    var 줄 = ['품목', '입고', '출고', '재고조정', '업체', '주문', '주문묶음', '명세서', '명세서줄', '견적요청', '즐겨찾기', '분류폴더'];
     셈칸.innerHTML = 줄.map(function (k) {
       return '<tr><th>' + k + '</th><td class="수">' + (결과[k] || []).length + '건</td></tr>';
     }).join('') +

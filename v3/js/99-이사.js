@@ -30,6 +30,28 @@ window.ZG = window.ZG || {};
   }
 
   var 상태표 = { selling: '판매중', soldout: '품절', paused: '일시중지' };
+  var 업체구분표 = {
+    supplier: '공급업체', customer: '판매처', logistics: '운송·택배',
+    other: '기타 협력사', 기타: '기타 협력사'
+  };
+  var 명세서종류표 = { quote: '견적서', invoice: '거래명세서' };
+
+  function 업체구분(c) {
+    return 업체구분표[c.type || c.category || ''] || '공급업체';
+  }
+
+  /* 취급품목은 배열(옛 6곳)과 쉼표문자열(새 7곳)이 섞여 있다 — 언제나 문자열로 만든다 */
+  function 취급품목문자(값) {
+    if (Array.isArray(값)) return 값.filter(Boolean).join(', ');
+    return String(값 == null ? '' : 값);
+  }
+
+  /* 담당자 칸은 화면에 하나뿐이다(시안). 구 데이터의 manager+managerPhone 은 합쳐 넣되 값을 버리지 않는다 */
+  function 담당자합치기(c) {
+    if (c.contactPerson) return { 담당자: c.contactPerson, 담당자전화: c.managerPhone || '' };
+    var 합 = [c.manager, c.managerPhone].filter(Boolean).join(' / ');
+    return { 담당자: 합, 담당자전화: '' };
+  }
 
   function 아이디(앞, i) {
     return 앞 + '_이사_' + i.toString(36);
@@ -265,22 +287,28 @@ window.ZG = window.ZG || {};
       };
     });
 
-    /* ── 7. 업체 — 칸을 버리지 않는다. 업체관리 화면이 이 값들을 쓴다 ── */
+    /* ── 7. 업체 — 칸을 버리지 않는다. 업체관리 화면이 이 값들을 쓴다 ──
+       🔴 구 데이터는 칸 이름이 두 세대로 갈려 있다.
+       옛 6곳 = ceo·category·manager·items(배열) / 새 7곳 = representative·type·contactPerson·terms·bankAccount·items(문자열).
+       한쪽만 읽으면 대표자 7곳·입금계좌 1곳(명세서 비고에 쓰는 계좌)이 조용히 빈칸이 된다 — 두 이름을 다 읽는다 */
     var 업체 = (구.companies || []).map(function (c) {
+      var 담당 = 담당자합치기(c);
       return {
         id: c.id,
         이름: c.name || '',
-        구분: c.category || '공급업체',
-        대표: c.ceo || '',
+        구분: 업체구분(c),
+        대표: c.representative || c.ceo || '',
         전화: c.phone || '',
-        담당자: c.manager || '',
-        담당자전화: c.managerPhone || '',
+        담당자: 담당.담당자,
+        담당자전화: 담당.담당자전화,
         이메일: c.email || '',
         주소: c.address || '',
         사업자번호: c.bizNumber || '',
         업태: c.bizType || '',
         종목: c.bizCategory || '',
-        취급품목: c.items || [],
+        취급품목: 취급품목문자(c.items),
+        입금계좌: c.bankAccount || '',
+        거래조건: c.terms || '',
         메모: c.memo || '',
         내업체: c.isSelf === true,
         마지막사용: Number(c.updatedAt) || Number(c.createdAt) || 0,
@@ -298,15 +326,56 @@ window.ZG = window.ZG || {};
         업체.push({
           id: 아이디('co', 업체.length), 이름: r.입고업체, 구분: '공급업체',
           대표: '', 전화: '', 담당자: '', 담당자전화: '', 이메일: '', 주소: '',
-          사업자번호: '', 업태: '', 종목: '', 취급품목: [], 메모: '',
+          사업자번호: '', 업태: '', 종목: '', 취급품목: '', 입금계좌: '', 거래조건: '', 메모: '',
           내업체: false, 마지막사용: r.등록일시, 등록일시: r.등록일시
         });
       }
     });
     if (더한업체) 경고.push('입고에만 있던 공급처 ' + 더한업체 + '곳을 업체로 새로 넣었다');
 
-    /* ── 8. 명세서 · 견적요청 · 즐겨찾기 — 아직 화면이 없다. 칸 이름만 우리 것으로 바꿔 보관한다 ── */
-    var 명세서 = (구.statements || []).map(function (s) { return s; });
+    /* ── 8. 명세서 — 머리 한 장 + 품목 줄 N 개로 쪼갠다 (3단계 설계 §2-2·§2-3).
+       받는곳·공급자는 그날 뽑은 종이의 사본이라 참조가 아니라 값으로 박아 둔다 ── */
+    var 명세서 = [], 명세서줄 = [];
+    (구.statements || []).forEach(function (s, si) {
+      var 장id = s.id || 아이디('st', si);
+      (s.items || []).forEach(function (it, i) {
+        명세서줄.push({
+          id: 아이디('sl', 명세서줄.length),
+          명세서id: 장id,
+          순번: i + 1,
+          품목코드: 코드정규화(it.barcode),
+          유통명: it.name || '',
+          학명: it.sci || '',
+          규격: it.spec || '',
+          수량: Number(it.qty) || 0,
+          단가: Number(it.price) || 0,
+          매입단가: Number(it.purchasePrice) || 0,
+          과세구분: it.taxable === true ? '과세' : '면세'
+        });
+      });
+      var b = s.buyer || {}, p = s.supplierSnapshot;
+      명세서.push({
+        id: 장id,
+        번호: s.no || '',
+        종류: 명세서종류표[s.type] || '거래명세서',
+        작성일: 날짜정규화(s.date, s.createdAt),
+        납기일: s.due || '',
+        받는곳: {
+          이름: b.name || '', 대표: b.representative || '', 사업자번호: b.bizNumber || '',
+          주소: b.address || '', 전화: b.phone || '', 담당자: b.contactPerson || ''
+        },
+        공급자: p ? {
+          이름: p.name || '', 대표: p.representative || '', 사업자번호: p.bizNumber || '',
+          주소: p.address || '', 전화: p.phone || '', 입금계좌: p.bankAccount || ''
+        } : null,
+        할인율: Number(s.discount) || 0,
+        비고: s.memo || '',
+        공급가액: Number(s.totalSupply) || 0,
+        세액: Number(s.totalTax) || 0,
+        합계: Number(s.totalGrand) || 0,
+        등록일시: Number(s.createdAt) || 지금
+      });
+    });
     var 견적요청 = (구.quoteRequests || []).map(function (q) {
       return {
         id: q.id,
@@ -340,7 +409,7 @@ window.ZG = window.ZG || {};
     return {
       품목: 품목, 입고: 입고, 출고: 출고, 재고조정: 재고조정,
       업체: 업체, 주문: 주문, 주문묶음: 묶음,
-      명세서: 명세서, 견적요청: 견적요청,
+      명세서: 명세서, 명세서줄: 명세서줄, 견적요청: 견적요청,
       즐겨찾기: 즐겨찾기, 분류폴더: 분류폴더,
       키워드: 구.keywordData || {},
       경고: 경고
@@ -358,6 +427,7 @@ window.ZG = window.ZG || {};
     저.전체쓰기(키.주문, 결과.주문);
     저.전체쓰기(키.주문묶음, 결과.주문묶음);
     저.전체쓰기(키.명세서, 결과.명세서);
+    저.전체쓰기(키.명세서줄, 결과.명세서줄);
     저.전체쓰기(키.견적요청, 결과.견적요청);
     저.전체쓰기(키.즐겨찾기, 결과.즐겨찾기);
     저.전체쓰기(키.분류폴더, 결과.분류폴더);
