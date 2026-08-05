@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 공통뼈대 C안 (실무 밀도형)</title>
+<style>
+  :root{
+    --bg:#FBF8F1; --ink:#3D3833; --leaf:#5C7A4A; --brick:#B5623C;
+    --line:#D8CFC0; --sage:#EDF0E4;
+    --ink60:rgba(61,56,51,.62); --ink40:rgba(61,56,51,.42);
+    --zebra:rgba(237,240,228,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    width:1200px; background:#EFEADF; color:var(--ink);
+    font-family:"Pretendard","Pretendard Variable",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    font-size:12px; line-height:1.35;
+    font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum";
+    padding:26px 40px 34px;
+  }
+  .num{font-variant-numeric:tabular-nums}
+  .cap{font-size:12px;color:var(--ink60);margin:0 0 8px 2px;letter-spacing:-.2px}
+  .cap b{color:var(--ink);font-weight:700}
+  .sect{margin-bottom:30px}
+
+  /* ===================== PC ===================== */
+  .pc{width:1120px;background:var(--bg);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+
+  /* 상단 바 */
+  .topbar{height:38px;background:var(--leaf);display:flex;align-items:stretch;color:var(--bg)}
+  .brand{display:flex;align-items:center;gap:6px;padding:0 14px 0 13px;font-size:12.5px;font-weight:800;letter-spacing:-.3px}
+  .brand .dotlogo{width:13px;height:13px;border-radius:50%;border:2.5px solid var(--bg)}
+  .brand small{font-weight:600;opacity:.72;font-size:10.5px;letter-spacing:0}
+  .tabs{display:flex;align-items:stretch}
+  .tabs a{display:flex;align-items:center;padding:0 15px;font-size:12.5px;font-weight:600;
+          color:rgba(251,248,241,.82);text-decoration:none;letter-spacing:-.3px;border-right:1px solid rgba(251,248,241,.14)}
+  .tabs a:first-child{border-left:1px solid rgba(251,248,241,.14)}
+  .tabs a.on{background:var(--bg);color:var(--leaf);font-weight:800}
+  .topright{margin-left:auto;display:flex;align-items:center;gap:9px;padding:0 12px;font-size:11px;color:rgba(251,248,241,.85)}
+  .topright .kbd{background:rgba(251,248,241,.16);border:1px solid rgba(251,248,241,.28);color:var(--bg)}
+  .topright .who{font-weight:700}
+
+  /* 요약 띠 */
+  .strip{height:29px;background:var(--sage);border-bottom:1px solid var(--line);
+         display:flex;align-items:center;gap:0;padding:0 12px;font-size:11.5px}
+  .strip .it{display:flex;align-items:baseline;gap:5px;padding:0 13px;border-right:1px solid var(--line)}
+  .strip .it:first-child{padding-left:0}
+  .strip .k{color:var(--ink60)}
+  .strip .v{font-size:13px;font-weight:800;letter-spacing:-.3px}
+  .strip .v.warn{color:var(--brick)}
+  .strip .v.leaf{color:var(--leaf)}
+  .strip .right{margin-left:auto;color:var(--ink40);border:0;padding-right:0}
+
+  /* 2단 분할 */
+  .split{display:flex;align-items:stretch}
+  .pane-l{width:366px;border-right:1px solid var(--line);background:var(--bg)}
+  .pane-r{flex:1;min-width:0;background:var(--bg)}
+  .pane-h{height:27px;display:flex;align-items:center;gap:8px;padding:0 11px;
+          border-bottom:1px solid var(--line);background:rgba(216,207,192,.22)}
+  .pane-h h3{font-size:12px;font-weight:800;letter-spacing:-.3px}
+  .pane-h .sub{font-size:10.5px;color:var(--ink40)}
+  .pane-h .r{margin-left:auto;display:flex;gap:5px;align-items:center}
+
+  /* 폼 — 라벨 왼쪽 */
+  .form{padding:9px 11px 0}
+  .fr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+  .fr>label{width:58px;flex:none;font-size:11px;color:var(--ink60);text-align:right;letter-spacing:-.3px}
+  .fr>label b{color:var(--brick);font-weight:700}
+  .inp{height:26px;border:1px solid var(--line);border-radius:3px;background:#FFFDF8;
+       padding:0 7px;font:inherit;font-size:12px;color:var(--ink);width:100%;display:flex;align-items:center;white-space:nowrap;overflow:hidden}
+  .inp.focus{border-color:var(--leaf);box-shadow:0 0 0 2px rgba(92,122,74,.15)}
+  .inp.ghost{color:var(--ink40)}
+  .inp.sci{font-style:italic;font-size:11.5px}
+  .sel{position:relative}
+  .sel::after{content:"▾";position:absolute;right:6px;top:5px;font-size:9px;color:var(--ink40)}
+  .code{background:var(--sage);border:1px dashed var(--leaf);color:var(--leaf);font-weight:800;letter-spacing:.2px}
+  .hint{font-size:10px;color:var(--ink40);margin:-3px 0 6px 65px;letter-spacing:-.2px}
+  .w-half{width:50%} .w-3{width:33.3%}
+
+  .ac{margin:-4px 0 6px 65px;border:1px solid var(--line);border-radius:3px;background:#FFFDF8;width:calc(100% - 65px);
+      box-shadow:0 2px 5px rgba(61,56,51,.07)}
+  .ac div{padding:3px 7px;font-size:11.5px;white-space:nowrap;border-bottom:1px solid rgba(216,207,192,.5);display:flex;gap:6px}
+  .ac div:last-child{border:0}
+  .ac div.on{background:var(--sage);font-weight:700}
+  .ac em{font-style:italic;color:var(--ink40);font-size:10px;margin-left:auto;white-space:nowrap}
+
+  .fsep{display:flex;align-items:center;gap:7px;margin:9px 0 7px;font-size:10.5px;color:var(--ink40);letter-spacing:-.2px}
+  .fsep::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  .formfoot{border-top:1px solid var(--line);margin-top:9px;padding:8px 11px;background:rgba(237,240,228,.35);
+            display:flex;align-items:center;gap:6px}
+  .formfoot .kb{margin-left:auto;font-size:10px;color:var(--ink40);display:flex;gap:4px;align-items:center;white-space:nowrap}
+
+  /* 버튼 */
+  .btn{height:26px;padding:0 11px;border-radius:3px;border:1px solid var(--line);background:#FFFDF8;
+       font:inherit;font-size:11.5px;font-weight:700;color:var(--ink);display:inline-flex;align-items:center;gap:5px;letter-spacing:-.3px;white-space:nowrap}
+  .btn.pri{background:var(--leaf);border-color:var(--leaf);color:var(--bg)}
+  .btn.warn{background:var(--bg);border-color:var(--brick);color:var(--brick)}
+  .btn.quiet{background:transparent;border-color:transparent;color:var(--ink60);padding:0 6px}
+  .btn.sm{height:22px;padding:0 8px;font-size:11px}
+  .kbd{display:inline-block;padding:0 4px;height:15px;line-height:14px;border:1px solid var(--line);
+       border-bottom-width:2px;border-radius:3px;background:#FFFDF8;font-size:10px;font-weight:700;color:var(--ink60)}
+  .btn .kbd{background:rgba(251,248,241,.2);border-color:rgba(251,248,241,.45);color:inherit;opacity:.9}
+
+  /* 표 도구줄 */
+  .tbar{height:27px;display:flex;align-items:center;gap:6px;padding:0 9px;border-bottom:1px solid var(--line)}
+  .search{height:21px;border:1px solid var(--line);border-radius:3px;background:#FFFDF8;padding:0 6px;
+          display:flex;align-items:center;gap:5px;width:200px;font-size:11px;color:var(--ink40)}
+  .chip{height:20px;padding:0 8px;border-radius:10px;border:1px solid var(--line);background:#FFFDF8;
+        font-size:10.5px;display:inline-flex;align-items:center;gap:4px;color:var(--ink60)}
+  .chip.on{background:var(--sage);border-color:var(--leaf);color:var(--leaf);font-weight:700}
+
+  /* 표 */
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  thead th{height:24px;background:var(--sage);border-bottom:1px solid var(--line);
+           font-size:10.5px;font-weight:700;color:var(--ink60);text-align:left;padding:0 6px;letter-spacing:-.2px;
+           white-space:nowrap}
+  thead th.r{text-align:right}
+  tbody td{height:25px;border-bottom:1px solid rgba(216,207,192,.55);padding:0 6px;font-size:11.5px;
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  tbody tr:nth-child(even){background:var(--zebra)}
+  tbody tr.cur{background:rgba(92,122,74,.13);box-shadow:inset 2px 0 0 var(--leaf)}
+  tbody tr.new td{font-weight:700}
+  td.r{text-align:right}
+  td.code{font-weight:700;letter-spacing:.2px;color:var(--leaf)}
+  td.sci{font-style:italic;font-size:11px;color:var(--ink60)}
+  td.nm{font-weight:600}
+  .dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:1px}
+  .d-on{background:var(--leaf)} .d-warn{background:var(--brick)} .d-off{background:var(--ink40)}
+  .st{font-size:10.5px;color:var(--ink60);white-space:nowrap}
+  .st.w{color:var(--brick);font-weight:700}
+  .flag{display:inline-block;margin-left:4px;padding:0 4px;height:14px;line-height:13px;border-radius:2px;
+        background:var(--sage);border:1px solid var(--line);font-size:9.5px;color:var(--ink60);vertical-align:1px}
+
+  /* 하단 상태줄 */
+  .statusbar{height:24px;border-top:1px solid var(--line);background:rgba(216,207,192,.22);
+             display:flex;align-items:center;gap:10px;padding:0 10px;font-size:10.5px;color:var(--ink60)}
+  .statusbar .r{margin-left:auto;display:flex;gap:9px;align-items:center}
+  .statusbar .kbd{height:14px;line-height:13px}
+
+  /* ===================== 폰 ===================== */
+  .ph{width:390px;background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .ph-top{height:46px;background:var(--leaf);color:var(--bg);display:flex;align-items:center;padding:0 12px;gap:8px}
+  .ph-top .t{font-size:15px;font-weight:800;letter-spacing:-.4px}
+  .ph-top .d{font-size:11.5px;opacity:.8}
+  .pcsw{margin-left:auto;height:30px;padding:0 10px;border-radius:15px;border:1px solid rgba(251,248,241,.55);
+        background:rgba(251,248,241,.14);color:var(--bg);font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px}
+  .ph-strip{height:30px;background:var(--sage);border-bottom:1px solid var(--line);display:flex;align-items:center;font-size:11.5px}
+  .ph-strip .it{flex:1;text-align:center;border-right:1px solid var(--line)}
+  .ph-strip .it:last-child{border:0}
+  .ph-strip .k{color:var(--ink60);margin-right:4px}
+  .ph-strip b{font-size:13px}
+  .ph-strip b.warn{color:var(--brick)}
+
+  .ph-body{padding:10px 12px 0}
+  .plab{font-size:10.5px;color:var(--ink60);margin:0 0 3px 2px;letter-spacing:-.2px}
+  .plab b{color:var(--brick)}
+  .pinp{height:44px;border:1px solid var(--line);border-radius:6px;background:#FFFDF8;padding:0 10px;
+        display:flex;align-items:center;font-size:15px;letter-spacing:-.3px}
+  .pinp.ghost{color:var(--ink40)}
+  .pinp.sci{font-style:italic;font-size:12.5px}
+  .pinp.code{background:var(--sage);border:1px dashed var(--leaf);color:var(--leaf);font-weight:800}
+  .prow{display:flex;gap:8px;margin-bottom:8px}
+  .prow>div{flex:1;min-width:0}
+  .pbtns{display:flex;gap:8px;margin:10px 0 9px}
+  .pbtn{flex:1;height:48px;border-radius:6px;border:1px solid var(--leaf);background:var(--leaf);color:var(--bg);
+        font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:-.3px}
+  .pbtn.sec{background:#FFFDF8;color:var(--ink);border-color:var(--line)}
+
+  .ph-lh{display:flex;align-items:center;padding:6px 12px 5px;border-top:1px solid var(--line);
+         background:rgba(216,207,192,.2)}
+  .ph-lh h4{font-size:11.5px;font-weight:800}
+  .ph-lh span{margin-left:auto;font-size:10.5px;color:var(--ink40)}
+  .plist{border-top:1px solid var(--line)}
+  .pitem{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid rgba(216,207,192,.55)}
+  .pitem:nth-child(even){background:var(--zebra)}
+  .pitem .c{font-size:10.5px;font-weight:800;color:var(--leaf);width:62px;flex:none;letter-spacing:.2px}
+  .pitem .m{flex:1;min-width:0;display:flex;flex-direction:column}
+  .pitem .m .n{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pitem .m .s{font-size:10px;font-style:italic;color:var(--ink40);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pitem .q{text-align:right;width:74px;flex:none}
+  .pitem .q .qn{font-size:12.5px;font-weight:800}
+  .pitem .q .st{font-size:9.5px}
+
+  .ph-nav{display:flex;border-top:1px solid var(--line);background:var(--bg)}
+  .ph-nav div{flex:1;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+              font-size:11.5px;color:var(--ink60);border-right:1px solid rgba(216,207,192,.5)}
+  .ph-nav div:last-child{border:0}
+  .ph-nav div.on{color:var(--leaf);font-weight:800;box-shadow:inset 0 -3px 0 var(--leaf);background:var(--sage)}
+  .ph-nav .ic{width:19px;height:19px;border:2px solid currentColor;border-radius:4px}
+  .ph-nav .ic.c{border-radius:50%}
+  .ph-nav .ic.d{border-radius:4px;border-style:dashed}
+
+  /* ===================== 공통 부품 ===================== */
+  .kit{width:1120px;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:14px 16px 16px}
+  .kit h2{font-size:13px;font-weight:800;margin-bottom:2px}
+  .kit .lead{font-size:11px;color:var(--ink40);margin-bottom:12px}
+  .kitgrid{display:flex;gap:16px;align-items:flex-start}
+  .kbox{border:1px solid var(--line);border-radius:4px;padding:9px 10px;background:#FFFDF8}
+  .kbox h5{font-size:10.5px;color:var(--ink40);font-weight:700;margin-bottom:7px;letter-spacing:-.2px}
+  .sw{display:flex;gap:6px}
+  .sw div{width:56px}
+  .sw .chip2{height:34px;border-radius:3px;border:1px solid var(--line)}
+  .sw p{font-size:9.5px;margin-top:3px;color:var(--ink60);text-align:center}
+  .sw code{font-size:9px;color:var(--ink40);display:block;text-align:center}
+  .typ p{margin-bottom:4px;color:var(--ink)}
+  .typ span{font-size:9.5px;color:var(--ink40);margin-left:6px;font-weight:400;font-style:normal}
+  .kt{border-collapse:collapse}
+  .kt td{padding:2px 9px 2px 0;font-size:11px;white-space:nowrap;height:auto;border:0}
+  .kt td.k{width:78px}
+</style>
+</head>
+<body>
+
+<!-- ================= PC ================= -->
+<div class="sect">
+  <p class="cap"><b>PC 1120px — 사무실에서 씁니다.</b> 왼쪽에 넣으면 오른쪽 표에 바로 쌓입니다. 스크롤 없이 한 화면.</p>
+
+  <div class="pc">
+    <!-- 상단 바 -->
+    <div class="topbar">
+      <div class="brand"><span class="dotlogo"></span>제로가드닝 <small>통합관리</small></div>
+      <nav class="tabs">
+        <a class="on" href="#">입고</a>
+        <a href="#">재고</a>
+        <a href="#">주문</a>
+        <a href="#">명세서</a>
+        <a href="#">소싱</a>
+        <a href="#">업체</a>
+        <a href="#">설정</a>
+      </nav>
+      <div class="topright">
+        <span class="kbd">/</span><span>검색</span>
+        <span class="kbd">Alt+S</span><span>저장</span>
+        <span class="who">우람</span>
+      </div>
+    </div>
+
+    <!-- 요약 한 줄 띠 -->
+    <div class="strip">
+      <span class="it"><span class="k">이번 달 입고</span><span class="v num">42</span><span class="k">건</span></span>
+      <span class="it"><span class="k">매입액</span><span class="v num">8,420,000</span><span class="k">원</span></span>
+      <span class="it"><span class="k">품목</span><span class="v num">318</span></span>
+      <span class="it"><span class="k">판매중</span><span class="v leaf num">274</span></span>
+      <span class="it"><span class="k">재입고 필요</span><span class="v warn num">7</span></span>
+      <span class="it"><span class="k">오늘 입력</span><span class="v num">6</span><span class="k">건</span></span>
+      <span class="it right">마지막 저장 14:02 · 자동저장 켜짐</span>
+    </div>
+
+    <!-- 2단 -->
+    <div class="split">
+      <!-- 왼쪽: 입력 -->
+      <div class="pane-l">
+        <div class="pane-h">
+          <h3>입고 등록</h3>
+          <span class="sub">7번째 · 오늘</span>
+          <span class="r"><span class="kbd">Alt+N</span><span class="sub">새로</span></span>
+        </div>
+
+        <div class="form">
+          <div class="fr">
+            <label>입고일자<b>*</b></label>
+            <div class="inp num" style="width:118px">2026-07-30</div>
+            <div class="sel" style="flex:1"><div class="inp ghost">과세 ▾</div></div>
+          </div>
+
+          <div class="fr">
+            <label>입고업체<b>*</b></label>
+            <div class="inp">한아름농원</div>
+          </div>
+
+          <div class="fr">
+            <label>유통명<b>*</b></label>
+            <div class="inp focus">수크령 '레드헤드'</div>
+          </div>
+          <div class="ac">
+            <div class="on">수크령 '레드헤드'<em>Pennisetum alopecuroides</em></div>
+            <div>수크령 '하멜른'<em>Pennisetum alopecuroides</em></div>
+          </div>
+
+          <div class="fr">
+            <label>학명</label>
+            <div class="inp sci">Pennisetum alopecuroides 'Red Head'</div>
+          </div>
+          <div class="hint">자동완성 — 이전 입고 기록에서 가져옴</div>
+
+          <div class="fr">
+            <label>규격<b>*</b></label>
+            <div class="sel" style="width:84px;flex:none"><div class="inp">15cm 포트</div></div>
+            <label style="width:26px">수량<b>*</b></label>
+            <div class="inp num" style="width:52px;flex:none">120</div>
+            <label style="width:26px">단가<b>*</b></label>
+            <div class="inp num" style="width:58px;flex:none">2,800</div>
+          </div>
+          <div class="hint">5치 → 15cm 포트로 저장됩니다 · 매입액 336,000원</div>
+
+          <div class="fr">
+            <label>품목코드</label>
+            <div class="inp code" style="width:104px">PEA03-15</div>
+            <span class="st" style="font-size:10.5px">자동 생성 · 중복 없음</span>
+          </div>
+
+          <div class="fsep">식물 특성 (선택)</div>
+          <div class="fr">
+            <label>키 / 폭</label>
+            <div class="inp num" style="width:44px">60</div><span class="st">~</span>
+            <div class="inp num" style="width:44px">90</div><span class="st">cm /</span>
+            <div class="inp num" style="width:44px">40</div><span class="st">~</span>
+            <div class="inp num" style="width:44px">60</div><span class="st">cm</span>
+          </div>
+          <div class="fr">
+            <label>내한 / 빛</label>
+            <div class="sel" style="width:82px"><div class="inp">Zone 5</div></div>
+            <div class="sel" style="width:74px"><div class="inp">양지</div></div>
+            <label style="width:30px">개화</label>
+            <div class="inp num" style="flex:1">8 ~ 10월</div>
+          </div>
+          <div class="fr">
+            <label>메모</label>
+            <div class="inp ghost">비고 (선택)</div>
+          </div>
+        </div>
+
+        <div class="formfoot">
+          <button class="btn pri">저장하고 다음 <span class="kbd">Alt+S</span></button>
+          <button class="btn">복제 <span class="kbd">Alt+D</span></button>
+          <button class="btn quiet">지우기</button>
+          <span class="kb"><span class="kbd">Enter</span> 다음 칸</span>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 표 -->
+      <div class="pane-r">
+        <div class="pane-h">
+          <h3>최근 입고</h3>
+          <span class="sub">318건 중 14건 표시</span>
+          <span class="r">
+            <button class="btn sm">수정 <span class="kbd">F2</span></button>
+            <button class="btn sm warn">재입고 필요 7</button>
+          </span>
+        </div>
+
+        <div class="tbar">
+          <div class="search"><span class="kbd">/</span> 품목코드 · 유통명 · 학명 검색</div>
+          <span class="chip on">전체 318</span>
+          <span class="chip">판매중 274</span>
+          <span class="chip">품절 22</span>
+          <span class="chip">일시중지 15</span>
+          <span class="chip">재입고 7</span>
+          <span class="chip" style="margin-left:auto">입고일 ↓</span>
+          <span class="chip">이번 달</span>
+        </div>
+
+        <table>
+          <colgroup>
+            <col style="width:82px"><col style="width:132px"><col style="width:250px">
+            <col style="width:70px"><col style="width:48px"><col style="width:56px"><col>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th>
+              <th class="r">수량</th><th class="r">단가</th><th>상태 · 입고일</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="cur new">
+              <td class="code">PEA03-15</td>
+              <td class="nm">수크령 '레드헤드'</td>
+              <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+              <td>15cm 포트</td><td class="r num">120</td><td class="r num">2,800</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중</span><span class="flag">방금</span></td>
+            </tr>
+            <tr>
+              <td class="code">CAR01-18</td>
+              <td class="nm">층꽃 '스털링실버'</td>
+              <td class="sci">Caryopteris × clandonensis 'Sterling Silver'</td>
+              <td>18cm 포트</td><td class="r num">80</td><td class="r num">3,200</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-29</span></td>
+            </tr>
+            <tr>
+              <td class="code">ANE02-21</td>
+              <td class="nm">추명국 '휠윈드핑크'</td>
+              <td class="sci">Anemone × hybrida 'Whirlwind Pink'</td>
+              <td>21cm 포트</td><td class="r num">0</td><td class="r num">4,500</td>
+              <td><span class="st w"><i class="dot d-warn"></i>재입고 필요 · 07-28</span></td>
+            </tr>
+            <tr>
+              <td class="code">MIS01-27</td>
+              <td class="nm">억새 '모닝라이트'</td>
+              <td class="sci">Miscanthus sinensis 'Morning Light'</td>
+              <td>27cm 포트</td><td class="r num">45</td><td class="r num">6,800</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-28</span></td>
+            </tr>
+            <tr>
+              <td class="code">SAL04-15</td>
+              <td class="nm">숙근 사루비아 '카라도나'</td>
+              <td class="sci">Salvia nemorosa 'Caradonna'</td>
+              <td>15cm 포트</td><td class="r num">210</td><td class="r num">2,400</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-27</span></td>
+            </tr>
+            <tr>
+              <td class="code">ECH02-18</td>
+              <td class="nm">에키네시아 '그린트위스터'</td>
+              <td class="sci">Echinacea purpurea 'Green Twister'</td>
+              <td>18cm 포트</td><td class="r num">64</td><td class="r num">3,600</td>
+              <td><span class="st"><i class="dot d-off"></i>일시중지 · 07-27</span></td>
+            </tr>
+            <tr>
+              <td class="code">FES01-10</td>
+              <td class="nm">청사초 (페스투카)</td>
+              <td class="sci">Festuca glauca</td>
+              <td>10cm 포트</td><td class="r num">350</td><td class="r num">1,400</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-26</span></td>
+            </tr>
+            <tr>
+              <td class="code">HEU03-15</td>
+              <td class="nm">휴케라 '팜므파탈'</td>
+              <td class="sci">Heuchera × hybrida 'Femme Fatale'</td>
+              <td>15cm 포트</td><td class="r num">0</td><td class="r num">5,200</td>
+              <td><span class="st w"><i class="dot d-warn"></i>재입고 필요 · 07-26</span></td>
+            </tr>
+            <tr>
+              <td class="code">SED02-15</td>
+              <td class="nm">꿩의비름 '허브스투디오'</td>
+              <td class="sci">Hylotelephium spectabile 'Herbstfreude'</td>
+              <td>15cm 포트</td><td class="r num">130</td><td class="r num">2,600</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-25</span></td>
+            </tr>
+            <tr>
+              <td class="code">PAN01-21</td>
+              <td class="nm">기장새 '헤비메탈'</td>
+              <td class="sci">Panicum virgatum 'Heavy Metal'</td>
+              <td>21cm 포트</td><td class="r num">28</td><td class="r num">5,400</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-25</span></td>
+            </tr>
+            <tr>
+              <td class="code">GAU02-15</td>
+              <td class="nm">가우라 '스파클화이트'</td>
+              <td class="sci">Gaura lindheimeri 'Sparkle White'</td>
+              <td>15cm 포트</td><td class="r num">160</td><td class="r num">2,200</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-24</span></td>
+            </tr>
+            <tr>
+              <td class="code">NEP01-18</td>
+              <td class="nm">개박하 '식스힐스자이언트'</td>
+              <td class="sci">Nepeta × faassenii 'Six Hills Giant'</td>
+              <td>18cm 포트</td><td class="r num">92</td><td class="r num">2,900</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-24</span></td>
+            </tr>
+            <tr>
+              <td class="code">HYD05-27</td>
+              <td class="nm">산수국 '블루버드'</td>
+              <td class="sci">Hydrangea serrata 'Bluebird'</td>
+              <td>27cm 포트</td><td class="r num">0</td><td class="r num">9,000</td>
+              <td><span class="st"><i class="dot d-off"></i>품절 · 07-23</span></td>
+            </tr>
+            <tr>
+              <td class="code">STI01-15</td>
+              <td class="nm">멕시칸깃털새</td>
+              <td class="sci">Nassella tenuissima</td>
+              <td>15cm 포트</td><td class="r num">240</td><td class="r num">1,900</td>
+              <td><span class="st"><i class="dot d-on"></i>판매중 · 07-23</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="statusbar">
+          <span><span class="kbd">↑</span><span class="kbd">↓</span> 행 이동</span>
+          <span><span class="kbd">Enter</span> 열기</span>
+          <span><span class="kbd">F2</span> 수정</span>
+          <span><span class="kbd">Alt+D</span> 이 행을 폼에 복제</span>
+          <span class="r">
+            <span>선택 1행 · PEA03-15</span>
+            <span>매입 기록은 삭제되지 않습니다</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 폰 ================= -->
+<div class="sect">
+  <p class="cap"><b>폰 390px — 밭에서 씁니다.</b> 버튼·입력칸은 손가락 크기(44px 이상), 밀도는 아래 목록에서 법니다.</p>
+
+  <div class="ph">
+    <div class="ph-top">
+      <span class="t">입고</span>
+      <span class="d">07-30</span>
+      <span class="pcsw">🖥 PC화면</span>
+    </div>
+
+    <div class="ph-strip">
+      <span class="it"><span class="k">오늘</span><b class="num">6</b></span>
+      <span class="it"><span class="k">이번달</span><b class="num">42</b></span>
+      <span class="it"><span class="k">재입고</span><b class="warn num">7</b></span>
+    </div>
+
+    <div class="ph-body">
+      <div class="prow">
+        <div>
+          <p class="plab">입고업체<b>*</b></p>
+          <div class="pinp">한아름농원</div>
+        </div>
+      </div>
+      <div class="prow">
+        <div>
+          <p class="plab">유통명<b>*</b></p>
+          <div class="pinp">수크령 '레드헤드'</div>
+        </div>
+      </div>
+      <div class="prow">
+        <div>
+          <p class="plab">학명 (자동)</p>
+          <div class="pinp sci">Pennisetum alopecuroides 'Red Head'</div>
+        </div>
+      </div>
+      <div class="prow">
+        <div style="flex:1.15">
+          <p class="plab">규격<b>*</b></p>
+          <div class="pinp">15cm 포트</div>
+        </div>
+        <div>
+          <p class="plab">수량<b>*</b></p>
+          <div class="pinp num">120</div>
+        </div>
+        <div>
+          <p class="plab">단가<b>*</b></p>
+          <div class="pinp num">2,800</div>
+        </div>
+      </div>
+      <div class="prow">
+        <div>
+          <p class="plab">품목코드 (자동 생성)</p>
+          <div class="pinp code">PEA03-15</div>
+        </div>
+      </div>
+
+      <div class="pbtns">
+        <div class="pbtn sec" style="flex:.62">복제</div>
+        <div class="pbtn">저장하고 다음</div>
+      </div>
+    </div>
+
+    <div class="ph-lh">
+      <h4>오늘 넣은 것</h4>
+      <span>6건 · 최근순</span>
+    </div>
+    <div class="plist">
+      <div class="pitem">
+        <span class="c">PEA03-15</span>
+        <span class="m"><span class="n">수크령 '레드헤드'</span>
+          <span class="s">Pennisetum alopecuroides 'Red Head'</span></span>
+        <span class="q"><span class="qn num">120</span>
+          <span class="st"><i class="dot d-on"></i>판매중</span></span>
+      </div>
+      <div class="pitem">
+        <span class="c">CAR01-18</span>
+        <span class="m"><span class="n">층꽃 '스털링실버'</span>
+          <span class="s">Caryopteris × clandonensis 'Sterling Silver'</span></span>
+        <span class="q"><span class="qn num">80</span>
+          <span class="st"><i class="dot d-on"></i>판매중</span></span>
+      </div>
+      <div class="pitem">
+        <span class="c">ANE02-21</span>
+        <span class="m"><span class="n">추명국 '휠윈드핑크'</span>
+          <span class="s">Anemone × hybrida 'Whirlwind Pink'</span></span>
+        <span class="q"><span class="qn num">0</span>
+          <span class="st w"><i class="dot d-warn"></i>재입고</span></span>
+      </div>
+      <div class="pitem">
+        <span class="c">MIS01-27</span>
+        <span class="m"><span class="n">억새 '모닝라이트'</span>
+          <span class="s">Miscanthus sinensis 'Morning Light'</span></span>
+        <span class="q"><span class="qn num">45</span>
+          <span class="st"><i class="dot d-on"></i>판매중</span></span>
+      </div>
+      <div class="pitem">
+        <span class="c">SAL04-15</span>
+        <span class="m"><span class="n">숙근 사루비아 '카라도나'</span>
+          <span class="s">Salvia nemorosa 'Caradonna'</span></span>
+        <span class="q"><span class="qn num">210</span>
+          <span class="st"><i class="dot d-on"></i>판매중</span></span>
+      </div>
+      <div class="pitem">
+        <span class="c">FES01-10</span>
+        <span class="m"><span class="n">청사초 (페스투카)</span>
+          <span class="s">Festuca glauca</span></span>
+        <span class="q"><span class="qn num">350</span>
+          <span class="st"><i class="dot d-on"></i>판매중</span></span>
+      </div>
+    </div>
+
+    <div class="ph-nav">
+      <div class="on"><span class="ic"></span>입고</div>
+      <div><span class="ic c"></span>재고</div>
+      <div><span class="ic"></span>주문</div>
+      <div><span class="ic d"></span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 공통 부품 ================= -->
+<div class="sect">
+  <p class="cap"><b>공통 부품</b> — 모든 화면이 이걸 씁니다. 여기만 고치면 전부 바뀝니다.</p>
+
+  <div class="kit">
+    <h2>C안 — 실무 밀도형</h2>
+    <p class="lead">기본 12px · 표 행 25px · 숫자는 등폭 정렬 · 상태는 색 점 + 짧은 글자</p>
+
+    <div class="kitgrid">
+      <div class="kbox" style="width:378px">
+        <h5>색 — 브랜드 팔레트 6개만</h5>
+        <div class="sw">
+          <div><div class="chip2" style="background:#FBF8F1"></div><p>바탕</p><code>#FBF8F1</code></div>
+          <div><div class="chip2" style="background:#3D3833"></div><p>글자</p><code>#3D3833</code></div>
+          <div><div class="chip2" style="background:#5C7A4A"></div><p>강조</p><code>#5C7A4A</code></div>
+          <div><div class="chip2" style="background:#B5623C"></div><p>주의</p><code>#B5623C</code></div>
+          <div><div class="chip2" style="background:#D8CFC0"></div><p>선</p><code>#D8CFC0</code></div>
+          <div><div class="chip2" style="background:#EDF0E4"></div><p>옅은바탕</p><code>#EDF0E4</code></div>
+        </div>
+        <h5 style="margin-top:11px">상태 표시 — 배지 대신 점</h5>
+        <div style="display:flex;gap:14px">
+          <span class="st"><i class="dot d-on"></i>판매중</span>
+          <span class="st"><i class="dot d-off"></i>품절</span>
+          <span class="st"><i class="dot d-off"></i>일시중지</span>
+          <span class="st w"><i class="dot d-warn"></i>재입고 필요</span>
+        </div>
+      </div>
+
+      <div class="kbox" style="width:300px">
+        <h5>버튼 4종 · 입력칸</h5>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn pri">저장 <span class="kbd">Alt+S</span></button>
+          <button class="btn">복제</button>
+          <button class="btn warn">재입고 필요</button>
+          <button class="btn quiet">지우기</button>
+        </div>
+        <div style="margin-top:9px;display:flex;gap:6px;align-items:center">
+          <div class="inp" style="width:96px">보통</div>
+          <div class="inp focus" style="width:80px">입력중</div>
+          <div class="inp code" style="width:88px">PEA03-15</div>
+        </div>
+        <div style="margin-top:7px;display:flex;gap:6px;align-items:center">
+          <div class="inp sci" style="width:200px">Festuca glauca 'Elijah Blue'</div>
+          <div class="inp num" style="width:60px">2,800</div>
+        </div>
+        <p style="font-size:10px;color:var(--ink40);margin-top:6px">폰에서는 같은 부품이 높이 44px로 커집니다</p>
+      </div>
+
+      <div class="kbox" style="width:172px">
+        <h5>글씨 크기 위계</h5>
+        <div class="typ">
+          <p style="font-size:15px;font-weight:800">폰 입력값 <span>15 B</span></p>
+          <p style="font-size:13px;font-weight:800">요약 숫자 <span>13 B</span></p>
+          <p style="font-size:12px;font-weight:800">제목 <span>12 B</span></p>
+          <p style="font-size:12px">입력값 <span>12</span></p>
+          <p style="font-size:11.5px">표 본문 <span>11.5</span></p>
+          <p style="font-size:11px;font-style:italic">학명 <span>11 i</span></p>
+          <p style="font-size:10.5px;color:var(--ink60)">라벨·상태 <span>10.5</span></p>
+        </div>
+      </div>
+
+      <div class="kbox" style="flex:1">
+        <h5>키보드 단축키 — 화면에 늘 보입니다</h5>
+        <table class="kt">
+          <tr><td class="k"><span class="kbd">Alt+S</span></td><td>저장하고 다음</td></tr>
+          <tr><td class="k"><span class="kbd">Alt+N</span></td><td>새 입력</td></tr>
+          <tr><td class="k"><span class="kbd">Alt+D</span></td><td>행 복제</td></tr>
+          <tr><td class="k"><span class="kbd">/</span></td><td>검색으로 이동</td></tr>
+          <tr><td class="k"><span class="kbd">↑</span><span class="kbd">↓</span></td><td>표 행 이동</td></tr>
+          <tr><td class="k"><span class="kbd">Enter</span></td><td>다음 칸 · 행 열기</td></tr>
+          <tr><td class="k"><span class="kbd">F2</span></td><td>선택 행 수정</td></tr>
+          <tr><td class="k"><span class="kbd">Esc</span></td><td>취소</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,83 @@
+/* 상품 화면(입고 · 재고) 전용 — 시안 <style> 에 갇혀 있던 것 (설계 §2 ②) */
+
+/* 입고 내역 합계줄 */
+.totrow td{
+  background:#F7F7F9; font-weight:var(--weight-bold); color:var(--color-text);
+  border-bottom:none; border-top:var(--border-width) solid var(--color-border);
+}
+
+/* 입고 내역 검색줄 */
+.qbar{display:flex; align-items:flex-end; gap:var(--space-lg); flex-wrap:wrap}
+.qbar .dash{padding-bottom:var(--space-lg); color:var(--color-text-muted)}
+
+/* 앞자리가 같은 다른 규격 — 품목코드 칸 왼쪽 초록 띠 */
+td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
+
+/* 현재고 아래 붙는 월 출고량 */
+.sub{display:block; font-size:var(--font-2xs); color:var(--color-text-muted);
+     font-weight:var(--weight-medium); margin-top:1px}
+
+/* 상태 세 칸이 좁은 폭에도 나란히 들어가게 */
+.ph-body .seg, .editpanel .seg{gap:6px}
+.ph-body .seg button, .editpanel .seg button{flex:1; min-width:0; padding:8px 4px}
+
+/* 표를 감싸는 가로 스크롤 — 창을 좁혀도 칸이 무너지지 않게 */
+.tablewrap{overflow-x:auto}
+.tablewrap > table{min-width:880px}
+.tablewrap > table.입고내역{min-width:980px}
+
+/* 재입고 요청 접기칸 (설계 §16-7) — .fold/.foldbody 를 알림 상자 안에서 다시 쓴다 */
+.alert > .fold{
+  background:transparent; border:none; box-shadow:none; padding:0;
+  font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger);
+  letter-spacing:-.02em; gap:var(--space-xs);
+  transition:transform var(--dur-tap) var(--ease-out);
+}
+.alert > .fold:active{transform:scale(var(--scale-tap))}
+.ph-shell .alert > .fold{font-size:var(--font-lg)}
+.ph-shell .alert > .fold .n{font-size:var(--font-xl)}
+.alert > .fold .n{font-size:var(--font-lg); font-variant-numeric:tabular-nums; margin-left:var(--space-3xs)}
+/* 0종이면 급할 것이 없다 — 빨강을 쓰지 않는다 */
+.alert.quiet{background:var(--color-bg); border-color:var(--color-border)}
+.alert.quiet > .fold{color:var(--color-text-sub)}
+.alert.quiet > .fold .n{color:var(--color-text-muted)}
+/* 펼침은 --ease-ios, 접힘은 그보다 빠르게 (설계 §10-2 · §10-3의 grid-template-rows 예외) */
+.alert > .foldbody{transition:grid-template-rows var(--dur-exit) var(--ease-in), opacity var(--dur-exit) var(--ease-in)}
+.alert > .foldbody.open{transition:grid-template-rows var(--dur-enter) var(--ease-ios), opacity var(--dur-enter) var(--ease-ios)}
+.재입고속{padding-top:var(--space-md)}
+.재입고속 > .ucards{margin-top:0}
+.재입고끝{margin-top:var(--space-lg)}
+
+/* 재입고 요청 카드가 좁은 PC 폭에서 두 줄로 */
+@media (max-width:1180px){ .ucards{grid-template-columns:repeat(2, 1fr)} }
+
+/* 폰 목록의 소진일 배지 — 시안 인라인 스타일을 클래스로 */
+.ph-card .days.big{margin-left:auto; font-size:var(--font-xl)}
+
+/* 입고 폼 · 재고 상세에서 쓰는 세로 묶음 */
+.stack{display:flex; flex-direction:column; gap:var(--gap-ph-body)}
+
+/* PC 본문 — 카드 사이 간격 */
+.pc-본문{display:flex; flex-direction:column; gap:var(--space-2xl)}
+
+/* 특성 칸 */
+.특성표{display:grid; grid-template-columns:repeat(2, 1fr); gap:var(--space-lg); padding:var(--space-2xl) 0 0}
+.특성표 .넓게{grid-column:1 / -1}
+@media (max-width:899px){ .특성표{grid-template-columns:1fr} }
+
+/* 여러 줄 입력 — 관리 특이사항 */
+.inp.multi{height:auto; min-height:76px; line-height:1.6; padding:9px 11px; resize:vertical; font-size:var(--font-md)}
+
+/* 입고 내역 줄의 수정 · 삭제 */
+.rowacts{display:flex; gap:var(--space-3xs); justify-content:flex-end}
+.rowacts .btn{padding:3px 8px; min-height:24px; font-size:var(--font-2xs)}
+.ph-card .rowacts{margin-top:var(--space-sm); justify-content:flex-start}
+.ph-card .memo, .memo{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+
+/* 시안의 .fchip.alert 이 .alert 상자 스타일을 덮어써 칩 모양을 잃는다 — 칩 모양을 되돌린다 */
+.fchip.alert{
+  background:var(--color-surface); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-pill); padding:var(--pad-btn-sm); animation:none;
+}
+.fchip.alert.on{background:var(--color-danger); border-color:var(--color-danger); color:var(--color-on-accent)}

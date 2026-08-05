@@ -1,0 +1,434 @@
+/* 주문 화면 전용 — 시안 03-주문.html 의 <style> 에서 실제로 쓰는 것만 옮겼다.
+   값은 모두 공통.css 의 변수다. 새 색·새 크기를 만들지 않는다. */
+
+/* 주문한 곳 꼬리표 — 상태 배지가 아니라 점이 없다 */
+.mall{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border);
+}
+
+/* 업로드 회차 꼬리표 */
+.rnd{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-accent-bg); color:var(--color-accent-dark);
+  border:var(--border-width) solid var(--color-accent-border); font-variant-numeric:tabular-nums;
+}
+.rnd.hand{background:var(--color-seg-bg); color:var(--color-text-sub); border-color:var(--color-border)}
+
+/* 고르는 네모칸 */
+.cb{
+  display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:-3px; padding:0;
+  border:var(--border-width) solid var(--color-border); background:var(--color-surface); cursor:pointer;
+}
+.cb.on{background:var(--color-accent); border-color:var(--color-accent-dark); position:relative}
+.cb.on::after{
+  content:'✓'; position:absolute; inset:0; color:#fff; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
+
+/* 표 아래 「고른 것 처리」 줄 */
+.tbar{
+  display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap;
+  padding:var(--space-lg) var(--space-sm) var(--space-2xs);
+  border-top:var(--border-width) solid var(--color-border-faint); margin-top:var(--space-xs);
+}
+.tbar .sel{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.tbar .sel b{color:var(--color-accent-dark); font-variant-numeric:tabular-nums}
+.tbar .spacer{flex:1}
+
+/* PC 표 — 이름·전화·주소가 같은 줄을 한 덩어리로 */
+tr.gstart td{border-top:var(--border-width-thick) solid var(--color-border)}
+td.who{
+  vertical-align:top; background:#FAFAFC; border-right:var(--border-width) solid var(--color-border-faint);
+  line-height:1.45;
+}
+td.who .n{font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
+td.who .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+td.who .cnt{font-size:var(--font-2xs); color:var(--color-text-hint); font-weight:var(--weight-semibold); margin-top:var(--space-xs)}
+tr.short td{background:var(--color-danger-bg)}
+tr.short td.who{background:#FFE9E7}
+td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(--weight-bold); margin-top:2px}
+
+/* 출고리스트 — 품목 밑 규격 */
+.rgs{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+/* 옵션 곱셈 (2 × 4개입) */
+.mul{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+/* 폰 주문 카드 */
+.olines{margin-top:var(--space-sm); display:flex; flex-direction:column; gap:var(--space-3xs)}
+.oline{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-md)}
+.oline .nm{font-weight:var(--weight-semibold); color:var(--color-text)}
+.oline .rg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.oline .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; white-space:nowrap}
+.ph-card .r0{display:flex; align-items:center; gap:var(--space-sm)}
+.ph-card .r0 .who{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.ph-card[role="button"]{cursor:pointer; transition:transform var(--dur-tap) var(--ease-out)}
+.ph-card[role="button"]:active{transform:scale(.985)}
+
+/* 재고가 모자란 주문은 카드째 빨강 */
+.ph-card.short{background:var(--color-danger-bg); box-shadow:0 1px 3px rgba(0,0,0,.05), 0 0 0 1.5px var(--color-danger-border)}
+.ph-card.short .r0 .who{color:var(--color-danger)}
+.ph-card .warn{
+  margin-top:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-danger);
+  display:flex; align-items:center; gap:var(--space-3xs);
+}
+
+/* 재주문 표시 — 첫 주문이면 아예 그리지 않는다 */
+.star{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#9A6B00; white-space:nowrap; letter-spacing:-.01em}
+/* 품목이 2개를 넘을 때 나머지를 접어 표시 */
+.more{
+  font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-accent-dark);
+  margin-top:var(--space-3xs); background:none; border:none; padding:var(--space-3xs) 0; cursor:pointer;
+  font-family:inherit; display:block; text-align:left;
+}
+
+/* 날짜 넘기는 줄 */
+.datebar{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-btn); padding:var(--space-sm) var(--space-lg);
+}
+.datebar .ar{
+  width:34px; height:34px; flex-shrink:0; border-radius:var(--radius-md); background:var(--color-seg-bg);
+  display:flex; align-items:center; justify-content:center; font-size:var(--font-3xl);
+  font-weight:var(--weight-bold); color:var(--color-text-sub); line-height:1;
+  border:none; font-family:inherit; cursor:pointer;
+}
+.datebar .d{flex:1; text-align:center; line-height:1.25}
+.datebar .d .big{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.datebar .d .sml{font-size:var(--font-2xs); color:var(--color-accent-dark); font-weight:var(--weight-semibold)}
+
+/* 폰 상단 버튼 세 개 — 좁아서 글씨를 한 단계 줄인다 */
+.topbtns{display:flex; gap:var(--space-2xs)}
+.topbtns .btn{flex:1; padding-left:var(--space-2xs); padding-right:var(--space-2xs); font-size:var(--font-sm); white-space:nowrap}
+
+/* 찾는 칸 */
+.search{position:relative}
+.search .inp{padding-left:32px}
+.search .mag{position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:var(--font-md); opacity:.45}
+
+/* 폰 상세 — 아래에 붙는 총 주문금액. 탭바(.ph-nav)가 fixed 라 이것도 fixed 로 띄우고
+   탭바 높이만큼 올린다. 그 높이는 08b 가 그리고 나서 재어 넣는다 */
+.totalbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:29;
+  background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border);
+  box-shadow:0 -4px 14px rgba(0,0,0,.06);
+  padding:var(--space-lg) var(--space-2xl); display:flex; align-items:center; gap:var(--space-sm);
+}
+.totalbar .l{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.totalbar .v{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.totalbar .btn{margin-left:auto; min-height:42px; font-size:var(--font-md)}
+
+/* 상세 품목 줄 */
+.dline{
+  display:flex; align-items:baseline; gap:var(--space-sm); padding:var(--space-md) 0;
+  border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md);
+}
+.dline:last-child{border-bottom:none}
+.dline .nm{font-weight:var(--weight-semibold)}
+.dline .rg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.dline .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* 접기칸 속 — 공통.css 의 .foldbody 는 여닫는 틀이고 이건 그 안쪽 상자다 */
+.foldin{
+  border:var(--border-width) solid var(--color-border); border-top:none; margin-top:-1px;
+  border-radius:0 0 var(--radius-md) var(--radius-md); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-md);
+}
+.foldin .k{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.foldin .v{font-size:var(--font-md); font-weight:var(--weight-semibold); margin-top:1px; line-height:1.45}
+
+/* 폰 ph-sub 안의 「‹ 주문」 */
+.ph-sub .back{
+  background:none; border:none; padding:0; font-family:inherit; font-size:inherit; color:inherit;
+  font-weight:inherit; cursor:pointer;
+}
+/* 폰 규격·경로 고르는 칸 — 한 줄에 다 들어가게 */
+.segsm button{min-width:50px; padding:var(--space-sm) var(--space-2xs); font-size:var(--font-sm)}
+
+/* 폰 표는 글씨를 한 단계 줄인다 */
+table.mini{font-size:var(--font-sm)}
+table.mini td{padding:var(--space-sm) var(--space-xs)}
+table.mini th{padding:var(--space-xs)}
+
+/* PC 머리줄 오른쪽 버튼 묶음 */
+.headbtns{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+
+/* PC 팝업 창 */
+.pcscrim{position:fixed; inset:0; background:rgba(0,0,0,.34); z-index:60}
+.pcsheet{
+  position:fixed; z-index:61; top:8vh; left:50%; transform:translateX(-50%);
+  width:min(760px, 92vw); max-height:80vh; overflow:auto;
+  background:var(--color-bg); border-radius:var(--radius-lg);
+  box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+}
+.pcsheet .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+  position:sticky; top:0;
+}
+.pcsheet .hd h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.pcsheet .hd .right{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+.pcsheet .hd .x{
+  font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1;
+  background:none; border:none; cursor:pointer; font-family:inherit;
+}
+.pcsheet .bd{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
+
+/* 인쇄 — 창 안만 남긴다.
+   🔴 반드시 body.인쇄중 아래에 둔다. 이 조건이 없으면 창을 안 열고 Ctrl+P 를 눌렀을 때
+   화면을 다 숨긴 뒤 남길 게 없어 흰 종이가 나온다. 창을 열 때만 표를 붙인다(08c). */
+@media print{
+  body.인쇄중 > *{display:none !important}
+  body.인쇄중 .pcscrim{display:none !important}
+  body.인쇄중 .pcsheet{
+    display:block !important; position:static; transform:none; width:auto; max-height:none;
+    box-shadow:none; overflow:visible;
+  }
+  body.인쇄중 .pcsheet .hd .right{display:none}
+  /* 🔴 동봉카드는 손님 상자에 들어가는 종이다 — 화면용 제목줄이 같이 찍히면 안 된다.
+     출고리스트 창은 제목이 있어야 맞으므로, 카드가 든 창에서만 머리줄을 통째로 숨긴다 */
+  body.인쇄중 .pcsheet:has(.encard) .hd{display:none}
+}
+
+/* 기간·회차 고르는 줄이 표에 딱 붙어 답답했다 — 한 칸 띄운다 (주문 화면에서만) */
+.pc-본문 > .fchips{margin-bottom:var(--space-2xl)}
+
+/* ── 품목 카드 (수동주문 등록 · 수정) ── 한 장이 품목 하나다 */
+.itemstack{display:flex; flex-direction:column; gap:var(--space-md)}
+.itemcards{display:flex; flex-direction:column; gap:var(--space-md)}
+.itemcard{
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  background:var(--color-surface); padding:var(--space-lg); display:flex;
+  flex-direction:column; gap:var(--space-md);
+}
+.itemcard .top{display:flex; gap:var(--space-sm); align-items:flex-start}
+.itemcard .grow{flex:1; min-width:0; position:relative}
+.itemcard .acwrap{position:relative}
+.itemcard .sci{font-size:var(--font-xs); font-style:italic; color:var(--color-text-sub); margin-top:2px}
+.itemcard .x{
+  background:none; border:none; cursor:pointer; font-family:inherit; padding:var(--space-2xs);
+  font-size:var(--font-lg); color:var(--color-text-muted); line-height:1;
+}
+.itemcard .pair{display:flex; gap:var(--gap-ph-pair)}
+.itemcard .pair .field{flex:1; min-width:0}
+/* 수량을 안 묻는 창(수동 카드)에서는 사이즈 칸이 줄 전체로 늘어나 허전하다 — 반 칸에 맞춘다 */
+.pcsheet .itemcard .pair .field:only-child{flex:0 1 50%}
+.itemcard .sizebox{display:flex; gap:var(--space-xs); min-width:0}
+.itemcard .sizebox .inp{min-width:0}
+/* 카드 안 스테퍼는 공통 크기(52px 버튼 + 큰 gap)로는 390px 폭을 넘어 ＋가 잘려 나간다.
+   카드 반 칸(약 150px)에 온전히 들어가도록 좁혀 쓴다 */
+.itemcard .stepper{gap:var(--space-2xs); padding:0; justify-content:space-between; min-width:0}
+.itemcard .stepper button{width:38px; height:38px; font-size:20px}
+.itemcard .stepper .num{min-width:0; flex:1; font-size:22px}
+/* PC 수정 창 안에서도 두 칸이 나란히 서야 한다 (.pair 규칙은 .ph-body 안에만 걸려 있다) */
+.pcsheet .pair{display:flex; gap:var(--gap-ph-pair)}
+.pcsheet .pair .field{flex:1; min-width:0}
+.pcsheet .bd > .itemstack + .itemstack{margin-top:var(--space-lg)}
+.rnd.hand.click{cursor:pointer; font-family:inherit}
+
+/* ── 동봉카드 설정 창 (09b) ── 기존 .field/.inp 를 그대로 쓰고 배치만 얹는다 */
+.cardset{display:flex; flex-direction:column; gap:var(--space-md)}
+.cardset .ph-sec{margin-top:var(--space-lg)}
+.cardset .ph-sec:first-child{margin-top:0}
+.cardset textarea.inp{height:auto; min-height:78px; line-height:1.55; resize:vertical}
+.cardset .presets{display:flex; flex-direction:column; gap:var(--space-md)}
+.cardset .preset{
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  background:var(--color-surface); padding:var(--space-lg);
+  display:flex; flex-direction:column; gap:var(--space-sm);
+}
+.cardset .preset .top{display:flex; gap:var(--space-sm); align-items:center}
+.cardset .preset .top input[type=radio]{width:20px; height:20px; flex:0 0 auto; accent-color:var(--color-accent)}
+.cardset .preset .top .inp{flex:1; min-width:0}
+.cardset .preset .x{
+  background:none; border:none; cursor:pointer; font-family:inherit; padding:var(--space-2xs);
+  font-size:var(--font-lg); color:var(--color-text-muted); line-height:1;
+}
+.cardset .preset .x:disabled{opacity:.25; cursor:default}
+/* 상한 숫자칸 — 폰 390px 에서는 두 칸씩 */
+.cardset .lims{display:grid; grid-template-columns:repeat(6, 1fr); gap:var(--space-sm)}
+.cardset .lims + .lims{grid-template-columns:repeat(2, 1fr)}
+@media screen and (max-width:899px){
+  .cardset .lims, .cardset .lims + .lims{grid-template-columns:repeat(3, 1fr)}
+  /* 폰에서는 78px 이면 안내 말씀이 서너 줄에서 잘려 보인다 — 한눈에 읽을 만큼 키운다 */
+  .cardset textarea.inp{min-height:160px}
+  .cardset .preset .field:last-child textarea.inp{min-height:112px}   /* 짧은 글 칸 */
+}
+/* 머리줄은 한 줄이다. 폭이 모자라면 제목이 아니라 힌트가 …로 줄어든다 (폰 390px) */
+.pcsheet .hd h3{white-space:nowrap; flex:0 0 auto}
+.pcsheet .hd .hint{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 1 auto}
+
+/* ══ 동봉카드 ══ 시안 09-동봉카드.html 그대로.
+   화면 부품의 색을 빌리지 않고 A4 세로 실치수(210×297mm = 794×1123px)로 짠다.
+   화면에서는 틀(.encardframe)이 축소 배율 --s 만 바꿔 얹는다 — 글자·줄바꿈은 인쇄 그대로다 */
+
+/* 손글씨 서체 — 나눔바른펜 (네이버, SIL OFL 1.1 · 상업 이용 무료).
+   🔴 이름만 적으면 이 맥에 안 깔려 있어 조용히 고딕으로 바뀐다. 파일을 직접 물린다 */
+@font-face{
+  font-family:'나눔바른펜'; font-weight:400; font-style:normal; font-display:block;
+  src:url('../폰트/NanumBarunpenR.woff2') format('woff2');
+}
+@font-face{
+  font-family:'나눔바른펜'; font-weight:700; font-style:normal; font-display:block;
+  src:url('../폰트/NanumBarunpenB.woff2') format('woff2');
+}
+
+.encardframe{
+  --s:.7053;
+  width:calc(794px * var(--s)); height:calc(1123px * var(--s));
+  overflow:hidden; background:#fff; box-shadow:var(--shadow-panel, 0 6px 20px rgba(0,0,0,.12));
+  margin:0 auto var(--space-2xl);
+}
+.encardframe:last-child{margin-bottom:0}
+
+.encard{
+  width:794px; height:1123px; background:#fff;
+  transform:scale(var(--s)); transform-origin:top left;
+  padding:28px 40px 24px; display:flex; flex-direction:column; position:relative;
+  font-family:"Apple SD Gothic Neo","Helvetica Neue",sans-serif; color:#1a1a1a;
+  letter-spacing:-.01em;
+}
+
+/* 머리 — 로고 PNG + 태그라인. 받는 분·송장·영문 워드마크는 넣지 않는다(우람님 확정) */
+.encard .cp-head{text-align:center; padding-bottom:10px; border-bottom:1px solid #2F6B3A}
+.encard .cp-head .lg{height:74px; display:flex; align-items:center; justify-content:center; overflow:hidden}
+.encard .cp-head .lg img{width:264px; display:block}
+.encard .cp-head .tag{font-size:14px; color:#888; letter-spacing:.8px; margin-top:2px}
+.encard .cp-title{
+  font-size:17px; font-weight:700; color:#2F6B3A; letter-spacing:1px;
+  padding:13px 0 8px; border-bottom:1px solid #d4e3d8; margin-bottom:12px;
+}
+
+/* ── 식물 자리 — 담긴 종수가 판을 정한다 ──
+   🔴 칸을 늘려 A4를 억지로 채우지 않는다(2026-08-05 우람님). 칸은 내용에 맞는 높이로 서고
+   남는 자리는 카드 아래쪽 여백으로 둔다. minmax 최소값으로 1·2·3종의 칸 크기가 서로 같아진다 */
+.encard .cp-plants{flex:none; display:grid; gap:14px; grid-template-columns:1fr; grid-auto-rows:minmax(228px,auto); margin-bottom:0}
+/* 🔴 3종만 최소 높이를 낮춘다(2026-08-05). 세 칸이 다 228px 를 차지하면 특이사항이 긴 칸이 한 줄도
+   더 못 늘어나 58자에서 잘렸다. 최소값만 낮추면 짧은 칸은 제 내용 높이(약 218px)로 서고 그만큼
+   남은 자리를 긴 칸이 가져간다. 1·2종은 위 기준값 228px 를 그대로 쓰므로 한 픽셀도 달라지지 않는다 */
+.encard .cp-plants.n3{grid-auto-rows:minmax(200px,auto)}
+.encard .cp-plants.n4{grid-template-columns:1fr 1fr; grid-auto-rows:minmax(214px,auto)}
+.encard .cp-plants.n5, .encard .cp-plants.n6{grid-template-columns:1fr 1fr; grid-auto-rows:minmax(186px,auto)}
+.encard .n5 > .plant:first-child{grid-column:1 / -1}   /* 5종은 첫 칸이 윗줄을 통으로 써 빈칸을 없앤다 */
+
+.encard .plant{
+  background:#fafbfa; border:1px solid #d4e3d8; border-left:4px solid #2F9E44;
+  border-radius:8px; padding:11px 15px; display:flex; flex-direction:column; min-height:0;
+}
+.encard .plant .ph{padding-bottom:7px; border-bottom:1px dashed #c8d8ce; flex:none}
+.encard .plant .nm{font-size:18px; font-weight:700; color:#2F6B3A; display:block; line-height:1.3}
+.encard .plant .sci{font-size:13px; font-style:italic; color:#666; display:block; margin-top:1px; line-height:1.3}
+
+/* 🔴 값은 말줄임으로 잘라내지 않는다. 라벨은 안 접고 값만 자기 자리에서 줄바꿈한다.
+   빈 값은 줄 자체를 그리지 않고, 특이사항은 별도 상자가 아니라 이 표에서 한 줄을
+   통째로 쓰는 항목(.t.wide)이라 칸 밖으로 나갈 일이 없다 */
+.encard .traits{
+  flex:1; display:grid; grid-template-columns:repeat(3,1fr);
+  align-content:start; gap:9px 18px; font-size:13px; margin-top:9px;
+}
+.encard .n1 .traits, .encard .n2 .traits, .encard .n3 .traits{grid-template-columns:repeat(3,minmax(0,1fr))}
+.encard .n4 .traits, .encard .n5 .traits, .encard .n6 .traits{grid-template-columns:repeat(2,1fr)}
+.encard .n5 > .plant:first-child .traits{grid-template-columns:repeat(3,1fr)}
+/* 🔴 줄 높이를 min-height로 억지로 늘리지 않는다. grid가 같은 행끼리 높이를 저절로 맞춰 주므로
+   값이 두 줄인 항목이 있는 행만 커지고 한 줄짜리 행은 한 줄 높이로 붙는다 */
+.encard .traits .t{display:flex; align-items:baseline; gap:5px; min-width:0; line-height:1.35}
+.encard .traits .t.wide{grid-column:1 / -1; margin-top:3px}
+.encard .traits i{font-style:normal; width:16px; text-align:center; flex:none}
+.encard .traits .l{color:#666; font-weight:700; font-size:12px; flex:none; white-space:nowrap}
+.encard .traits .v{
+  color:#1a1a1a; font-weight:600; min-width:0; word-break:keep-all;
+  overflow-wrap:break-word; white-space:nowrap;
+}
+.encard .traits .t.wide .v{white-space:normal}
+/* 값의 설명 부분은 괄호를 버리고 아랫줄에 작게 — 줄 중간에서 갈라지지 않는다 */
+.encard .traits .v small{
+  display:block; font-size:.8em; color:#666; font-weight:500;
+  line-height:1.2; margin-top:1px; white-space:nowrap;
+}
+.encard .traits .t.wide .v{font-weight:500; color:#3a3a3a}
+
+/* 종수별 크기 — 1·2·3종은 3종 기준 한 벌로 통일한다 */
+.encard .n1 .plant, .encard .n2 .plant, .encard .n3 .plant{padding:16px 20px}
+.encard .n1 .nm, .encard .n2 .nm, .encard .n3 .nm{font-size:21px}
+.encard .n1 .traits, .encard .n2 .traits, .encard .n3 .traits{font-size:15px; gap:12px 22px; margin-top:11px}
+.encard .n1 .traits .l, .encard .n2 .traits .l, .encard .n3 .traits .l{font-size:13.5px}
+.encard .n1 .traits .t.wide, .encard .n2 .traits .t.wide, .encard .n3 .traits .t.wide{margin-top:4px}
+.encard .n4 .plant{padding:13px 16px}
+.encard .n4 .traits{font-size:14px; gap:10px 18px; margin-top:10px}
+.encard .n5 .plant, .encard .n6 .plant{padding:11px 14px}
+.encard .n5 .nm, .encard .n6 .nm{font-size:17px}
+.encard .n5 .sci, .encard .n6 .sci{font-size:11.5px}
+.encard .n5 .ph, .encard .n6 .ph{padding-bottom:6px}
+.encard .n5 .traits, .encard .n6 .traits{font-size:12.5px; gap:7px 12px; margin-top:8px}
+.encard .n5 .traits .t, .encard .n6 .traits .t{line-height:1.3}
+.encard .n5 .traits i, .encard .n6 .traits i{width:14px}
+.encard .n5 .traits .l, .encard .n6 .traits .l{font-size:11.5px}
+.encard .n5 > .plant:first-child .nm{font-size:19px}
+
+/* ── 아래 — 감사 · 안내 말씀 ──
+   🔴 인사말을 카드 바닥에 붙이지 않는다(2026-08-05 우람님). 식물 칸이 끝난 자리에서 간격만
+   띄우고 바로 놓고, 남는 자리는 전부 카드 맨 아래에 모은다. .cp-gap 은 늘지는 않고 줄기만 하는
+   빈 칸이라, 종이가 꽉 차는 주문에서는 스스로 좁아져 안내 말씀이 종이 밖으로 밀려나지 않는다 */
+.encard .cp-gap{flex:0 1 34px; min-height:14px}
+.encard .cp-bottom{flex:none}
+.encard .thanks{text-align:center; font-size:20px; font-weight:600; color:#2F6B3A; letter-spacing:1px}
+.encard .thanks small{display:block; font-size:15px; color:#555; font-weight:500; margin-top:3px; letter-spacing:0}
+.encard .memo{margin-top:9px; padding-top:9px; border-top:1px dashed #d4d8d4}
+.encard .memo .t{font-size:14px; font-weight:700; color:#2F6B3A; letter-spacing:1px; margin-bottom:4px}
+/* 안내 말씀 본문만 손글씨다. 인사말·식물 정보는 고딕 그대로.
+   손글씨는 획이 가늘어 같은 크기면 작아 보이므로 한 단계 키우고 줄 간격을 넓혔다 */
+.encard .memo p{
+  font-family:'나눔바른펜',"Apple SD Gothic Neo",sans-serif;
+  font-size:15.5px; line-height:1.68; color:#333; letter-spacing:0;
+}
+
+/* ══ 1종·2종만 — 남던 아래 여백을 위쪽 사이사이로 나눠 보낸다 (2026-08-05 우람님).
+   🔴 :has()로 그 카드 안에서만 걸어 3~6종에는 한 글자도 닿지 않는다 ══ */
+.encard:has(.n1){padding-top:96px}
+.encard:has(.n1) .cp-head{padding-bottom:26px}
+.encard:has(.n1) .cp-title{padding:34px 0 22px; margin-bottom:36px}
+.encard:has(.n1) .plant .ph{padding-bottom:14px}
+.encard:has(.n1) .traits{margin-top:20px; gap:20px 22px}
+.encard:has(.n1) .traits .t.wide{margin-top:10px}
+.encard:has(.n1) .cp-gap{flex:0 1 150px}
+.encard:has(.n1) .thanks small{margin-top:8px}
+.encard:has(.n1) .memo{margin-top:28px; padding-top:28px}
+
+.encard:has(.n2){padding-top:60px}
+.encard:has(.n2) .cp-head{padding-bottom:20px}
+.encard:has(.n2) .cp-title{padding:24px 0 16px; margin-bottom:26px}
+.encard:has(.n2) .cp-plants{gap:26px}
+.encard:has(.n2) .plant .ph{padding-bottom:11px}
+.encard:has(.n2) .traits{margin-top:15px; gap:16px 22px}
+.encard:has(.n2) .traits .t.wide{margin-top:6px}
+.encard:has(.n2) .cp-gap{flex:0 1 60px}
+.encard:has(.n2) .thanks small{margin-top:6px}
+.encard:has(.n2) .memo{margin-top:18px; padding-top:18px}
+
+/* 종이와 송장을 짝짓는 출력번호 */
+.encard .enno{
+  position:absolute; right:16px; bottom:8px;
+  font-size:12px; color:#b0b3b0; font-variant-numeric:tabular-nums;
+}
+
+/* 폰에서는 창이 좁다. 배율만 줄여 얹는다 — 안이 다시 짜이지 않으니 인쇄와 같은 그림이다 */
+@media screen and (max-width:899px){
+  .encardframe{--s:.40}
+}
+
+/* 인쇄 — 카드 한 장이 A4 한 쪽이다. 기본 여백(약 12.7mm)을 감안해 배율을 잡는다.
+   794px×.86 = 181mm 로, 여백을 넉넉히 잡은 프린터에서도 잘리지 않는다 */
+@media print{
+  body.인쇄중 .pcsheet .bd{padding:0}
+  body.인쇄중 .encardframe{
+    --s:.86; box-shadow:none; margin:0 auto;
+    break-inside:avoid; break-after:page; page-break-after:always;
+  }
+  body.인쇄중 .encardframe:last-child{break-after:auto; page-break-after:auto}
+  /* 초록 강조선·배지 색이 인쇄에서 빠지면 카드가 밋밋해진다 */
+  body.인쇄중 .encard{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+}

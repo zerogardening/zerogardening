@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 · 공통 뼈대 B안 — 정원 느낌 · 숨 쉬는 화면</title>
+<style>
+  :root{
+    --bg:#FBF8F1;
+    --ink:#3D3833;
+    --leaf:#5C7A4A;
+    --clay:#B5623C;
+    --line:#D8CFC0;
+    --sage:#EDF0E4;
+    --mute:#9A9384;
+    --sans:"Apple SD Gothic Neo","NanumBarunGothic","Nanum Barun Gothic",sans-serif;
+    --serif:"MaruBuri","Nanum Myeongjo",serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  body{
+    width:1200px;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding:56px 40px 72px;
+    /* 종이 결 — 아주 옅게 */
+    background-image:radial-gradient(rgba(61,56,51,.030) .8px, transparent .8px);
+    background-size:5px 5px;
+  }
+
+  /* ── 시안 캡션 ───────────────────────────── */
+  .cap{display:flex;align-items:baseline;gap:14px;margin:0 0 20px 4px}
+  .cap b{font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .cap span{font-size:14px;color:var(--mute)}
+  .cap .rule{flex:1;height:1px;background:var(--line);opacity:.7}
+  .gap{height:64px}
+
+  /* ── 기기 틀 ─────────────────────────────── */
+  .phone{
+    width:390px;margin:0 auto;background:var(--bg);
+    border:1px solid var(--line);border-radius:34px;
+    box-shadow:0 18px 44px rgba(61,56,51,.09);
+    overflow:hidden;
+  }
+  .pc{
+    width:1120px;margin:0 auto;background:var(--bg);
+    border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 20px 50px rgba(61,56,51,.08);
+    overflow:hidden;
+  }
+
+  /* ── PC 상단 메뉴 — 사이드바 없음, 얇은 가로줄 하나 ── */
+  .topbar{display:flex;align-items:center;padding:26px 48px 22px}
+  .logo{
+    width:126px;height:39px;background:var(--mute);
+    -webkit-mask:url('../../../브랜드/브랜드 디자인소스/제로가드닝 국문로고-투명.png') no-repeat left center/contain;
+    mask:url('../../../브랜드/브랜드 디자인소스/제로가드닝 국문로고-투명.png') no-repeat left center/contain;
+  }
+  nav{display:flex;gap:32px;margin-left:44px}
+  nav a{
+    font-size:15.5px;color:var(--mute);text-decoration:none;
+    padding-bottom:6px;position:relative;letter-spacing:-.01em;
+  }
+  nav a.on{color:var(--ink);font-weight:600}
+  nav a.on::after{
+    content:"";position:absolute;left:50%;bottom:-2px;
+    width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--leaf);
+  }
+  .who{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--mute)}
+  .who i{width:26px;height:26px;border-radius:50%;background:var(--sage);display:inline-block}
+  .hair{height:1px;background:var(--line);opacity:.75;margin:0 48px}
+
+  /* ── PC 본문 ─────────────────────────────── */
+  .page{padding:44px 48px 48px}
+  .head{display:flex;align-items:flex-end;margin-bottom:44px}
+  h1{font-family:var(--serif);font-size:42px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+  .head .sub{margin-left:18px;font-size:14px;color:var(--mute);padding-bottom:7px}
+  .head .today{margin-left:auto;font-size:14px;color:var(--mute);padding-bottom:7px}
+  .head .today b{color:var(--ink);font-weight:600}
+
+  /* 입력 — 상자로 가두지 않는다. 밑줄 한 줄 */
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);column-gap:32px;row-gap:36px}
+  .f{grid-column:span 3;display:flex;flex-direction:column}
+  .f.w4{grid-column:span 4}
+  .f.w5{grid-column:span 5}
+  .f.w7{grid-column:span 7}
+  .f label{font-size:12.5px;color:var(--mute);letter-spacing:.06em;margin-bottom:9px}
+  .f .val{
+    font-size:19px;letter-spacing:-.01em;padding:4px 2px 11px;
+    border-bottom:1.5px solid var(--line);
+  }
+  .f .val.sci{font-family:var(--serif);font-size:17.5px;color:#4A4640}
+  .f .val.ph{color:#BDB5A6}
+  .f .val.pick{display:flex;align-items:center}
+  .f .val.pick .arw{margin-left:auto;color:var(--mute);font-size:12px}
+  .unit{color:var(--mute);font-size:14px;margin-left:6px}
+
+  /* 자동 생성 결과 — 유일하게 색을 깔아주는 자리 */
+  .auto{
+    grid-column:span 5;background:var(--sage);border-radius:14px;
+    padding:18px 24px 20px;display:flex;align-items:center;gap:18px;
+  }
+  .auto .t{font-size:12.5px;color:var(--leaf);letter-spacing:.06em;margin-bottom:6px}
+  .auto .code{font-size:30px;font-weight:700;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+  .auto .note{font-size:12.5px;color:var(--mute);line-height:1.55;padding-left:18px;border-left:1px solid rgba(92,122,74,.28)}
+
+  .acts{display:flex;align-items:center;gap:14px;margin-top:44px}
+  .btn{
+    font-family:var(--sans);font-size:15.5px;border:none;border-radius:999px;
+    padding:14px 30px;cursor:default;letter-spacing:-.01em;
+  }
+  .btn.pri{background:var(--leaf);color:#FBF8F1;font-weight:600}
+  .btn.sec{background:transparent;color:var(--ink);border:1.4px solid var(--line)}
+  .btn.qui{background:transparent;color:var(--mute);padding:14px 10px}
+  .btn.warn{background:transparent;color:var(--clay);border:1.4px solid rgba(181,98,60,.45)}
+  .acts .tip{margin-left:auto;font-size:13px;color:var(--mute)}
+
+  /* ── 표 — 세로선 없음, 가로선 아주 옅게 ── */
+  .blk{margin-top:64px}
+  .blk .shead{display:flex;align-items:baseline;margin-bottom:14px}
+  .blk h2{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em}
+  .blk .cnt{margin-left:12px;font-size:13.5px;color:var(--mute)}
+  .blk .more{margin-left:auto;font-size:13.5px;color:var(--leaf)}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  th{
+    font-size:12.5px;font-weight:500;color:var(--mute);letter-spacing:.05em;
+    text-align:left;padding:0 0 12px;border-bottom:1px solid var(--line);
+  }
+  td{
+    padding:20px 0;border-bottom:1px solid rgba(216,207,192,.5);
+    font-size:15px;vertical-align:middle;
+  }
+  td:first-child,th:first-child{padding-left:4px}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .code{font-weight:600;letter-spacing:.01em;font-variant-numeric:tabular-nums}
+  .name{letter-spacing:-.01em}
+  .sci{font-family:var(--serif);font-size:14.5px;color:#6B655C;white-space:nowrap}
+  .zero{color:var(--clay);font-weight:600}
+  .st{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:#6B655C}
+  .st i{width:6px;height:6px;border-radius:50%;background:var(--leaf);display:inline-block}
+  .st.need{color:var(--clay)}
+  .st.need i{background:var(--clay)}
+
+  /* ── 폰 ──────────────────────────────────── */
+  .p-top{display:flex;align-items:center;padding:26px 22px 0}
+  .p-logo{
+    width:92px;height:29px;background:var(--mute);
+    -webkit-mask:url('../../../브랜드/브랜드 디자인소스/제로가드닝 국문로고-투명.png') no-repeat left center/contain;
+    mask:url('../../../브랜드/브랜드 디자인소스/제로가드닝 국문로고-투명.png') no-repeat left center/contain;
+  }
+  .pcsw{
+    margin-left:auto;display:flex;align-items:center;gap:7px;
+    border:1.2px solid var(--line);border-radius:999px;padding:7px 13px;
+    font-size:12.5px;color:var(--mute);
+  }
+  .pcsw i{width:13px;height:10px;border:1.4px solid var(--mute);border-radius:2px;display:inline-block}
+  .p-body{padding:20px 22px 26px}
+  .p-body h1{font-family:var(--serif);font-size:31px;font-weight:600;letter-spacing:-.02em}
+  .p-date{font-size:13.5px;color:var(--mute);margin-top:7px}
+  .p-form{margin-top:28px;display:grid;grid-template-columns:1fr 1fr;column-gap:20px;row-gap:24px}
+  .p-form .f{grid-column:span 1}
+  .p-form .f.full{grid-column:span 2}
+  .p-form .f label{font-size:11.5px;margin-bottom:7px}
+  .p-form .f .val{font-size:17px;padding:3px 1px 9px}
+  .p-form .f .val.sci{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .p-auto{
+    grid-column:span 2;background:var(--sage);border-radius:13px;
+    padding:15px 18px;display:flex;align-items:center;
+  }
+  .p-auto .t{font-size:11.5px;color:var(--leaf);letter-spacing:.05em;margin-bottom:5px}
+  .p-auto .code{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums}
+  .p-auto .re{margin-left:auto;font-size:12.5px;color:var(--leaf);border:1.2px solid rgba(92,122,74,.35);border-radius:999px;padding:7px 13px}
+  .p-save{
+    margin-top:26px;width:100%;background:var(--leaf);color:#FBF8F1;
+    border:none;border-radius:16px;padding:19px 0;font-size:17px;font-weight:600;
+    font-family:var(--sans);letter-spacing:-.01em;
+  }
+  .p-sec{margin-top:34px}
+  .p-sec .shead{display:flex;align-items:baseline;margin-bottom:4px}
+  .p-sec h2{font-family:var(--serif);font-size:19px;font-weight:600}
+  .p-sec .more{margin-left:auto;font-size:12.5px;color:var(--leaf)}
+  .row{display:flex;align-items:center;padding:17px 2px;border-bottom:1px solid rgba(216,207,192,.5)}
+  .row .l{min-width:0}
+  .row .c{font-size:13px;font-weight:600;color:var(--mute);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .row .n{font-size:16px;letter-spacing:-.01em;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+  .row .r{margin-left:auto;text-align:right;padding-left:12px}
+  .row .q{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+  .row .s{font-size:12px;color:#6B655C;margin-top:3px}
+  .row .s.need{color:var(--clay)}
+  .p-nav{display:flex;border-top:1px solid var(--line);background:rgba(237,240,228,.42)}
+  .p-nav>div{flex:1;text-align:center;padding:16px 0 20px;font-size:14.5px;color:var(--mute)}
+  .p-nav>div.on{color:var(--leaf);font-weight:700}
+  .p-nav>div .dot{width:5px;height:5px;border-radius:50%;background:var(--leaf);margin:0 auto 7px;opacity:0}
+  .p-nav>div.on .dot{opacity:1}
+
+  /* ── 공통 부품 견본 ───────────────────────── */
+  .kit{width:1120px;margin:0 auto;padding:0}
+  .kit .box{padding:34px 0 38px;border-top:1px solid var(--line)}
+  .kit h3{font-size:13px;color:var(--mute);letter-spacing:.09em;margin-bottom:26px}
+  .sw{display:flex;gap:34px}
+  .sw div{text-align:left}
+  .sw i{width:62px;height:62px;border-radius:50%;display:block;margin-bottom:12px;box-shadow:inset 0 0 0 1px rgba(61,56,51,.07)}
+  .sw b{display:block;font-size:14px;font-weight:600;letter-spacing:-.01em}
+  .sw span{display:block;font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums;margin-top:3px}
+  .kit .two{display:grid;grid-template-columns:1fr 1fr;column-gap:64px}
+  .typo div{display:flex;align-items:baseline;gap:16px;margin-bottom:16px}
+  .typo span{font-size:12px;color:var(--mute);width:150px;flex:none;letter-spacing:.03em}
+  .t42{font-family:var(--serif);font-size:42px;font-weight:600;letter-spacing:-.02em}
+  .t24{font-family:var(--serif);font-size:24px;font-weight:600}
+  .t19{font-size:19px}
+  .t15{font-size:15px}
+  .t13{font-size:12.5px;color:var(--mute);letter-spacing:.05em}
+  .fields{display:flex;gap:28px;align-items:flex-end}
+  .fields .f{width:210px}
+</style>
+</head>
+<body>
+
+<!-- ══════════ 폰 ══════════ -->
+<div class="cap"><b>폰 390px — 밭에서 씁니다</b><span>메뉴 4개 · 인쇄와 엑셀은 뺐습니다</span><i class="rule"></i></div>
+
+<div class="phone">
+  <div class="p-top">
+    <div class="p-logo"></div>
+    <div class="pcsw"><i></i>PC 화면</div>
+  </div>
+
+  <div class="p-body">
+    <h1>입고 등록</h1>
+    <div class="p-date">2026년 7월 30일 목요일 · 오늘 3건</div>
+
+    <div class="p-form">
+      <div class="f"><label>입고일자</label><div class="val">2026-07-30</div></div>
+      <div class="f"><label>입고업체</label><div class="val pick">한아름농원<span class="arw">▾</span></div></div>
+
+      <div class="f full"><label>유통명</label><div class="val">수크령 '레드헤드'</div></div>
+      <div class="f full"><label>학명</label><div class="val sci">Pennisetum alopecuroides 'Red Head'</div></div>
+
+      <div class="f"><label>규격</label><div class="val pick">15cm 포트<span class="arw">▾</span></div></div>
+      <div class="f"><label>수량</label><div class="val">120<span class="unit">개</span></div></div>
+
+      <div class="f full"><label>매입단가</label><div class="val">2,800<span class="unit">원</span></div></div>
+
+      <div class="p-auto">
+        <div>
+          <div class="t">품목코드 · 자동 생성</div>
+          <div class="code">PEA03-15</div>
+        </div>
+        <div class="re">다시 만들기</div>
+      </div>
+    </div>
+
+    <button class="p-save">저장하고 다음 입력</button>
+
+    <div class="p-sec">
+      <div class="shead"><h2>최근 입고</h2><span class="more">전체 보기</span></div>
+
+      <div class="row">
+        <div class="l"><div class="c">PEA03-15</div><div class="n">수크령 '레드헤드'</div></div>
+        <div class="r"><div class="q">120</div><div class="s">15cm · 2,800원</div></div>
+      </div>
+      <div class="row">
+        <div class="l"><div class="c">CAR01-18</div><div class="n">층꽃 '스털링실버'</div></div>
+        <div class="r"><div class="q">80</div><div class="s">18cm · 3,200원</div></div>
+      </div>
+      <div class="row">
+        <div class="l"><div class="c">ANE02-21</div><div class="n">추명국 '휠윈드핑크'</div></div>
+        <div class="r"><div class="q zero">0</div><div class="s need">재입고 필요</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-nav">
+    <div class="on"><div class="dot"></div>입고</div>
+    <div><div class="dot"></div>재고</div>
+    <div><div class="dot"></div>주문</div>
+    <div><div class="dot"></div>더보기</div>
+  </div>
+</div>
+
+<div class="gap"></div>
+
+<!-- ══════════ PC ══════════ -->
+<div class="cap"><b>PC — 사무실에서 씁니다</b><span>메뉴는 위로 · 왼쪽 초록 기둥 없음</span><i class="rule"></i></div>
+
+<div class="pc">
+  <div class="topbar">
+    <div class="logo"></div>
+    <nav>
+      <a class="on" href="#">입고</a>
+      <a href="#">재고</a>
+      <a href="#">주문</a>
+      <a href="#">소싱</a>
+      <a href="#">명세서</a>
+      <a href="#">엑셀</a>
+    </nav>
+    <div class="who"><i></i>우람</div>
+  </div>
+  <div class="hair"></div>
+
+  <div class="page">
+    <div class="head">
+      <h1>입고 등록</h1>
+      <div class="sub">들어온 식물을 적어 둡니다</div>
+      <div class="today">2026년 7월 30일 목요일 · 오늘 입고 <b>3건</b></div>
+    </div>
+
+    <div class="grid">
+      <div class="f w4"><label>입고일자</label><div class="val">2026-07-30</div></div>
+      <div class="f w4"><label>입고업체</label><div class="val pick">한아름농원<span class="arw">▾</span></div></div>
+      <div class="f w4"><label>담당</label><div class="val ph">직접 입력</div></div>
+
+      <div class="f w5"><label>유통명</label><div class="val">수크령 '레드헤드'</div></div>
+      <div class="f w7"><label>학명</label><div class="val sci">Pennisetum alopecuroides 'Red Head'</div></div>
+
+      <div class="f w4"><label>규격</label><div class="val pick">15cm 포트<span class="arw">▾</span></div></div>
+      <div class="f w4"><label>수량</label><div class="val">120<span class="unit">개</span></div></div>
+      <div class="f w4"><label>매입단가</label><div class="val">2,800<span class="unit">원</span></div></div>
+
+      <div class="auto">
+        <div>
+          <div class="t">품목코드 · 자동 생성</div>
+          <div class="code">PEA03-15</div>
+        </div>
+        <div class="note">학명 앞 2자 + 품종명 첫 글자<br>규격이 다르면 번호가 새로 붙습니다</div>
+      </div>
+    </div>
+
+    <div class="acts">
+      <button class="btn pri">저장하고 다음 입력</button>
+      <button class="btn sec">저장하고 닫기</button>
+      <button class="btn qui">지우기</button>
+      <div class="tip">Enter 를 누르면 바로 저장됩니다</div>
+    </div>
+
+    <div class="blk">
+      <div class="shead"><h2>최근 입고</h2><span class="cnt">이번 주 12건</span><span class="more">전체 보기 →</span></div>
+      <table>
+        <colgroup>
+          <col style="width:112px"><col style="width:186px"><col style="width:340px">
+          <col style="width:104px"><col style="width:72px"><col style="width:90px"><col style="width:120px">
+        </colgroup>
+        <tr>
+          <th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th>
+          <th class="num">수량</th><th class="num">단가</th><th style="padding-left:16px">상태</th>
+        </tr>
+        <tr>
+          <td class="code">PEA03-15</td>
+          <td class="name">수크령 '레드헤드'</td>
+          <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+          <td>15cm 포트</td>
+          <td class="num">120</td>
+          <td class="num">2,800</td>
+          <td style="padding-left:16px"><span class="st"><i></i>판매중</span></td>
+        </tr>
+        <tr>
+          <td class="code">CAR01-18</td>
+          <td class="name">층꽃 '스털링실버'</td>
+          <td class="sci">Caryopteris × clandonensis 'Sterling Silver'</td>
+          <td>18cm 포트</td>
+          <td class="num">80</td>
+          <td class="num">3,200</td>
+          <td style="padding-left:16px"><span class="st"><i></i>판매중</span></td>
+        </tr>
+        <tr>
+          <td class="code">ANE02-21</td>
+          <td class="name">추명국 '휠윈드핑크'</td>
+          <td class="sci">Anemone × hybrida 'Whirlwind Pink'</td>
+          <td>21cm 포트</td>
+          <td class="num zero">0</td>
+          <td class="num">4,500</td>
+          <td style="padding-left:16px"><span class="st need"><i></i>재입고 필요</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="gap"></div>
+
+<!-- ══════════ 공통 부품 ══════════ -->
+<div class="cap"><b>공통 부품</b><span>모든 화면이 이 견본을 씁니다</span><i class="rule"></i></div>
+
+<div class="kit">
+  <div class="box">
+    <h3>색 — 아이보리가 주인공, 초록은 점으로</h3>
+    <div class="sw">
+      <div><i style="background:#FBF8F1;box-shadow:inset 0 0 0 1px #D8CFC0"></i><b>바탕</b><span>#FBF8F1</span></div>
+      <div><i style="background:#3D3833"></i><b>글자</b><span>#3D3833</span></div>
+      <div><i style="background:#5C7A4A"></i><b>강조</b><span>#5C7A4A</span></div>
+      <div><i style="background:#B5623C"></i><b>주의</b><span>#B5623C</span></div>
+      <div><i style="background:#D8CFC0"></i><b>선</b><span>#D8CFC0</span></div>
+      <div><i style="background:#EDF0E4"></i><b>옅은 바탕</b><span>#EDF0E4</span></div>
+      <div><i style="background:#9A9384"></i><b>흐린 글자 · 로고</b><span>#9A9384</span></div>
+    </div>
+  </div>
+
+  <div class="box two">
+    <div>
+      <h3>버튼 네 가지</h3>
+      <div class="acts" style="margin-top:0">
+        <button class="btn pri">저장</button>
+        <button class="btn sec">보조</button>
+        <button class="btn qui">조용히</button>
+        <button class="btn warn">삭제</button>
+      </div>
+    </div>
+    <div>
+      <h3>입력칸 — 상자로 가두지 않는다</h3>
+      <div class="fields">
+        <div class="f"><label>채워진 칸</label><div class="val">수크령 '레드헤드'</div></div>
+        <div class="f"><label>고르는 칸</label><div class="val pick">15cm 포트<span class="arw">▾</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box two">
+    <div class="typo">
+      <h3>글씨 크기 — 위계를 크게 벌린다</h3>
+      <div><span>화면 제목 42 · 세리프</span><b class="t42">입고 등록</b></div>
+      <div><span>구역 제목 24 · 세리프</span><b class="t24">최근 입고</b></div>
+      <div><span>입력값 19 · 산세리프</span><b class="t19">2,800원 · PEA03-15</b></div>
+      <div><span>표 본문 15</span><b class="t15">수크령 '레드헤드' · 120개</b></div>
+      <div><span>라벨 12.5</span><b class="t13">품목코드</b></div>
+    </div>
+    <div>
+      <h3>지키는 것</h3>
+      <div style="font-size:15px;line-height:2.05;color:#4A4640">
+        숫자와 코드는 <b style="font-weight:700">산세리프</b>로만 씁니다 — 0과 O를 헷갈리면 안 됩니다.<br>
+        세리프는 제목과 학명에만 씁니다.<br>
+        표에 세로줄을 긋지 않습니다. 가로줄도 아주 옅게.<br>
+        주의는 <b style="color:#B5623C;font-weight:700">흙벽돌색</b>으로 알립니다. 빨강은 쓰지 않습니다.<br>
+        폰 메뉴는 넷을 넘기지 않습니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

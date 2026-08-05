@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품 › 재고</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="_공통.css">
+<style>
+  /* 이 화면에서만 쓰는 것 */
+  .phone{height:1044px}
+  .ph-body{gap:var(--space-lg)}
+
+  /* 왼쪽 띠 — 앞자리가 같은 다른 규격 */
+  td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
+
+  /* 현재고 아래 붙는 월 출고량 */
+  .sub{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+
+  /* 여러 개 골라 한꺼번에 고치는 줄 */
+  .bulk{
+    display:flex; align-items:center; gap:var(--space-md); flex-wrap:wrap;
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg); margin-bottom:var(--space-lg);
+  }
+  .bulk .n{font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-accent)}
+  .bulk .inp{height:var(--h-btn-sm); font-size:var(--font-sm); width:98px; padding:0 var(--space-md)}
+  .bulk .sp{flex:1}
+
+  .chip.warn{background:var(--color-btn-bg); color:var(--color-text-sub); border-color:var(--color-border)}
+  .chip.warn::before{background:var(--color-text-muted)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ 폰 ══════════ -->
+<div>
+  <div class="cap">폰 <b>390px</b> — 밭에서 「뭐가 떨어져 가나」만 봅니다 <span class="tag">고치는 건 PC에서</span></div>
+  <div class="phone">
+    <div class="ph-top">
+      <h1>재고</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>등록 <b>126</b>종 · 총 <b>4,283</b>주</span>
+      <span>3주 내 소진 <b>7</b>종</span>
+    </div>
+
+    <div class="ph-body">
+
+      <div class="alert">
+        <h4>3주 안에 소진 <span class="right">7종 · 전체 ›</span></h4>
+        <div class="ph-list" style="margin-top:var(--space-md)">
+          <div class="ph-card">
+            <div class="r1">
+              <div class="nm">추명국 '휠윈드핑크'</div>
+              <div class="days d0" style="margin-left:auto; font-size:var(--font-xl)">소진</div>
+            </div>
+            <div class="r2">ANW02-21 · 0주 · 월 24주 나감</div>
+          </div>
+          <div class="ph-card">
+            <div class="r1">
+              <div class="nm">휴케라 '팰리스퍼플'</div>
+              <div class="days d1" style="margin-left:auto; font-size:var(--font-xl)">2일</div>
+            </div>
+            <div class="r2">HEP01-15 · 2주 · 월 28주 나감</div>
+          </div>
+          <div class="ph-card">
+            <div class="r1">
+              <div class="nm">청사초</div>
+              <div class="days d1" style="margin-left:auto; font-size:var(--font-xl)">21일</div>
+            </div>
+            <div class="r2">CAR01-10 · 88주 · 월 100주 나감</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <input class="inp" value="🔍  유통명 · 학명 · 품목코드">
+      </div>
+
+      <div class="fchips">
+        <button class="fchip on">전체 <span class="n">126</span></button>
+        <button class="fchip">판매중 <span class="n">98</span></button>
+        <button class="fchip">품절 <span class="n">14</span></button>
+        <button class="fchip">중지 <span class="n">7</span></button>
+      </div>
+
+      <div class="ph-sec">소진일 빠른 순 <span class="help r">?</span></div>
+
+      <div class="ph-list">
+        <div class="ph-card">
+          <div class="r1">
+            <div class="nm">에키네시아 '판테온'</div>
+            <div class="days d1" style="margin-left:auto; font-size:var(--font-xl)">23일</div>
+          </div>
+          <div class="sci">Echinacea purpurea 'Pantheon'</div>
+          <div class="r2">ECP01-15 · <b>36</b>주 · 월 46주 나감</div>
+        </div>
+        <div class="ph-card">
+          <div class="r1">
+            <div class="nm">자엽안개나무</div>
+            <div class="days d2" style="margin-left:auto; font-size:var(--font-xl)">30일</div>
+          </div>
+          <div class="sci">Cotinus coggygria</div>
+          <div class="r2">COT01-27 · <b>2</b>주 · 월 2주 나감</div>
+        </div>
+        <div class="ph-card">
+          <div class="r1">
+            <div class="nm">숙근사루비아 '카라도나'</div>
+            <div class="days d2" style="margin-left:auto; font-size:var(--font-xl)">60일</div>
+          </div>
+          <div class="sci">Salvia nemorosa 'Caradonna'</div>
+          <div class="r2">SAC01-15 · <b>75</b>주 · 월 38주 나감</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div class="on"><span class="ic">📦</span>재고</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div>
+  <div class="cap">PC <b>1440px</b> — 품목 목록이자 재고 목록입니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="pc-side">
+      <div class="logo">제로가드닝</div>
+      <div class="slogan">GARDENING FROM ZERO</div>
+      <a class="on"><span class="ic">🌿</span>상품</a>
+      <a><span class="ic">🛒</span>주문 관리</a>
+      <a><span class="ic">📄</span>명세서 발행</a>
+      <a><span class="ic">🏢</span>업체 관리</a>
+      <a><span class="ic">🌱</span>소싱 추천</a>
+    </div>
+
+    <div class="pc-main">
+      <div class="pc-head">
+        <h2>상품</h2>
+        <div class="path">상품 › 재고</div>
+      </div>
+      <div class="pc-tabs">
+        <span>입고</span>
+        <span class="on">재고</span>
+      </div>
+
+      <div class="stat">
+        <div><div class="k">등록 품목</div><div class="v">126<small>종</small></div></div>
+        <div><div class="k">총 재고</div><div class="v">4,283<small>주</small></div></div>
+        <div><div class="k">3주 안에 소진</div><div class="v alert">7<small>종</small></div></div>
+      </div>
+
+      <!-- ── 급한 것 ── -->
+      <div class="alert">
+        <h4>3주 안에 소진 <span class="right"><button class="btn sm">입고 등록으로</button></span></h4>
+        <table style="margin-top:var(--space-sm); background:var(--color-surface); border-radius:var(--radius-sm)">
+          <colgroup>
+            <col style="width:112px"><col><col style="width:100px">
+            <col style="width:96px"><col style="width:78px"><col style="width:118px">
+          </colgroup>
+          <tr>
+            <th>품목코드</th><th>유통명 · 학명</th><th>규격</th>
+            <th class="r">현재고</th><th class="r">소진일</th><th>마지막 입고</th>
+          </tr>
+          <tr>
+            <td class="code">ANW02-21</td>
+            <td>추명국 '휠윈드핑크'<div class="sci">Anemone × hybrida 'Whirlwind Pink'</div></td>
+            <td class="dim">21cm 포트</td>
+            <td class="r zero">0<span class="sub">월 24주 나감</span></td>
+            <td class="r"><span class="days d0">소진</span></td><td class="dim">2026-05-14</td>
+          </tr>
+          <tr>
+            <td class="code">FEE01-10</td>
+            <td>애기수염풀 '엘리야블루'<div class="sci">Festuca glauca 'Elijah Blue'</div></td>
+            <td class="dim">10cm 포트</td>
+            <td class="r zero">0<span class="sub">월 60주 나감</span></td>
+            <td class="r"><span class="days d0">소진</span></td><td class="dim">2026-04-28</td>
+          </tr>
+          <tr>
+            <td class="code">HAA01-18</td>
+            <td>무늬사초 '아우레올라'<div class="sci">Hakonechloa macra 'Aureola'</div></td>
+            <td class="dim">18cm 포트</td>
+            <td class="r zero">0<span class="sub">월 40주 나감</span></td>
+            <td class="r"><span class="days d0">소진</span></td><td class="dim">2026-06-02</td>
+          </tr>
+          <tr>
+            <td class="code">HEP01-15</td>
+            <td>휴케라 '팰리스퍼플'<div class="sci">Heuchera micrantha 'Palace Purple'</div></td>
+            <td class="dim">15cm 포트</td>
+            <td class="r">2<span class="sub">월 28주 나감</span></td>
+            <td class="r"><span class="days d1">2일</span></td><td class="dim">2026-06-19</td>
+          </tr>
+          <tr>
+            <td class="code">CAR01-10</td>
+            <td>청사초<div class="sci">Carex breviculmis</div></td>
+            <td class="dim">10cm 포트</td>
+            <td class="r">88<span class="sub">월 100주 나감</span></td>
+            <td class="r"><span class="days d1">21일</span></td><td class="dim">2026-06-25</td>
+          </tr>
+        </table>
+        <p style="margin-top:var(--space-lg)">소진일이 빠른 순입니다. 나머지 2종은 아래 목록에서 <b>「3주 내 소진」</b>을 누르면 보입니다. · 2026-07-31 09:12 기준</p>
+      </div>
+
+      <!-- ── 전체 목록 (예전 「품목코드」 탭이 여기로 들어왔습니다) ── -->
+      <div class="card table-card">
+        <h3 style="padding:0 var(--space-sm)">전체 품목
+          <span class="hint">소진일 빠른 순</span>
+          <span class="help">?</span>
+          <span class="right" style="display:flex; gap:var(--space-sm)">
+            <button class="btn sm">⬇ 엑셀 내려받기</button>
+            <button class="btn sm">인쇄</button>
+          </span>
+        </h3>
+
+        <div style="padding:0 var(--space-sm) var(--space-lg); display:flex; flex-direction:column; gap:var(--space-lg)">
+          <div class="fchips">
+            <button class="fchip on">전체 <span class="n">126</span></button>
+            <button class="fchip">판매중 <span class="n">98</span></button>
+            <button class="fchip">품절 <span class="n">14</span></button>
+            <button class="fchip">일시중지 <span class="n">7</span></button>
+            <button class="fchip alert on" style="margin-left:var(--space-md)">3주 내 소진 <span class="n">7</span></button>
+            <div class="spacer" style="flex:1"></div>
+            <input class="inp" style="width:264px; height:var(--h-btn)" value="🔍  유통명 · 학명 · 품목코드로 찾기">
+          </div>
+
+          <div class="bulk">
+            <span class="n">✓ 3개 선택됨</span>
+            <button class="btn sm">상태를 판매중으로</button>
+            <button class="btn sm">일괄 변경</button>
+            <span style="font-size:var(--font-sm); color:var(--color-text-sub); font-weight:var(--weight-semibold)">매입단가</span>
+            <input class="inp num" value="%">
+            <input class="inp num" value="-5">
+            <button class="btn sm">일괄 조정</button>
+            <div class="sp"></div>
+            <button class="btn sm">선택 해제</button>
+          </div>
+        </div>
+
+        <table>
+          <colgroup>
+            <col style="width:34px"><col style="width:104px"><col>
+            <col style="width:92px"><col style="width:82px"><col style="width:72px">
+            <col style="width:82px"><col style="width:104px"><col style="width:44px">
+          </colgroup>
+          <tr>
+            <th></th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th>
+            <th class="r">현재고</th><th class="r">소진일</th><th class="r">매입단가</th><th>상태</th><th></th>
+          </tr>
+
+          <tr>
+            <td>✓</td><td class="code">ANW02-21</td>
+            <td>추명국 '휠윈드핑크'<div class="sci">Anemone × hybrida 'Whirlwind Pink'</div></td>
+            <td class="dim">21cm 포트</td>
+            <td class="r zero">0<span class="sub">월 24주</span></td>
+            <td class="r"><span class="days d0">소진</span></td>
+            <td class="r">4,500</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td>✓</td><td class="code">FEE01-10</td>
+            <td>애기수염풀 '엘리야블루'<div class="sci">Festuca glauca 'Elijah Blue'</div></td>
+            <td class="dim">10cm 포트</td>
+            <td class="r zero">0<span class="sub">월 60주</span></td>
+            <td class="r"><span class="days d0">소진</span></td>
+            <td class="r">1,600</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td>✓</td><td class="code">HAA01-18</td>
+            <td>무늬사초 '아우레올라'<div class="sci">Hakonechloa macra 'Aureola'</div></td>
+            <td class="dim">18cm 포트</td>
+            <td class="r zero">0<span class="sub">월 40주</span></td>
+            <td class="r"><span class="days d0">소진</span></td>
+            <td class="r">3,800</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">MIS01-27</td>
+            <td>억새<div class="sci">Miscanthus sinensis</div></td>
+            <td class="dim">27cm 포트</td>
+            <td class="r zero">0<span class="sub">월 12주</span></td>
+            <td class="r"><span class="days d0">소진</span></td>
+            <td class="r">4,800</td><td><span class="chip warn">품절</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">HEP01-15</td>
+            <td>휴케라 '팰리스퍼플'<div class="sci">Heuchera micrantha 'Palace Purple'</div></td>
+            <td class="dim">15cm 포트</td>
+            <td class="r">2<span class="sub">월 28주</span></td>
+            <td class="r"><span class="days d1">2일</span></td>
+            <td class="r">2,900</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code same">PER03-21</td>
+            <td>수크령 '레드헤드'<div class="sci">Pennisetum alopecuroides 'Red Head'</div></td>
+            <td class="dim">21cm 포트</td>
+            <td class="r">8<span class="sub">월 30주</span></td>
+            <td class="r"><span class="days d1">8일</span></td>
+            <td class="r">3,900</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">ECP01-15</td>
+            <td>에키네시아 '판테온'<div class="sci">Echinacea purpurea 'Pantheon'</div></td>
+            <td class="dim">15cm 포트</td>
+            <td class="r">36<span class="sub">월 46주</span></td>
+            <td class="r"><span class="days d1">23일</span></td>
+            <td class="r">2,600</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">CAR01-10</td>
+            <td>청사초<div class="sci">Carex breviculmis</div></td>
+            <td class="dim">10cm 포트</td>
+            <td class="r">88<span class="sub">월 100주</span></td>
+            <td class="r"><span class="days d1">21일</span></td>
+            <td class="r">1,900</td><td><span class="chip out">재입고 필요</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code same">COT01-27</td>
+            <td>자엽안개나무<div class="sci">Cotinus coggygria</div></td>
+            <td class="dim">27cm 포트</td>
+            <td class="r">2<span class="sub">월 2주</span></td>
+            <td class="r"><span class="days d2">30일</span></td>
+            <td class="r">9,500</td><td><span class="chip">판매중</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">SAC01-15</td>
+            <td>숙근사루비아 '카라도나'<div class="sci">Salvia nemorosa 'Caradonna'</div></td>
+            <td class="dim">15cm 포트</td>
+            <td class="r">75<span class="sub">월 38주</span></td>
+            <td class="r"><span class="days d2">60일</span></td>
+            <td class="r">2,300</td><td><span class="chip">판매중</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code same">CAS01-18</td>
+            <td>층꽃 '스털링실버'<div class="sci">Caryopteris × clandonensis 'Sterling Silver'</div></td>
+            <td class="dim">18cm 포트</td>
+            <td class="r">54<span class="sub">월 18주</span></td>
+            <td class="r"><span class="days d2">90일</span></td>
+            <td class="r">3,200</td><td><span class="chip">판매중</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code same">PER03-15</td>
+            <td>수크령 '레드헤드'<div class="sci">Pennisetum alopecuroides 'Red Head'</div></td>
+            <td class="dim">15cm 포트</td>
+            <td class="r">122<span class="sub">월 40주</span></td>
+            <td class="r"><span class="days d2">90일</span></td>
+            <td class="r">2,800</td><td><span class="chip">판매중</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">FES01-10</td>
+            <td>털수염풀<div class="sci">Festuca glauca</div></td>
+            <td class="dim">10cm 포트</td>
+            <td class="r">88<span class="sub">월 22주</span></td>
+            <td class="r"><span class="days d2">120일</span></td>
+            <td class="r">1,400</td><td><span class="chip">판매중</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code same">COT01-21</td>
+            <td>자엽안개나무<div class="sci">Cotinus coggygria</div></td>
+            <td class="dim">21cm 포트</td>
+            <td class="r">44<span class="sub">월 4주</span></td>
+            <td class="r"><span class="days d2">330일</span></td>
+            <td class="r">6,800</td><td><span class="chip">판매중</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+          <tr>
+            <td></td><td class="code">MIR02-27</td>
+            <td>억새 '레드치프'<div class="sci">Miscanthus sinensis 'Red Chief'</div></td>
+            <td class="dim">27cm 포트</td>
+            <td class="r">12<span class="sub">월 3주</span></td>
+            <td class="r dim" style="font-weight:var(--weight-medium)">판정 안 함</td>
+            <td class="r">5,200</td><td><span class="chip warn">일시중지</span></td><td><button class="btn sm">✎</button></td>
+          </tr>
+        </table>
+
+        <div class="pager">
+          <span class="gap">126종 중 1~15</span>
+          <i>‹</i><b>1</b><i>2</i><i>3</i><i>›</i>
+        </div>
+
+        <p style="padding:0 var(--space-2xl) var(--space-lg); font-size:var(--font-xs); color:var(--color-text-muted); line-height:1.7">
+          품목코드 왼쪽의 <b style="color:var(--color-accent)">초록 띠</b>는 앞자리가 같은 다른 규격입니다 — 126종 가운데 16종.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 무엇이 바뀌었나 ══════════ -->
+<div class="parts">
+  <h2>「품목코드」 탭을 없애고 여기에 넣었습니다</h2>
+  <div class="lead">품목코드 목록과 재고 목록은 같은 126종을 두 번 보여주고 있었습니다.</div>
+  <div class="pgrid">
+
+    <div style="flex:1">
+      <h4>말투를 바꿨습니다</h4>
+      <p class="note" style="margin-top:0">
+        「이미 바닥」 「이틀 뒤 바닥」 → <b class="accent">소진 · 2일 · 21일</b><br>
+        「1개월치」 「4개월치」 → <b class="accent">30일 · 120일</b><br><br>
+        전부 <b class="accent">날짜 하나</b>로 통일했습니다.<br>
+        숫자만 보고 급한 순서를 바로 압니다.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>설명을 접었습니다</h4>
+      <p class="note" style="margin-top:0">
+        「왜 개수로 안 보나」 설명 상자를 지우고<br>
+        제목 옆 <span class="help">?</span> 안에 넣었습니다.<br><br>
+        누르면 <b class="accent">한 문단</b>만 나옵니다 —<br>
+        <span style="color:var(--color-text-muted)">소진일 = 현재고 ÷ 최근 30일 평균 출고.<br>
+        3주 이하면 재입고 필요로 올립니다.</span>
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>품목코드 탭이 없어도 되는 이유</h4>
+      <p class="note" style="margin-top:0">
+        <b class="accent">코드를 만드는 일</b>은 입고 탭에서 합니다.<br>
+        학명을 치면 코드가 붙고 겹침도 그때 걸러집니다.<br><br>
+        <b class="accent">코드를 찾는 일</b>은 이 목록이 합니다.<br>
+        126종이 코드 · 유통명 · 학명 · 규격까지 다 있습니다.<br><br>
+        따로 볼 것이 남지 않아 탭을 지웠습니다.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>화면 수</h4>
+      <div class="scale" style="gap:var(--space-lg)">
+        <div><i>전</i><span style="font-size:var(--font-4xl); font-weight:var(--weight-bold); color:var(--color-text-muted)">탭 4개</span></div>
+        <div><i>후</i><span style="font-size:var(--font-4xl); font-weight:var(--weight-bold); color:var(--color-accent)">탭 2개</span></div>
+      </div>
+      <p class="note">
+        수동 입고 + 입고 리스트 → <b class="accent">입고</b><br>
+        재고 관리 + 품목코드 → <b class="accent">재고</b><br><br>
+        왼쪽 메뉴의 <b>「재고 관리」</b>도 지웠습니다.<br>
+        상품 안 재고 탭과 같은 것이었습니다.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

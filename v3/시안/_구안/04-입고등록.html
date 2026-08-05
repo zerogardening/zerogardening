@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품 관리 › 입고 등록</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   여기(:root)만 고치면 모든 화면의 겉모습이 한꺼번에 바뀝니다.
+   아래 스타일 규칙에는 색·크기 값을 직접 적지 않습니다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+
+  /* ── 글씨체 ───────────────────────────────────────────────
+     --font-family : 프로그램 전체 글씨체                        */
+  --font-family: Pretendard, -apple-system, sans-serif;
+
+  /* ── 색 · 바탕 ────────────────────────────────────────────
+     --color-canvas  : 화면 바깥 배경 (창 전체 뒷색)
+     --color-bg      : 프로그램 바탕
+     --color-surface : 카드 · 입력칸 · 표의 흰 바탕                */
+  --color-canvas:  #E8E4DA;
+  --color-bg:      #FBF8F1;
+  --color-surface: #FFFFFF;
+
+  /* ── 색 · 글자 (진한 순서) ────────────────────────────────
+     --color-text        : 본문 글자
+     --color-text-sub    : 표 안 보조 글자 (규격 · 학명)
+     --color-text-muted  : 항목 이름 · 설명글
+     --color-text-hint   : "자동 생성" 같은 옅은 안내
+     --color-text-faint  : 견본표의 치수 숫자 (가장 옅음)         */
+  --color-text:       #3D3833;
+  --color-text-sub:   #6E665C;
+  --color-text-muted: #8A8279;
+  --color-text-hint:  #A9A296;
+  --color-text-faint: #B0A99E;
+
+  /* ── 색 · 강조(초록) ──────────────────────────────────────
+     --color-accent        : 저장 버튼 · 메뉴 · 강조 숫자
+     --color-accent-bg     : 표 머리 · 자동입력칸의 옅은 초록
+     --color-accent-border : 그 옅은 초록의 테두리
+     --color-on-accent     : 초록 위에 얹는 글자색                */
+  --color-accent:        #5C7A4A;
+  --color-accent-bg:     #EDF0E4;
+  --color-accent-border: #C9D3B6;
+  --color-on-accent:     #FFFFFF;
+
+  /* ── 색 · 주의(흙벽돌) ────────────────────────────────────
+     재고 0 · 삭제 · 재입고 필요. 빨강 대신 씁니다.
+     --color-danger / -bg / -border                             */
+  --color-danger:        #B5623C;
+  --color-danger-bg:     #F7EAE3;
+  --color-danger-border: #E3C4B4;
+
+  /* ── 색 · 선 ──────────────────────────────────────────────
+     --color-border       : 상자 · 입력칸 테두리
+     --color-border-faint : 표의 줄 사이 옅은 선                  */
+  --color-border:       #D8CFC0;
+  --color-border-faint: #EFEAE0;
+
+  /* ── 색 · 초록 바탕 위의 흰 겹침 (왼쪽 메뉴 · 폰 상단) ──── */
+  --overlay-strong: rgba(255,255,255,.75);
+  --overlay-mid:    rgba(255,255,255,.60);
+  --overlay-line:   rgba(255,255,255,.42);
+  --overlay-soft:   rgba(255,255,255,.20);
+  --overlay-faint:  rgba(255,255,255,.16);
+
+  /* ── 글씨 크기 (작은 것 → 큰 것) ──────────────────────────
+     3xs 치수라벨 / 2xs 배지 / xs 항목이름 / sm 작은버튼
+     md  본문·표  / lg  입력값 / xl 견본제목 / 2xl 폰저장버튼
+     3xl 폰 화면제목 / 4xl PC 화면제목 / 5xl 통계 숫자           */
+  --font-3xs: 10px;
+  --font-2xs: 11px;
+  --font-xs:  12px;
+  --font-sm:  13px;
+  --font-md:  14px;
+  --font-lg:  15px;
+  --font-xl:  16px;
+  --font-2xl: 17px;
+  --font-3xl: 18px;
+  --font-4xl: 20px;
+  --font-5xl: 24px;
+  --font-table-sci: 12.5px;   /* 표 안 학명 전용 (한 곳) */
+  --font-icon: 20px;          /* 폰 아래 메뉴 아이콘 */
+
+  /* ── 글씨 굵기 ────────────────────────────────────────────
+     regular 입력값 / medium 버튼·본문 / semibold 항목이름
+     bold    제목·숫자·강조                                     */
+  --weight-regular:  500;
+  --weight-medium:   600;
+  --weight-semibold: 700;
+  --weight-bold:     800;
+
+  /* ── 간격 (작은 것 → 큰 것) ─────────────────────────────── */
+  --space-4xs:  3px;
+  --space-3xs:  4px;
+  --space-2xs:  5px;
+  --space-xs:   6px;
+  --space-sm:   8px;
+  --space-md:  10px;
+  --space-lg:  12px;
+  --space-xl:  14px;
+  --space-2xl: 16px;
+  --space-3xl: 20px;
+  --space-4xl: 26px;
+  --space-5xl: 30px;
+
+  /* ── 부품별 안쪽 여백 — 부품을 넉넉/빽빽하게 만들 때 고칩니다 */
+  --pad-page:      28px 20px 30px;
+  --pad-btn:       10px 18px;
+  --pad-btn-wide:  10px 34px;
+  --pad-btn-sm:     6px 12px;
+  --pad-input:      0 13px;
+  --pad-th:         9px 10px;
+  --pad-td:        11px 10px;
+  --pad-chip:       4px 10px 4px 8px;
+  --pad-tag:        2px 8px;
+  --pad-card:      20px;
+  --pad-card-table:20px 12px 8px;
+  --pad-stat:      13px 16px;
+  --pad-tab:        8px 15px 9px;
+  --pad-nav-item:  10px 0 14px;
+  --pad-ph-top:    15px 18px;
+  --pad-ph-sub:     9px 18px;
+  --pad-ph-body:   16px 18px;
+  --pad-ph-save:   16px;
+  --pad-pcbtn:      7px 11px;
+  --pad-side-y:    22px;
+  --pad-side-x:    20px;
+  --pad-main:      22px 26px;
+  --pad-parts:     24px 28px 26px;
+
+  /* ── 부품별 사이 간격 ─────────────────────────────────── */
+  --gap-ph-body:    13px;   /* 폰 입력칸 위아래 */
+  --gap-ph-pair:    11px;   /* 폰에서 둘씩 나란히 놓을 때 */
+  --gap-side-icon:   9px;   /* 메뉴 아이콘 ↔ 글자 */
+  --gap-chip:        5px;   /* 배지 점 ↔ 글자 */
+  --gap-sample:     11px;   /* 견본표 항목 사이 */
+  --gap-scale:       7px;   /* 글씨크기 견본 줄 사이 */
+  --gap-parts-col:  34px;   /* 견본표 칸 사이 */
+
+  /* ── 모서리 둥글기 ──────────────────────────────────────── */
+  --radius-sm:    6px;
+  --radius-badge: 7px;
+  --radius-md:    8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-pill: 20px;
+  --radius-phone:26px;
+
+  /* ── 선 굵기 ──────────────────────────────────────────────
+     --border-width       : 보통 테두리
+     --border-width-thick : 선택된 탭 밑줄
+     --bar-width / --bar-height : 선택된 메뉴 옆·위 막대          */
+  --border-width:       1px;
+  --border-width-thick: 2px;
+  --bar-width:  4px;
+  --bar-height: 3px;
+
+  /* ── 그림자 ─────────────────────────────────────────────── */
+  --shadow-panel: 0 8px 32px rgba(61,56,51,.18);
+
+  /* ── 입력칸 높이 ────────────────────────────────────────── */
+  --h-input:     44px;
+  --h-input-line:42px;
+  --h-label:     16px;
+  --dot-size:     6px;   /* 배지 앞의 점 */
+
+  /* ══════════════════════════════════════════════════════════
+     ▼ 여기부터는 「입고 등록」 화면에서 새로 쓰는 값입니다.
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── 코드 글씨 크기 (03 품목코드 화면과 같은 값) ──────────
+     --font-code-xl : 만들어진 코드 미리보기 (가장 큼)
+     --font-code-lg : 경고창 안 후보 코드
+     --font-code-md : 자동완성 후보 앞의 코드 토막                */
+  --font-code-xl: 26px;
+  --font-code-lg: 19px;
+  --font-code-md: 15px;
+
+  /* ── 코드 앞 5자 표시 (03과 같은 값) ────────────────────── */
+  --color-key-bg:      #E4EAD6;
+  --color-key-bg-warn: #EFD8CB;
+  --pad-key:  1px 3px;
+
+  /* ── 안내·경고 상자 (03과 같은 값) ──────────────────────── */
+  --pad-rule:   12px 16px;
+  --pad-alert:  15px 17px;
+  --pad-choice: 11px 15px;
+
+  /* ── 만들어진 코드 미리보기 상자 ────────────────────────── */
+  --w-preview: 178px;
+
+  /* ── 자동완성 후보 목록 — 이 화면의 핵심 부품 ─────────────
+     --shadow-ac   : 떠 있어 보이게 하는 그림자
+     --pad-ac      : 목록 상자 안쪽 여백
+     --pad-ac-head : 「전에 넣은 것에서 찾았습니다」 안내줄
+     --pad-ac-item : 후보 한 줄
+     --gap-ac      : 후보 줄 사이
+     --w-ac-code   : 후보 왼쪽 품목코드 칸 폭
+     --w-ac-pc     : PC에서 뜨는 후보 상자 가로폭
+                     (입력칸보다 넓게 · 오른쪽 끝을 맞춰 왼쪽으로 펼칩니다)
+     --h-ac-pc     : 그 상자가 차지하는 높이 — 아래 내용이 가리지 않게 비워둡니다
+     --w-ac-meta   : 후보 오른쪽 「입고 12건 · 지난 단가」 칸 폭            */
+  --shadow-ac:   0 8px 20px rgba(61,56,51,.14);
+  --pad-ac:      6px;
+  --pad-ac-head: 8px 10px 7px;
+  --pad-ac-item: 8px 10px 9px;
+  --gap-ac:      2px;
+  --w-ac-code:   64px;
+  --w-ac-pc:    640px;
+  --h-ac-pc:    344px;
+  --w-ac-meta:  152px;
+
+  /* ── 규격 프리셋 버튼 (10·15·18·21·27cm + 직접입력) ───────
+     --w-preset   : 버튼 하나 가로폭
+     --pad-preset : 버튼 안쪽 여백
+     --gap-preset : 버튼 사이                                    */
+  --w-preset:     84px;
+  --w-preset-ph: 108px;   /* 폰은 한 줄에 셋 · 장갑 낀 손으로 누릅니다 */
+  --pad-preset: 8px 6px 7px;
+  --gap-preset: 7px;
+
+  /* ── 과세 / 면세 두 갈래 버튼 ───────────────────────────── */
+  --pad-taxbtn: 0 22px;
+  --w-tax:      152px;
+
+  /* ── 접었다 펴는 「식물 특성」 영역 ──────────────────────── */
+  --pad-fold-h: 11px 14px;
+  --pad-fold-b: 16px 14px 15px;
+  --gap-fold:   14px;
+  --w-duo-unit: 24px;   /* cm · Zone 같은 단위 글씨 자리 */
+
+  /* ── 오늘 등록한 것이 쌓이는 줄 (폰) ────────────────────── */
+  --pad-ph-log: 10px 12px 11px;
+  --gap-ph-log: 7px;
+
+  /* ── 입력칸 가로폭 ──────────────────────────────────────── */
+  --w-date:    134px;
+  --w-company: 158px;
+  --w-name:    186px;
+  --w-qty:     104px;
+  --w-price:   124px;
+  --w-amount:  132px;
+
+  /* ── 「오늘 등록한 입고」 표 칸 폭 ─────────────────────────
+     유통명과 학명은 한 칸에 위아래 두 줄로 넣습니다 (입고 리스트와 같음) */
+  --w-t-time:  54px;
+  --w-t-code:  98px;
+  --w-t-spec:  84px;
+  --w-t-qty:   52px;
+  --w-t-price: 68px;
+  --w-t-amt:   84px;
+  --w-t-tax:   50px;
+  --w-t-act:   58px;
+
+  /* ── 겹침 경고 안에 뜨는 표의 칸 폭 ─────────────────────── */
+  --w-d-code: 108px;
+  --w-d-name: 152px;
+  --w-d-spec:  96px;
+  --w-d-qty:   84px;
+
+  /* ── 폰 화면 최소 높이 (내용이 길면 알아서 늘어납니다) ───── */
+  --h-phone: 722px;
+}
+
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:var(--font-family);
+    background:var(--color-canvas); color:var(--color-text);
+    width:1200px; padding:var(--pad-page);
+    display:flex; flex-direction:column; gap:var(--space-5xl); align-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .cap{font-size:var(--font-sm); color:var(--color-text-muted); margin-bottom:var(--space-md); letter-spacing:.01em}
+  .cap b{color:var(--color-accent); font-weight:var(--weight-semibold)}
+  .cap .tag{
+    display:inline-block; margin-left:var(--space-sm); font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-accent); background:var(--color-accent-bg); border:var(--border-width) solid var(--color-border);
+    padding:var(--pad-tag); border-radius:var(--radius-pill); vertical-align:1px;
+  }
+
+  /* ══ 공통 부품 ══ */
+  .btn{
+    font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-medium); cursor:pointer;
+    padding:var(--pad-btn); border-radius:var(--radius-md); line-height:1.2; white-space:nowrap;
+    background:var(--color-surface); color:var(--color-text); border:var(--border-width) solid var(--color-border);
+  }
+  .btn.main{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
+  .btn.warn{background:var(--color-surface); color:var(--color-danger); border-color:var(--color-danger)}
+  .btn.sm{padding:var(--pad-btn-sm); font-size:var(--font-sm); border-radius:var(--radius-sm)}
+  .btn.wide{padding:var(--pad-btn-wide)}
+
+  .field{display:flex; flex-direction:column; gap:var(--space-xs)}
+  .field > label{
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    letter-spacing:.01em; line-height:var(--h-label); height:var(--h-label);
+    display:flex; align-items:center; gap:var(--space-3xs); white-space:nowrap;
+  }
+  .field > label .req{color:var(--color-danger); font-size:var(--font-xs)}
+  .field > label .auto{color:var(--color-text-hint); font-weight:var(--weight-regular); font-size:var(--font-2xs)}
+  .inp{
+    width:100%; font-family:inherit; font-size:var(--font-lg); font-weight:var(--weight-regular);
+    height:var(--h-input); padding:var(--pad-input); line-height:var(--h-input-line);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-surface); color:var(--color-text);
+  }
+  .inp.num{text-align:right; font-variant-numeric:tabular-nums; letter-spacing:.01em}
+  .inp.sci{font-size:var(--font-md); font-style:italic; letter-spacing:-.1px}
+  .inp.code{
+    font-variant-numeric:tabular-nums; letter-spacing:.05em; font-weight:var(--weight-bold);
+    color:var(--color-accent); background:var(--color-accent-bg); border-color:var(--color-accent-border);
+  }
+  /* 골랐더니 저절로 채워진 칸 — 자동 생성 칸과 같은 옅은 초록 */
+  .inp.filled{background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+  /* 지금 치고 있는 칸 */
+  .inp.typing{border-color:var(--color-accent); border-width:var(--border-width-thick); padding:var(--pad-input)}
+
+  table{width:100%; border-collapse:collapse; font-size:var(--font-md); table-layout:fixed}
+  th{
+    background:var(--color-accent-bg); color:var(--color-accent); font-size:var(--font-xs); font-weight:var(--weight-bold);
+    text-align:left; padding:var(--pad-th); border-bottom:var(--border-width) solid var(--color-border);
+    white-space:nowrap; letter-spacing:.01em;
+  }
+  th:first-child{border-radius:var(--radius-sm) 0 0 0}
+  th:last-child{border-radius:0 var(--radius-sm) 0 0}
+  th.r{text-align:right}
+  th.c{text-align:center}
+  td{padding:var(--pad-td); border-bottom:var(--border-width) solid var(--color-border-faint); vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  td.r{text-align:right; font-variant-numeric:tabular-nums; font-weight:var(--weight-medium)}
+  td.c{text-align:center}
+  td.code{color:var(--color-accent); font-weight:var(--weight-bold); letter-spacing:.04em; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.sci{font-style:italic; font-size:var(--font-table-sci); color:var(--color-text-sub); white-space:nowrap; letter-spacing:-.2px; overflow:hidden; text-overflow:ellipsis}
+  td.dim{color:var(--color-text-sub); white-space:nowrap}
+  td.zero{color:var(--color-danger); font-weight:var(--weight-bold)}
+  td.nm{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  /* 한 칸에 유통명(위) · 학명(아래) 두 줄 — 입고 리스트와 같은 방식 */
+  td .nm2{font-weight:var(--weight-medium); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  td .sci2{
+    font-style:italic; font-size:var(--font-table-sci); color:var(--color-text-sub);
+    letter-spacing:-.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:var(--space-4xs);
+  }
+
+  .chip{
+    display:inline-flex; align-items:center; gap:var(--gap-chip);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-chip);
+    border-radius:var(--radius-pill); background:var(--color-accent-bg); color:var(--color-accent);
+    border:var(--border-width) solid var(--color-accent-border); white-space:nowrap;
+  }
+  .chip::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:var(--color-accent)}
+  .chip.out{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+  .chip.out::before{background:var(--color-danger)}
+
+  /* ══ 폰 ══ */
+  .phone{
+    width:390px; background:var(--color-bg); border-radius:var(--radius-phone); overflow:hidden;
+    box-shadow:var(--shadow-panel); display:flex; flex-direction:column; min-height:var(--h-phone);
+  }
+  .ph-top{
+    background:var(--color-accent); color:var(--color-on-accent); padding:var(--pad-ph-top);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .ph-top h1{font-size:var(--font-3xl); font-weight:var(--weight-bold); letter-spacing:-.01em}
+  .ph-top .pcbtn{
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); background:var(--overlay-soft);
+    padding:var(--pad-pcbtn); border-radius:var(--radius-badge); border:var(--border-width) solid var(--overlay-line);
+    line-height:1;
+  }
+  .ph-sub{
+    background:var(--color-surface); border-bottom:var(--border-width) solid var(--color-border);
+    padding:var(--pad-ph-sub); font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    display:flex; justify-content:space-between;
+  }
+  .ph-sub b{color:var(--color-text); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+  .ph-body{flex:1; padding:var(--pad-ph-body); display:flex; flex-direction:column; gap:var(--gap-ph-body)}
+  .ph-body .pair{display:flex; gap:var(--gap-ph-pair)}
+  .ph-body .pair .field{flex:1}
+  .ph-save{
+    margin-top:auto; width:100%; padding:var(--pad-ph-save); font-size:var(--font-2xl); font-weight:var(--weight-bold);
+    background:var(--color-accent); color:var(--color-on-accent); border:none; border-radius:var(--radius-lg); font-family:inherit;
+  }
+  .ph-nav{display:flex; background:var(--color-surface); border-top:var(--border-width) solid var(--color-border)}
+  .ph-nav div{
+    flex:1; text-align:center; padding:var(--pad-nav-item);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+  }
+  .ph-nav div.on{color:var(--color-accent); box-shadow:inset 0 var(--bar-height) 0 var(--color-accent)}
+  .ph-nav .ic{display:block; font-size:var(--font-icon); margin-bottom:var(--space-3xs); line-height:1}
+
+  /* ══ PC ══ */
+  .pc{
+    width:1120px; background:var(--color-bg); border-radius:var(--radius-xl); overflow:hidden;
+    box-shadow:var(--shadow-panel); display:flex;
+  }
+  .pc-side{width:198px; background:var(--color-accent); color:var(--color-on-accent); padding:var(--pad-side-y) 0; flex-shrink:0}
+  .pc-side .logo{
+    padding:0 var(--pad-side-x) var(--space-xs); font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em;
+  }
+  .pc-side .slogan{padding:0 var(--pad-side-x) var(--pad-side-y); font-size:var(--font-3xs); color:var(--overlay-mid); letter-spacing:.06em}
+  .pc-side a{
+    display:flex; align-items:center; gap:var(--gap-side-icon);
+    padding:var(--space-lg) var(--pad-side-x); font-size:var(--font-md); font-weight:var(--weight-medium);
+    color:var(--overlay-strong); text-decoration:none;
+  }
+  .pc-side a.on{
+    background:var(--overlay-faint); color:var(--color-on-accent); font-weight:var(--weight-bold);
+    box-shadow:inset var(--bar-width) 0 0 var(--color-on-accent);
+  }
+  .pc-side .ic{width:18px; text-align:center; font-size:var(--font-md)}
+  .pc-main{flex:1; padding:var(--pad-main); overflow:hidden; display:flex; flex-direction:column; gap:var(--space-2xl)}
+  .pc-main > *{flex:0 0 auto}
+  .pc-head{display:flex; justify-content:space-between; align-items:flex-end}
+  .pc-head h2{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .pc-head .path{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-bottom:var(--space-2xs)}
+  .pc-tabs{display:flex; gap:var(--space-3xs); border-bottom:var(--border-width) solid var(--color-border)}
+  .pc-tabs span{
+    padding:var(--pad-tab); font-size:var(--font-md); font-weight:var(--weight-medium); color:var(--color-text-muted);
+    border-bottom:var(--border-width-thick) solid transparent; margin-bottom:calc(var(--border-width) * -1);
+  }
+  .pc-tabs span.on{color:var(--color-accent); font-weight:var(--weight-bold); border-bottom-color:var(--color-accent)}
+  .stat{display:flex; gap:var(--space-lg)}
+  .stat > div{
+    flex:1; background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); padding:var(--pad-stat);
+  }
+  .stat .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .stat .v{
+    font-size:var(--font-5xl); font-weight:var(--weight-bold); color:var(--color-accent); margin-top:var(--space-4xs);
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em; line-height:1.15;
+  }
+  .stat .v small{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); margin-left:var(--space-4xs)}
+  .stat .v.alert, .stat .v.alert small{color:var(--color-danger)}
+  .card{background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg); padding:var(--pad-card)}
+  .card.table-card{padding:var(--pad-card-table)}
+  .card > h3{
+    font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-accent); margin-bottom:var(--space-2xl);
+    display:flex; align-items:center; gap:var(--space-sm);
+  }
+  .card > h3 .hint{font-size:var(--font-xs); font-weight:var(--weight-medium); color:var(--color-text-muted)}
+  .card > h3 .right{margin-left:auto; font-weight:var(--weight-medium)}
+  .card > h3 .right + .btn{margin-left:0}
+  .row{display:flex; gap:var(--space-xl); margin-bottom:var(--space-xl)}
+  .row:last-of-type{margin-bottom:0}
+  .row.bottom{align-items:flex-end}
+  .row .spacer{flex:1}
+
+  /* ══════════════════════════════════════════════════════════
+     ▼ 이 화면 전용 부품
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── 자동완성 후보 목록 ─────────────────────────────────── */
+  .ac{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); box-shadow:var(--shadow-ac); padding:var(--pad-ac);
+    display:flex; flex-direction:column; gap:var(--gap-ac);
+  }
+  .ac-head{
+    padding:var(--pad-ac-head); font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-muted); border-bottom:var(--border-width) solid var(--color-border-faint);
+    margin-bottom:var(--space-3xs); line-height:1.5;
+  }
+  .ac-head b{color:var(--color-accent); font-weight:var(--weight-bold)}
+  .ac-item{
+    display:flex; align-items:center; gap:var(--space-md); padding:var(--pad-ac-item);
+    border-radius:var(--radius-sm); border:var(--border-width) solid transparent;
+  }
+  .ac-item.pick{background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+  .ac-item .c{
+    width:var(--w-ac-code); flex-shrink:0; font-size:var(--font-code-md); font-weight:var(--weight-bold);
+    color:var(--color-accent); letter-spacing:.05em; font-variant-numeric:tabular-nums;
+  }
+  .ac-item .t{flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--space-4xs)}
+  .ac-item .t .n{
+    font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ac-item .t .n em{font-style:normal; color:var(--color-accent); background:var(--color-key-bg); border-radius:var(--radius-sm); padding:var(--pad-key)}
+  .ac-item .t .s{
+    font-size:var(--font-xs); font-style:italic; color:var(--color-text-sub); letter-spacing:-.2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ac-item .m{
+    width:var(--w-ac-meta); font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    white-space:nowrap; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; line-height:1.55;
+  }
+  /* PC — 후보 상자는 입력칸 아래에 떠 있습니다.
+     오른쪽 끝을 입력칸에 맞추고 왼쪽으로 넓게 펼쳐 학명이 잘리지 않게 합니다. */
+  .row.acrow{position:relative; margin-bottom:var(--h-ac-pc)}
+  .row.acrow .ac{
+    position:absolute; right:0; width:var(--w-ac-pc);
+    top:calc(var(--h-label) + var(--space-xs) + var(--h-input) + var(--space-xs));
+  }
+  .ac-item.new{
+    color:var(--color-accent); font-size:var(--font-sm); font-weight:var(--weight-semibold);
+    border-top:var(--border-width) solid var(--color-border-faint); border-radius:0;
+    margin-top:var(--space-3xs); padding-top:var(--space-lg);
+  }
+  .ac-item.new span{color:var(--color-text-muted); font-weight:var(--weight-medium); font-size:var(--font-2xs); margin-left:var(--space-xs)}
+
+  /* ── 규격 프리셋 버튼 ───────────────────────────────────── */
+  .presets{display:flex; gap:var(--gap-preset); flex-wrap:wrap}
+  .pre{
+    width:var(--w-preset); font-family:inherit; cursor:pointer; text-align:center;
+    padding:var(--pad-preset); border-radius:var(--radius-md);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  }
+  .pre b{display:block; font-size:var(--font-lg); font-weight:var(--weight-semibold); color:var(--color-text); line-height:1.3}
+  .pre i{display:block; font-style:normal; font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-hint); margin-top:var(--space-4xs)}
+  .pre.on{background:var(--color-accent); border-color:var(--color-accent)}
+  .pre.on b{color:var(--color-on-accent); font-weight:var(--weight-bold)}
+  .pre.on i{color:var(--overlay-strong)}
+  .pre.free b{font-size:var(--font-md); color:var(--color-text-sub)}
+
+  /* 「9치 = 27cm 포트로 저장됩니다」 안내 */
+  .savenote{
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); padding:var(--pad-rule);
+    font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); line-height:1.7;
+  }
+  .savenote b{color:var(--color-accent); font-weight:var(--weight-bold)}
+  .savenote .arw{color:var(--color-text-hint); font-weight:var(--weight-bold)}
+
+  /* ── 과세 / 면세 두 갈래 ────────────────────────────────── */
+  .taxset{display:flex; width:var(--w-tax); border-radius:var(--radius-md); overflow:hidden; border:var(--border-width) solid var(--color-border)}
+  .taxset button{
+    flex:1; font-family:inherit; cursor:pointer; height:var(--h-input); padding:var(--pad-taxbtn);
+    font-size:var(--font-md); font-weight:var(--weight-medium); color:var(--color-text-muted);
+    background:var(--color-surface); border:none;
+  }
+  .taxset button + button{border-left:var(--border-width) solid var(--color-border)}
+  .taxset button.on{background:var(--color-accent); color:var(--color-on-accent); font-weight:var(--weight-bold)}
+
+  /* ── 만들어진 코드 미리보기 (03과 같은 모양) ────────────── */
+  .preview{
+    display:flex; flex-direction:column; justify-content:center; gap:var(--space-4xs);
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); padding:var(--pad-rule); width:var(--w-preview); flex-shrink:0;
+  }
+  .preview .k{font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted)}
+  .preview .v{
+    font-size:var(--font-code-xl); font-weight:var(--weight-bold); color:var(--color-accent);
+    letter-spacing:.06em; line-height:1.1; font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .preview.danger{background:var(--color-danger-bg); border-color:var(--color-danger-border)}
+  .preview.danger .v{color:var(--color-danger)}
+
+  /* ── 앞 5자 강조 · 중복 경고 (03과 같은 문구·같은 모양) ─── */
+  .key{background:var(--color-key-bg); border-radius:var(--radius-sm); padding:var(--pad-key)}
+  .key.warn{background:var(--color-key-bg-warn)}
+  .dupwarn{
+    background:var(--color-danger-bg); border:var(--border-width) solid var(--color-danger-border);
+    border-radius:var(--radius-md); padding:var(--pad-alert); margin-top:var(--space-xl);
+  }
+  .dupwarn h4{
+    font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger);
+    display:flex; align-items:center; gap:var(--space-xs); margin-bottom:var(--space-xs);
+  }
+  .dupwarn p{font-size:var(--font-xs); color:var(--color-text-sub); line-height:1.65; margin-bottom:var(--space-lg)}
+  .dupwarn p b{color:var(--color-danger); font-weight:var(--weight-bold)}
+  .dupwarn .box{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-danger-border);
+    border-radius:var(--radius-sm); overflow:hidden; margin-bottom:var(--space-lg);
+  }
+  .dupwarn th{background:var(--color-danger-bg); color:var(--color-danger); border-bottom-color:var(--color-danger-border)}
+  .dupwarn td.code{color:var(--color-danger)}
+  .choices{display:flex; gap:var(--space-lg)}
+  .choice{
+    flex:1; display:flex; align-items:center; gap:var(--space-lg); text-align:left; cursor:pointer;
+    font-family:inherit; padding:var(--pad-choice); border-radius:var(--radius-md);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  }
+  .choice .t{font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-text); line-height:1.4}
+  .choice .d{font-size:var(--font-2xs); font-weight:var(--weight-medium); color:var(--color-text-muted); margin-top:var(--space-4xs)}
+  .choice .c{
+    margin-left:auto; font-size:var(--font-code-lg); font-weight:var(--weight-bold);
+    letter-spacing:.05em; color:var(--color-accent); font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .choice.pick{border-color:var(--color-accent); background:var(--color-accent-bg)}
+  .choice.alt .c{color:var(--color-danger)}
+  .lock{
+    font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    margin-top:var(--space-md); display:flex; align-items:center; gap:var(--space-xs);
+  }
+  .lock b{color:var(--color-danger); font-weight:var(--weight-bold)}
+
+  /* ── 접었다 펴는 「식물 특성 (선택)」 ───────────────────── */
+  .fold{border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md); background:var(--color-bg); margin-top:var(--space-xl)}
+  .fold-h{
+    display:flex; align-items:center; gap:var(--space-sm); padding:var(--pad-fold-h);
+    font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text);
+  }
+  .fold-h .ar{color:var(--color-text-hint); font-size:var(--font-xs); font-weight:var(--weight-bold)}
+  .fold-h .opt{
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-pill); padding:var(--pad-tag);
+  }
+  .fold-h .memo{font-size:var(--font-2xs); font-weight:var(--weight-medium); color:var(--color-text-hint)}
+  .fold-h .right{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-medium); color:var(--color-text-muted)}
+  .fold-b{
+    padding:var(--pad-fold-b); border-top:var(--border-width) solid var(--color-border);
+    display:flex; flex-direction:column; gap:var(--gap-fold); background:var(--color-surface);
+    border-radius:0 0 var(--radius-md) var(--radius-md);
+  }
+  .fold-b .row{margin-bottom:0}
+  .duo{display:flex; align-items:center; gap:var(--space-xs)}
+  .duo .inp{flex:1}
+  .duo .tw{font-size:var(--font-md); color:var(--color-text-hint); font-weight:var(--weight-bold)}
+  .duo .unit{
+    width:var(--w-duo-unit); flex-shrink:0; font-size:var(--font-xs);
+    color:var(--color-text-muted); font-weight:var(--weight-semibold);
+  }
+  /* 골라 넣는 칸 — 오른쪽 끝에 ▾ */
+  .sel{position:relative}
+  .sel .ar{
+    position:absolute; right:var(--space-lg); top:0; height:var(--h-input);
+    display:flex; align-items:center; font-size:var(--font-xs);
+    color:var(--color-text-muted); font-weight:var(--weight-bold);
+  }
+
+  /* ── 저장줄 안내 ────────────────────────────────────────── */
+  .saverow{display:flex; align-items:center; gap:var(--space-lg); margin-top:var(--space-xl)}
+  .saverow .msg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); line-height:1.6}
+  .saverow .msg b{color:var(--color-accent); font-weight:var(--weight-bold)}
+  .saverow .spacer{flex:1}
+
+  /* ── 합계줄 ─────────────────────────────────────────────── */
+  tr.sum td{
+    background:var(--color-accent-bg); font-weight:var(--weight-bold); color:var(--color-accent);
+    border-bottom:none; font-variant-numeric:tabular-nums;
+  }
+  .del{
+    font-family:inherit; cursor:pointer; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-muted); background:var(--color-surface);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-sm); padding:var(--pad-tag);
+  }
+
+  /* ══ 폰 전용 ══ */
+  /* 폰 규격 프리셋은 한 줄에 셋씩 */
+  .ph-body .presets .pre{width:var(--w-preset-ph)}
+  /* 폰 겹침 경고 — 좁아서 세로로 세웁니다 */
+  .ph-warn{
+    background:var(--color-danger-bg); border:var(--border-width) solid var(--color-danger-border);
+    border-radius:var(--radius-md); padding:var(--pad-rule);
+  }
+  .ph-warn h4{
+    font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-danger);
+    margin-bottom:var(--space-xs); line-height:1.4;
+  }
+  .ph-warn p{font-size:var(--font-2xs); color:var(--color-text-sub); line-height:1.6; margin-bottom:var(--space-md)}
+  .ph-warn .choices{flex-direction:column; gap:var(--space-sm)}
+  .ph-warn .choice{padding:var(--pad-choice)}
+  /* 폰 — 오늘 이 화면에서 넣은 것 */
+  .ph-log{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md); padding:var(--pad-ph-log);
+    display:flex; flex-direction:column; gap:var(--gap-ph-log);
+  }
+  .ph-log .lh{
+    display:flex; align-items:center; gap:var(--space-xs); font-size:var(--font-2xs);
+    font-weight:var(--weight-bold); color:var(--color-text-muted);
+    padding-bottom:var(--space-xs); border-bottom:var(--border-width) solid var(--color-border-faint);
+  }
+  .ph-log .lh b{color:var(--color-accent)}
+  .ph-log .lh .right{margin-left:auto; font-weight:var(--weight-semibold); color:var(--color-text-hint)}
+  .ph-log .li{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-xs); color:var(--color-text-sub)}
+  .ph-log .li em{
+    font-style:normal; font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-accent);
+    letter-spacing:.04em; font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .ph-log .li span{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--color-text)}
+  .ph-log .li i{font-style:normal; font-variant-numeric:tabular-nums; font-weight:var(--weight-semibold); white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ══════════ 폰 ══════════ -->
+<div>
+  <div class="cap">폰 <b>390px</b> — 밭·하차장에서 그 자리에서 찍습니다 <span class="tag">엑셀·일괄업로드 없음</span> <span style="opacity:.65">(위아래로 밀어 보는 화면을 전부 펼쳐 그렸습니다)</span></div>
+  <div class="phone">
+    <div class="ph-top">
+      <h1>입고 등록</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>2026-07-31 · 한아름농원</span>
+      <span>오늘 등록 <b>4</b>건 · <b>470</b>주</span>
+    </div>
+    <div class="ph-body">
+
+      <div class="field">
+        <label>입고업체 <span class="req">*</span> <span class="auto">오늘 계속 이 업체로 둡니다</span></label>
+        <input class="inp filled" value="한아름농원">
+      </div>
+
+      <!-- 자동완성 펼친 상태 -->
+      <div class="field">
+        <label>유통명 <span class="req">*</span></label>
+        <input class="inp typing" value="수크령">
+        <div class="ac">
+          <div class="ac-head">전에 넣은 것에서 <b>3건</b> 찾았습니다 · 고르면 학명 · 품목코드 · 지난 단가가 저절로 채워집니다</div>
+          <div class="ac-item pick">
+            <span class="c">PER03</span>
+            <span class="t">
+              <span class="n"><em>수크령</em> '레드헤드'</span>
+              <span class="s">Pennisetum alopecuroides 'Red Head'</span>
+            </span>
+          </div>
+          <div class="ac-item">
+            <span class="c">PEL01</span>
+            <span class="t">
+              <span class="n"><em>수크령</em> '리틀버니'</span>
+              <span class="s">Pennisetum alopecuroides 'Little Bunny'</span>
+            </span>
+          </div>
+          <div class="ac-item">
+            <span class="c">PEH01</span>
+            <span class="t">
+              <span class="n"><em>수크령</em> '하멜른'</span>
+              <span class="s">Pennisetum alopecuroides 'Hameln'</span>
+            </span>
+          </div>
+          <div class="ac-item new">＋ 목록에 없습니다 — 새 품목으로 등록<span>코드를 새로 만듭니다</span></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>학명 <span class="auto">골라주시면 저절로 채워집니다</span></label>
+        <input class="inp sci filled" value="Pennisetum alopecuroides 'Red Head'">
+      </div>
+
+      <div class="field">
+        <label>규격 <span class="req">*</span> <span class="auto">「치」로 들어와도 cm로 저장합니다</span></label>
+        <div class="presets">
+          <button class="pre"><b>10cm</b><i>4치</i></button>
+          <button class="pre"><b>15cm</b><i>5치</i></button>
+          <button class="pre"><b>18cm</b><i>6치</i></button>
+          <button class="pre"><b>21cm</b><i>7치</i></button>
+          <button class="pre on"><b>27cm</b><i>9치</i></button>
+          <button class="pre free"><b>직접입력</b><i>그 밖의 규격</i></button>
+        </div>
+        <div class="savenote">현장에서 <b>9치</b> <span class="arw">→</span> 저장은 <b>27cm 포트</b></div>
+      </div>
+
+      <div class="pair">
+        <div class="field">
+          <label>수량 <span class="req">*</span></label>
+          <input class="inp num" value="40">
+        </div>
+        <div class="field">
+          <label>매입단가 <span class="req">*</span></label>
+          <input class="inp num" value="5,200">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>과세 · 면세 <span class="req">*</span></label>
+        <div class="taxset">
+          <button>과세</button>
+          <button class="on">면세</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>품목코드 <span class="auto">자동 생성</span></label>
+        <input class="inp code" value="PER03-27">
+      </div>
+
+      <!-- 앞 5자 겹침 경고 -->
+      <div class="ph-warn">
+        <h4>⚠ 앞 5자 PER03이 이미 쓰이고 있습니다 — 2건</h4>
+        <p>
+          <b>PER03-15 수크령 '레드헤드'</b> · <b>PER03-21 수크령 '레드헤드'</b><br>
+          같은 식물인지 먼저 확인해 주세요.
+        </p>
+        <div class="choices">
+          <button class="choice pick">
+            <div>
+              <div class="t">같은 식물 · 규격만 다름</div>
+              <div class="d">일련번호 03을 그대로 씁니다</div>
+            </div>
+            <span class="c">PER03-27</span>
+          </button>
+          <button class="choice alt">
+            <div>
+              <div class="t">다른 식물입니다</div>
+              <div class="d">일련번호를 04로 올립니다</div>
+            </div>
+            <span class="c">PER04-27</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 접힌 상태 — 폰에서는 굳이 안 채우셔도 됩니다 -->
+      <div class="fold">
+        <div class="fold-h">
+          <span class="ar">▸</span>식물 특성
+          <span class="opt">선택 · 나중에 채워도 됩니다</span>
+          <span class="right">＋</span>
+        </div>
+      </div>
+
+      <!-- 오늘 이 화면에서 넣은 것이 아래로 쌓입니다 -->
+      <div class="ph-log">
+        <div class="lh">오늘 등록 <b>4건</b> · 470주 · 1,486,000원 <span class="right">전체보기</span></div>
+        <div class="li"><em>COR01-27</em><span>자엽안개나무 '로얄퍼플'</span><i>40주</i></div>
+        <div class="li"><em>HAA01-15</em><span>하코네클로아 '아우레올라'</span><i>150주</i></div>
+        <div class="li"><em>CAS01-18</em><span>층꽃 '스털링실버'</span><i>80주</i></div>
+        <div class="li"><em>CAR01-10</em><span>청사초</span><i>200주</i></div>
+      </div>
+
+      <button class="ph-save">저장하고 다음 것 입력</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div>
+  <div class="cap">PC <b>1440px</b> — 사무실에서 명세서를 보고 여러 종을 이어서 칩니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="pc-side">
+      <div class="logo">제로가드닝</div>
+      <div class="slogan">GARDENING FROM ZERO</div>
+      <a class="on"><span class="ic">🌿</span>상품 관리</a>
+      <a><span class="ic">📦</span>재고 관리</a>
+      <a><span class="ic">🛒</span>주문 관리</a>
+      <a><span class="ic">📄</span>명세서 발행</a>
+      <a><span class="ic">🏢</span>업체 관리</a>
+      <a><span class="ic">🌱</span>소싱 추천</a>
+    </div>
+    <div class="pc-main">
+      <div class="pc-head">
+        <h2>상품 관리</h2>
+        <div class="path">상품 관리 › 수동 입고</div>
+      </div>
+      <div class="pc-tabs">
+        <span class="on">수동 입고</span>
+        <span>입고 리스트</span>
+        <span>재고 관리</span>
+        <span>품목코드</span>
+      </div>
+
+      <div class="stat">
+        <div><div class="k">오늘 등록</div><div class="v">4<small>건</small></div></div>
+        <div><div class="k">오늘 입고 수량</div><div class="v">470<small>주</small></div></div>
+        <div><div class="k">오늘 매입금액</div><div class="v">1,486,000<small>원</small></div></div>
+      </div>
+
+      <!-- ── 입고 등록 ── -->
+      <div class="card">
+        <h3>입고 등록 <span class="hint">* 표시는 꼭 채워주세요 · 저장하면 곧바로 다음 것을 칠 수 있습니다</span>
+          <button class="btn sm right">📄 엑셀 불러오기</button>
+          <button class="btn sm">⬆ 여러 건 한꺼번에 올리기</button></h3>
+
+        <!-- 1줄 — 자동완성이 펼쳐진 상태 -->
+        <div class="row acrow">
+          <div class="field" style="width:var(--w-date)">
+            <label>입고일자 <span class="req">*</span></label>
+            <input class="inp" value="2026-07-31">
+          </div>
+          <div class="field" style="width:var(--w-company)">
+            <label>입고업체 <span class="req">*</span> <span class="auto">고정</span></label>
+            <input class="inp filled" value="한아름농원">
+          </div>
+          <div class="field" style="width:var(--w-name)">
+            <label>유통명 <span class="req">*</span></label>
+            <input class="inp" value="수크령 '레드헤드'">
+          </div>
+          <div class="field" style="flex:1; min-width:0">
+            <label>학명 <span class="auto">치는 중 · 두 글자만 쳐도 후보가 뜹니다</span></label>
+            <input class="inp sci typing" value="Pennisetum alo">
+            <div class="ac">
+              <div class="ac-head">전에 넣은 것에서 <b>4건</b> 찾았습니다 · 고르면 유통명 · 품목코드 · 규격 · 지난 단가까지 한꺼번에 채워집니다</div>
+              <div class="ac-item pick">
+                <span class="c">PER03</span>
+                <span class="t">
+                  <span class="n">수크령 '레드헤드'</span>
+                  <span class="s"><em>Pennisetum alo</em>pecuroides 'Red Head'</span>
+                </span>
+                <span class="m">입고 12건 · 최근 2026-05-14<br>21cm 포트 · 3,400원</span>
+              </div>
+              <div class="ac-item">
+                <span class="c">PEL01</span>
+                <span class="t">
+                  <span class="n">수크령 '리틀버니'</span>
+                  <span class="s">Pennisetum alopecuroides 'Little Bunny'</span>
+                </span>
+                <span class="m">입고 7건 · 최근 2026-03-22<br>15cm 포트 · 2,600원</span>
+              </div>
+              <div class="ac-item">
+                <span class="c">PEH01</span>
+                <span class="t">
+                  <span class="n">수크령 '하멜른'</span>
+                  <span class="s">Pennisetum alopecuroides 'Hameln'</span>
+                </span>
+                <span class="m">입고 4건 · 최근 2025-10-08<br>15cm 포트 · 2,500원</span>
+              </div>
+              <div class="ac-item">
+                <span class="c">PER02</span>
+                <span class="t">
+                  <span class="n">붉은수크령</span>
+                  <span class="s">Pennisetum setaceum 'Rubrum'</span>
+                </span>
+                <span class="m">입고 3건 · 최근 2025-06-19<br>10cm 포트 · 1,900원</span>
+              </div>
+              <div class="ac-item new">＋ 목록에 없습니다 — 새 품목으로 등록<span>학명을 끝까지 치면 품목코드가 새로 만들어집니다</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2줄 — 규격 프리셋 -->
+        <div class="row">
+          <div class="field">
+            <label>규격 <span class="req">*</span> <span class="auto">기본 다섯 가지 · 그 밖은 직접 입력</span></label>
+            <div class="presets">
+              <button class="pre"><b>10cm</b><i>4치</i></button>
+              <button class="pre"><b>15cm</b><i>5치</i></button>
+              <button class="pre"><b>18cm</b><i>6치</i></button>
+              <button class="pre"><b>21cm</b><i>7치</i></button>
+              <button class="pre on"><b>27cm</b><i>9치</i></button>
+              <button class="pre free"><b>직접입력</b><i>그 밖의 규격</i></button>
+            </div>
+          </div>
+          <div class="field" style="flex:1; min-width:0">
+            <label>&nbsp;</label>
+            <div class="savenote">
+              거래처가 <b>「9치」</b>로 적어 보내도 <span class="arw">→</span> 저장은 <b>27cm 포트</b>로 통일됩니다.<br>
+              4치=10cm · 5치=15cm · 6치=18cm · 7치=21cm · 9치=27cm
+            </div>
+          </div>
+        </div>
+
+        <!-- 3줄 — 수량 · 단가 · 과세 · 코드 -->
+        <div class="row bottom">
+          <div class="field" style="width:var(--w-qty)">
+            <label>수량 <span class="req">*</span></label>
+            <input class="inp num" value="40">
+          </div>
+          <div class="field" style="width:var(--w-price)">
+            <label>매입단가 <span class="req">*</span></label>
+            <input class="inp num" value="5,200">
+          </div>
+          <div class="field" style="width:var(--w-amount)">
+            <label>금액 <span class="auto">자동 계산</span></label>
+            <input class="inp num filled" value="208,000">
+          </div>
+          <div class="field">
+            <label>과세 · 면세 <span class="req">*</span></label>
+            <div class="taxset">
+              <button>과세</button>
+              <button class="on">면세</button>
+            </div>
+          </div>
+          <div class="spacer"></div>
+          <div class="preview danger">
+            <div class="k">만들어진 품목코드</div>
+            <div class="v">PER03-27</div>
+          </div>
+        </div>
+
+        <!-- 앞 5자 겹침 경고 — 03 품목코드 화면과 같은 규칙·같은 문구 -->
+        <div class="dupwarn">
+          <h4>⚠ 앞 5자 <b>PER03</b>이 이미 쓰이고 있습니다 — 2건</h4>
+          <p>
+            아래 품목이 같은 <b>PER03</b>으로 시작합니다. <b>같은 식물인지 먼저 확인해 주세요.</b><br>
+            같은 식물이면 번호를 그대로 쓰고, 다른 식물이면 일련번호를 올려야 합니다.
+          </p>
+          <div class="box">
+            <table>
+              <colgroup><col style="width:var(--w-d-code)"><col style="width:var(--w-d-name)"><col><col style="width:var(--w-d-spec)"><col style="width:var(--w-d-qty)"></colgroup>
+              <tr><th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th><th class="r">현재고</th></tr>
+              <tr>
+                <td class="code"><span class="key warn">PER03</span>-15</td>
+                <td class="nm">수크령 '레드헤드'</td>
+                <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+                <td class="dim">15cm 포트</td><td class="r">340</td>
+              </tr>
+              <tr>
+                <td class="code"><span class="key warn">PER03</span>-21</td>
+                <td class="nm">수크령 '레드헤드'</td>
+                <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+                <td class="dim">21cm 포트</td><td class="r">90</td>
+              </tr>
+            </table>
+          </div>
+          <div class="choices">
+            <button class="choice pick">
+              <div>
+                <div class="t">같은 식물입니다 — 규격만 다릅니다</div>
+                <div class="d">일련번호 03을 그대로 씁니다</div>
+              </div>
+              <span class="c">PER03-27</span>
+            </button>
+            <button class="choice alt">
+              <div>
+                <div class="t">다른 식물입니다</div>
+                <div class="d">일련번호를 04로 올립니다</div>
+              </div>
+              <span class="c">PER04-27</span>
+            </button>
+          </div>
+          <div class="lock">🔒 <b>품목코드는 한 번 저장하면 바꿀 수 없습니다.</b> 주문·재고·명세서가 전부 이 코드로 이어집니다.</div>
+        </div>
+
+        <!-- 식물 특성 — PC는 펼친 상태 -->
+        <div class="fold">
+          <div class="fold-h">
+            <span class="ar">▾</span>식물 특성
+            <span class="opt">선택 · 나중에 채워도 됩니다</span>
+            <span class="memo">비워두고 저장하셔도 입고는 그대로 등록됩니다</span>
+            <span class="right">6개 모두 채움 · 접기</span>
+          </div>
+          <div class="fold-b">
+            <div class="row">
+              <div class="field" style="flex:1">
+                <label>다 자란 키</label>
+                <div class="duo"><input class="inp num" value="80"><span class="tw">~</span><input class="inp num" value="120"><span class="unit">cm</span></div>
+              </div>
+              <div class="field" style="flex:1">
+                <label>폭</label>
+                <div class="duo"><input class="inp num" value="60"><span class="tw">~</span><input class="inp num" value="90"><span class="unit">cm</span></div>
+              </div>
+              <div class="field" style="flex:1">
+                <label>내한성 <span class="auto">USDA Zone 2~10</span></label>
+                <div class="duo"><input class="inp num" value="5"><span class="tw">~</span><input class="inp num" value="9"><span class="unit">Zone</span></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field" style="flex:1">
+                <label>물주기 <span class="auto">자주 · 보통 · 적게 · 건조 · 다습</span></label>
+                <div class="sel"><input class="inp" value="보통"><span class="ar">▾</span></div>
+              </div>
+              <div class="field" style="flex:1">
+                <label>햇빛 <span class="auto">양지 ~ 음지 5단계</span></label>
+                <div class="sel"><input class="inp" value="양지"><span class="ar">▾</span></div>
+              </div>
+              <div class="field" style="flex:1">
+                <label>개화기</label>
+                <div class="duo"><input class="inp num" value="8"><span class="tw">~</span><input class="inp num" value="10"><span class="unit">월</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 저장줄 -->
+        <div class="saverow">
+          <div class="msg">
+            <b>저장하고 계속 입력</b>을 누르면 아래 목록에 한 줄 쌓이고,<br>
+            입고일자 · 입고업체만 남고 나머지 칸은 비워져 다음 것을 바로 치실 수 있습니다.
+          </div>
+          <div class="spacer"></div>
+          <button class="btn">칸 비우기</button>
+          <button class="btn">저장하고 끝내기</button>
+          <button class="btn main wide">저장하고 계속 입력</button>
+        </div>
+      </div>
+
+      <!-- ── 오늘 이 화면에서 등록한 것 ── -->
+      <div class="card table-card">
+        <h3>오늘 등록한 입고 <span class="hint">4건 · 방금 저장한 것이 맨 위에 옵니다</span>
+          <button class="btn sm right">⬇ 엑셀 내려받기</button>
+          <button class="btn sm">🖨 인쇄</button></h3>
+        <table>
+          <colgroup>
+            <col style="width:var(--w-t-time)"><col style="width:var(--w-t-code)"><col>
+            <col style="width:var(--w-t-spec)"><col style="width:var(--w-t-qty)"><col style="width:var(--w-t-price)">
+            <col style="width:var(--w-t-amt)"><col style="width:var(--w-t-tax)"><col style="width:var(--w-t-act)">
+          </colgroup>
+          <tr>
+            <th>시각</th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th>
+            <th class="r">수량</th><th class="r">단가</th><th class="r">금액</th><th class="c">구분</th><th></th>
+          </tr>
+          <tr>
+            <td class="dim">09:44</td>
+            <td class="code">COR01-27</td>
+            <td>
+              <div class="nm2">자엽안개나무 '로얄퍼플'</div>
+              <div class="sci2">Cotinus coggygria 'Royal Purple'</div>
+            </td>
+            <td class="dim">27cm 포트</td>
+            <td class="r">40</td><td class="r">16,500</td><td class="r">660,000</td>
+            <td class="c dim">과세</td>
+            <td class="c"><button class="del">지움</button></td>
+          </tr>
+          <tr>
+            <td class="dim">09:31</td>
+            <td class="code">HAA01-15</td>
+            <td>
+              <div class="nm2">하코네클로아 '아우레올라'</div>
+              <div class="sci2">Hakonechloa macra 'Aureola'</div>
+            </td>
+            <td class="dim">15cm 포트</td>
+            <td class="r">150</td><td class="r">2,600</td><td class="r">390,000</td>
+            <td class="c dim">면세</td>
+            <td class="c"><button class="del">지움</button></td>
+          </tr>
+          <tr>
+            <td class="dim">09:20</td>
+            <td class="code">CAS01-18</td>
+            <td>
+              <div class="nm2">층꽃 '스털링실버'</div>
+              <div class="sci2">Caryopteris × clandonensis 'Sterling Silver'</div>
+            </td>
+            <td class="dim">18cm 포트</td>
+            <td class="r">80</td><td class="r">3,200</td><td class="r">256,000</td>
+            <td class="c dim">면세</td>
+            <td class="c"><button class="del">지움</button></td>
+          </tr>
+          <tr>
+            <td class="dim">09:12</td>
+            <td class="code">CAR01-10</td>
+            <td>
+              <div class="nm2">청사초</div>
+              <div class="sci2">Carex breviculmis</div>
+            </td>
+            <td class="dim">10cm 포트</td>
+            <td class="r">200</td><td class="r">900</td><td class="r">180,000</td>
+            <td class="c dim">면세</td>
+            <td class="c"><button class="del">지움</button></td>
+          </tr>
+          <tr class="sum">
+            <td></td><td></td><td>합계 4건</td><td></td>
+            <td class="r">470</td><td></td><td class="r">1,486,000</td><td></td><td></td>
+          </tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

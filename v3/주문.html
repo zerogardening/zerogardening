@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>제로가드닝 통합관리 — 주문</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F9E44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="통합관리">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta http-equiv="Cache-Control" content="no-cache">
+
+<link rel="stylesheet" href="css/공통.css?v=2">
+<link rel="stylesheet" href="css/주문.css?v=2">
+</head>
+<body>
+
+<div id="앱"></div>
+<div id="토스트칸" aria-live="polite"></div>
+
+<!-- 상품(index.html)과 같은 공통 뼈대 위에 주문만 얹는다. 05~07(입고·재고)은 싣지 않는다 -->
+<script src="js/lib/xlsx.min.js"></script>
+<script src="js/00-시드.js?v=2"></script>
+<script src="js/01-저장소.js?v=2"></script>
+<script src="js/02-품목코드.js?v=2"></script>
+<script src="js/03-계산.js?v=2"></script>
+<script src="js/04-공통UI.js?v=2"></script>
+<script src="js/04b-특성.js?v=2"></script>
+<script src="js/08a-주문자료.js?v=2"></script>
+<script src="js/08b-주문목록.js?v=2"></script>
+<script src="js/08c-주문입력.js?v=2"></script>
+<script src="js/08d-주문파일.js?v=2"></script>
+<script src="js/09-동봉카드.js?v=2"></script>
+<script src="js/09b-카드설정.js?v=2"></script>
+</body>
+</html>

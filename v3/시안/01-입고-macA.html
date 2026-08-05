@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품 › 입고 (macOS A안 · 브랜드 초록)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* 이 화면에서만 쓰는 것 */
+  .phone{height:auto}
+  .ph-body{gap:var(--space-lg)}
+  .totrow td{
+    background:#F7F7F9; font-weight:var(--weight-bold); color:var(--color-text);
+    border-bottom:none; border-top:var(--border-width) solid var(--color-border);
+  }
+  .qbar{display:flex; align-items:flex-end; gap:var(--space-lg); flex-wrap:wrap}
+  .qbar .dash{padding-bottom:var(--space-lg); color:var(--color-text-muted)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════ 폰 ══════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 밭·차 안에서 그 자리에서 찍어 넣습니다 <span class="tag">넣기 + 확인이 한 화면</span></div>
+  <div class="phone">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="bat"><i></i></span>
+      </span>
+    </div>
+    <div class="ph-top">
+      <h1>입고</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>2026-07-31 · 한아름농원</span>
+      <span>오늘 <b>4</b>건 · <b>470</b>주</span>
+    </div>
+
+    <div class="ph-body">
+
+      <div class="field">
+        <label>입고업체 <span class="req">*</span> <span class="auto">오늘 계속 이 업체입니다</span></label>
+        <input class="inp" value="한아름농원">
+      </div>
+
+      <div class="field">
+        <label>유통명 <span class="req">*</span></label>
+        <input class="inp" value="수크령">
+      </div>
+
+      <div class="ac">
+        <div class="hd">전에 넣은 것에서 3건 찾았습니다 — 고르면 학명·품목코드가 저절로 채워집니다</div>
+        <div class="it on">
+          <div class="cd">PER03</div>
+          <div>
+            <div class="nm">수크령 '레드헤드'</div>
+            <div class="sci">Pennisetum alopecuroides 'Red Head'</div>
+          </div>
+        </div>
+        <div class="it">
+          <div class="cd">PEL01</div>
+          <div>
+            <div class="nm">수크령 '리틀버니'</div>
+            <div class="sci">Pennisetum alopecuroides 'Little Bunny'</div>
+          </div>
+        </div>
+        <div class="it">
+          <div class="cd">PEH01</div>
+          <div>
+            <div class="nm">수크령 '하멜른'</div>
+            <div class="sci">Pennisetum alopecuroides 'Hameln'</div>
+          </div>
+        </div>
+        <div class="new">＋ 목록에 없습니다 — 새 품목으로 등록 <span>코드를 새로 만듭니다</span></div>
+      </div>
+
+      <div class="field">
+        <label>학명 <span class="auto">골라주시면 저절로 채워집니다</span></label>
+        <input class="inp sci" value="Pennisetum alopecuroides 'Red Head'">
+      </div>
+
+      <div class="field">
+        <label>규격 <span class="req">*</span> <span class="auto">「치」로 들어와도 cm로 저장합니다</span></label>
+        <div class="seg">
+          <button>10cm<i>4치</i></button>
+          <button>15cm<i>5치</i></button>
+          <button>18cm<i>6치</i></button>
+          <button>21cm<i>7치</i></button>
+          <button class="on">27cm<i>9치</i></button>
+          <button>직접입력<i>그 밖의 규격</i></button>
+        </div>
+      </div>
+
+      <div class="pair">
+        <div class="field">
+          <label>수량 <span class="req">*</span></label>
+          <input class="inp num" value="40">
+        </div>
+        <div class="field">
+          <label>매입단가 <span class="req">*</span></label>
+          <input class="inp num" value="5,200">
+        </div>
+      </div>
+
+      <div class="pair">
+        <div class="field" style="flex:1.1">
+          <label>과세 · 면세 <span class="req">*</span></label>
+          <div class="toggle">
+            <button style="flex:1; padding:0">과세</button>
+            <button class="on" style="flex:1; padding:0">면세</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>품목코드 <span class="auto">자동 생성</span></label>
+          <input class="inp code" value="PER03-27">
+        </div>
+      </div>
+
+      <div class="alert">
+        <h4>⚠ 앞 5자 PER03 이 이미 쓰이고 있습니다 <span class="right">2건</span></h4>
+        <p>
+          PER03-15 수크령 '레드헤드' · PER03-21 수크령 '레드헤드'<br>
+          <b>같은 식물인지 먼저 확인해 주세요.</b>
+        </p>
+        <div class="pick" style="flex-direction:column; gap:var(--space-sm)">
+          <button class="go">
+            <div>
+              <div class="t">같은 식물 · 규격만 다름</div>
+              <div class="s">일련번호 03을 그대로 씁니다</div>
+            </div>
+            <div class="c ok">PER03-27</div>
+          </button>
+          <button>
+            <div>
+              <div class="t">다른 식물입니다</div>
+              <div class="s">일련번호를 04로 올립니다</div>
+            </div>
+            <div class="c no">PER04-27</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="fold">
+        ＋ 식물 특성 <span class="s">선택 · 나중에 채워도 됩니다</span> <span class="r">6가지</span>
+      </div>
+
+      <button class="ph-save">저장하고 다음 것 입력</button>
+
+      <div class="ph-sec">오늘 넣은 것 <span class="r">4건 · 470주 · 1,486,000원</span></div>
+      <div class="ph-list">
+        <div class="ph-card">
+          <div class="r1">
+            <div class="nm">자엽안개나무 '로얄퍼플'</div>
+            <div class="cd">COR01-27</div>
+          </div>
+          <div class="sci">Cotinus coggygria 'Royal Purple'</div>
+          <div class="r2">27cm 포트 · <b>40</b>주 · 16,500원 <span class="amt">660,000</span></div>
+        </div>
+        <div class="ph-card">
+          <div class="r1">
+            <div class="nm">하코네클로아 '아우레올라'</div>
+            <div class="cd">HAA01-15</div>
+          </div>
+          <div class="sci">Hakonechloa macra 'Aureola'</div>
+          <div class="r2">15cm 포트 · <b>150</b>주 · 2,600원 <span class="amt">390,000</span></div>
+        </div>
+        <div class="ph-card">
+          <div class="r1">
+            <div class="nm">층꽃 '스털링실버'</div>
+            <div class="cd">CAS01-18</div>
+          </div>
+          <div class="sci">Caryopteris × clandonensis 'Sterling Silver'</div>
+          <div class="r2">18cm 포트 · <b>80</b>주 · 3,200원 <span class="amt">256,000</span></div>
+        </div>
+      </div>
+
+      <div class="fchips" style="justify-content:center">
+        <button class="fchip on">오늘</button>
+        <button class="fchip">이번 달</button>
+        <button class="fchip">지난 달</button>
+        <button class="fchip">전체</button>
+      </div>
+
+    </div>
+
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 넣는 칸과 찾는 칸이 한 화면입니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 상품 › 입고</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>상품</h2>
+          <div class="path">상품 › 입고</div>
+        </div>
+        <div class="pc-tabs">
+          <span class="on">입고</span>
+          <span>재고</span>
+        </div>
+
+        <!-- ── 넣는 칸 ── -->
+        <div class="card">
+          <h3>입고 등록 <span class="hint">* 표시는 꼭 채워주세요 · 저장하면 칸이 비고 다음 것을 이어서 넣습니다</span>
+            <span class="right" style="display:flex; gap:var(--space-sm)">
+              <button class="btn sm">엑셀 불러오기</button>
+              <button class="btn sm">여러 건 한꺼번에</button>
+            </span>
+          </h3>
+
+          <div class="row">
+            <div class="field" style="width:138px"><label>입고일자 <span class="req">*</span></label><input class="inp" value="2026-07-31"></div>
+            <div class="field" style="width:158px"><label>입고업체 <span class="req">*</span> <span class="auto">고정</span></label><input class="inp" value="한아름농원"></div>
+            <div class="field" style="width:190px"><label>유통명 <span class="req">*</span></label><input class="inp" value="수크령 '레드헤드'"></div>
+            <div class="field" style="flex:1"><label>학명 <span class="auto">치는 즉시 후보가 뜹니다</span></label><input class="inp sci" value="Pennisetum alo"></div>
+          </div>
+
+          <div class="row" style="margin-top:calc(var(--space-lg) * -1)">
+            <div style="width:310px"></div>
+            <div class="ac" style="flex:1">
+              <div class="hd">전에 넣은 것에서 4건 찾았습니다 — 고르면 유통명 · 품목코드 · 규격 · 지난 단가까지 한꺼번에 채워집니다</div>
+              <div class="it on">
+                <div class="cd">PER03</div>
+                <div>
+                  <div class="nm">수크령 '레드헤드'</div>
+                  <div class="sci">Pennisetum alopecuroides 'Red Head'</div>
+                </div>
+                <div class="rg">입고 12건 · 최근 2026-05-14<br>21cm 포트 · 3,400원</div>
+              </div>
+              <div class="it">
+                <div class="cd">PEL01</div>
+                <div>
+                  <div class="nm">수크령 '리틀버니'</div>
+                  <div class="sci">Pennisetum alopecuroides 'Little Bunny'</div>
+                </div>
+                <div class="rg">입고 7건 · 최근 2026-03-22<br>15cm 포트 · 2,600원</div>
+              </div>
+              <div class="it">
+                <div class="cd">PEH01</div>
+                <div>
+                  <div class="nm">수크령 '하멜른'</div>
+                  <div class="sci">Pennisetum alopecuroides 'Hameln'</div>
+                </div>
+                <div class="rg">입고 4건 · 최근 2025-10-08<br>15cm 포트 · 2,500원</div>
+              </div>
+              <div class="new">＋ 목록에 없습니다 — 새 품목으로 등록 <span>학명을 끝까지 치면 품목코드가 새로 만들어집니다</span></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field" style="flex:1">
+              <label>규격 <span class="req">*</span></label>
+              <div class="seg">
+                <button>10cm<i>4치</i></button>
+                <button>15cm<i>5치</i></button>
+                <button>18cm<i>6치</i></button>
+                <button>21cm<i>7치</i></button>
+                <button class="on">27cm<i>9치</i></button>
+                <button>직접입력<i>그 밖의 규격</i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row bottom">
+            <div class="field" style="width:118px"><label>수량 <span class="req">*</span></label><input class="inp num" value="40"></div>
+            <div class="field" style="width:138px"><label>매입단가 <span class="req">*</span></label><input class="inp num" value="5,200"></div>
+            <div class="field" style="width:150px"><label>금액 <span class="auto">자동 계산</span></label><input class="inp num code" value="208,000"></div>
+            <div class="field" style="width:186px">
+              <label>과세 · 면세 <span class="req">*</span></label>
+              <div class="toggle">
+                <button style="flex:1; padding:0">과세</button>
+                <button class="on" style="flex:1; padding:0">면세</button>
+              </div>
+            </div>
+            <div class="field" style="width:178px"><label>품목코드 <span class="auto">자동 생성</span></label><input class="inp code" value="PER03-27"></div>
+          </div>
+
+          <div class="row bottom">
+            <div class="spacer"></div>
+            <button class="btn">칸 비우기</button>
+            <button class="btn">저장하고 끝내기</button>
+            <button class="btn main wide">저장하고 계속</button>
+          </div>
+
+          <div class="alert" style="margin-top:var(--space-xl)">
+            <h4>⚠ 앞 5자 PER03 이 이미 쓰이고 있습니다 <span class="right">2건</span></h4>
+            <p>
+              이미 쓰고 있는 품목이 <b>PER03</b>으로 시작합니다. <b>같은 식물인지 먼저 확인해 주세요.</b><br>
+              같은 식물이면 번호를 그대로 쓰고, 다른 식물이면 일련번호를 올려야 합니다.
+            </p>
+            <table style="margin-top:var(--space-lg); background:var(--color-surface); border-radius:var(--radius-md); overflow:hidden">
+              <colgroup><col style="width:112px"><col style="width:150px"><col><col style="width:104px"><col style="width:78px"></colgroup>
+              <tr><th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th><th class="r">현재고</th></tr>
+              <tr>
+                <td class="code" style="color:var(--color-danger)">PER03-15</td><td>수크령 '레드헤드'</td>
+                <td class="sci">Pennisetum alopecuroides 'Red Head'</td><td class="dim">15cm 포트</td><td class="r">340</td>
+              </tr>
+              <tr>
+                <td class="code" style="color:var(--color-danger)">PER03-21</td><td>수크령 '레드헤드'</td>
+                <td class="sci">Pennisetum alopecuroides 'Red Head'</td><td class="dim">21cm 포트</td><td class="r">90</td>
+              </tr>
+            </table>
+            <div class="pick">
+              <button class="go">
+                <div>
+                  <div class="t">같은 식물입니다 — 규격만 다릅니다</div>
+                  <div class="s">일련번호 03을 그대로 씁니다</div>
+                </div>
+                <div class="c ok">PER03-27</div>
+              </button>
+              <button>
+                <div>
+                  <div class="t">다른 식물입니다</div>
+                  <div class="s">일련번호를 04로 올립니다</div>
+                </div>
+                <div class="c no">PER04-27</div>
+              </button>
+            </div>
+            <p style="margin-top:var(--space-lg)">
+              🔒 <b>품목코드는 한 번 저장하면 바꿀 수 없습니다.</b> 주문 · 재고 · 명세서가 전부 이 코드로 이어집니다.
+            </p>
+          </div>
+
+          <div class="fold" style="margin-top:var(--space-xl)">
+            ＋ 식물 특성 <span class="s">선택 · 나중에 채워도 됩니다</span>
+            <span class="r">다 자란 키 · 폭 · 내한성 · 물주기 · 햇빛 · 개화기</span>
+          </div>
+        </div>
+
+        <!-- ── 찾는 칸 ── -->
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">입고 내역
+            <span class="hint">방금 넣은 것은 「오늘」에 바로 보입니다</span>
+            <span class="right" style="display:flex; gap:var(--space-sm)">
+              <button class="btn sm">⬇ 엑셀 내려받기</button>
+              <button class="btn sm">인쇄</button>
+            </span>
+          </h3>
+
+          <div style="padding:0 var(--space-sm) var(--space-xl); display:flex; flex-direction:column; gap:var(--space-lg)">
+            <div class="fchips">
+              <button class="fchip on">오늘 <span class="n">4</span></button>
+              <button class="fchip">이번 달 <span class="n">24</span></button>
+              <button class="fchip">지난 달 <span class="n">31</span></button>
+              <button class="fchip">최근 3개월 <span class="n">86</span></button>
+              <button class="fchip">올해 <span class="n">173</span></button>
+              <button class="fchip">전체</button>
+            </div>
+            <div class="qbar">
+              <div class="field" style="flex:1; min-width:250px">
+                <label>찾기 <span class="auto">유통명 · 학명 · 품목코드 · 업체를 한 칸에서</span></label>
+                <input class="inp" value="🔍  Pennisetum">
+              </div>
+              <div class="field" style="width:168px"><label>입고업체</label><input class="inp" value="전체 업체  ⌄"></div>
+              <div class="field" style="width:138px"><label>시작일</label><input class="inp" value="2026-07-31"></div>
+              <div class="dash">~</div>
+              <div class="field" style="width:138px"><label>종료일</label><input class="inp" value="2026-07-31"></div>
+              <button class="btn main">조회</button>
+              <button class="btn">조건 초기화</button>
+            </div>
+          </div>
+
+          <table>
+            <colgroup>
+              <col style="width:64px"><col style="width:98px"><col>
+              <col style="width:80px"><col style="width:50px"><col style="width:62px"><col style="width:76px">
+              <col style="width:86px"><col style="width:44px"><col style="width:50px">
+            </colgroup>
+            <tr>
+              <th>입고일</th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th>
+              <th class="r">수량</th><th class="r">단가</th><th class="r">금액</th><th>입고업체</th><th>구분</th><th></th>
+            </tr>
+            <tr>
+              <td class="dim">07-31</td><td class="code">COR01-27</td>
+              <td>자엽안개나무 '로얄퍼플'<div class="sci">Cotinus coggygria 'Royal Purple'</div></td>
+              <td class="dim">27cm 포트</td><td class="r">40</td><td class="r">16,500</td><td class="r">660,000</td>
+              <td class="dim">한아름농원</td><td class="dim">과세</td><td><button class="btn sm">수정</button></td>
+            </tr>
+            <tr>
+              <td class="dim">07-31</td><td class="code">HAA01-15</td>
+              <td>하코네클로아 '아우레올라'<div class="sci">Hakonechloa macra 'Aureola'</div></td>
+              <td class="dim">15cm 포트</td><td class="r">150</td><td class="r">2,600</td><td class="r">390,000</td>
+              <td class="dim">한아름농원</td><td class="dim">면세</td><td><button class="btn sm">수정</button></td>
+            </tr>
+            <tr>
+              <td class="dim">07-31</td><td class="code">CAS01-18</td>
+              <td>층꽃 '스털링실버'<div class="sci">Caryopteris × clandonensis 'Sterling Silver'</div></td>
+              <td class="dim">18cm 포트</td><td class="r">80</td><td class="r">3,200</td><td class="r">256,000</td>
+              <td class="dim">한아름농원</td><td class="dim">면세</td><td><button class="btn sm">수정</button></td>
+            </tr>
+            <tr>
+              <td class="dim">07-31</td><td class="code">CAR01-10</td>
+              <td>청사초<div class="sci">Carex breviculmis</div></td>
+              <td class="dim">10cm 포트</td><td class="r">200</td><td class="r">900</td><td class="r">180,000</td>
+              <td class="dim">한아름농원</td><td class="dim">면세</td><td><button class="btn sm">수정</button></td>
+            </tr>
+            <tr class="totrow">
+              <td>합계</td><td></td><td>4건</td><td></td>
+              <td class="r">470</td><td></td><td class="r">1,486,000</td><td></td><td></td><td></td>
+            </tr>
+          </table>
+
+          <div class="pager">
+            <span class="gap">4건 중 1~4</span>
+            <i>‹</i><b>1</b><i>›</i>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 무엇이 바뀌었나 ══════════ -->
+<div class="parts">
+  <h2>레이아웃은 그대로, 겉모습만 macOS로</h2>
+  <div class="lead">칸 · 표 · 버튼의 자리는 확정본과 한 곳도 다르지 않습니다. · macOS A안 (브랜드 초록)</div>
+  <div class="pgrid">
+    <div style="flex:1">
+      <h4>창</h4>
+      <p class="note" style="margin-top:0">
+        맥 창처럼 <b class="accent">제목줄 + 신호등 세 개</b>를 붙이고<br>
+        모서리를 12px로 깎았습니다.<br><br>
+        왼쪽 메뉴는 <b class="accent">반투명 사이드바</b>입니다 —<br>
+        초록으로 통칠하지 않고, 지금 있는 자리만 초록으로 칠합니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>컨트롤</h4>
+      <p class="note" style="margin-top:0">
+        입고 · 재고 탭은 <b class="accent">세그먼티드 컨트롤</b>,<br>
+        과세 · 면세도 같은 모양입니다.<br><br>
+        보통 버튼은 맥의 흰 버튼 — <b>테두리와 그림자</b>로<br>
+        누를 수 있는 것임을 계속 보입니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>폰</h4>
+      <p class="note" style="margin-top:0">
+        상단은 iOS <b class="accent">큰 제목(28px)</b>,<br>
+        하단은 <b class="accent">iOS 탭바</b>입니다 — 입고 · 재고 · 주문 · 더보기 넷 그대로.<br><br>
+        <b>글씨는 줄이지 않았습니다.</b> 항목 이름 12→13,<br>
+        목록 이름 15→16으로 오히려 키웠습니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>색</h4>
+      <p class="note" style="margin-top:0">
+        바탕 · 선 · 글자는 <b class="accent">macOS 중성 회색</b>,<br>
+        강조는 <b class="accent">브랜드 초록 #2F9E44</b>입니다.<br><br>
+        경고는 애플 시스템 레드로 바꿔<br>
+        <b>빨강은 급한 것에만</b> 쓰이게 했습니다.<br><br>
+        <span style="color:var(--color-text-muted)">B안은 강조색만 애플 블루로 바뀝니다.</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

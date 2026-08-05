@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 주문 (macOS A안 · 브랜드 초록)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+/* ══ 주문 화면에서만 쓰는 부품 — 나머지는 모두 _공통-macA.css 그대로 ══ */
+
+/* 폰 세 대 — 위 두 대, 아래 한 대 */
+.phones{display:flex; flex-wrap:wrap; gap:44px var(--space-4xl); align-items:stretch; justify-content:center; width:1120px}
+.phone{height:auto; min-height:820px}
+
+/* 주문한 사이트 꼬리표 (쿠팡 · 스마트스토어 · 카페24 · 전화) — 상태 배지가 아니라서 점이 없습니다 */
+.mall{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border);
+}
+
+/* 고르는 네모칸 */
+.cb{
+  display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:-3px;
+  border:var(--border-width) solid var(--color-border); background:var(--color-surface);
+}
+.cb.on{background:var(--color-accent); border-color:var(--color-accent-dark); position:relative}
+.cb.on::after{
+  content:'✓'; position:absolute; inset:0; color:#fff; font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; line-height:1;
+}
+
+/* 표 아래 「고른 것 처리」 줄 */
+.tbar{
+  display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap;
+  padding:var(--space-lg) var(--space-sm) var(--space-2xs);
+  border-top:var(--border-width) solid var(--color-border-faint); margin-top:var(--space-xs);
+}
+.tbar .sel{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.tbar .sel b{color:var(--color-accent-dark); font-variant-numeric:tabular-nums}
+.tbar .spacer{flex:1}
+
+/* ── PC 표에서 「이름+주소+전화」가 같은 줄을 한 덩어리로 보이게 ── */
+tr.gstart td{border-top:var(--border-width-thick) solid var(--color-border)}
+td.who{
+  vertical-align:top; background:#FAFAFC; border-right:var(--border-width) solid var(--color-border-faint);
+  line-height:1.45;
+}
+td.who .n{font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
+td.who .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+td.who .cnt{font-size:var(--font-2xs); color:var(--color-text-hint); font-weight:var(--weight-semibold); margin-top:var(--space-xs)}
+tr.short td{background:var(--color-danger-bg)}
+tr.short td.who{background:#FFE9E7}
+
+/* 출고리스트 — 품목 밑에 붙는 규격 */
+.rgs{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+
+/* 옵션 곱셈 표시 (2주문 × 4개입) */
+.mul{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+/* ── 폰 주문 카드 ── */
+.olines{margin-top:var(--space-sm); display:flex; flex-direction:column; gap:var(--space-3xs)}
+.oline{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-md)}
+.oline .cd{
+  font-family:var(--font-mono); font-size:var(--font-2xs); font-weight:var(--weight-bold);
+  color:var(--color-accent-dark); width:74px; flex-shrink:0; white-space:nowrap;
+}
+.oline .nm{font-weight:var(--weight-semibold); color:var(--color-text)}
+.oline .rg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.oline .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; white-space:nowrap}
+.phone .ph-card .r0{display:flex; align-items:center; gap:var(--space-sm)}
+.phone .ph-card .r0 .who{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.phone .ph-card .r0 .tel{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+/* 재고가 모자란 주문은 카드째 빨강 */
+.ph-card.short{background:var(--color-danger-bg); box-shadow:0 1px 3px rgba(0,0,0,.05), 0 0 0 1.5px var(--color-danger-border)}
+.ph-card.short .r0 .who{color:var(--color-danger)}
+.ph-card .warn{
+  margin-top:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-danger);
+  display:flex; align-items:center; gap:var(--space-3xs);
+}
+
+/* 날짜 넘기는 줄 — 어제 ‹ 오늘 › 내일 */
+.datebar{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-btn); padding:var(--space-sm) var(--space-lg);
+}
+.datebar .ar{
+  width:34px; height:34px; flex-shrink:0; border-radius:var(--radius-md); background:var(--color-seg-bg);
+  display:flex; align-items:center; justify-content:center; font-size:var(--font-3xl);
+  font-weight:var(--weight-bold); color:var(--color-text-sub); line-height:1;
+}
+.datebar .d{flex:1; text-align:center; line-height:1.25}
+.datebar .d .big{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.datebar .d .sml{font-size:var(--font-2xs); color:var(--color-accent-dark); font-weight:var(--weight-semibold)}
+
+/* 찾는 칸 */
+.search{position:relative}
+.search .inp{padding-left:32px}
+.search .mag{position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:var(--font-md); opacity:.45}
+
+/* ══ 동봉카드 = 상자에 같이 넣는 A4 세로 한 장 「정원식물 관리카드」 ══
+   이건 화면 UI가 아니라 고객이 받는 인쇄물이라 색·글씨는 브랜드가이드의 인쇄색을 씁니다
+   (종이 아이보리 #FBF8F1 · 먹빛 #3D3833 · 잎색 #5C7A4A · 선 #D8CFC0) */
+.a4{
+  --paper:#FBF8F1; --ink:#3D3833; --leaf:#5C7A4A; --line:#D8CFC0; --sage:#EDF0E4; --dim:#7A7266;
+  width:512px; height:724px;                 /* 210 × 297mm 비율 */
+  background:var(--paper); color:var(--ink);
+  border:1px solid var(--line); border-radius:2px;
+  box-shadow:0 12px 30px rgba(0,0,0,.16);
+  padding:24px 26px;                          /* 여백 10mm */
+  display:flex; flex-direction:column; gap:10px; flex-shrink:0; overflow:hidden;
+  line-height:1.45;
+}
+/* 머리 — 로고 + 태그라인 */
+.a4 .top{text-align:center}
+.a4 .top img{height:30px; display:block; margin:0 auto}
+.a4 .top .tag2{font-size:11px; color:var(--dim); margin-top:5px; letter-spacing:-.01em}
+/* 송장번호 — 있을 때만 그립니다 */
+.a4 .inv{
+  text-align:right; font-size:10.5px; color:var(--dim); font-weight:600;
+  font-family:var(--font-mono); border-bottom:1px solid var(--line); padding-bottom:6px;
+}
+/* 제목 */
+.a4 .ttl{
+  text-align:center; font-size:19px; font-weight:800; color:var(--leaf); letter-spacing:-.02em;
+}
+.a4 .ttl .pg{font-size:13px; color:var(--dim); font-weight:700}
+/* 품목 한 덩어리 — 카드의 본체 */
+.a4 .plants{display:flex; flex-direction:column; gap:9px}
+.a4 .pl{border:1px solid var(--line); border-radius:7px; background:#fff; padding:11px 13px}
+.a4 .pl .nm{font-size:16px; font-weight:800; letter-spacing:-.02em}
+.a4 .pl .sci{font-style:italic; font-size:11px; color:var(--dim); margin-top:1px}
+.a4 .pl .g6{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:9px}
+.a4 .pl .g{background:var(--sage); border-radius:5px; padding:6px 8px}
+.a4 .pl .g .k{font-size:10px; font-weight:700; color:#6B6558; white-space:nowrap}
+.a4 .pl .g .v{font-size:12.5px; font-weight:700; margin-top:2px; letter-spacing:-.01em}
+.a4 .pl .g .v.non{color:#B4AEA1}
+.a4 .pl .memo1{font-size:11.5px; color:#5F5A52; margin-top:8px; line-height:1.5}
+/* 인사말 */
+.a4 .thx{text-align:center; margin-top:auto; padding-top:2px}
+.a4 .thx b{font-size:14.5px; font-weight:800; color:var(--leaf)}
+.a4 .thx p{font-size:12px; color:#5F5A52; margin-top:3px}
+/* 손으로 적는 안내 말씀 */
+.a4 .say{border:1px dashed var(--line); border-radius:7px; background:#fff; padding:10px 12px}
+.a4 .say .k{font-size:11px; font-weight:800; color:var(--leaf)}
+.a4 .say p{font-size:12.5px; line-height:1.6; margin-top:4px; color:#4A453E}
+/* 발 */
+.a4 .btm{text-align:center; border-top:1px solid var(--line); padding-top:8px}
+.a4 .btm img{height:18px; opacity:.8; display:block; margin:0 auto}
+.a4 .btm .sl{font-size:9.5px; color:var(--dim); letter-spacing:.08em; margin-top:4px}
+
+/* 폰에서는 같은 카드를 폭에 맞춰 세로로 흘려 보여줍니다 (인쇄물은 똑같은 A4 한 장입니다) */
+.a4.flow{width:100%; height:auto; overflow:visible; box-shadow:none; border-radius:8px}
+
+/* 품목 수에 따라 장수가 달라지는 것을 보여주는 작은 종이들 */
+.pgminis{display:flex; gap:var(--space-lg); flex-wrap:wrap}
+.pgset{text-align:center}
+.pgset .cp{font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-text-sub); margin-top:var(--space-xs)}
+.pgpair{display:flex; gap:5px}
+.pgmini{
+  width:74px; height:105px; background:#FBF8F1; border:1px solid #D8CFC0; border-radius:2px;
+  padding:6px 5px; display:flex; flex-direction:column; gap:3px;
+}
+.pgmini .l{height:4px; border-radius:1px; background:#D8CFC0; margin:0 auto; width:52%}
+.pgmini .h{height:6px; border-radius:1px; background:#9DBA88; margin:0 auto; width:64%}
+.pgmini .b{border:1px solid #E1DACB; background:#EDF0E4; border-radius:2px; flex:0 0 auto}
+.pgmini .b.lg{height:26px}
+.pgmini .b.sm{height:15px}
+.pgmini .b.say{border-style:dashed; background:#fff; height:14px}
+.pgmini .sp{flex:1}
+
+/* 인쇄 설정 · 규칙을 적어두는 옅은 상자 */
+.printnote{
+  background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+  border-radius:var(--radius-md); padding:var(--space-lg) var(--space-xl);
+  font-size:var(--font-xs); color:var(--color-accent-dark); font-weight:var(--weight-semibold); line-height:1.75;
+}
+
+/* 폰 밑에 붙는 큰 단추들 */
+.ph-foot{margin-top:auto; display:flex; flex-direction:column; gap:var(--space-md); padding-top:var(--space-lg)}
+.ph-foot .btn{width:100%}
+/* 폰 규격 고르는 칸 — 한 줄에 다 들어가게 */
+.segsm button{min-width:50px; padding:var(--space-sm) var(--space-2xs); font-size:var(--font-sm)}
+
+/* ══ 3차에서 새로 쓰는 것 (색·크기 값은 모두 _공통-macA.css 변수) ══ */
+
+/* 재주문 표시 — 이름 옆 ⭐ + 재주문 횟수. 첫 주문(0회)이면 아예 그리지 않습니다 */
+.star{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#9A6B00; white-space:nowrap; letter-spacing:-.01em}
+
+/* 품목이 2개를 넘을 때 나머지를 접어 표시 */
+.more{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-accent-dark); margin-top:var(--space-3xs)}
+
+/* 폰 상단 버튼 세 개 (수동주문 · 출고리스트 · 동봉카드) — 좁아서 글씨를 한 단계 줄입니다 */
+.topbtns{display:flex; gap:var(--space-2xs)}
+.topbtns .btn{flex:1; padding-left:var(--space-2xs); padding-right:var(--space-2xs); font-size:var(--font-sm); white-space:nowrap}
+
+/* 폰 팝업 — 아래에서 올라오는 시트 */
+.phone{position:relative}
+.phscrim{position:absolute; inset:0; background:rgba(0,0,0,.34); z-index:5}
+.phsheet{
+  position:absolute; left:0; right:0; bottom:0; z-index:6;
+  background:var(--color-bg); border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow:0 -12px 34px rgba(0,0,0,.24); display:flex; flex-direction:column; overflow:hidden;
+}
+.phsheet .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+}
+.phsheet .hd h3{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.phsheet .hd .x{margin-left:auto; font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1}
+.phsheet .bd{padding:var(--space-lg) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-md)}
+.phsheet .ft{padding:var(--space-md) var(--space-2xl) var(--space-2xl)}
+.phsheet .ft .btn{width:100%}
+
+/* 주문 상세 — 화면 아래에 붙어 있는 총 주문금액 */
+.totalbar{
+  background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border);
+  box-shadow:0 -4px 14px rgba(0,0,0,.06);
+  padding:var(--space-lg) var(--space-2xl); display:flex; align-items:center; gap:var(--space-sm);
+}
+.totalbar .l{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.totalbar .v{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.totalbar .btn{margin-left:auto; min-height:42px; font-size:var(--font-md)}
+
+/* 접기칸 속 — 재고 「재입고 요청」과 같은 fold 부품의 몸통 */
+.foldbody{
+  border:var(--border-width) solid var(--color-border); border-top:none; margin-top:-1px;
+  border-radius:0 0 var(--radius-md) var(--radius-md); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-md);
+}
+.foldbody .k{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.foldbody .v{font-size:var(--font-md); font-weight:var(--weight-semibold); margin-top:1px; line-height:1.45}
+
+/* 상세 품목 줄 */
+.dline{
+  display:flex; align-items:baseline; gap:var(--space-sm); padding:var(--space-md) 0;
+  border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md);
+}
+.dline:last-child{border-bottom:none}
+.dline .nm{font-weight:var(--weight-semibold)}
+.dline .rg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.dline .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* PC 머리줄 오른쪽 버튼 묶음 */
+.headbtns{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+
+/* PC 팝업 — 버튼을 누르면 뜨는 창 */
+.popdemo{display:flex; gap:var(--space-2xl); width:1120px; align-items:flex-start}
+.pcsheet{
+  flex:1; background:var(--color-bg); border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+}
+.pcsheet .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+}
+.pcsheet .hd h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.pcsheet .hd .right{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+.pcsheet .bd{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
+
+/* 업로드 회차 꼬리표 — 하루에 두세 번 올리는 파일을 구분합니다 */
+.rnd{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-accent-bg); color:var(--color-accent-dark);
+  border:var(--border-width) solid var(--color-accent-border); font-variant-numeric:tabular-nums;
+}
+.memo{
+  width:1120px; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+  margin-top:var(--space-md);
+}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════ 폰 ══════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 주문탭 <b>3차</b> <span class="tag">macOS A안 · 브랜드 초록</span></div>
+  <div class="phones">
+
+  <!-- ── 폰 ① 일자별 주문 조회 ── -->
+  <div class="phone">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="bat"><i></i></span>
+      </span>
+    </div>
+    <div class="ph-top">
+      <h1>주문</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-body" style="gap:var(--space-md)">
+
+      <div class="datebar">
+        <span class="ar">‹</span>
+        <span class="d">
+          <div class="big">2026-08-04</div>
+          <div class="sml">오늘 · 화요일</div>
+        </span>
+        <span class="ar">›</span>
+      </div>
+
+      <div class="topbtns">
+        <button class="btn">＋ 수동주문</button>
+        <button class="btn">📋 출고리스트</button>
+        <button class="btn">💌 동봉카드</button>
+      </div>
+
+      <div class="search">
+        <span class="mag">🔍</span>
+        <input class="inp" placeholder="이름 · 전화번호 · 상품명으로 찾기">
+      </div>
+
+      <div class="ph-list">
+
+        <div class="ph-card">
+          <div class="r0">
+            <span class="who">김미정</span>
+            <span class="star">⭐ 3</span>
+            <span class="mall" style="margin-left:auto">스마트스토어</span>
+            <span class="chev">›</span>
+          </div>
+          <div class="olines">
+            <div class="oline"><span class="nm">수크령 '레드헤드'</span><span class="rg">15cm</span><span class="q">12주</span></div>
+            <div class="oline"><span class="nm">청사초</span><span class="rg">10cm</span><span class="q">6주</span></div>
+          </div>
+          <div class="more">＋2개 더</div>
+        </div>
+
+        <div class="ph-card">
+          <div class="r0">
+            <span class="who">박준호</span>
+            <span class="mall" style="margin-left:auto">쿠팡</span>
+            <span class="chev">›</span>
+          </div>
+          <div class="olines">
+            <div class="oline"><span class="nm">층꽃 '스털링실버'</span><span class="rg">18cm</span><span class="q">8주</span></div>
+          </div>
+        </div>
+
+        <div class="ph-card short">
+          <div class="r0">
+            <span class="who">한아름조경</span>
+            <span class="star">⭐ 12</span>
+            <span class="mall" style="margin-left:auto">전화주문</span>
+            <span class="chev">›</span>
+          </div>
+          <div class="olines">
+            <div class="oline"><span class="nm">추명국 '휠윈드핑크'</span><span class="rg">21cm</span><span class="q">40주</span></div>
+          </div>
+        </div>
+
+        <div class="ph-card">
+          <div class="r0">
+            <span class="who">이서연</span>
+            <span class="star">⭐ 1</span>
+            <span class="mall" style="margin-left:auto">카페24</span>
+            <span class="chev">›</span>
+          </div>
+          <div class="olines">
+            <div class="oline"><span class="nm">비비추 '준'</span><span class="rg">15cm</span><span class="q">8주</span></div>
+            <div class="oline"><span class="nm">맥문동 '바리에가타'</span><span class="rg">12cm</span><span class="q">20주</span></div>
+          </div>
+          <div class="more">＋1개 더</div>
+        </div>
+
+        <div class="ph-card">
+          <div class="r0">
+            <span class="who">정다은</span>
+            <span class="mall" style="margin-left:auto">스마트스토어</span>
+            <span class="chev">›</span>
+          </div>
+          <div class="olines">
+            <div class="oline"><span class="nm">숙근세이지 '카라도나'</span><span class="rg">15cm</span><span class="q">6주</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div class="on"><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+
+  <!-- ── 폰 ② 「＋ 수동주문」을 누르면 — 수동주문 화면으로 페이지 전환 ── -->
+  <div class="phone">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="bat"><i></i></span>
+      </span>
+    </div>
+    <div class="ph-top">
+      <h1>수동주문</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>‹ 주문</span>
+      <span>2026-08-04</span>
+    </div>
+    <div class="ph-body" style="gap:var(--space-md)">
+
+      <div class="field">
+        <label>어디로 들어온 주문</label>
+        <div class="seg segsm">
+          <button class="on">전화</button>
+          <button>문자</button>
+          <button>직접방문</button>
+          <button>기타</button>
+        </div>
+      </div>
+
+      <div class="pair">
+        <div class="field">
+          <label>받는 분 <span class="req">*</span></label>
+          <input class="inp" value="한아름조경">
+        </div>
+        <div class="field">
+          <label>전화번호 <span class="req">*</span></label>
+          <input class="inp" value="031-592-4410">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>주소 <span class="req">*</span></label>
+        <input class="inp" value="경기 고양시 덕양구 신원동 12-4">
+      </div>
+
+      <div class="field">
+        <label>품목 <span class="req">*</span></label>
+        <input class="inp" value="추명국">
+      </div>
+      <div class="ac">
+        <div class="hd">'추명국' 으로 찾은 것 2</div>
+        <div class="it on">
+          <span class="cd">ANW02</span>
+          <span>
+            <div class="nm">추명국 '휠윈드핑크'</div>
+            <div class="sci">Anemone × hybrida 'Whirlwind Pink'</div>
+          </span>
+          <span class="rg">21cm 포트<br>재고 0</span>
+        </div>
+        <div class="it">
+          <span class="cd">ANW05</span>
+          <span>
+            <div class="nm">추명국 '오노린쥬베르'</div>
+            <div class="sci">Anemone × hybrida 'Honorine Jobert'</div>
+          </span>
+          <span class="rg">15cm 포트<br>재고 62</span>
+        </div>
+      </div>
+
+      <div class="pair">
+        <div class="field">
+          <label>수량 <span class="req">*</span></label>
+          <input class="inp num" value="40">
+        </div>
+        <div class="field">
+          <label>단가 <span class="auto">받은 금액 그대로</span></label>
+          <input class="inp num" value="5,400">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>금액 <span class="auto">수량 × 단가</span></label>
+        <input class="inp num readonly" value="216,000" disabled>
+      </div>
+
+      <button class="ph-save">주문등록</button>
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div class="on"><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+
+  <!-- ── 폰 ③ 주문 상세 — 폰①에서 카드를 누르면. 총 주문금액은 화면 아래에 붙어 있습니다 ── -->
+  <div class="phone">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="bat"><i></i></span>
+      </span>
+    </div>
+    <div class="ph-top">
+      <h1>주문 상세</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>‹ 주문</span>
+      <span>2026-08-04 · 스마트스토어</span>
+    </div>
+    <div class="ph-body" style="gap:var(--space-md)">
+
+      <!-- 주문자 — 이름만 크게. 누르면 전화·주소가 펴집니다 -->
+      <div>
+        <div class="fold" style="border-radius:var(--radius-md) var(--radius-md) 0 0">
+          <span style="font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; color:var(--color-text)">김미정</span>
+          <span class="star">⭐ 3</span>
+          <span class="r">닫기 ⌃</span>
+        </div>
+        <div class="foldbody">
+          <div>
+            <div class="k">전화번호</div>
+            <div class="v">010-2481-7735</div>
+          </div>
+          <div>
+            <div class="k">주소</div>
+            <div class="v">경기 남양주시 화도읍 재재기로 22</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ph-sec">주문 품목 <span class="r">2품목</span></div>
+
+      <div class="ph-card" style="padding:0 var(--space-2xl)">
+        <div class="dline">
+          <span>
+            <div class="nm">수크령 '레드헤드'</div>
+            <div class="rg">15cm 포트 · 4,800원</div>
+          </span>
+          <span class="q">12주</span>
+        </div>
+        <div class="dline">
+          <span>
+            <div class="nm">청사초</div>
+            <div class="rg">10cm 포트 · 4,400원</div>
+          </span>
+          <span class="q">6주</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 화면 아래에 붙어 있습니다 — 목록을 스크롤해도 따라오지 않고 그대로 있습니다 -->
+    <div class="totalbar">
+      <span class="l">총 주문금액</span>
+      <span class="v">84,000원</span>
+      <button class="btn main" style="margin-left:var(--space-lg)">💌 동봉카드</button>
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div class="on"><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+
+  </div>
+
+  <!-- ── 폰 ④ 「📋 출고리스트」를 누르면 — 별도 화면으로 페이지 전환 ── -->
+  <div class="phone">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="bat"><i></i></span>
+      </span>
+    </div>
+    <div class="ph-top">
+      <h1>출고리스트</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>‹ 주문</span>
+      <span>2026-08-04 · 고른 3건</span>
+    </div>
+    <div class="ph-body" style="gap:0">
+      <table class="mini">
+        <colgroup><col style="width:78px"><col><col style="width:44px"><col style="width:44px"></colgroup>
+        <tr><th>코드</th><th>품목 · 규격</th><th class="r">필요</th><th class="r">재고</th></tr>
+        <tr>
+          <td class="code">PER03-15</td><td>수크령 '레드헤드'<div class="rgs">15cm 포트</div></td>
+          <td class="r">12</td><td class="r">108</td>
+        </tr>
+        <tr>
+          <td class="code">CAR01-10</td><td>청사초<div class="rgs">10cm 포트</div></td>
+          <td class="r">6</td><td class="r">240</td>
+        </tr>
+        <tr>
+          <td class="code">CAS01-18</td><td>층꽃 '스털링실버'<div class="rgs">18cm 포트</div></td>
+          <td class="r">8</td><td class="r">31</td>
+        </tr>
+        <tr class="short">
+          <td class="code">ANW02-21</td><td>추명국 '휠윈드핑크'<div class="rgs">21cm 포트</div>
+            <div style="font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(--weight-bold); margin-top:2px">재고부족</div></td>
+          <td class="r zero">40</td><td class="r zero">0</td>
+        </tr>
+      </table>
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div class="on"><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+
+  <!-- ── 폰 ⑤ 「💌 동봉카드」 — 디자인 미정, 지금은 비워둡니다 ── -->
+  <div class="cap" style="align-self:center">💌 동봉카드 화면 <span class="tag">디자인 미정</span><br>기존 통합관리 형태를 개선 예정 · 지금은 손대지 않습니다</div>
+
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 파일을 올리고 · 내보내고 · 리스트를 뽑습니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <div>
+            <h2>주문 관리</h2>
+            <div class="path">주문 › 주문 조회</div>
+          </div>
+          <div class="headbtns">
+            <button class="btn sm">⬆ 카페24 → 로젠 파일</button>
+            <button class="btn sm">⬆ 로젠 → 배송완료 파일</button>
+            <button class="btn sm main">📋 출고리스트</button>
+            <button class="btn sm main">💌 동봉카드</button>
+          </div>
+        </div>
+
+        <div class="fchips">
+          <span style="font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)">기간</span>
+          <input class="inp" value="2026-08-04" style="width:132px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center">
+          <span style="color:var(--color-text-muted)">~</span>
+          <input class="inp" value="2026-08-04" style="width:132px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center">
+          <button class="fchip on">오늘</button>
+          <button class="fchip">이번 주</button>
+          <button class="fchip">이번 달</button>
+          <span style="width:1px; height:20px; background:var(--color-border); margin:0 var(--space-xs)"></span>
+          <span style="font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)">올린 회차</span>
+          <button class="fchip on">전체</button>
+          <button class="fchip">1회차 09:10</button>
+          <button class="fchip">2회차 13:40</button>
+          <span style="flex:1"></span>
+          <div class="search" style="width:300px; margin-left:auto">
+            <span class="mag" style="font-size:var(--font-sm)">🔍</span>
+            <input class="inp" placeholder="이름 · 전화번호 · 주소 · 상품명" style="height:var(--h-btn-sm); font-size:var(--font-sm)">
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-04 · 주문 9건 · 품목 14줄</span>
+            <span class="right"><span class="rnd">1회차 09:10</span> <span class="rnd">2회차 13:40</span></span></h3>
+          <table>
+            <colgroup>
+              <col style="width:28px"><col style="width:186px"><col style="width:82px"><col style="width:80px">
+              <col><col style="width:76px"><col style="width:74px"><col style="width:60px"><col style="width:74px">
+            </colgroup>
+            <tr>
+              <th><span class="cb"></span></th><th>받는 분 · 전화 · 주소</th><th>주문한 곳</th><th>품목코드</th>
+              <th>품목</th><th>규격</th><th class="r">수량</th><th class="r">단가</th><th class="r">금액</th>
+            </tr>
+
+            <!-- 묶음 1 — 김미정 (2줄) -->
+            <tr class="gstart">
+              <td rowspan="2"><span class="cb on"></span></td>
+              <td class="who" rowspan="2">
+                <div class="n">김미정</div>
+                <div class="d">010-2481-7735</div>
+                <div class="d">경기 남양주시 화도읍 재재기로 22</div>
+                <div class="cnt">2품목 · 84,000원</div>
+                <div style="margin-top:5px"><span class="rnd">1회차 09:10</span></div>
+              </td>
+              <td rowspan="2"><span class="mall">스마트스토어</span></td>
+              <td class="code">PER03-15</td>
+              <td>수크령 '레드헤드'<div class="sci">Pennisetum alopecuroides 'Red Head'</div></td>
+              <td class="dim">15cm 포트</td><td class="r">12</td><td class="r">4,800</td><td class="r">57,600</td>
+            </tr>
+            <tr>
+              <td class="code">CAR01-10</td>
+              <td>청사초<div class="sci">Carex breviculmis</div></td>
+              <td class="dim">10cm 포트</td><td class="r">6</td><td class="r">4,400</td><td class="r">26,400</td>
+            </tr>
+
+            <!-- 묶음 2 — 박준호 (쿠팡 옵션 곱셈) -->
+            <tr class="gstart">
+              <td><span class="cb on"></span></td>
+              <td class="who">
+                <div class="n">박준호</div>
+                <div class="d">010-9032-1188</div>
+                <div class="d">서울 강동구 천호대로 1077</div>
+                <div class="cnt">1품목 · 63,200원</div>
+                <div style="margin-top:5px"><span class="rnd">1회차 09:10</span></div>
+              </td>
+              <td><span class="mall">쿠팡</span></td>
+              <td class="code">CAS01-18</td>
+              <td>층꽃 '스털링실버'<div class="sci">Caryopteris × clandonensis 'Sterling Silver'</div></td>
+              <td class="dim">18cm 포트</td>
+              <td class="r">8<div class="mul">2 × 4개입</div></td>
+              <td class="r">7,900</td><td class="r">63,200</td>
+            </tr>
+
+            <!-- 묶음 3 — 재고 모자란 주문 -->
+            <tr class="gstart short">
+              <td><span class="cb"></span></td>
+              <td class="who">
+                <div class="n">한아름조경</div>
+                <div class="d">031-592-4410</div>
+                <div class="d">경기 고양시 덕양구 신원동 12-4</div>
+                <div class="cnt">1품목 · 216,000원</div>
+                <div style="margin-top:5px"><span class="rnd" style="background:var(--color-seg-bg); color:var(--color-text-sub); border-color:var(--color-border)">직접입력</span></div>
+              </td>
+              <td><span class="mall">전화주문</span></td>
+              <td class="code">ANW02-21</td>
+              <td>추명국 '휠윈드핑크'<div class="sci">Anemone × hybrida 'Whirlwind Pink'</div>
+                <div style="font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(--weight-bold); margin-top:2px">⚠ 재고 0주 — 40주 모자람</div></td>
+              <td class="dim">21cm 포트</td><td class="r zero">40</td><td class="r">5,400</td><td class="r">216,000</td>
+            </tr>
+
+            <!-- 묶음 4 -->
+            <tr class="gstart">
+              <td><span class="cb on"></span></td>
+              <td class="who">
+                <div class="n">이서연</div>
+                <div class="d">010-4417-2260</div>
+                <div class="d">서울 은평구 진관2로 33</div>
+                <div class="cnt">1품목 · 40,800원</div>
+                <div style="margin-top:5px"><span class="rnd">2회차 13:40</span></div>
+              </td>
+              <td><span class="mall">카페24</span></td>
+              <td class="code">HOS04-15</td>
+              <td>비비추 '준'<div class="sci">Hosta 'June'</div></td>
+              <td class="dim">15cm 포트</td><td class="r">8</td><td class="r">5,100</td><td class="r">40,800</td>
+            </tr>
+          </table>
+
+          <div class="tbar">
+            <span class="sel">고른 것 <b>3</b>건</span>
+            <span class="spacer"></span>
+            <button class="btn sm">엑셀로 내려받기</button>
+          </div>
+
+          <div class="pager">
+            <i>‹</i><b>1</b><i>2</i><i>3</i><i>›</i>
+            <span class="gap"></span><span style="margin-left:var(--space-md)">모두 9건</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- 머리줄 「📋 출고리스트」를 누르면 뜨는 창 (「💌 동봉카드」도 같은 모양) -->
+  <div class="cap" style="margin-top:var(--space-4xl)">머리줄 버튼을 누르면 뜨는 창 <span class="tag">출고리스트</span></div>
+  <div class="popdemo">
+    <div class="pcsheet">
+      <div class="hd">
+        <h3>출고리스트</h3>
+        <span class="hint">2026-08-04 · 고른 3건</span>
+        <span class="right">
+          <button class="btn sm main">🖨 인쇄</button>
+          <span style="font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1">✕</span>
+        </span>
+      </div>
+      <div class="bd">
+        <table>
+          <colgroup><col style="width:110px"><col><col style="width:70px"><col style="width:70px"><col style="width:96px"></colgroup>
+          <tr><th>품목코드</th><th>품목 · 규격</th><th class="r">필요</th><th class="r">재고</th><th>상태</th></tr>
+          <tr>
+            <td class="code">PER03-15</td><td>수크령 '레드헤드'<div class="rgs">15cm 포트</div></td>
+            <td class="r">12</td><td class="r">108</td><td><span class="chip">충분</span></td>
+          </tr>
+          <tr>
+            <td class="code">CAR01-10</td><td>청사초<div class="rgs">10cm 포트</div></td>
+            <td class="r">6</td><td class="r">240</td><td><span class="chip">충분</span></td>
+          </tr>
+          <tr>
+            <td class="code">CAS01-18</td><td>층꽃 '스털링실버'<div class="rgs">18cm 포트</div></td>
+            <td class="r">8</td><td class="r">31</td><td><span class="chip">충분</span></td>
+          </tr>
+          <tr class="short">
+            <td class="code">ANW02-21</td><td>추명국 '휠윈드핑크'<div class="rgs">21cm 포트</div></td>
+            <td class="r zero">40</td><td class="r zero">0</td><td><span class="chip out">재고부족</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- 머리줄 「💌 동봉카드」를 누르면 뜨는 창 — 디자인 미정 -->
+  <div class="cap" style="margin-top:var(--space-4xl)">머리줄 버튼을 누르면 뜨는 창 <span class="tag">동봉카드 — 디자인 미정</span></div>
+  <div class="popdemo">
+    <div class="pcsheet">
+      <div class="hd">
+        <h3>동봉카드</h3>
+        <span class="right">
+          <button class="btn sm main">🖨 인쇄</button>
+          <span style="font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1">✕</span>
+        </span>
+      </div>
+      <div class="bd" style="min-height:240px; display:flex; align-items:center; justify-content:center; color:var(--color-text-muted); font-weight:var(--weight-medium)">
+        디자인 미정 — 기존 통합관리 형태를 개선 예정
+      </div>
+    </div>
+  </div>
+  <div class="memo">대안: 회차 배지 대신 표에서 회차별로 구분선을 넣어 「1회차 09:10」 머리줄 아래 그 회차 주문만 묶어 보여주는 방법도 있습니다.</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품 관리 › 품목코드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   여기(:root)만 고치면 모든 화면의 겉모습이 한꺼번에 바뀝니다.
+   아래 스타일 규칙에는 색·크기 값을 직접 적지 않습니다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+
+  /* ── 글씨체 ───────────────────────────────────────────────
+     --font-family : 프로그램 전체 글씨체                        */
+  --font-family: Pretendard, -apple-system, sans-serif;
+
+  /* ── 색 · 바탕 ────────────────────────────────────────────
+     --color-canvas  : 화면 바깥 배경 (창 전체 뒷색)
+     --color-bg      : 프로그램 바탕
+     --color-surface : 카드 · 입력칸 · 표의 흰 바탕                */
+  --color-canvas:  #E8E4DA;
+  --color-bg:      #FBF8F1;
+  --color-surface: #FFFFFF;
+
+  /* ── 색 · 글자 (진한 순서) ────────────────────────────────
+     --color-text        : 본문 글자
+     --color-text-sub    : 표 안 보조 글자 (규격 · 학명)
+     --color-text-muted  : 항목 이름 · 설명글
+     --color-text-hint   : "자동 생성" 같은 옅은 안내
+     --color-text-faint  : 견본표의 치수 숫자 (가장 옅음)         */
+  --color-text:       #3D3833;
+  --color-text-sub:   #6E665C;
+  --color-text-muted: #8A8279;
+  --color-text-hint:  #A9A296;
+  --color-text-faint: #B0A99E;
+
+  /* ── 색 · 강조(초록) ──────────────────────────────────────
+     --color-accent        : 저장 버튼 · 메뉴 · 강조 숫자
+     --color-accent-bg     : 표 머리 · 자동입력칸의 옅은 초록
+     --color-accent-border : 그 옅은 초록의 테두리
+     --color-on-accent     : 초록 위에 얹는 글자색                */
+  --color-accent:        #5C7A4A;
+  --color-accent-bg:     #EDF0E4;
+  --color-accent-border: #C9D3B6;
+  --color-on-accent:     #FFFFFF;
+
+  /* ── 색 · 주의(흙벽돌) ────────────────────────────────────
+     재고 0 · 삭제 · 재입고 필요. 빨강 대신 씁니다.
+     --color-danger / -bg / -border                             */
+  --color-danger:        #B5623C;
+  --color-danger-bg:     #F7EAE3;
+  --color-danger-border: #E3C4B4;
+
+  /* ── 색 · 선 ──────────────────────────────────────────────
+     --color-border       : 상자 · 입력칸 테두리
+     --color-border-faint : 표의 줄 사이 옅은 선                  */
+  --color-border:       #D8CFC0;
+  --color-border-faint: #EFEAE0;
+
+  /* ── 색 · 초록 바탕 위의 흰 겹침 (왼쪽 메뉴 · 폰 상단) ──── */
+  --overlay-strong: rgba(255,255,255,.75);
+  --overlay-mid:    rgba(255,255,255,.60);
+  --overlay-line:   rgba(255,255,255,.42);
+  --overlay-soft:   rgba(255,255,255,.20);
+  --overlay-faint:  rgba(255,255,255,.16);
+
+  /* ── 글씨 크기 (작은 것 → 큰 것) ──────────────────────────
+     3xs 치수라벨 / 2xs 배지 / xs 항목이름 / sm 작은버튼
+     md  본문·표  / lg  입력값 / xl 견본제목 / 2xl 폰저장버튼
+     3xl 폰 화면제목 / 4xl PC 화면제목 / 5xl 통계 숫자           */
+  --font-3xs: 10px;
+  --font-2xs: 11px;
+  --font-xs:  12px;
+  --font-sm:  13px;
+  --font-md:  14px;
+  --font-lg:  15px;
+  --font-xl:  16px;
+  --font-2xl: 17px;
+  --font-3xl: 18px;
+  --font-4xl: 20px;
+  --font-5xl: 24px;
+  --font-table-sci: 12.5px;   /* 표 안 학명 전용 (한 곳) */
+  --font-icon: 20px;          /* 폰 아래 메뉴 아이콘 */
+
+  /* ── 글씨 굵기 ────────────────────────────────────────────
+     regular 입력값 / medium 버튼·본문 / semibold 항목이름
+     bold    제목·숫자·강조                                     */
+  --weight-regular:  500;
+  --weight-medium:   600;
+  --weight-semibold: 700;
+  --weight-bold:     800;
+
+  /* ── 간격 (작은 것 → 큰 것) ─────────────────────────────── */
+  --space-4xs:  3px;
+  --space-3xs:  4px;
+  --space-2xs:  5px;
+  --space-xs:   6px;
+  --space-sm:   8px;
+  --space-md:  10px;
+  --space-lg:  12px;
+  --space-xl:  14px;
+  --space-2xl: 16px;
+  --space-3xl: 20px;
+  --space-4xl: 26px;
+  --space-5xl: 30px;
+
+  /* ── 부품별 안쪽 여백 — 부품을 넉넉/빽빽하게 만들 때 고칩니다 */
+  --pad-page:      28px 20px 30px;
+  --pad-btn:       10px 18px;
+  --pad-btn-wide:  10px 34px;
+  --pad-btn-sm:     6px 12px;
+  --pad-input:      0 13px;
+  --pad-th:         9px 10px;
+  --pad-td:        11px 10px;
+  --pad-chip:       4px 10px 4px 8px;
+  --pad-tag:        2px 8px;
+  --pad-card:      20px;
+  --pad-card-table:20px 12px 8px;
+  --pad-stat:      13px 16px;
+  --pad-tab:        8px 15px 9px;
+  --pad-nav-item:  10px 0 14px;
+  --pad-ph-top:    15px 18px;
+  --pad-ph-sub:     9px 18px;
+  --pad-ph-body:   16px 18px;
+  --pad-ph-save:   16px;
+  --pad-pcbtn:      7px 11px;
+  --pad-side-y:    22px;
+  --pad-side-x:    20px;
+  --pad-main:      22px 26px;
+  --pad-parts:     24px 28px 26px;
+
+  /* ── 부품별 사이 간격 ─────────────────────────────────── */
+  --gap-ph-body:    13px;   /* 폰 입력칸 위아래 */
+  --gap-ph-pair:    11px;   /* 폰에서 둘씩 나란히 놓을 때 */
+  --gap-side-icon:   9px;   /* 메뉴 아이콘 ↔ 글자 */
+  --gap-chip:        5px;   /* 배지 점 ↔ 글자 */
+  --gap-sample:     11px;   /* 견본표 항목 사이 */
+  --gap-scale:       7px;   /* 글씨크기 견본 줄 사이 */
+  --gap-parts-col:  34px;   /* 견본표 칸 사이 */
+
+  /* ── 모서리 둥글기 ──────────────────────────────────────── */
+  --radius-sm:    6px;
+  --radius-badge: 7px;
+  --radius-md:    8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-pill: 20px;
+  --radius-phone:26px;
+
+  /* ── 선 굵기 ──────────────────────────────────────────────
+     --border-width       : 보통 테두리
+     --border-width-thick : 선택된 탭 밑줄
+     --bar-width / --bar-height : 선택된 메뉴 옆·위 막대          */
+  --border-width:       1px;
+  --border-width-thick: 2px;
+  --bar-width:  4px;
+  --bar-height: 3px;
+
+  /* ── 그림자 ─────────────────────────────────────────────── */
+  --shadow-panel: 0 8px 32px rgba(61,56,51,.18);
+
+  /* ── 입력칸 높이 ────────────────────────────────────────── */
+  --h-input:     44px;
+  --h-input-line:42px;
+  --h-label:     16px;
+  --dot-size:     6px;   /* 배지 앞의 점 */
+
+  /* ══════════════════════════════════════════════════════════
+     ▼ 여기부터는 「품목코드」 화면에서 새로 쓰는 값입니다.
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── 코드 글씨 크기 ───────────────────────────────────────
+     --font-code-xl : 만들어진 코드 미리보기 (가장 큼)
+     --font-code-lg : 경고창 안 후보 코드 · 폰 카드의 코드
+     --font-code-md : 코드 짜임 설명의 토막 글씨                */
+  --font-code-xl: 26px;
+  --font-code-lg: 19px;
+  --font-code-md: 15px;
+
+  /* ── 코드 앞 5자 표시 ─────────────────────────────────────
+     겹치는지 보는 자리라 뒷자리와 바탕색을 달리 합니다.
+     --color-key-bg     : 목록에서 앞 5자 뒤에 깔리는 색
+     --color-key-bg-warn: 경고 구역에서 겹친 앞 5자에 깔리는 색  */
+  --color-key-bg:      #E4EAD6;
+  --color-key-bg-warn: #EFD8CB;
+  --pad-key:  1px 3px;
+
+  /* ── 같은 앞 5자끼리 묶어 보이는 막대 ─────────────────────
+     목록 표 왼쪽에 세로로 서는 띠입니다.                        */
+  --bar-group: 4px;
+  --color-group-bar:      var(--color-accent-border);
+  --color-group-bar-warn: var(--color-danger-border);
+  --color-row-group-bg:   #FCFBF7;
+
+  /* ── 안내·경고 상자 ──────────────────────────────────────
+     --pad-rule  : 코드 만드는 법 안내띠
+     --pad-alert : 중복 경고 상자
+     --pad-choice: 「이렇게 하겠다」 선택 버튼                    */
+  --pad-rule:   12px 16px;
+  --pad-alert:  15px 17px;
+  --pad-choice: 11px 15px;
+  --gap-rule:   14px;
+
+  /* ── 코드 짜임 토막 (앞3자 · 일련번호 · 규격) ────────────── */
+  --pad-seg:     5px 11px;
+  --gap-seg:      5px;
+  --w-seg-label: 62px;
+
+  /* ── 폰 조회 카드 ────────────────────────────────────────
+     --pad-ph-card : 카드 안쪽 여백
+     --gap-ph-card : 카드 사이 간격
+     --gap-ph-line : 카드 안 줄 사이                            */
+  --pad-ph-card: 11px 13px 12px;
+  --gap-ph-card:  9px;
+  --gap-ph-line:  3px;
+
+  /* ── 검색칸 ──────────────────────────────────────────────
+     --w-search : PC 검색칸 가로폭                              */
+  --w-search: 320px;
+
+  /* ── 만들어진 코드 미리보기 상자 가로폭 ───────────────────
+     코드가 두 줄로 접히지 않을 만큼은 확보해 둡니다.           */
+  --w-preview: 186px;
+}
+
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:var(--font-family);
+    background:var(--color-canvas); color:var(--color-text);
+    width:1200px; padding:var(--pad-page);
+    display:flex; flex-direction:column; gap:var(--space-5xl); align-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .cap{font-size:var(--font-sm); color:var(--color-text-muted); margin-bottom:var(--space-md); letter-spacing:.01em}
+  .cap b{color:var(--color-accent); font-weight:var(--weight-semibold)}
+  .cap .tag{
+    display:inline-block; margin-left:var(--space-sm); font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-accent); background:var(--color-accent-bg); border:var(--border-width) solid var(--color-border);
+    padding:var(--pad-tag); border-radius:var(--radius-pill); vertical-align:1px;
+  }
+
+  /* ══ 공통 부품 ══ */
+  .btn{
+    font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-medium); cursor:pointer;
+    padding:var(--pad-btn); border-radius:var(--radius-md); line-height:1.2; white-space:nowrap;
+    background:var(--color-surface); color:var(--color-text); border:var(--border-width) solid var(--color-border);
+  }
+  .btn.main{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
+  .btn.warn{background:var(--color-surface); color:var(--color-danger); border-color:var(--color-danger)}
+  .btn.sm{padding:var(--pad-btn-sm); font-size:var(--font-sm); border-radius:var(--radius-sm)}
+  .btn.wide{padding:var(--pad-btn-wide)}
+
+  .field{display:flex; flex-direction:column; gap:var(--space-xs)}
+  .field > label{
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    letter-spacing:.01em; line-height:var(--h-label); height:var(--h-label);
+    display:flex; align-items:center; gap:var(--space-3xs); white-space:nowrap;
+  }
+  .field > label .req{color:var(--color-danger); font-size:var(--font-xs)}
+  .field > label .auto{color:var(--color-text-hint); font-weight:var(--weight-regular); font-size:var(--font-2xs)}
+  .inp{
+    width:100%; font-family:inherit; font-size:var(--font-lg); font-weight:var(--weight-regular);
+    height:var(--h-input); padding:var(--pad-input); line-height:var(--h-input-line);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-surface); color:var(--color-text);
+  }
+  .inp.num{text-align:right; font-variant-numeric:tabular-nums; letter-spacing:.01em}
+  .inp.sci{font-size:var(--font-md); font-style:italic; letter-spacing:-.1px}
+  .inp.code{
+    font-variant-numeric:tabular-nums; letter-spacing:.05em; font-weight:var(--weight-bold);
+    color:var(--color-accent); background:var(--color-accent-bg); border-color:var(--color-accent-border);
+  }
+
+  table{width:100%; border-collapse:collapse; font-size:var(--font-md); table-layout:fixed}
+  th{
+    background:var(--color-accent-bg); color:var(--color-accent); font-size:var(--font-xs); font-weight:var(--weight-bold);
+    text-align:left; padding:var(--pad-th); border-bottom:var(--border-width) solid var(--color-border);
+    white-space:nowrap; letter-spacing:.01em;
+  }
+  th:first-child{border-radius:var(--radius-sm) 0 0 0}
+  th:last-child{border-radius:0 var(--radius-sm) 0 0}
+  th.r{text-align:right}
+  td{padding:var(--pad-td); border-bottom:var(--border-width) solid var(--color-border-faint); vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  td.r{text-align:right; font-variant-numeric:tabular-nums; font-weight:var(--weight-medium)}
+  td.code{color:var(--color-accent); font-weight:var(--weight-bold); letter-spacing:.04em; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.sci{font-style:italic; font-size:var(--font-table-sci); color:var(--color-text-sub); white-space:nowrap; letter-spacing:-.2px}
+  td.dim{color:var(--color-text-sub); white-space:nowrap}
+  td.zero{color:var(--color-danger); font-weight:var(--weight-bold)}
+
+  .chip{
+    display:inline-flex; align-items:center; gap:var(--gap-chip);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-chip);
+    border-radius:var(--radius-pill); background:var(--color-accent-bg); color:var(--color-accent);
+    border:var(--border-width) solid var(--color-accent-border); white-space:nowrap;
+  }
+  .chip::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:var(--color-accent)}
+  .chip.out{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+  .chip.out::before{background:var(--color-danger)}
+
+  /* ══ 폰 ══ */
+  .phone{
+    width:390px; background:var(--color-bg); border-radius:var(--radius-phone); overflow:hidden;
+    box-shadow:var(--shadow-panel); display:flex; flex-direction:column; height:722px;
+  }
+  .ph-top{
+    background:var(--color-accent); color:var(--color-on-accent); padding:var(--pad-ph-top);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .ph-top h1{font-size:var(--font-3xl); font-weight:var(--weight-bold); letter-spacing:-.01em}
+  .ph-top .pcbtn{
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); background:var(--overlay-soft);
+    padding:var(--pad-pcbtn); border-radius:var(--radius-badge); border:var(--border-width) solid var(--overlay-line);
+    line-height:1;
+  }
+  .ph-sub{
+    background:var(--color-surface); border-bottom:var(--border-width) solid var(--color-border);
+    padding:var(--pad-ph-sub); font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    display:flex; justify-content:space-between;
+  }
+  .ph-sub b{color:var(--color-text); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+  .ph-sub b.warn{color:var(--color-danger)}
+  .ph-body{flex:1; padding:var(--pad-ph-body); display:flex; flex-direction:column; gap:var(--gap-ph-body)}
+  .ph-body .pair{display:flex; gap:var(--gap-ph-pair)}
+  .ph-body .pair .field{flex:1}
+  .ph-save{
+    margin-top:auto; width:100%; padding:var(--pad-ph-save); font-size:var(--font-2xl); font-weight:var(--weight-bold);
+    background:var(--color-accent); color:var(--color-on-accent); border:none; border-radius:var(--radius-lg); font-family:inherit;
+  }
+  .ph-nav{display:flex; background:var(--color-surface); border-top:var(--border-width) solid var(--color-border)}
+  .ph-nav div{
+    flex:1; text-align:center; padding:var(--pad-nav-item);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+  }
+  .ph-nav div.on{color:var(--color-accent); box-shadow:inset 0 var(--bar-height) 0 var(--color-accent)}
+  .ph-nav .ic{display:block; font-size:var(--font-icon); margin-bottom:var(--space-3xs); line-height:1}
+
+  /* ══ PC ══ */
+  .pc{
+    width:1120px; background:var(--color-bg); border-radius:var(--radius-xl); overflow:hidden;
+    box-shadow:var(--shadow-panel); display:flex;
+  }
+  .pc-side{width:198px; background:var(--color-accent); color:var(--color-on-accent); padding:var(--pad-side-y) 0; flex-shrink:0}
+  .pc-side .logo{
+    padding:0 var(--pad-side-x) var(--space-xs); font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em;
+  }
+  .pc-side .slogan{padding:0 var(--pad-side-x) var(--pad-side-y); font-size:var(--font-3xs); color:var(--overlay-mid); letter-spacing:.06em}
+  .pc-side a{
+    display:flex; align-items:center; gap:var(--gap-side-icon);
+    padding:var(--space-lg) var(--pad-side-x); font-size:var(--font-md); font-weight:var(--weight-medium);
+    color:var(--overlay-strong); text-decoration:none;
+  }
+  .pc-side a.on{
+    background:var(--overlay-faint); color:var(--color-on-accent); font-weight:var(--weight-bold);
+    box-shadow:inset var(--bar-width) 0 0 var(--color-on-accent);
+  }
+  .pc-side .ic{width:18px; text-align:center; font-size:var(--font-md)}
+  .pc-main{flex:1; padding:var(--pad-main); overflow:hidden; display:flex; flex-direction:column; gap:var(--space-2xl)}
+  .pc-main > *{flex:0 0 auto}
+  .pc-head{display:flex; justify-content:space-between; align-items:flex-end}
+  .pc-head h2{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .pc-head .path{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-bottom:var(--space-2xs)}
+  .pc-tabs{display:flex; gap:var(--space-3xs); border-bottom:var(--border-width) solid var(--color-border)}
+  .pc-tabs span{
+    padding:var(--pad-tab); font-size:var(--font-md); font-weight:var(--weight-medium); color:var(--color-text-muted);
+    border-bottom:var(--border-width-thick) solid transparent; margin-bottom:calc(var(--border-width) * -1);
+  }
+  .pc-tabs span.on{color:var(--color-accent); font-weight:var(--weight-bold); border-bottom-color:var(--color-accent)}
+  .stat{display:flex; gap:var(--space-lg)}
+  .stat > div{
+    flex:1; background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); padding:var(--pad-stat);
+  }
+  .stat .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .stat .v{
+    font-size:var(--font-5xl); font-weight:var(--weight-bold); color:var(--color-accent); margin-top:var(--space-4xs);
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em; line-height:1.15;
+  }
+  .stat .v small{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); margin-left:var(--space-4xs)}
+  .stat .v.alert, .stat .v.alert small{color:var(--color-danger)}
+  .card{background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg); padding:var(--pad-card)}
+  .card.table-card{padding:var(--pad-card-table)}
+  .card > h3{
+    font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-accent); margin-bottom:var(--space-2xl);
+    display:flex; align-items:center; gap:var(--space-sm);
+  }
+  .card > h3 .hint{font-size:var(--font-xs); font-weight:var(--weight-medium); color:var(--color-text-muted)}
+  .card > h3 .right{margin-left:auto; font-weight:var(--weight-medium)}
+  .row{display:flex; gap:var(--space-xl); margin-bottom:var(--space-xl)}
+  .row:last-of-type{margin-bottom:0}
+  .row.bottom{align-items:flex-end}
+  .row .spacer{flex:1}
+
+  /* ══ 이 화면 전용 부품 ══ */
+
+  /* 코드 만드는 법 안내띠 — 신규 등록칸 바로 위 */
+  .rulebar{
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); padding:var(--pad-rule);
+    display:flex; align-items:center; gap:var(--gap-rule); margin-bottom:var(--space-xl);
+  }
+  .segset{display:flex; gap:var(--gap-seg); align-items:flex-end}
+  .seg{text-align:center}
+  .seg em{
+    display:block; font-style:normal; font-size:var(--font-code-md); font-weight:var(--weight-bold);
+    color:var(--color-accent); background:var(--color-surface); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-sm); padding:var(--pad-seg); letter-spacing:.06em; min-width:var(--w-seg-label);
+  }
+  .seg i{
+    display:block; font-style:normal; font-size:var(--font-3xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-muted); margin-top:var(--space-3xs); letter-spacing:.02em; white-space:nowrap;
+  }
+  .rulebar .plus{font-size:var(--font-lg); color:var(--color-text-hint); font-weight:var(--weight-bold); padding-bottom:var(--space-xl)}
+  .rulebar .divider{width:var(--border-width); align-self:stretch; background:var(--color-accent-border); margin:0 var(--space-2xs)}
+  .exlist{display:flex; flex-direction:column; gap:var(--space-xs); font-size:var(--font-xs); color:var(--color-text-sub)}
+  .exlist div{display:flex; align-items:center; gap:var(--space-sm); white-space:nowrap}
+  .exlist .case{
+    font-size:var(--font-3xs); font-weight:var(--weight-bold); color:var(--color-text-muted);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-badge); padding:var(--pad-tag); letter-spacing:.02em;
+  }
+  .exlist .sci{font-style:italic; color:var(--color-text-sub); letter-spacing:-.2px}
+  .exlist .arw{color:var(--color-text-hint)}
+  .exlist b{color:var(--color-accent); font-weight:var(--weight-bold); letter-spacing:.05em; font-size:var(--font-sm)}
+
+  /* 만들어진 코드 미리보기 */
+  .preview{
+    display:flex; flex-direction:column; justify-content:center; gap:var(--space-4xs);
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); padding:var(--pad-rule); width:var(--w-preview); flex-shrink:0;
+  }
+  .preview .k{font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted)}
+  .preview .v{
+    font-size:var(--font-code-xl); font-weight:var(--weight-bold); color:var(--color-accent);
+    letter-spacing:.06em; line-height:1.1; font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .preview.danger{background:var(--color-danger-bg); border-color:var(--color-danger-border)}
+  .preview.danger .v{color:var(--color-danger)}
+
+  /* 앞 5자 강조 */
+  .key{background:var(--color-key-bg); border-radius:var(--radius-sm); padding:var(--pad-key)}
+  .key.warn{background:var(--color-key-bg-warn)}
+
+  /* 중복 경고 상자 (이름을 .alert로 쓰면 통계숫자 .v.alert와 부딪칩니다) */
+  .dupwarn{
+    background:var(--color-danger-bg); border:var(--border-width) solid var(--color-danger-border);
+    border-radius:var(--radius-md); padding:var(--pad-alert); margin-top:var(--space-xl);
+  }
+  .dupwarn h4{
+    font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger);
+    display:flex; align-items:center; gap:var(--space-xs); margin-bottom:var(--space-xs);
+  }
+  .dupwarn p{font-size:var(--font-xs); color:var(--color-text-sub); line-height:1.65; margin-bottom:var(--space-lg)}
+  .dupwarn p b{color:var(--color-danger); font-weight:var(--weight-bold)}
+  .dupwarn .box{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-danger-border);
+    border-radius:var(--radius-sm); overflow:hidden; margin-bottom:var(--space-lg);
+  }
+  .dupwarn th{background:var(--color-danger-bg); color:var(--color-danger); border-bottom-color:var(--color-danger-border)}
+  .dupwarn td.code{color:var(--color-danger)}
+
+  /* 두 갈래 선택 버튼 */
+  .choices{display:flex; gap:var(--space-lg)}
+  .choice{
+    flex:1; display:flex; align-items:center; gap:var(--space-lg); text-align:left; cursor:pointer;
+    font-family:inherit; padding:var(--pad-choice); border-radius:var(--radius-md);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  }
+  .choice .t{font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-text); line-height:1.4}
+  .choice .d{font-size:var(--font-2xs); font-weight:var(--weight-medium); color:var(--color-text-muted); margin-top:var(--space-4xs)}
+  .choice .c{
+    margin-left:auto; font-size:var(--font-code-lg); font-weight:var(--weight-bold);
+    letter-spacing:.05em; color:var(--color-accent); font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .choice.pick{border-color:var(--color-accent); background:var(--color-accent-bg)}
+  .choice.alt .c{color:var(--color-danger)}
+  .lock{
+    font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    margin-top:var(--space-md); display:flex; align-items:center; gap:var(--space-xs);
+  }
+  .lock b{color:var(--color-danger); font-weight:var(--weight-bold)}
+
+  /* 앞 5자 겹치는 조 — 모아보기 */
+  .groups{display:flex; gap:var(--space-lg)}
+  .group{
+    flex:1; border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    padding:var(--pad-rule); background:var(--color-bg);
+  }
+  .group.warn{border-color:var(--color-danger-border); background:var(--color-danger-bg)}
+  .group .gh{display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-md)}
+  .group .gh .g{
+    font-size:var(--font-code-md); font-weight:var(--weight-bold); color:var(--color-accent);
+    letter-spacing:.06em; font-variant-numeric:tabular-nums;
+  }
+  .group.warn .gh .g{color:var(--color-danger)}
+  .group .gh .n{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-left:auto}
+  .group ul{list-style:none; display:flex; flex-direction:column; gap:var(--space-xs)}
+  .group li{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-xs); color:var(--color-text-sub)}
+  .group li em{
+    font-style:normal; font-weight:var(--weight-bold); color:var(--color-text); letter-spacing:.04em;
+    font-variant-numeric:tabular-nums; white-space:nowrap; font-size:var(--font-sm);
+  }
+  .group li span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .group .verdict{
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    line-height:1.6; margin-top:var(--space-md); padding-top:var(--space-md);
+    border-top:var(--border-width) solid var(--color-border-faint);
+  }
+  .group.warn .verdict{border-top-color:var(--color-danger-border); color:var(--color-danger)}
+
+  /* 목록 표 — 같은 앞 5자끼리 왼쪽 띠로 묶기 */
+  tr.grp td:first-child{box-shadow:inset var(--bar-group) 0 0 var(--color-group-bar)}
+  tr.grp td{background:var(--color-row-group-bg)}
+  tr.grp.warn td:first-child{box-shadow:inset var(--bar-group) 0 0 var(--color-group-bar-warn)}
+  tr.grp-mid td{border-bottom-color:transparent}
+  .searchbar{display:flex; align-items:center; gap:var(--space-md); margin-bottom:var(--space-lg)}
+  .searchbar .inp{width:var(--w-search)}
+  .searchbar .hintx{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+  .searchbar .spacer{flex:1}
+
+  /* ══ 폰 조회 카드 ══ */
+  .ph-search{position:relative}
+  .ph-search .inp{padding-left:calc(var(--space-4xl) + var(--space-sm))}
+  .ph-search .ic{
+    position:absolute; left:var(--space-lg); top:0; height:var(--h-input);
+    display:flex; align-items:center; font-size:var(--font-xl); color:var(--color-text-hint);
+  }
+  .ph-list{display:flex; flex-direction:column; gap:var(--gap-ph-card)}
+  .ph-card{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md); padding:var(--pad-ph-card);
+    display:flex; flex-direction:column; gap:var(--gap-ph-line);
+  }
+  .ph-card .l1{display:flex; align-items:center; gap:var(--space-sm)}
+  .ph-card .l1 .c{
+    font-size:var(--font-code-lg); font-weight:var(--weight-bold); color:var(--color-accent);
+    letter-spacing:.05em; font-variant-numeric:tabular-nums; line-height:1.2;
+  }
+  .ph-card .l1 .st{margin-left:auto}
+  .ph-card .nm{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text)}
+  .ph-card .sci{
+    font-size:var(--font-xs); font-style:italic; color:var(--color-text-sub); letter-spacing:-.2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .ph-card .l4{
+    display:flex; gap:var(--space-lg); font-size:var(--font-2xs); color:var(--color-text-muted);
+    font-weight:var(--weight-semibold); margin-top:var(--space-3xs);
+  }
+  .ph-card .l4 b{color:var(--color-text); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+  .ph-card.warn{border-color:var(--color-danger-border)}
+  .ph-card .dup{
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-danger);
+    background:var(--color-danger-bg); border-radius:var(--radius-badge); padding:var(--pad-tag);
+    display:inline-flex; align-items:center; gap:var(--space-3xs); align-self:flex-start; margin-top:var(--space-3xs);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ 폰 ══════════ -->
+<div>
+  <div class="cap">폰 <b>390px</b> — 밭에서 <b>「이 코드 뭐였지」</b>를 찾습니다 <span class="tag">조회 전용</span></div>
+  <div class="phone">
+    <div class="ph-top">
+      <h1>품목코드</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>등록 <b>126</b>종</span>
+      <span>앞 5자 겹침 <b class="warn">3</b>조</span>
+    </div>
+    <div class="ph-body">
+
+      <div class="ph-search">
+        <span class="ic">🔍</span>
+        <input class="inp" value="수크령">
+      </div>
+
+      <div class="ph-list">
+
+        <div class="ph-card warn">
+          <div class="l1">
+            <span class="c">PER03-15</span>
+            <span class="st"><span class="chip">판매중</span></span>
+          </div>
+          <div class="nm">수크령 '레드헤드'</div>
+          <div class="sci">Pennisetum alopecuroides 'Red Head'</div>
+          <div class="l4"><span>15cm 포트</span><span>입고 <b>12</b>건</span><span>현재고 <b>340</b></span></div>
+          <span class="dup">⚠ 앞 5자 PER03 — 같은 조 1건 더</span>
+        </div>
+
+        <div class="ph-card warn">
+          <div class="l1">
+            <span class="c">PER03-21</span>
+            <span class="st"><span class="chip">판매중</span></span>
+          </div>
+          <div class="nm">수크령 '레드헤드'</div>
+          <div class="sci">Pennisetum alopecuroides 'Red Head'</div>
+          <div class="l4"><span>21cm 포트</span><span>입고 <b>5</b>건</span><span>현재고 <b>90</b></span></div>
+          <span class="dup">⚠ 앞 5자 PER03 — 규격만 다름</span>
+        </div>
+
+        <div class="ph-card">
+          <div class="l1">
+            <span class="c">PEL01-15</span>
+            <span class="st"><span class="chip">판매중</span></span>
+          </div>
+          <div class="nm">수크령 '리틀버니'</div>
+          <div class="sci">Pennisetum alopecuroides 'Little Bunny'</div>
+          <div class="l4"><span>15cm 포트</span><span>입고 <b>7</b>건</span><span>현재고 <b>210</b></span></div>
+        </div>
+
+        <div class="ph-card">
+          <div class="l1">
+            <span class="c">PER02-10</span>
+            <span class="st"><span class="chip out">재입고 필요</span></span>
+          </div>
+          <div class="nm">붉은수크령</div>
+          <div class="sci">Pennisetum setaceum 'Rubrum'</div>
+          <div class="l4"><span>10cm 포트</span><span>입고 <b>3</b>건</span><span>현재고 <b>0</b></span></div>
+        </div>
+
+      </div>
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div class="on"><span class="ic">📦</span>재고</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div>
+  <div class="cap">PC <b>1440px</b> — 사무실에서 씁니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="pc-side">
+      <div class="logo">제로가드닝</div>
+      <div class="slogan">GARDENING FROM ZERO</div>
+      <a class="on"><span class="ic">🌿</span>상품 관리</a>
+      <a><span class="ic">📦</span>재고 관리</a>
+      <a><span class="ic">🛒</span>주문 관리</a>
+      <a><span class="ic">📄</span>명세서 발행</a>
+      <a><span class="ic">🏢</span>업체 관리</a>
+      <a><span class="ic">🌱</span>소싱 추천</a>
+    </div>
+    <div class="pc-main">
+      <div class="pc-head">
+        <h2>품목코드</h2>
+        <div class="path">상품 관리 › 품목코드</div>
+      </div>
+      <div class="pc-tabs">
+        <span>수동 입고</span>
+        <span>입고 리스트</span>
+        <span>재고 관리</span>
+        <span class="on">품목코드</span>
+      </div>
+
+      <div class="stat">
+        <div><div class="k">등록된 품목코드</div><div class="v">126<small>개</small></div></div>
+        <div><div class="k">이번 달 새로 만든 코드</div><div class="v">8<small>개</small></div></div>
+        <div><div class="k">앞 5자가 겹치는 조</div><div class="v alert">3<small>조 · 확인 필요</small></div></div>
+      </div>
+
+      <!-- ── 새 품목코드 만들기 ── -->
+      <div class="card">
+        <h3>새 품목코드 만들기 <span class="hint">학명을 치면 코드가 저절로 만들어집니다 · 규격은 10·15·18·21·27cm 포트 또는 직접 입력</span></h3>
+
+        <!-- 코드 짜임 + 두 가지 경우 예시 -->
+        <div class="rulebar">
+          <div class="segset">
+            <div class="seg"><em>MIR</em><i>앞 3자 · 학명</i></div>
+            <span class="plus">+</span>
+            <div class="seg"><em>01</em><i>일련번호</i></div>
+            <span class="plus">+</span>
+            <div class="seg"><em>-15</em><i>규격 · 화분 지름</i></div>
+          </div>
+          <div class="divider"></div>
+          <div class="exlist">
+            <div>
+              <span class="case">품종명에 따옴표 있음</span>
+              <span class="sci">Miscanthus sinensis 'Red Chief'</span>
+              <span class="arw">→ 앞 2자 <b>MI</b> + 품종 첫 글자 <b>R</b> →</span>
+              <b>MIR01-15</b>
+            </div>
+            <div>
+              <span class="case">따옴표 없음</span>
+              <span class="sci">Festuca glauca</span>
+              <span class="arw">→ 속명 앞 3자 →</span>
+              <b>FES01-10</b>
+            </div>
+          </div>
+        </div>
+
+        <div class="row bottom">
+          <div class="field" style="flex:1; min-width:250px"><label>학명 <span class="req">*</span></label><input class="inp sci" value="Pennisetum alopecuroides 'Red Head'"></div>
+          <div class="field" style="width:134px"><label>유통명 <span class="req">*</span></label><input class="inp" value="수크령 '레드헤드'"></div>
+          <div class="field" style="width:118px"><label>규격 <span class="req">*</span></label><input class="inp" value="27cm 포트 ▾"></div>
+          <div class="preview danger">
+            <div class="k">만들어진 코드</div>
+            <div class="v">PER03-27</div>
+          </div>
+          <button class="btn" style="opacity:.5">저장</button>
+        </div>
+
+        <!-- 🔴 중복 경고 -->
+        <div class="dupwarn">
+          <h4>⚠ 앞 5자 <b>PER03</b>이 이미 쓰이고 있습니다 — 2건</h4>
+          <p>
+            아래 품목이 같은 <b>PER03</b>으로 시작합니다. <b>같은 식물인지 먼저 확인해 주세요.</b><br>
+            같은 식물이면 번호를 그대로 쓰고, 다른 식물이면 일련번호를 올려야 합니다.
+          </p>
+          <div class="box">
+            <table>
+              <colgroup><col style="width:112px"><col style="width:168px"><col><col style="width:100px"><col style="width:100px"></colgroup>
+              <tr><th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th><th class="r">현재고</th></tr>
+              <tr>
+                <td class="code"><span class="key warn">PER03</span>-15</td>
+                <td>수크령 '레드헤드'</td>
+                <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+                <td class="dim">15cm 포트</td><td class="r">340</td>
+              </tr>
+              <tr>
+                <td class="code"><span class="key warn">PER03</span>-21</td>
+                <td>수크령 '레드헤드'</td>
+                <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+                <td class="dim">21cm 포트</td><td class="r">90</td>
+              </tr>
+            </table>
+          </div>
+          <div class="choices">
+            <button class="choice pick">
+              <div>
+                <div class="t">같은 식물입니다 — 규격만 다릅니다</div>
+                <div class="d">일련번호 03을 그대로 씁니다</div>
+              </div>
+              <span class="c">PER03-27</span>
+            </button>
+            <button class="choice alt">
+              <div>
+                <div class="t">다른 식물입니다</div>
+                <div class="d">일련번호를 04로 올립니다</div>
+              </div>
+              <span class="c">PER04-27</span>
+            </button>
+          </div>
+          <div class="lock">🔒 <b>품목코드는 한 번 저장하면 바꿀 수 없습니다.</b> 주문·재고·명세서가 전부 이 코드로 이어집니다.</div>
+        </div>
+      </div>
+
+      <!-- ── 앞 5자 겹치는 조 모아보기 ── -->
+      <div class="card">
+        <h3>앞 5자가 겹치는 조 <span class="hint">3조 · 같은 식물이면 정상, 다른 식물이면 번호를 갈라야 합니다</span>
+          <button class="btn sm right">전부 다시 검사</button></h3>
+        <div class="groups">
+
+          <div class="group warn">
+            <div class="gh"><span class="g">PER03</span><span class="chip out">확인 필요</span><span class="n">3건</span></div>
+            <ul>
+              <li><em>PER03-15</em><span>수크령 '레드헤드'</span></li>
+              <li><em>PER03-21</em><span>수크령 '레드헤드'</span></li>
+              <li><em>PER03-27</em><span>등록 대기 중</span></li>
+            </ul>
+            <div class="verdict">지금 만들고 있는 코드가 이 조에 들어갑니다</div>
+          </div>
+
+          <div class="group">
+            <div class="gh"><span class="g">CAS01</span><span class="chip">정상</span><span class="n">2건</span></div>
+            <ul>
+              <li><em>CAS01-18</em><span>층꽃 '스털링실버'</span></li>
+              <li><em>CAS01-27</em><span>층꽃 '스털링실버'</span></li>
+            </ul>
+            <div class="verdict">학명이 같습니다 — 규격만 다른 같은 식물</div>
+          </div>
+
+          <div class="group">
+            <div class="gh"><span class="g">FES</span><span class="chip">정상</span><span class="n">앞 3자만 겹침</span></div>
+            <ul>
+              <li><em>FES01-10</em><span>털수염풀</span></li>
+              <li><em>FES02-15</em><span>김의털</span></li>
+            </ul>
+            <div class="verdict">다른 식물이라 일련번호 01 · 02로 갈랐습니다</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── 품목코드 목록 ── -->
+      <div class="card table-card">
+        <h3>품목코드 목록 <span class="hint">126개</span></h3>
+        <div class="searchbar">
+          <input class="inp" value="🔍  코드 · 유통명 · 학명으로 찾기">
+          <span class="hintx">왼쪽에 띠가 있는 줄은 앞 5자가 같은 조입니다</span>
+          <span class="spacer"></span>
+          <button class="btn sm">엑셀 내려받기</button>
+          <button class="btn sm">인쇄</button>
+        </div>
+        <table>
+          <colgroup>
+            <col style="width:112px"><col style="width:132px"><col>
+            <col style="width:86px"><col style="width:104px"><col style="width:58px"><col style="width:72px">
+          </colgroup>
+          <tr>
+            <th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th>
+            <th>등록일</th><th class="r">입고</th><th class="r">현재고</th>
+          </tr>
+          <tr class="grp grp-mid">
+            <td class="code"><span class="key">PER03</span>-15</td>
+            <td>수크령 '레드헤드'</td>
+            <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+            <td class="dim">15cm 포트</td><td class="dim">2025-03-11</td><td class="r">12</td><td class="r">340</td>
+          </tr>
+          <tr class="grp">
+            <td class="code"><span class="key">PER03</span>-21</td>
+            <td>수크령 '레드헤드'</td>
+            <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+            <td class="dim">21cm 포트</td><td class="dim">2025-09-02</td><td class="r">5</td><td class="r">90</td>
+          </tr>
+          <tr>
+            <td class="code">PEL01-15</td>
+            <td>수크령 '리틀버니'</td>
+            <td class="sci">Pennisetum alopecuroides 'Little Bunny'</td>
+            <td class="dim">15cm 포트</td><td class="dim">2025-04-18</td><td class="r">7</td><td class="r">210</td>
+          </tr>
+          <tr class="grp grp-mid">
+            <td class="code"><span class="key">CAS01</span>-18</td>
+            <td>층꽃 '스털링실버'</td>
+            <td class="sci">Caryopteris × clandonensis 'Sterling Silver'</td>
+            <td class="dim">18cm 포트</td><td class="dim">2024-08-27</td><td class="r">9</td><td class="r">180</td>
+          </tr>
+          <tr class="grp">
+            <td class="code"><span class="key">CAS01</span>-27</td>
+            <td>층꽃 '스털링실버'</td>
+            <td class="sci">Caryopteris × clandonensis 'Sterling Silver'</td>
+            <td class="dim">27cm 포트</td><td class="dim">2026-05-14</td><td class="r">2</td><td class="r">44</td>
+          </tr>
+          <tr>
+            <td class="code">ANW02-21</td>
+            <td>추명국 '휠윈드핑크'</td>
+            <td class="sci">Anemone × hybrida 'Whirlwind Pink'</td>
+            <td class="dim">21cm 포트</td><td class="dim">2025-06-03</td><td class="r">6</td><td class="r zero">0</td>
+          </tr>
+          <tr>
+            <td class="code">FES01-10</td>
+            <td>털수염풀</td>
+            <td class="sci">Festuca glauca</td>
+            <td class="dim">10cm 포트</td><td class="dim">2024-11-20</td><td class="r">14</td><td class="r">610</td>
+          </tr>
+          <tr>
+            <td class="code">FES02-15</td>
+            <td>김의털</td>
+            <td class="sci">Festuca ovina</td>
+            <td class="dim">15cm 포트</td><td class="dim">2026-02-14</td><td class="r">3</td><td class="r">180</td>
+          </tr>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 동봉카드 · 기존 느낌 유지안</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ══ 인쇄물이라 화면 부품(_공통-macA.css)의 색만 빌려 쓰고
+        레이아웃은 A4 한 장 기준으로 따로 짭니다 ══ */
+  .pages{display:flex; gap:30px; flex-wrap:wrap; justify-content:center}
+  .pagewrap{width:560px}
+  .plabel{
+    font-size:var(--font-xs); font-weight:var(--weight-bold); color:#45474D;
+    margin-bottom:var(--space-sm); display:flex; align-items:center; gap:var(--space-sm);
+  }
+  .plabel .n{
+    background:var(--overlay-strong); border-radius:var(--radius-pill); padding:var(--pad-tag);
+    font-size:var(--font-2xs); color:var(--color-accent-dark); box-shadow:0 0 0 1px rgba(0,0,0,.06);
+  }
+
+  /* ── A4 한 장 ── */
+  .cardpage{
+    width:560px; height:792px; background:#fff; box-shadow:var(--shadow-panel);
+    padding:24px 30px 22px; display:flex; flex-direction:column;
+    font-family:"Apple SD Gothic Neo","Helvetica Neue",sans-serif; color:#1a1a1a;
+    letter-spacing:-.01em;
+  }
+
+  /* 머리 — 손글씨 로고 PNG + 태그라인 */
+  .cp-head{text-align:center; padding-bottom:9px; border-bottom:1px solid #2F6B3A}
+  .cp-head img{display:block; margin:0 auto; width:186px}
+  .cp-head .tag{font-size:10.5px; color:#888; letter-spacing:.8px; margin-top:-10px}
+
+  /* 받는 분 · 송장 */
+  .cp-meta{
+    display:flex; justify-content:space-between; align-items:center; gap:6px;
+    font-size:11px; color:#666; margin:10px 0; padding:6px 12px;
+    background:#f4f6f5; border-radius:5px;
+  }
+  .cp-meta .lbl{font-weight:700; color:#444; margin-right:5px}
+  .cp-meta .tracking{
+    font-family:var(--font-mono); font-size:11.5px; color:#1e4abb;
+    background:#e7f0ff; padding:1px 8px; border-radius:4px;
+  }
+  .cp-title{
+    font-size:13px; font-weight:700; color:#2F6B3A; letter-spacing:1px;
+    padding-bottom:6px; border-bottom:1px solid #d4e3d8; margin-bottom:11px;
+  }
+
+  /* ── 식물 자리 — 개수에 따라 판이 바뀝니다 ── */
+  .cp-plants{flex:1; display:grid; gap:10px; grid-auto-rows:1fr; min-height:0}
+  .n1{grid-template-columns:1fr}
+  .n2{grid-template-columns:1fr 1fr}
+  .n3{grid-template-columns:1fr}
+  .n4{grid-template-columns:1fr 1fr}
+  .n5{grid-template-columns:1fr 1fr}
+  .n5 > .plant:last-child{grid-column:1 / -1}
+
+  .plant{
+    background:#fafbfa; border:1px solid #d4e3d8; border-left:3px solid #2F9E44;
+    border-radius:6px; padding:11px 14px; display:flex; flex-direction:column; min-height:0;
+  }
+  .plant .ph{padding-bottom:7px; border-bottom:1px dashed #c8d8ce}
+  .plant .nm{font-size:14.5px; font-weight:700; color:#2F6B3A; display:block}
+  .plant .sci{font-size:11px; font-style:italic; color:#666; display:block; margin-top:1px}
+  .plant .svc{
+    font-size:9.5px; font-weight:700; color:#7a5b00; background:#fff6dd;
+    border:1px solid #eddca6; border-radius:9px; padding:1px 7px; margin-left:5px; vertical-align:2px;
+  }
+  .traits{flex:1; display:grid; align-content:space-around; font-size:11px; margin:7px 0}
+  .traits .t{display:flex; align-items:baseline; gap:5px; white-space:nowrap; overflow:hidden}
+  .traits i{font-style:normal; width:14px; text-align:center; flex-shrink:0}
+  .traits .l{color:#666; font-weight:700; font-size:10px; min-width:40px; flex-shrink:0}
+  .traits .v{color:#1a1a1a; font-weight:600; overflow:hidden; text-overflow:ellipsis}
+  .note{
+    font-size:11px; color:#444; background:#fff; border:1px solid #e0e4e2;
+    border-radius:5px; padding:5px 9px; line-height:1.5;
+  }
+  .note .nl{font-size:9.5px; font-weight:700; color:#7a5b00; margin-right:5px}
+
+  /* 개수별 특성표 짜임 — 자리가 남으면 넓게, 빽빽하면 좁게 */
+  .n1 .traits{grid-template-columns:1fr 1fr; gap:10px 14px; font-size:13px}
+  .n1 .nm{font-size:19px}
+  .n2 .traits{grid-template-columns:1fr; gap:4px; font-size:12px}
+  .n2 .nm{font-size:16px}
+  .n3 .traits{grid-template-columns:1fr 1fr 1fr; gap:6px 12px}
+  .n4 .traits{grid-template-columns:1fr 1fr; gap:4px 12px}
+  .n5 .traits{grid-template-columns:1fr 1fr; gap:3px 12px; font-size:10.5px}
+  .n5 > .plant:last-child .traits{grid-template-columns:repeat(3,1fr)}
+  .n5 .nm{font-size:13.5px}
+  .n5 .note{font-size:10.5px; padding:4px 8px}
+
+  /* ── 아래 — 감사 · 안내 말씀 · 워드마크 ── */
+  .cp-bottom{margin-top:12px}
+  .thanks{text-align:center; font-size:15px; font-weight:600; color:#2F6B3A; letter-spacing:1px}
+  .thanks small{display:block; font-size:11.5px; color:#555; font-weight:500; margin-top:3px; letter-spacing:0}
+  .memo{margin-top:10px; padding-top:9px; border-top:1px dashed #d4d8d4}
+  .memo .t{font-size:10.5px; font-weight:700; color:#2F6B3A; letter-spacing:1px; margin-bottom:4px}
+  .memo p{font-size:11.5px; line-height:1.65; color:#3a3a3a}
+  .foot{text-align:center; margin-top:11px; padding-top:9px; border-top:1px solid #d4e3d8}
+  .foot img{display:block; margin:0 auto 4px; width:104px; opacity:.85}
+  .foot .l{font-size:10.5px; color:#666; letter-spacing:.3px}
+
+  .cnt{
+    display:inline-block; font-size:var(--font-2xs); font-weight:var(--weight-bold);
+    color:var(--color-text-muted); margin-left:auto;
+  }
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<div class="cap">동봉카드 — <b>기존 느낌 유지안</b> · A4 한 장 (560×792로 줄여 표시)
+  <span class="tag">지금 쓰던 색·이모지·로고 그대로 · 빈 자리만 채웠습니다</span>
+</div>
+
+<div class="pages">
+
+  <!-- ══ 식물 2종 ══ -->
+  <div class="pagewrap">
+    <div class="plabel">식물 <span class="n">2종</span> — 세로로 긴 두 칸으로 갈라 아래까지 채웁니다</div>
+    <div class="cardpage">
+      <div class="cp-head">
+        <img src="_카드로고1.png" alt="제로가드닝">
+        <div class="tag">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
+      </div>
+      <div class="cp-meta">
+        <span><span class="lbl">받는 분</span>김정원 님</span>
+        <span><span class="lbl">송장번호</span><span class="tracking">4512-8890-1123</span></span>
+      </div>
+      <div class="cp-title">🌿 정원식물 관리카드</div>
+
+      <div class="cp-plants n2">
+        <div class="plant">
+          <div class="ph">
+            <span class="nm">수크령 '레드헤드'</span>
+            <span class="sci">Pennisetum alopecuroides 'Red Head'</span>
+          </div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">최대 높이</span><span class="v">60~90cm</span></div>
+            <div class="t"><i>↔</i><span class="l">최대 너비</span><span class="v">40~60cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-29℃ (3지역)</span></div>
+            <div class="t"><i>💧</i><span class="l">물 주기</span><span class="v">보통 — 겉흙 마르면</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">양지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">8~10월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝 특이사항</span>가을에 이삭이 붉게 물듭니다. 늦겨울에 밑동 15cm만 남기고 잘라주시면 이듬해 더 곱게 올라옵니다.</div>
+        </div>
+
+        <div class="plant">
+          <div class="ph">
+            <span class="nm">청사초</span>
+            <span class="sci">Carex breviculmis</span>
+          </div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">최대 높이</span><span class="v">20~30cm</span></div>
+            <div class="t"><i>↔</i><span class="l">최대 너비</span><span class="v">30~40cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-23℃ (4지역)</span></div>
+            <div class="t"><i>💧</i><span class="l">물 주기</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">반음지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">4~5월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝 특이사항</span>그늘진 화단 가장자리를 메우는 데 좋습니다. 초봄에 묵은 잎을 손으로 훑어내 주세요.</div>
+        </div>
+      </div>
+
+      <div class="cp-bottom">
+        <div class="thanks">구매해주셔서 감사합니다<small>정성껏 키운 식물이 잘 도착했길 바랍니다.</small></div>
+        <div class="memo">
+          <div class="t">💌 안내 말씀</div>
+          <p>온도가 급변하는 환절기에는 식물도 스트레스를 받습니다. 겨울철에는 5℃ 이하로 떨어지지 않도록 실내 월동을 권장드리며, 한여름 직사광선이 강한 시간대(오전 11시~오후 3시)는 피해주세요. 흙이 마르는 속도는 계절·환경에 따라 다르니 손가락으로 흙을 짚어보고 마른 정도를 확인 후 물을 주시면 됩니다.</p>
+        </div>
+        <div class="foot">
+          <img src="_카드로고2.png" alt="ZERO GARDENING">
+          <div class="l">키우시다 궁금한 점은 언제든 편하게 연락주세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 식물 4종 ══ -->
+  <div class="pagewrap">
+    <div class="plabel">식물 <span class="n">4종</span> — 2×2로 딱 떨어집니다</div>
+    <div class="cardpage">
+      <div class="cp-head">
+        <img src="_카드로고1.png" alt="제로가드닝">
+        <div class="tag">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
+      </div>
+      <div class="cp-meta">
+        <span><span class="lbl">받는 분</span>박서연 님</span>
+        <span><span class="lbl">송장번호</span><span class="tracking">4512-8890-1207</span></span>
+      </div>
+      <div class="cp-title">🌿 정원식물 관리카드</div>
+
+      <div class="cp-plants n4">
+        <div class="plant">
+          <div class="ph"><span class="nm">수크령 '레드헤드'</span><span class="sci">Pennisetum alopecuroides 'Red Head'</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">60~90cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">40~60cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-29℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">양지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">8~10월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>늦겨울에 밑동 15cm만 남기고 잘라주세요.</div>
+        </div>
+        <div class="plant">
+          <div class="ph"><span class="nm">층꽃 '스털링실버'</span><span class="sci">Caryopteris × clandonensis 'Sterling Silver'</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">60~80cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">60~80cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-23℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">적게</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">양지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">8~9월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>물이 고이는 자리는 피해 심어주세요.</div>
+        </div>
+        <div class="plant">
+          <div class="ph"><span class="nm">무늬둥굴레</span><span class="sci">Polygonatum odoratum 'Variegatum'</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">40~60cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">30~50cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-34℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">음지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">5~6월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>여름에 잎이 지는 것은 자연스러운 일입니다.</div>
+        </div>
+        <div class="plant">
+          <div class="ph"><span class="nm">청사초</span><span class="sci">Carex breviculmis</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">20~30cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">30~40cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-23℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">반음지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">4~5월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>초봄에 묵은 잎을 손으로 훑어내 주세요.</div>
+        </div>
+      </div>
+
+      <div class="cp-bottom">
+        <div class="thanks">구매해주셔서 감사합니다<small>정성껏 키운 식물이 잘 도착했길 바랍니다.</small></div>
+        <div class="memo">
+          <div class="t">💌 안내 말씀</div>
+          <p>겨울철에는 5℃ 이하로 떨어지지 않도록 실내 월동을 권장드리며, 한여름 직사광선이 강한 시간대(오전 11시~오후 3시)는 피해주세요. 흙이 마르는 속도는 계절·환경에 따라 다르니 손가락으로 짚어보고 물을 주시면 됩니다.</p>
+        </div>
+        <div class="foot">
+          <img src="_카드로고2.png" alt="ZERO GARDENING">
+          <div class="l">키우시다 궁금한 점은 언제든 편하게 연락주세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 식물 5종 (＋서비스) ══ -->
+  <div class="pagewrap">
+    <div class="plabel">식물 <span class="n">5종</span> — 2·2·1, 마지막 한 칸은 가로로 눕혀 빈 자리를 없앱니다
+      <span class="cnt">서비스 품목 1개 포함</span>
+    </div>
+    <div class="cardpage">
+      <div class="cp-head">
+        <img src="_카드로고1.png" alt="제로가드닝">
+        <div class="tag">가드닝, 처음이어도 괜찮아요. 제로에서 같이 시작해요.</div>
+      </div>
+      <div class="cp-meta">
+        <span><span class="lbl">받는 분</span>이하늘 님</span>
+        <span><span class="lbl">송장번호</span><span class="tracking">4512-8890-1244</span></span>
+      </div>
+      <div class="cp-title">🌿 정원식물 관리카드</div>
+
+      <div class="cp-plants n5">
+        <div class="plant">
+          <div class="ph"><span class="nm">수크령 '레드헤드'</span><span class="sci">Pennisetum alopecuroides 'Red Head'</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">60~90cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">40~60cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-29℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">양지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">8~10월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>늦겨울에 밑동 15cm만 남기고 잘라주세요.</div>
+        </div>
+        <div class="plant">
+          <div class="ph"><span class="nm">층꽃 '스털링실버'</span><span class="sci">Caryopteris × clandonensis</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">60~80cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">60~80cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-23℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">적게</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">양지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">8~9월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>물이 고이는 자리는 피해주세요.</div>
+        </div>
+        <div class="plant">
+          <div class="ph"><span class="nm">무늬둥굴레</span><span class="sci">Polygonatum odoratum 'Variegatum'</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">40~60cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">30~50cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-34℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">음지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">5~6월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>여름에 잎이 지는 것은 자연스럽습니다.</div>
+        </div>
+        <div class="plant">
+          <div class="ph"><span class="nm">청사초</span><span class="sci">Carex breviculmis</span></div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">20~30cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">30~40cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-23℃</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">반음지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">4~5월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝</span>초봄에 묵은 잎을 훑어내 주세요.</div>
+        </div>
+        <div class="plant">
+          <div class="ph">
+            <span class="nm">애기범부채 '루시퍼'<span class="svc">서비스</span></span>
+            <span class="sci">Crocosmia 'Lucifer'</span>
+          </div>
+          <div class="traits">
+            <div class="t"><i>↕</i><span class="l">높이</span><span class="v">80~100cm</span></div>
+            <div class="t"><i>↔</i><span class="l">너비</span><span class="v">30~40cm</span></div>
+            <div class="t"><i>❄</i><span class="l">내한성</span><span class="v">-23℃ (4지역)</span></div>
+            <div class="t"><i>💧</i><span class="l">물</span><span class="v">보통</span></div>
+            <div class="t"><i>☀</i><span class="l">일조량</span><span class="v">양지</span></div>
+            <div class="t"><i>🌸</i><span class="l">개화기</span><span class="v">7~8월</span></div>
+          </div>
+          <div class="note"><span class="nl">📝 특이사항</span>늦여름 붉은 꽃이 길게 이어집니다. 중부 이북은 알뿌리를 캐어 실내에서 겨울을 나게 해주세요.</div>
+        </div>
+      </div>
+
+      <div class="cp-bottom">
+        <div class="thanks">구매해주셔서 감사합니다<small>정성껏 키운 식물이 잘 도착했길 바랍니다.</small></div>
+        <div class="memo">
+          <div class="t">💌 안내 말씀</div>
+          <p>겨울철에는 5℃ 이하로 떨어지지 않도록 실내 월동을 권장드립니다. 흙이 마르는 속도는 계절·환경에 따라 다르니 손가락으로 짚어보고 물을 주세요.</p>
+        </div>
+        <div class="foot">
+          <img src="_카드로고2.png" alt="ZERO GARDENING">
+          <div class="l">키우시다 궁금한 점은 언제든 편하게 연락주세요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="parts" style="margin-top:var(--space-5xl)">
+  <h2>기존 느낌 유지안 — 무엇만 바뀌었나</h2>
+  <div class="lead">색 · 이모지 · 로고 두 개는 지금 쓰시던 그대로입니다. <b>판(레이아웃)만</b> 바꿨습니다.</div>
+  <div class="pgrid">
+    <div style="flex:1">
+      <h4>빈 자리를 없앤 법</h4>
+      <p class="note">
+        지금은 식물이 몇 개든 <b>위에서부터 한 줄씩</b> 쌓입니다.<br>
+        그래서 2종이면 가운데가 통째로 비었습니다.<br><br>
+        고친 판은 <b class="accent">개수가 판을 정합니다</b> —<br>
+        2종은 세로로 긴 두 칸, 3종은 가로로 넓은 세 줄,<br>
+        4종은 2×2, 5종은 2·2·1(마지막은 눕혀서).<br>
+        칸은 남은 높이를 <b class="accent">똑같이 나눠 갖고</b>, 칸 안의 특성표도<br>
+        위아래로 벌어져 채웁니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>글씨도 같이 움직입니다</h4>
+      <p class="note">
+        칸이 넓으면 <b class="accent">글씨가 커지고 특성이 한 줄씩</b> 펴집니다(2종).<br>
+        칸이 좁으면 두 줄·세 줄로 접히며 작아집니다(5종).<br><br>
+        덕분에 2종 카드는 <b>읽기 쉬운 큰 글씨</b>가 되고,<br>
+        5종 카드도 <b>한 장 안에</b> 다 들어옵니다.<br>
+        6종부터는 지금처럼 1/2로 나뉩니다.
+      </p>
+    </div>
+    <div style="flex:1">
+      <h4>서비스 품목</h4>
+      <p class="note">
+        서비스로 넣어드린 것은 <b class="accent">이름 옆에 「서비스」</b> 딱지가 붙습니다.<br>
+        나머지는 산 식물과 똑같이 특성·특이사항이 들어갑니다.<br><br>
+        PC에서 <b class="accent">여러 건을 골라 한 번에</b> 지정합니다 —<br>
+        <span style="color:var(--color-text-muted)">09-동봉카드-PC편집 시안을 봐주세요.</span>
+      </p>
+    </div>
+    <div style="flex:.9">
+      <h4>잉크</h4>
+      <p class="note">
+        이 안은 <b>잉크를 아끼지 않습니다</b> —<br>
+        로고 PNG 두 개, 초록 세로줄, 컬러 이모지 6종,<br>
+        회색 상자 두 곳이 그대로 있습니다.<br><br>
+        <b class="accent">09-동봉카드-잉크절약</b>과 나란히 놓고<br>
+        고르시면 됩니다.
+      </p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

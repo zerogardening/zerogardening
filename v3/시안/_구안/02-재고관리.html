@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품 관리 › 재고 관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   여기(:root)만 고치면 모든 화면의 겉모습이 한꺼번에 바뀝니다.
+   아래 스타일 규칙에는 색·크기 값을 직접 적지 않습니다.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+
+  /* ── 글씨체 ───────────────────────────────────────────────
+     --font-family : 프로그램 전체 글씨체                        */
+  --font-family: Pretendard, -apple-system, sans-serif;
+
+  /* ── 색 · 바탕 ────────────────────────────────────────────
+     --color-canvas  : 화면 바깥 배경 (창 전체 뒷색)
+     --color-bg      : 프로그램 바탕
+     --color-surface : 카드 · 입력칸 · 표의 흰 바탕                */
+  --color-canvas:  #E8E4DA;
+  --color-bg:      #FBF8F1;
+  --color-surface: #FFFFFF;
+
+  /* ── 색 · 글자 (진한 순서) ────────────────────────────────
+     --color-text        : 본문 글자
+     --color-text-sub    : 표 안 보조 글자 (규격 · 학명)
+     --color-text-muted  : 항목 이름 · 설명글
+     --color-text-hint   : "자동 생성" 같은 옅은 안내
+     --color-text-faint  : 견본표의 치수 숫자 (가장 옅음)         */
+  --color-text:       #3D3833;
+  --color-text-sub:   #6E665C;
+  --color-text-muted: #8A8279;
+  --color-text-hint:  #A9A296;
+  --color-text-faint: #B0A99E;
+
+  /* ── 색 · 강조(초록) ──────────────────────────────────────
+     --color-accent        : 저장 버튼 · 메뉴 · 강조 숫자
+     --color-accent-bg     : 표 머리 · 자동입력칸의 옅은 초록
+     --color-accent-border : 그 옅은 초록의 테두리
+     --color-on-accent     : 초록 위에 얹는 글자색                */
+  --color-accent:        #5C7A4A;
+  --color-accent-bg:     #EDF0E4;
+  --color-accent-border: #C9D3B6;
+  --color-on-accent:     #FFFFFF;
+
+  /* ── 색 · 주의(흙벽돌) ────────────────────────────────────
+     재고 0 · 삭제 · 재입고 필요. 빨강 대신 씁니다.
+     --color-danger / -bg / -border                             */
+  --color-danger:        #B5623C;
+  --color-danger-bg:     #F7EAE3;
+  --color-danger-border: #E3C4B4;
+
+  /* ── 색 · 선 ──────────────────────────────────────────────
+     --color-border       : 상자 · 입력칸 테두리
+     --color-border-faint : 표의 줄 사이 옅은 선                  */
+  --color-border:       #D8CFC0;
+  --color-border-faint: #EFEAE0;
+
+  /* ── 색 · 초록 바탕 위의 흰 겹침 (왼쪽 메뉴 · 폰 상단) ──── */
+  --overlay-strong: rgba(255,255,255,.75);
+  --overlay-mid:    rgba(255,255,255,.60);
+  --overlay-line:   rgba(255,255,255,.42);
+  --overlay-soft:   rgba(255,255,255,.20);
+  --overlay-faint:  rgba(255,255,255,.16);
+
+  /* ── 글씨 크기 (작은 것 → 큰 것) ──────────────────────────
+     3xs 치수라벨 / 2xs 배지 / xs 항목이름 / sm 작은버튼
+     md  본문·표  / lg  입력값 / xl 견본제목 / 2xl 폰저장버튼
+     3xl 폰 화면제목 / 4xl PC 화면제목 / 5xl 통계 숫자           */
+  --font-3xs: 10px;
+  --font-2xs: 11px;
+  --font-xs:  12px;
+  --font-sm:  13px;
+  --font-md:  14px;
+  --font-lg:  15px;
+  --font-xl:  16px;
+  --font-2xl: 17px;
+  --font-3xl: 18px;
+  --font-4xl: 20px;
+  --font-5xl: 24px;
+  --font-table-sci: 12.5px;   /* 표 안 학명 전용 (한 곳) */
+  --font-icon: 20px;          /* 폰 아래 메뉴 아이콘 */
+
+  /* ── 글씨 굵기 ────────────────────────────────────────────
+     regular 입력값 / medium 버튼·본문 / semibold 항목이름
+     bold    제목·숫자·강조                                     */
+  --weight-regular:  500;
+  --weight-medium:   600;
+  --weight-semibold: 700;
+  --weight-bold:     800;
+
+  /* ── 간격 (작은 것 → 큰 것) ─────────────────────────────── */
+  --space-4xs:  3px;
+  --space-3xs:  4px;
+  --space-2xs:  5px;
+  --space-xs:   6px;
+  --space-sm:   8px;
+  --space-md:  10px;
+  --space-lg:  12px;
+  --space-xl:  14px;
+  --space-2xl: 16px;
+  --space-3xl: 20px;
+  --space-4xl: 26px;
+  --space-5xl: 30px;
+
+  /* ── 부품별 안쪽 여백 — 부품을 넉넉/빽빽하게 만들 때 고칩니다 */
+  --pad-page:      28px 20px 30px;
+  --pad-btn:       10px 18px;
+  --pad-btn-wide:  10px 34px;
+  --pad-btn-sm:     6px 12px;
+  --pad-input:      0 13px;
+  --pad-th:         9px 10px;
+  --pad-td:        11px 10px;
+  --pad-chip:       4px 10px 4px 8px;
+  --pad-tag:        2px 8px;
+  --pad-card:      20px;
+  --pad-card-table:20px 12px 8px;
+  --pad-stat:      13px 16px;
+  --pad-tab:        8px 15px 9px;
+  --pad-nav-item:  10px 0 14px;
+  --pad-ph-top:    15px 18px;
+  --pad-ph-sub:     9px 18px;
+  --pad-ph-body:   16px 18px;
+  --pad-ph-save:   16px;
+  --pad-pcbtn:      7px 11px;
+  --pad-side-y:    22px;
+  --pad-side-x:    20px;
+  --pad-main:      22px 26px;
+  --pad-parts:     24px 28px 26px;
+
+  /* ── 부품별 사이 간격 ─────────────────────────────────── */
+  --gap-ph-body:    13px;   /* 폰 입력칸 위아래 */
+  --gap-ph-pair:    11px;   /* 폰에서 둘씩 나란히 놓을 때 */
+  --gap-side-icon:   9px;   /* 메뉴 아이콘 ↔ 글자 */
+  --gap-chip:        5px;   /* 배지 점 ↔ 글자 */
+  --gap-sample:     11px;   /* 견본표 항목 사이 */
+  --gap-scale:       7px;   /* 글씨크기 견본 줄 사이 */
+  --gap-parts-col:  34px;   /* 견본표 칸 사이 */
+
+  /* ── 모서리 둥글기 ──────────────────────────────────────── */
+  --radius-sm:    6px;
+  --radius-badge: 7px;
+  --radius-md:    8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-pill: 20px;
+  --radius-phone:26px;
+
+  /* ── 선 굵기 ──────────────────────────────────────────────
+     --border-width       : 보통 테두리
+     --border-width-thick : 선택된 탭 밑줄
+     --bar-width / --bar-height : 선택된 메뉴 옆·위 막대          */
+  --border-width:       1px;
+  --border-width-thick: 2px;
+  --bar-width:  4px;
+  --bar-height: 3px;
+
+  /* ── 그림자 ─────────────────────────────────────────────── */
+  --shadow-panel: 0 8px 32px rgba(61,56,51,.18);
+
+  /* ── 입력칸 높이 ────────────────────────────────────────── */
+  --h-input:     44px;
+  --h-input-line:42px;
+  --h-label:     16px;
+  --dot-size:     6px;   /* 배지 앞의 점 */
+
+  /* ══════════════════════════════════════════════════════════
+     ▼ 여기부터 재고 관리 화면에서 새로 필요해진 것들 ▼
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── 색 · 쉼(회색) ────────────────────────────────────────
+     품절 · 일시중지처럼 "지금 안 파는 것". 위험(흙벽돌)과 구분됩니다.
+     --color-neutral / -bg / -border                            */
+  --color-neutral:        #7C736A;
+  --color-neutral-bg:     #F1EDE6;
+  --color-neutral-border: #DCD5C9;
+
+  /* ── 상태 배지의 점 모양 ──────────────────────────────────
+     색을 못 가려도 모양으로 구분됩니다.
+     판매중 ● 채운원 / 품절 ○ 빈원 / 일시중지 ■ 네모 / 재입고 ◆ 마름모 */
+  --dot-border-width: 1.5px;   /* 빈 원의 테두리 굵기 */
+  --dot-square-radius: 1px;    /* 네모 점의 둥글기 */
+
+  /* ── 학명 · 이름 두 줄 표시 ───────────────────────────────
+     표에서 유통명 아래에 학명을 붙여 씁니다. 칸이 좁아 조금 작습니다. */
+  --font-sci-inline: 11.5px;
+  --gap-name-line:   2px;      /* 유통명 ↔ 학명 줄 간격 */
+
+  /* ── 같은 식물 묶음 (품목코드 앞자리) ─────────────────────
+     규격만 다른 같은 식물은 왼쪽에 초록 막대로 묶어 보여줍니다.   */
+  --bar-group:       3px;
+  --pad-group-arrow: 3px;      /* 묶인 아랫줄의 ↳ 뒤 여백 */
+
+  /* ── 상태 필터 버튼 ─────────────────────────────────────── */
+  --pad-fbtn:  7px 13px;
+  --gap-fbtn:  6px;
+
+  /* ── 여러 개 골랐을 때 뜨는 띠 (일괄 작업) ────────────────── */
+  --pad-bulk:   9px 14px;
+  --gap-bulk:   8px;
+  --w-inp-mini: 74px;          /* 단가조정 값 넣는 작은 칸 */
+  --h-inp-mini: 32px;
+
+  /* ── 재입고 필요 구역 ───────────────────────────────────── */
+  --pad-alert-head: 12px 16px;
+  --pad-alert-row:  11px 16px;
+  --w-alert-code:   96px;      /* 재입고 줄의 품목코드 폭 */
+  --w-alert-spec:   82px;
+  --w-alert-qty:    72px;
+  --w-alert-last:  128px;
+
+  /* ── 검색칸 ─────────────────────────────────────────────── */
+  --h-search:    38px;
+  --pad-search:  0 13px 0 32px;
+  --pos-search-icon: 11px;
+
+  /* ── 체크박스 ───────────────────────────────────────────── */
+  --box-size:   15px;
+  --box-radius:  4px;
+
+  /* ── 폰 목록 카드 ───────────────────────────────────────── */
+  --pad-pcard:   11px 13px;
+  --gap-pcard:    8px;
+  --font-pstock: 21px;         /* 폰 카드의 현재고 숫자 */
+
+  /* ── 조정 이력 표시 ─────────────────────────────────────── */
+  --pad-adjmark: 1px 5px;
+
+  /* ══════════════════════════════════════════════════════════
+     ▼ 「남은 기간」 판정 — 개수가 아니라 소진 속도로 봅니다 ▼
+       남은 기간 = 현재고 ÷ 최근 30일 평균 출고량
+       3주 이하 → 재입고 필요
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── 현재고 + 월 출고량을 한 칸에 (예: 88 / 월 100) ─────── */
+  --font-rate:  11px;          /* "월 100" 출고 속도 글씨 */
+  --gap-rate:    3px;          /* 현재고 ↔ 출고속도 줄 간격 */
+
+  /* ── 재입고 줄에 새로 생긴 칸 ───────────────────────────── */
+  --w-alert-now:   88px;       /* 현재고 · 월 출고 */
+  --w-alert-left: 120px;       /* 남은 기간 */
+
+  /* ── 「왜 개수로 안 보나」 대비 상자 ───────────────────────
+     88개(급함) vs 44개(여유)를 나란히 놓아 기준을 설명합니다.  */
+  --pad-why:      15px 18px 13px;
+  --pad-why-case: 12px 14px;
+  --gap-why:      12px;
+  --font-why-num: 27px;        /* 대비 상자의 큰 숫자 */
+  --w-why-num:    76px;
+  --w-why-rate:  132px;
+  --w-why-verd:  118px;
+  --w-why-vs:     92px;        /* 가운데 "88 > 44" 칸 */
+
+  /* ── 자동 계산 안내 한 줄 ───────────────────────────────── */
+  --pad-note: 5px 0 0;
+
+  /* ── 기준을 손으로 덮어쓴 품목 표시 (부가 기능) ───────────── */
+  --pad-fixmark: 1px 5px;
+}
+
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:var(--font-family);
+    background:var(--color-canvas); color:var(--color-text);
+    width:1200px; padding:var(--pad-page);
+    display:flex; flex-direction:column; gap:var(--space-5xl); align-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .cap{font-size:var(--font-sm); color:var(--color-text-muted); margin-bottom:var(--space-md); letter-spacing:.01em}
+  .cap b{color:var(--color-accent); font-weight:var(--weight-semibold)}
+  .cap .tag{
+    display:inline-block; margin-left:var(--space-sm); font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-accent); background:var(--color-accent-bg); border:var(--border-width) solid var(--color-border);
+    padding:var(--pad-tag); border-radius:var(--radius-pill); vertical-align:1px;
+  }
+
+  /* ══ 공통 부품 ══ */
+  .btn{
+    font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-medium); cursor:pointer;
+    padding:var(--pad-btn); border-radius:var(--radius-md); line-height:1.2; white-space:nowrap;
+    background:var(--color-surface); color:var(--color-text); border:var(--border-width) solid var(--color-border);
+  }
+  .btn.main{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
+  .btn.warn{background:var(--color-surface); color:var(--color-danger); border-color:var(--color-danger)}
+  .btn.sm{padding:var(--pad-btn-sm); font-size:var(--font-sm); border-radius:var(--radius-sm)}
+  .btn.wide{padding:var(--pad-btn-wide)}
+
+  .field{display:flex; flex-direction:column; gap:var(--space-xs)}
+  .field > label{
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    letter-spacing:.01em; line-height:var(--h-label); height:var(--h-label);
+    display:flex; align-items:center; gap:var(--space-3xs); white-space:nowrap;
+  }
+  .inp{
+    width:100%; font-family:inherit; font-size:var(--font-lg); font-weight:var(--weight-regular);
+    height:var(--h-input); padding:var(--pad-input); line-height:var(--h-input-line);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-surface); color:var(--color-text);
+  }
+  .inp.num{text-align:right; font-variant-numeric:tabular-nums; letter-spacing:.01em}
+
+  table{width:100%; border-collapse:collapse; font-size:var(--font-md); table-layout:fixed}
+  th{
+    background:var(--color-accent-bg); color:var(--color-accent); font-size:var(--font-xs); font-weight:var(--weight-bold);
+    text-align:left; padding:var(--pad-th); border-bottom:var(--border-width) solid var(--color-border);
+    white-space:nowrap; letter-spacing:.01em;
+  }
+  th:first-child{border-radius:var(--radius-sm) 0 0 0}
+  th:last-child{border-radius:0 var(--radius-sm) 0 0}
+  th.r{text-align:right}
+  th.c{text-align:center}
+  td{padding:var(--pad-td); border-bottom:var(--border-width) solid var(--color-border-faint); vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  td.r{text-align:right; font-variant-numeric:tabular-nums; font-weight:var(--weight-medium)}
+  td.c{text-align:center}
+  td.code{color:var(--color-accent); font-weight:var(--weight-bold); letter-spacing:.04em; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.sci{font-style:italic; font-size:var(--font-table-sci); color:var(--color-text-sub); white-space:nowrap; letter-spacing:-.2px}
+  td.dim{color:var(--color-text-sub); white-space:nowrap}
+  td.zero{color:var(--color-danger); font-weight:var(--weight-bold)}
+
+  .chip{
+    display:inline-flex; align-items:center; gap:var(--gap-chip);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-chip);
+    border-radius:var(--radius-pill); background:var(--color-accent-bg); color:var(--color-accent);
+    border:var(--border-width) solid var(--color-accent-border); white-space:nowrap;
+  }
+  .chip::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:var(--color-accent)}
+  /* 품절 — 회색 빈 원 */
+  .chip.soldout{background:var(--color-neutral-bg); color:var(--color-neutral); border-color:var(--color-neutral-border)}
+  .chip.soldout::before{background:transparent; border:var(--dot-border-width) solid var(--color-neutral)}
+  /* 일시중지 — 회색 네모 */
+  .chip.pause{background:var(--color-neutral-bg); color:var(--color-neutral); border-color:var(--color-neutral-border)}
+  .chip.pause::before{background:var(--color-neutral); border-radius:var(--dot-square-radius)}
+  /* 재입고 필요 — 흙벽돌 마름모 */
+  .chip.out{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+  .chip.out::before{background:var(--color-danger); border-radius:var(--dot-square-radius); transform:rotate(45deg)}
+
+  /* ══ 폰 ══ */
+  .phone{
+    width:390px; background:var(--color-bg); border-radius:var(--radius-phone); overflow:hidden;
+    box-shadow:var(--shadow-panel); display:flex; flex-direction:column; height:722px;
+  }
+  .ph-top{
+    background:var(--color-accent); color:var(--color-on-accent); padding:var(--pad-ph-top);
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .ph-top h1{font-size:var(--font-3xl); font-weight:var(--weight-bold); letter-spacing:-.01em}
+  .ph-top .pcbtn{
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); background:var(--overlay-soft);
+    padding:var(--pad-pcbtn); border-radius:var(--radius-badge); border:var(--border-width) solid var(--overlay-line);
+    line-height:1;
+  }
+  .ph-sub{
+    background:var(--color-surface); border-bottom:var(--border-width) solid var(--color-border);
+    padding:var(--pad-ph-sub); font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    display:flex; justify-content:space-between;
+  }
+  .ph-sub b{color:var(--color-text); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+  .ph-sub b.alert{color:var(--color-danger)}
+  .ph-body{flex:1; padding:var(--pad-ph-body); display:flex; flex-direction:column; gap:var(--gap-ph-body); overflow:hidden}
+  .ph-nav{display:flex; background:var(--color-surface); border-top:var(--border-width) solid var(--color-border)}
+  .ph-nav div{
+    flex:1; text-align:center; padding:var(--pad-nav-item);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+  }
+  .ph-nav div.on{color:var(--color-accent); box-shadow:inset 0 var(--bar-height) 0 var(--color-accent)}
+  .ph-nav .ic{display:block; font-size:var(--font-icon); margin-bottom:var(--space-3xs); line-height:1}
+
+  /* ══ PC ══ */
+  .pc{
+    width:1120px; background:var(--color-bg); border-radius:var(--radius-xl); overflow:hidden;
+    box-shadow:var(--shadow-panel); display:flex;
+  }
+  .pc-side{width:198px; background:var(--color-accent); color:var(--color-on-accent); padding:var(--pad-side-y) 0; flex-shrink:0}
+  .pc-side .logo{
+    padding:0 var(--pad-side-x) var(--space-xs); font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em;
+  }
+  .pc-side .slogan{padding:0 var(--pad-side-x) var(--pad-side-y); font-size:var(--font-3xs); color:var(--overlay-mid); letter-spacing:.06em}
+  .pc-side a{
+    display:flex; align-items:center; gap:var(--gap-side-icon);
+    padding:var(--space-lg) var(--pad-side-x); font-size:var(--font-md); font-weight:var(--weight-medium);
+    color:var(--overlay-strong); text-decoration:none;
+  }
+  .pc-side a.on{
+    background:var(--overlay-faint); color:var(--color-on-accent); font-weight:var(--weight-bold);
+    box-shadow:inset var(--bar-width) 0 0 var(--color-on-accent);
+  }
+  .pc-side .ic{width:18px; text-align:center; font-size:var(--font-md)}
+  .pc-main{flex:1; padding:var(--pad-main); overflow:hidden; display:flex; flex-direction:column; gap:var(--space-2xl)}
+  .pc-main > *{flex:0 0 auto}
+  .pc-head{display:flex; justify-content:space-between; align-items:flex-end}
+  .pc-head h2{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .pc-head .path{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-bottom:var(--space-2xs)}
+  .pc-tabs{display:flex; gap:var(--space-3xs); border-bottom:var(--border-width) solid var(--color-border)}
+  .pc-tabs span{
+    padding:var(--pad-tab); font-size:var(--font-md); font-weight:var(--weight-medium); color:var(--color-text-muted);
+    border-bottom:var(--border-width-thick) solid transparent; margin-bottom:calc(var(--border-width) * -1);
+  }
+  .pc-tabs span.on{color:var(--color-accent); font-weight:var(--weight-bold); border-bottom-color:var(--color-accent)}
+  .stat{display:flex; gap:var(--space-lg)}
+  .stat > div{
+    flex:1; background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); padding:var(--pad-stat);
+  }
+  .stat > div.alertbox{border-color:var(--color-danger-border); background:var(--color-danger-bg)}
+  .stat .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .stat .k.alert{color:var(--color-danger)}
+  .stat .v{
+    font-size:var(--font-5xl); font-weight:var(--weight-bold); color:var(--color-accent); margin-top:var(--space-4xs);
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em; line-height:1.15;
+  }
+  .stat .v small{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); margin-left:var(--space-4xs)}
+  .stat .v.alert, .stat .v.alert small{color:var(--color-danger)}
+  .stat .v.rest, .stat .v.rest small{color:var(--color-neutral)}
+  .stat .note{
+    font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    padding:var(--pad-note); letter-spacing:-.01em;
+  }
+  .stat .note.alert{color:var(--color-danger); opacity:.8}
+  .card{background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg); padding:var(--pad-card)}
+  .card.table-card{padding:var(--pad-card-table)}
+  .card > h3{
+    font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-accent); margin-bottom:var(--space-2xl);
+    display:flex; align-items:center; gap:var(--space-sm);
+  }
+  .card > h3 .hint{font-size:var(--font-xs); font-weight:var(--weight-medium); color:var(--color-text-muted)}
+  .card > h3 .right{margin-left:auto; font-weight:var(--weight-medium)}
+  .row{display:flex; gap:var(--space-xl); margin-bottom:var(--space-xl)}
+  .row:last-of-type{margin-bottom:0}
+  .row.bottom{align-items:flex-end}
+  .row .spacer{flex:1}
+
+  /* ══ 재입고 필요 구역 — 이 화면의 주인공 ══ */
+  .alertcard{
+    background:var(--color-surface); border:var(--border-width-thick) solid var(--color-danger-border);
+    border-radius:var(--radius-lg); overflow:hidden;
+  }
+  .alertcard .ahead{
+    background:var(--color-danger-bg); padding:var(--pad-alert-head);
+    display:flex; align-items:center; gap:var(--space-sm);
+    border-bottom:var(--border-width) solid var(--color-danger-border);
+  }
+  .alertcard .ahead h3{font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-danger)}
+  .alertcard .ahead .cnt{
+    font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-on-accent);
+    background:var(--color-danger); padding:var(--pad-tag); border-radius:var(--radius-pill);
+  }
+  .alertcard .ahead .hint{font-size:var(--font-xs); color:var(--color-danger); font-weight:var(--weight-medium); opacity:.85}
+  .alertcard .ahead .right{margin-left:auto}
+  .arow{
+    display:flex; align-items:center; gap:var(--space-lg); padding:var(--pad-alert-row);
+    border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md);
+  }
+  .arow:last-child{border-bottom:none}
+  .arow .acode{
+    width:var(--w-alert-code); flex-shrink:0; color:var(--color-accent); font-weight:var(--weight-bold);
+    letter-spacing:.04em; font-variant-numeric:tabular-nums;
+  }
+  .arow .aname{flex:1; min-width:0}
+  .arow .aname b{font-weight:var(--weight-medium); display:block}
+  .arow .aname i{
+    display:block; font-style:italic; font-size:var(--font-sci-inline); color:var(--color-text-sub);
+    margin-top:var(--gap-name-line); letter-spacing:-.2px; white-space:nowrap;
+  }
+  .arow .aspec{width:var(--w-alert-spec); flex-shrink:0; color:var(--color-text-sub)}
+  /* 현재고 · 월 출고량 — 계산 근거를 같이 보여줍니다 */
+  .arow .anow{
+    width:var(--w-alert-now); flex-shrink:0; text-align:right; font-variant-numeric:tabular-nums;
+  }
+  .arow .anow b{display:block; font-weight:var(--weight-bold)}
+  .arow .anow small{
+    display:block; font-size:var(--font-rate); color:var(--color-text-muted);
+    font-weight:var(--weight-medium); margin-top:var(--gap-rate);
+  }
+  /* 남은 기간 — 이 칸이 판단의 근거입니다 */
+  .arow .aleft{
+    width:var(--w-alert-left); flex-shrink:0; text-align:right;
+    color:var(--color-danger); font-weight:var(--weight-bold); white-space:nowrap;
+  }
+  .arow .aleft small{
+    display:block; font-size:var(--font-3xs); color:var(--color-text-muted);
+    font-weight:var(--weight-medium); margin-top:var(--space-4xs);
+  }
+  .arow .alast{
+    width:var(--w-alert-last); flex-shrink:0; font-size:var(--font-xs); color:var(--color-text-muted);
+    font-weight:var(--weight-medium); text-align:right;
+  }
+
+  /* ══ 상태 필터 · 검색 · 일괄작업 ══ */
+  .toolbar{display:flex; align-items:center; gap:var(--space-md); flex-wrap:wrap}
+  .fbtn{
+    font-family:inherit; font-size:var(--font-sm); font-weight:var(--weight-medium); cursor:pointer;
+    padding:var(--pad-fbtn); border-radius:var(--radius-pill); white-space:nowrap;
+    background:var(--color-surface); color:var(--color-text-sub);
+    border:var(--border-width) solid var(--color-border);
+  }
+  .fbtn b{font-weight:var(--weight-bold); margin-left:var(--space-2xs); font-variant-numeric:tabular-nums; color:var(--color-text-muted)}
+  .fbtn.on{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
+  .fbtn.on b{color:var(--color-on-accent)}
+  .fbtn.alert{color:var(--color-danger); border-color:var(--color-danger-border); background:var(--color-danger-bg)}
+  .fbtn.alert b{color:var(--color-danger)}
+  .search{position:relative; flex:1; min-width:0}
+  .search .ic{
+    position:absolute; left:var(--pos-search-icon); top:50%; transform:translateY(-50%);
+    font-size:var(--font-xs); color:var(--color-text-hint);
+  }
+  .search input{
+    width:100%; font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-regular);
+    height:var(--h-search); padding:var(--pad-search); color:var(--color-text-hint);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md); background:var(--color-surface);
+  }
+  .bulk{
+    display:flex; align-items:center; gap:var(--gap-bulk); padding:var(--pad-bulk);
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); font-size:var(--font-sm); color:var(--color-accent);
+    font-weight:var(--weight-medium); margin-bottom:var(--space-lg);
+  }
+  .bulk .sel{font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+  .bulk .div{width:var(--border-width); height:var(--font-xl); background:var(--color-accent-border)}
+  .bulk .lbl{color:var(--color-text-sub); font-weight:var(--weight-semibold); font-size:var(--font-xs)}
+  .bulk .mini{
+    font-family:inherit; font-size:var(--font-sm); font-weight:var(--weight-medium); height:var(--h-inp-mini);
+    padding:var(--pad-btn-sm); border-radius:var(--radius-sm); background:var(--color-surface);
+    border:var(--border-width) solid var(--color-border); color:var(--color-text);
+  }
+  .bulk .mini.num{width:var(--w-inp-mini); text-align:right; font-variant-numeric:tabular-nums}
+  .bulk .right{margin-left:auto; display:flex; gap:var(--space-sm)}
+
+  /* ══ 체크박스 ══ */
+  .box{
+    display:inline-block; width:var(--box-size); height:var(--box-size); border-radius:var(--box-radius);
+    border:var(--border-width) solid var(--color-border); background:var(--color-surface); vertical-align:-2px;
+  }
+  .box.on{
+    background:var(--color-accent); border-color:var(--color-accent); color:var(--color-on-accent);
+    font-size:var(--font-3xs); text-align:center; line-height:var(--box-size); font-weight:var(--weight-bold);
+  }
+
+  /* ══ 재고 표 ══ */
+  .name b{font-weight:var(--weight-medium); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .name i{
+    display:block; font-style:italic; font-size:var(--font-sci-inline); color:var(--color-text-sub);
+    margin-top:var(--gap-name-line); letter-spacing:-.2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  /* 현재고 + 월 출고량을 한 칸에 — 「88 · 월 100」 */
+  td.now{text-align:right; white-space:nowrap}
+  td.now b{
+    display:block; font-size:var(--font-lg); font-weight:var(--weight-bold);
+    font-variant-numeric:tabular-nums; line-height:1.15;
+  }
+  td.now b.zero, td.now b.low{color:var(--color-danger)}
+  td.now .rate{
+    display:block; font-size:var(--font-rate); color:var(--color-text-muted);
+    font-weight:var(--weight-medium); margin-top:var(--gap-rate); font-variant-numeric:tabular-nums;
+  }
+  /* 남은 기간 — 재입고 판단은 이 칸으로 합니다 */
+  td.left{white-space:nowrap}
+  .lt{font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger)}
+  .lt.calm{font-weight:var(--weight-medium); color:var(--color-text-muted)}
+  .lt.none{font-weight:var(--weight-medium); color:var(--color-text-hint); font-size:var(--font-sm)}
+  .adjmark{
+    display:inline-block; font-size:var(--font-3xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-sub); background:var(--color-neutral-bg); border:var(--border-width) solid var(--color-neutral-border);
+    padding:var(--pad-adjmark); border-radius:var(--radius-sm); letter-spacing:0; white-space:nowrap;
+    vertical-align:1px; margin-left:var(--space-3xs);
+  }
+  /* 기준 기간을 손으로 정해둔 품목 (부가 기능 — 대부분은 자동입니다) */
+  .fixmark{
+    display:inline-block; font-size:var(--font-3xs); font-weight:var(--weight-semibold);
+    color:var(--color-accent); background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    padding:var(--pad-fixmark); border-radius:var(--radius-sm); white-space:nowrap; margin-left:var(--space-3xs);
+    vertical-align:1px;
+  }
+  /* 규격만 다른 같은 식물 — 왼쪽 초록 막대로 묶습니다 */
+  tr.grp td:first-child{box-shadow:inset var(--bar-group) 0 0 var(--color-accent-border)}
+  .cont{font-style:normal; color:var(--color-text-hint); margin-right:var(--pad-group-arrow); font-weight:var(--weight-medium)}
+
+  /* ══ 「왜 개수로 안 보나」 대비 상자 ══ */
+  .why{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); padding:var(--pad-why);
+  }
+  .why .wh{
+    font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-text-sub);
+    margin-bottom:var(--space-lg); display:flex; align-items:center; gap:var(--space-sm);
+  }
+  .why .wh .right{margin-left:auto; font-size:var(--font-xs); font-weight:var(--weight-medium); color:var(--color-text-muted)}
+  .wrow{display:flex; align-items:stretch; gap:var(--gap-why)}
+  .wcase{
+    flex:1; display:flex; flex-direction:column; gap:var(--space-md); padding:var(--pad-why-case);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-bg); min-width:0;
+  }
+  .wcase.alert{border-color:var(--color-danger-border); background:var(--color-danger-bg)}
+  .wcase .wtop{display:flex; align-items:center; gap:var(--space-md)}
+  .wcase .wname{flex:1; min-width:0}
+  .wcase .wname b{
+    display:block; font-size:var(--font-md); font-weight:var(--weight-semibold);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .wcase .wname span{
+    display:block; font-size:var(--font-2xs); color:var(--color-text-muted);
+    font-weight:var(--weight-medium); margin-top:var(--space-4xs); letter-spacing:.03em; white-space:nowrap;
+  }
+  .wcase .wnum{
+    flex-shrink:0; text-align:right; font-size:var(--font-why-num); white-space:nowrap;
+    font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; line-height:1; color:var(--color-text);
+  }
+  .wcase .wnum small{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); margin-left:var(--space-4xs)}
+  .wcase .wbot{
+    display:flex; align-items:center; gap:var(--space-sm);
+    border-top:var(--border-width) solid var(--color-border); padding-top:var(--space-md);
+  }
+  .wcase.alert .wbot{border-top-color:var(--color-danger-border)}
+  .wcase .wrate{
+    flex:1; min-width:0; font-size:var(--font-xs); color:var(--color-text-sub);
+    font-weight:var(--weight-medium); white-space:nowrap;
+  }
+  .wcase .wrate b{font-weight:var(--weight-bold); color:var(--color-text)}
+  .wcase .wverd{
+    flex-shrink:0; text-align:right; font-size:var(--font-sm);
+    font-weight:var(--weight-bold); color:var(--color-text-muted); white-space:nowrap;
+  }
+  .wcase.alert .wverd{color:var(--color-danger)}
+  .wvs{
+    width:var(--w-why-vs); flex-shrink:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center;
+    font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+  }
+  .wvs b{
+    display:block; font-size:var(--font-xl); font-weight:var(--weight-bold); color:var(--color-text-sub);
+    font-variant-numeric:tabular-nums; margin:var(--space-4xs) 0;
+  }
+  .why .wfoot{
+    margin-top:var(--space-lg); font-size:var(--font-xs); color:var(--color-text-muted);
+    font-weight:var(--weight-medium); line-height:1.5;
+  }
+  .why .wfoot b{color:var(--color-accent); font-weight:var(--weight-bold)}
+  .tfoot{
+    display:flex; align-items:center; justify-content:space-between; padding:var(--pad-alert-row);
+    font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+  }
+
+  /* ══ 폰 전용 ══ */
+  .ph-alert{
+    background:var(--color-danger-bg); border:var(--border-width-thick) solid var(--color-danger-border);
+    border-radius:var(--radius-md); overflow:hidden; flex-shrink:0;
+  }
+  .ph-alert .h{
+    padding:var(--pad-btn-sm); display:flex; align-items:center; gap:var(--space-xs);
+    font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-danger);
+    border-bottom:var(--border-width) solid var(--color-danger-border);
+  }
+  .ph-alert .h .cnt{
+    font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-on-accent);
+    background:var(--color-danger); padding:var(--pad-tag); border-radius:var(--radius-pill);
+  }
+  .ph-alert .h .more{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold); opacity:.8}
+  .ph-alert .r{
+    background:var(--color-surface); padding:var(--pad-pcard); display:flex; align-items:center; gap:var(--space-md);
+    border-bottom:var(--border-width) solid var(--color-border-faint);
+  }
+  .ph-alert .r:last-child{border-bottom:none}
+  .ph-alert .r .n{flex:1; min-width:0}
+  .ph-alert .r .n b{display:block; font-size:var(--font-md); font-weight:var(--weight-medium)}
+  .ph-alert .r .n span{
+    display:block; font-size:var(--font-2xs); color:var(--color-text-muted); margin-top:var(--space-4xs);
+    font-weight:var(--weight-medium); font-variant-numeric:tabular-nums;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  /* 재고는 많은데 빨리 나가는 품목 — 근거 숫자를 진하게 */
+  .ph-alert .r .n span.key{color:var(--color-danger); font-weight:var(--weight-semibold)}
+  /* 폰에서도 「몇 개」가 아니라 「언제 바닥나나」를 크게 씁니다 */
+  .ph-alert .r .q{
+    flex-shrink:0; text-align:right; color:var(--color-danger);
+    font-variant-numeric:tabular-nums; line-height:1;
+  }
+  .ph-alert .r .q b{display:block; font-size:var(--font-3xl); font-weight:var(--weight-bold)}
+  .ph-alert .r .q em{
+    display:block; font-style:normal; font-size:var(--font-3xs); font-weight:var(--weight-semibold);
+    margin-top:var(--space-3xs); opacity:.85;
+  }
+  .ph-note{
+    font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+    flex-shrink:0; letter-spacing:-.01em;
+  }
+  /* 폰 세로 배치에서 검색칸이 늘어나지 않게 (아이콘이 아래로 밀립니다) */
+  .ph-body > .search{flex:0 0 auto}
+  .ph-filters{display:flex; gap:var(--gap-fbtn); flex-shrink:0}
+  .ph-filters .fbtn{font-size:var(--font-xs); padding:var(--pad-btn-sm); border-radius:var(--radius-pill)}
+  .ph-list{display:flex; flex-direction:column; gap:var(--gap-pcard); overflow:hidden}
+  .ph-list .lbl{font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-text-muted); letter-spacing:.04em}
+  .pcard{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md); padding:var(--pad-pcard); display:flex; align-items:center; gap:var(--space-md);
+  }
+  .pcard .n{flex:1; min-width:0}
+  .pcard .n b{display:block; font-size:var(--font-md); font-weight:var(--weight-medium)}
+  .pcard .n i{
+    display:block; font-style:italic; font-size:var(--font-2xs); color:var(--color-text-sub);
+    margin-top:var(--gap-name-line); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .pcard .n span{
+    display:block; font-size:var(--font-2xs); color:var(--color-text-muted); margin-top:var(--space-3xs);
+    font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums;
+  }
+  .pcard .q{text-align:right; flex-shrink:0}
+  .pcard .q b{
+    display:block; font-size:var(--font-pstock); font-weight:var(--weight-bold); color:var(--color-accent);
+    font-variant-numeric:tabular-nums; line-height:1.1; white-space:nowrap;
+  }
+  .pcard .q b.zero, .pcard .q b.alert{color:var(--color-danger)}
+  .pcard .q em{
+    display:block; font-style:normal; font-size:var(--font-3xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-muted); margin-top:var(--space-4xs);
+  }
+  .pcard .q .chip{margin-top:var(--space-xs)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ 폰 ══════════ -->
+<div>
+  <div class="cap">폰 <b>390px</b> — 밭에서 씁니다 <span class="tag">상품 관리 › 재고 관리</span></div>
+  <div class="phone">
+    <div class="ph-top">
+      <h1>재고</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>등록 <b>126</b>종 · 총 <b>4,283</b>주</span>
+      <span>3주 내 바닥 <b class="alert">7</b>종</span>
+    </div>
+    <div class="ph-body">
+
+      <!-- 폰에서도 「곧 바닥나는 것」이 맨 위 -->
+      <div class="ph-alert">
+        <div class="h">
+          <span>⚠ 3주 안에 바닥납니다</span><span class="cnt">7종</span>
+          <span class="more">전체 ›</span>
+        </div>
+        <div class="r">
+          <div class="n"><b>추명국 '휠윈드핑크'</b><span>ANW02-21 · 0개 · 월 24 나감</span></div>
+          <div class="q"><b>0</b><em>이미 바닥</em></div>
+        </div>
+        <div class="r">
+          <div class="n"><b>휴케라 '팰리스퍼플'</b><span>HEP01-15 · 2개 · 월 28 나감</span></div>
+          <div class="q"><b>2일</b><em>뒤 바닥</em></div>
+        </div>
+        <div class="r">
+          <div class="n"><b>청사초</b><span class="key">CAR01-10 · 88개 · 월 100 나감</span></div>
+          <div class="q"><b>3주</b><em>뒤 바닥</em></div>
+        </div>
+      </div>
+
+      <div class="ph-note">최근 30일 판매 속도로 자동 계산합니다 · 따로 설정하실 것 없습니다</div>
+
+      <div class="search">
+        <span class="ic">🔍</span>
+        <input value="유통명 · 학명 · 품목코드 검색">
+      </div>
+
+      <div class="ph-filters">
+        <button class="fbtn on">전체 <b>126</b></button>
+        <button class="fbtn">판매중 <b>98</b></button>
+        <button class="fbtn">품절 <b>14</b></button>
+        <button class="fbtn">중지 <b>7</b></button>
+      </div>
+
+      <div class="ph-list">
+        <div class="lbl">전체 재고 — 급한 순 (남은 기간이 짧은 것부터)</div>
+        <div class="pcard">
+          <div class="n">
+            <b>에키네시아 '판테온'</b>
+            <i>Echinacea purpurea 'Pantheon'</i>
+            <span>ECP01-15 · 36개 · 월 46 나감</span>
+          </div>
+          <div class="q"><b class="alert">23일</b><em>뒤 바닥</em></div>
+        </div>
+        <div class="pcard">
+          <div class="n">
+            <b>자엽안개나무</b>
+            <i>Cotinus coggygria</i>
+            <span>COT01-27 · 2개 · 월 2 나감</span>
+          </div>
+          <div class="q"><b>1개월치</b><em>여유</em></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div class="on"><span class="ic">📦</span>재고</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div>
+  <div class="cap">PC <b>1440px</b> — 사무실에서 씁니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="pc-side">
+      <div class="logo">제로가드닝</div>
+      <div class="slogan">GARDENING FROM ZERO</div>
+      <a class="on"><span class="ic">🌿</span>상품 관리</a>
+      <a><span class="ic">📦</span>재고 관리</a>
+      <a><span class="ic">🛒</span>주문 관리</a>
+      <a><span class="ic">📄</span>명세서 발행</a>
+      <a><span class="ic">🏢</span>업체 관리</a>
+      <a><span class="ic">🌱</span>소싱 추천</a>
+    </div>
+    <div class="pc-main">
+      <div class="pc-head">
+        <h2>상품 관리</h2>
+        <div class="path">상품 관리 › 재고 관리</div>
+      </div>
+      <div class="pc-tabs">
+        <span>수동 입고</span>
+        <span>입고 리스트</span>
+        <span class="on">재고 관리</span>
+        <span>품목코드</span>
+      </div>
+
+      <div class="stat">
+        <div><div class="k">등록 품목</div><div class="v">126<small>종</small></div></div>
+        <div><div class="k">총 재고</div><div class="v">4,283<small>주</small></div></div>
+        <div><div class="k">품절 · 일시중지</div><div class="v rest">21<small>종</small></div></div>
+        <div class="alertbox">
+          <div class="k alert">3주 내 바닥</div>
+          <div class="v alert">7<small>종</small></div>
+          <div class="note alert">최근 30일 판매 기준 · 상태는 「재입고필요」</div>
+        </div>
+      </div>
+
+      <!-- ── 이 화면의 주인공 : 3주 안에 바닥나는 것 ── -->
+      <div class="alertcard">
+        <div class="ahead">
+          <h3>⚠ 3주 안에 바닥납니다</h3>
+          <span class="cnt">7종</span>
+          <span class="hint">최근 30일 판매 속도로 자동 계산합니다 — 따로 설정하실 것 없습니다</span>
+          <button class="btn sm right">입고 등록으로</button>
+        </div>
+        <div class="arow">
+          <div class="acode">ANW02-21</div>
+          <div class="aname"><b>추명국 '휠윈드핑크'</b><i>Anemone × hybrida 'Whirlwind Pink'</i></div>
+          <div class="aspec">21cm 포트</div>
+          <div class="anow"><b>0</b><small>월 24 나감</small></div>
+          <div class="aleft">이미 바닥<small>7일째 0개</small></div>
+          <div class="alast">마지막 입고 05-14</div>
+        </div>
+        <div class="arow">
+          <div class="acode">FEE01-10</div>
+          <div class="aname"><b>애기수염풀</b><i>Festuca glauca 'Elijah Blue'</i></div>
+          <div class="aspec">10cm 포트</div>
+          <div class="anow"><b>0</b><small>월 60 나감</small></div>
+          <div class="aleft">이미 바닥<small>가장 잘 나가던 것</small></div>
+          <div class="alast">마지막 입고 04-28</div>
+        </div>
+        <div class="arow">
+          <div class="acode">HAA01-18</div>
+          <div class="aname"><b>무늬사초 '아우레올라'</b><i>Hakonechloa macra 'Aureola'</i></div>
+          <div class="aspec">18cm 포트</div>
+          <div class="anow"><b>0</b><small>월 40 나감</small></div>
+          <div class="aleft">이미 바닥<small>15일째 0개</small></div>
+          <div class="alast">마지막 입고 06-02</div>
+        </div>
+        <div class="arow">
+          <div class="acode">HEP01-15</div>
+          <div class="aname"><b>휴케라 '팰리스퍼플'</b><i>Heuchera micrantha 'Palace Purple'</i></div>
+          <div class="aspec">15cm 포트</div>
+          <div class="anow"><b>2</b><small>월 28 나감</small></div>
+          <div class="aleft">이틀 뒤 바닥<small>2 ÷ 월 28</small></div>
+          <div class="alast">마지막 입고 06-19</div>
+        </div>
+        <div class="arow">
+          <div class="acode">CAR01-10</div>
+          <div class="aname"><b>청사초</b><i>Carex breviculmis</i></div>
+          <div class="aspec">10cm 포트</div>
+          <div class="anow"><b>88</b><small>월 100 나감</small></div>
+          <div class="aleft">3주 뒤 바닥<small>88 ÷ 월 100</small></div>
+          <div class="alast">마지막 입고 06-25</div>
+        </div>
+        <div class="tfoot">
+          <span>남은 기간이 짧은 순입니다. 나머지 2종은 아래 목록에서 「재입고필요」를 누르면 보입니다.</span>
+          <span>2026-07-30 09:12 기준</span>
+        </div>
+      </div>
+
+      <!-- ── 왜 개수가 아니라 남은 기간인가 ── -->
+      <div class="why">
+        <div class="wh">
+          왜 「몇 개 남았나」로 보지 않나
+          <span class="right">품목이 126종이라 하나하나 기준 개수를 정할 수가 없습니다</span>
+        </div>
+        <div class="wrow">
+          <div class="wcase alert">
+            <div class="wtop">
+              <div class="wname"><b>청사초</b><span>CAR01-10 · 10cm 포트</span></div>
+              <div class="wnum">88<small>개 남음</small></div>
+            </div>
+            <div class="wbot">
+              <div class="wrate">한 달에 <b>100개</b>씩 나갑니다</div>
+              <div class="wverd">→ 3주 뒤 바닥</div>
+            </div>
+          </div>
+          <div class="wvs">개수만 보면<b>88 &gt; 44</b>인데</div>
+          <div class="wcase">
+            <div class="wtop">
+              <div class="wname"><b>자엽안개나무</b><span>COT01-21 · 21cm 포트</span></div>
+              <div class="wnum">44<small>개 남음</small></div>
+            </div>
+            <div class="wbot">
+              <div class="wrate">한 달에 <b>4개</b>씩 나갑니다</div>
+              <div class="wverd">→ 11개월치</div>
+            </div>
+          </div>
+        </div>
+        <div class="wfoot">
+          급한 건 <b>재고가 더 많은 청사초</b>입니다. 그래서 개수가 아니라 <b>남은 기간</b>으로 봅니다 —
+          <b>남은 기간 = 현재고 ÷ 최근 30일 평균 출고량</b>, 3주 이하면 재입고 필요로 올립니다.
+          봄가을과 비수기는 나가는 속도가 다르기 때문에 1년 평균이 아니라 <b>최근 30일</b>만 봅니다.
+        </div>
+      </div>
+
+      <!-- ── 전체 재고 목록 ── -->
+      <div class="card table-card">
+        <h3>전체 재고
+          <span class="hint">남은 기간이 짧은 순 · 남은 기간 = 현재고 ÷ 최근 30일 평균 출고량 · 3주 이하면 재입고필요</span>
+          <button class="btn sm right">엑셀 내려받기</button>
+        </h3>
+
+        <div class="toolbar" style="margin-bottom:var(--space-lg)">
+          <button class="fbtn on">전체 <b>126</b></button>
+          <button class="fbtn">판매중 <b>98</b></button>
+          <button class="fbtn">품절 <b>14</b></button>
+          <button class="fbtn">일시중지 <b>7</b></button>
+          <button class="fbtn alert">재입고필요 <b>7</b></button>
+          <div class="search">
+            <span class="ic">🔍</span>
+            <input value="유통명 · 학명 · 품목코드로 찾기">
+          </div>
+        </div>
+
+        <div class="bulk">
+          <span class="box on">✓</span>
+          <span class="sel">3개 선택됨</span>
+          <span class="div"></span>
+          <span class="lbl">상태를</span>
+          <select class="mini"><option>판매중으로</option></select>
+          <button class="btn sm">일괄 변경</button>
+          <span class="div"></span>
+          <span class="lbl">매입단가를</span>
+          <select class="mini"><option>％</option><option>원</option></select>
+          <input class="mini num" value="-5">
+          <button class="btn sm">일괄 조정</button>
+          <span class="right"><button class="btn sm">선택 해제</button></span>
+        </div>
+
+        <table>
+          <colgroup>
+            <col style="width:30px"><col style="width:96px"><col>
+            <col style="width:74px"><col style="width:92px"><col style="width:124px">
+            <col style="width:62px"><col style="width:76px"><col style="width:38px">
+          </colgroup>
+          <tr>
+            <th class="c"><span class="box"></span></th>
+            <th>품목코드</th><th>유통명 · 학명</th><th>규격</th>
+            <th class="r">현재고 · 월 출고</th><th>남은 기간 ▲</th>
+            <th class="r">매입단가</th><th>상태</th><th class="c">조정</th>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box on">✓</span></td>
+            <td class="code">ANW02<span>-21</span></td>
+            <td class="name"><b>추명국 '휠윈드핑크'</b><i>Anemone × hybrida 'Whirlwind Pink'</i></td>
+            <td class="dim">21cm 포트</td>
+            <td class="now"><b class="zero">0</b><span class="rate">월 24 나감</span></td>
+            <td class="left"><span class="lt">이미 바닥</span></td>
+            <td class="r">4,500</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box on">✓</span></td>
+            <td class="code">FEE01<span>-10</span></td>
+            <td class="name"><b>애기수염풀</b><i>Festuca glauca 'Elijah Blue'</i></td>
+            <td class="dim">10cm 포트</td>
+            <td class="now"><b class="zero">0</b><span class="rate">월 60 나감</span></td>
+            <td class="left"><span class="lt">이미 바닥</span></td>
+            <td class="r">1,600</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box on">✓</span></td>
+            <td class="code">HAA01<span>-18</span></td>
+            <td class="name"><b>무늬사초 '아우레올라'</b><i>Hakonechloa macra 'Aureola'</i></td>
+            <td class="dim">18cm 포트</td>
+            <td class="now"><b class="zero">0</b><span class="rate">월 40 나감</span></td>
+            <td class="left"><span class="lt">이미 바닥</span></td>
+            <td class="r">3,800</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">MIS01<span>-27</span></td>
+            <td class="name"><b>억새</b><i>Miscanthus sinensis</i></td>
+            <td class="dim">27cm 포트</td>
+            <td class="now"><b class="zero">0</b><span class="rate">월 12 나감</span></td>
+            <td class="left"><span class="lt">이미 바닥</span></td>
+            <td class="r">4,800</td>
+            <td><span class="chip soldout">품절</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">HEP01<span>-15</span></td>
+            <td class="name"><b>휴케라 '팰리스퍼플'</b><i>Heuchera micrantha 'Palace Purple'</i></td>
+            <td class="dim">15cm 포트</td>
+            <td class="now"><b class="low">2<span class="adjmark" title="2026-05-30에 30주로 손수 맞추셨습니다. 그 뒤 입고 0 · 출고 28 → 2">⟲</span></b><span class="rate">월 28 나감</span></td>
+            <td class="left"><span class="lt">이틀 뒤 바닥</span></td>
+            <td class="r">2,900</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr class="grp">
+            <td class="c"><span class="box"></span></td>
+            <td class="code">PER03<span>-21</span></td>
+            <td class="name"><b>수크령 '레드헤드'</b><i>Pennisetum alopecuroides 'Red Head'</i></td>
+            <td class="dim">21cm 포트</td>
+            <td class="now"><b class="low">8</b><span class="rate">월 30 나감</span></td>
+            <td class="left"><span class="lt">8일 뒤 바닥</span></td>
+            <td class="r">3,900</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">ECP01<span>-15</span></td>
+            <td class="name"><b>에키네시아 '판테온'</b><i>Echinacea purpurea 'Pantheon'</i></td>
+            <td class="dim">15cm 포트</td>
+            <td class="now"><b>36</b><span class="rate">월 46 나감</span></td>
+            <td class="left"><span class="lt">23일 뒤 바닥</span></td>
+            <td class="r">2,600</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <!-- ★ 재고는 88개로 많은데도 재입고 필요 — 이 화면의 핵심 -->
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">CAR01<span>-10</span></td>
+            <td class="name"><b>청사초</b><i>Carex breviculmis</i></td>
+            <td class="dim">10cm 포트</td>
+            <td class="now"><b>88</b><span class="rate">월 100 나감</span></td>
+            <td class="left"><span class="lt">3주 뒤 바닥</span></td>
+            <td class="r">1,900</td>
+            <td><span class="chip out">재입고필요</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <!-- ↓ 여기부터는 여유 있는 것 — 강조하지 않습니다 -->
+          <tr class="grp">
+            <td class="c"><span class="box"></span></td>
+            <td class="code">COT01<span>-27</span></td>
+            <td class="name"><b>자엽안개나무</b><i>Cotinus coggygria</i></td>
+            <td class="dim">27cm 포트</td>
+            <td class="now"><b>2</b><span class="rate">월 2 나감</span></td>
+            <td class="left"><span class="lt calm">1개월치</span></td>
+            <td class="r">9,500</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">SAC01<span>-15</span></td>
+            <td class="name"><b>숙근사루비아 '카라도나'</b><i>Salvia nemorosa 'Caradonna'</i></td>
+            <td class="dim">15cm 포트</td>
+            <td class="now"><b>75</b><span class="rate">월 38 나감</span></td>
+            <td class="left"><span class="lt calm">2개월치</span></td>
+            <td class="r">2,300</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">CAS01<span>-18</span></td>
+            <td class="name"><b>층꽃 '스털링실버'</b><i>Caryopteris × clandonensis 'Sterling Silver'</i></td>
+            <td class="dim">18cm 포트</td>
+            <td class="now"><b>54<span class="adjmark" title="2026-07-12에 60주로 손수 맞추셨습니다. 그 뒤 입고 0 · 출고 6 → 54">⟲</span></b><span class="rate">월 18 나감</span></td>
+            <td class="left"><span class="lt calm">3개월치</span></td>
+            <td class="r">3,200</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr class="grp">
+            <td class="c"><span class="box"></span></td>
+            <td class="code">PER03<span>-15</span></td>
+            <td class="name"><b>수크령 '레드헤드'</b><i>Pennisetum alopecuroides 'Red Head'</i></td>
+            <td class="dim">15cm 포트</td>
+            <td class="now"><b>122</b><span class="rate">월 40 나감</span></td>
+            <td class="left"><span class="lt calm">3개월치</span></td>
+            <td class="r">2,800</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">FES01<span>-10</span></td>
+            <td class="name"><b>털수염풀</b><i>Festuca glauca</i></td>
+            <td class="dim">10cm 포트</td>
+            <td class="now"><b>88</b><span class="rate">월 22 나감</span></td>
+            <td class="left"><span class="lt calm">4개월치</span></td>
+            <td class="r">1,400</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">NES01<span>-15</span></td>
+            <td class="name"><b>캣민트 '식스힐즈자이언트'</b><i>Nepeta × faassenii 'Six Hills Giant'</i></td>
+            <td class="dim">15cm 포트</td>
+            <td class="now"><b>145<span class="adjmark" title="2026-06-28에 168주로 손수 맞추셨습니다. 그 뒤 입고 0 · 출고 23 → 145">⟲</span></b><span class="rate">월 32 나감</span></td>
+            <td class="left"><span class="lt calm">4개월치</span><span class="fixmark" title="이 품목만 기준을 8주로 정해두셨습니다. 나머지는 전부 3주 기준으로 자동 판정합니다.">기준 8주</span></td>
+            <td class="r">2,100</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <!-- ★ 재고는 44개뿐인데 여유 — 위의 청사초와 대비됩니다 -->
+          <tr class="grp">
+            <td class="c"><span class="box"></span></td>
+            <td class="code">COT01<span>-21</span></td>
+            <td class="name"><b>자엽안개나무</b><i>Cotinus coggygria</i></td>
+            <td class="dim">21cm 포트</td>
+            <td class="now"><b>44</b><span class="rate">월 4 나감</span></td>
+            <td class="left"><span class="lt calm">11개월치</span></td>
+            <td class="r">6,800</td>
+            <td><span class="chip">판매중</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+
+          <tr>
+            <td class="c"><span class="box"></span></td>
+            <td class="code">MIR02<span>-27</span></td>
+            <td class="name"><b>억새 '레드치프'</b><i>Miscanthus sinensis 'Red Chief'</i></td>
+            <td class="dim">27cm 포트</td>
+            <td class="now"><b>12</b><span class="rate">월 3 나감</span></td>
+            <td class="left"><span class="lt none">판정 안 함 · 중지</span></td>
+            <td class="r">5,200</td>
+            <td><span class="chip pause">일시중지</span></td>
+            <td class="c"><button class="btn sm">✎</button></td>
+          </tr>
+        </table>
+
+        <div class="tfoot">
+          <span>126종 가운데 16종 · 왼쪽 <b style="color:var(--color-accent)">초록 띠</b>는 규격만 다른 같은 식물입니다</span>
+          <span>⟲ 손으로 맞춘 재고 · <b style="color:var(--color-accent)">기준 8주</b>는 그 품목만 기준을 따로 정해둔 것 (✎에서 바꿉니다)</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

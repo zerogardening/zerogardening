@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 공통 뼈대 A안</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#FBF8F1; --ink:#3D3833; --leaf:#5C7A4A; --brick:#B5623C;
+    --line:#D8CFC0; --sage:#EDF0E4; --white:#fff;
+    --muted:#8A8279; --faint:#EFEAE0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:Pretendard,-apple-system,sans-serif;
+    background:#E8E4DA; color:var(--ink);
+    width:1200px; padding:28px 20px 30px;
+    display:flex; flex-direction:column; gap:30px; align-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .cap{font-size:13px; color:var(--muted); margin-bottom:10px; letter-spacing:.01em}
+  .cap b{color:var(--leaf); font-weight:700}
+  .cap .tag{
+    display:inline-block; margin-left:8px; font-size:11px; font-weight:700;
+    color:var(--leaf); background:var(--sage); border:1px solid var(--line);
+    padding:2px 8px; border-radius:20px; vertical-align:1px;
+  }
+
+  /* ══ 공통 부품 ══ */
+  .btn{
+    font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
+    padding:10px 18px; border-radius:8px; line-height:1.2; white-space:nowrap;
+    background:var(--white); color:var(--ink); border:1px solid var(--line);
+  }
+  .btn.main{background:var(--leaf); color:#fff; border-color:var(--leaf)}
+  .btn.warn{background:var(--white); color:var(--brick); border-color:var(--brick)}
+  .btn.sm{padding:6px 12px; font-size:13px; border-radius:6px}
+
+  .field{display:flex; flex-direction:column; gap:6px}
+  .field > label{
+    font-size:12px; font-weight:700; color:var(--muted);
+    letter-spacing:.01em; line-height:16px; height:16px;
+    display:flex; align-items:center; gap:4px; white-space:nowrap;
+  }
+  .field > label .req{color:var(--brick); font-size:12px}
+  .field > label .auto{color:#A9A296; font-weight:500; font-size:11px}
+  .inp{
+    width:100%; font-family:inherit; font-size:15px; font-weight:500;
+    height:44px; padding:0 13px; line-height:42px;
+    border:1px solid var(--line); border-radius:8px;
+    background:var(--white); color:var(--ink);
+  }
+  .inp.num{text-align:right; font-variant-numeric:tabular-nums; letter-spacing:.01em}
+  .inp.sci{font-size:14px; font-style:italic; letter-spacing:-.1px}
+  .inp.code{
+    font-variant-numeric:tabular-nums; letter-spacing:.05em; font-weight:800;
+    color:var(--leaf); background:var(--sage); border-color:#C9D3B6;
+  }
+
+  table{width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed}
+  th{
+    background:var(--sage); color:var(--leaf); font-size:12px; font-weight:800;
+    text-align:left; padding:9px 10px; border-bottom:1px solid var(--line);
+    white-space:nowrap; letter-spacing:.01em;
+  }
+  th:first-child{border-radius:6px 0 0 0}
+  th:last-child{border-radius:0 6px 0 0}
+  th.r{text-align:right}
+  td{padding:11px 10px; border-bottom:1px solid var(--faint); vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  td.r{text-align:right; font-variant-numeric:tabular-nums; font-weight:600}
+  td.code{color:var(--leaf); font-weight:800; letter-spacing:.04em; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.sci{font-style:italic; font-size:12.5px; color:#6E665C; white-space:nowrap; letter-spacing:-.2px}
+  td.dim{color:#6E665C}
+  td.zero{color:var(--brick); font-weight:800}
+
+  .chip{
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11px; font-weight:700; padding:4px 10px 4px 8px;
+    border-radius:20px; background:var(--sage); color:var(--leaf);
+    border:1px solid #C9D3B6; white-space:nowrap;
+  }
+  .chip::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--leaf)}
+  .chip.out{background:#F7EAE3; color:var(--brick); border-color:#E3C4B4}
+  .chip.out::before{background:var(--brick)}
+
+  /* ══ 폰 ══ */
+  .phone{
+    width:390px; background:var(--bg); border-radius:26px; overflow:hidden;
+    box-shadow:0 8px 32px rgba(61,56,51,.18); display:flex; flex-direction:column; height:722px;
+  }
+  .ph-top{
+    background:var(--leaf); color:#fff; padding:15px 18px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .ph-top h1{font-size:18px; font-weight:800; letter-spacing:-.01em}
+  .ph-top .pcbtn{
+    font-size:11px; font-weight:700; background:rgba(255,255,255,.2);
+    padding:7px 11px; border-radius:7px; border:1px solid rgba(255,255,255,.42);
+    line-height:1;
+  }
+  .ph-sub{
+    background:#fff; border-bottom:1px solid var(--line);
+    padding:9px 18px; font-size:12px; color:var(--muted); font-weight:600;
+    display:flex; justify-content:space-between;
+  }
+  .ph-sub b{color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums}
+  .ph-body{flex:1; padding:16px 18px; display:flex; flex-direction:column; gap:13px}
+  .ph-body .pair{display:flex; gap:11px}
+  .ph-body .pair .field{flex:1}
+  .ph-save{
+    margin-top:auto; width:100%; padding:16px; font-size:17px; font-weight:800;
+    background:var(--leaf); color:#fff; border:none; border-radius:10px; font-family:inherit;
+  }
+  .ph-nav{display:flex; background:var(--white); border-top:1px solid var(--line)}
+  .ph-nav div{
+    flex:1; text-align:center; padding:10px 0 14px;
+    font-size:11px; font-weight:700; color:var(--muted);
+  }
+  .ph-nav div.on{color:var(--leaf); box-shadow:inset 0 3px 0 var(--leaf)}
+  .ph-nav .ic{display:block; font-size:20px; margin-bottom:4px; line-height:1}
+
+  /* ══ PC ══ */
+  .pc{
+    width:1120px; background:var(--bg); border-radius:12px; overflow:hidden;
+    box-shadow:0 8px 32px rgba(61,56,51,.18); display:flex;
+  }
+  .pc-side{width:198px; background:var(--leaf); color:#fff; padding:22px 0; flex-shrink:0}
+  .pc-side .logo{
+    padding:0 20px 6px; font-size:17px; font-weight:800; letter-spacing:-.02em;
+  }
+  .pc-side .slogan{padding:0 20px 22px; font-size:10px; color:rgba(255,255,255,.6); letter-spacing:.06em}
+  .pc-side a{
+    display:flex; align-items:center; gap:9px;
+    padding:12px 20px; font-size:14px; font-weight:600;
+    color:rgba(255,255,255,.75); text-decoration:none;
+  }
+  .pc-side a.on{
+    background:rgba(255,255,255,.16); color:#fff; font-weight:800;
+    box-shadow:inset 4px 0 0 #fff;
+  }
+  .pc-side .ic{width:18px; text-align:center; font-size:14px}
+  .pc-main{flex:1; padding:22px 26px; overflow:hidden; display:flex; flex-direction:column; gap:16px}
+  .pc-main > *{flex:0 0 auto}
+  .pc-head{display:flex; justify-content:space-between; align-items:flex-end}
+  .pc-head h2{font-size:20px; font-weight:800; letter-spacing:-.02em}
+  .pc-head .path{font-size:12px; color:var(--muted); font-weight:600; margin-bottom:5px}
+  .pc-tabs{display:flex; gap:4px; border-bottom:1px solid var(--line)}
+  .pc-tabs span{
+    padding:8px 15px 9px; font-size:14px; font-weight:600; color:var(--muted);
+    border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .pc-tabs span.on{color:var(--leaf); font-weight:800; border-bottom-color:var(--leaf)}
+  .stat{display:flex; gap:12px}
+  .stat > div{
+    flex:1; background:var(--white); border:1px solid var(--line);
+    border-radius:10px; padding:13px 16px;
+  }
+  .stat .k{font-size:12px; color:var(--muted); font-weight:700}
+  .stat .v{
+    font-size:24px; font-weight:800; color:var(--leaf); margin-top:3px;
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em; line-height:1.15;
+  }
+  .stat .v small{font-size:12px; font-weight:700; color:var(--muted); margin-left:3px}
+  .card{background:var(--white); border:1px solid var(--line); border-radius:10px; padding:20px}
+  .card > h3{
+    font-size:15px; font-weight:800; color:var(--leaf); margin-bottom:16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card > h3 .hint{font-size:12px; font-weight:600; color:var(--muted)}
+  .row{display:flex; gap:14px; margin-bottom:14px}
+  .row:last-of-type{margin-bottom:0}
+
+  /* ══ 부품 견본 ══ */
+  .parts{
+    width:1120px; background:var(--bg); border-radius:12px; padding:24px 28px 26px;
+    box-shadow:0 8px 32px rgba(61,56,51,.18);
+  }
+  .parts h2{font-size:16px; font-weight:800; color:var(--leaf); margin-bottom:4px}
+  .parts .lead{font-size:12px; color:var(--muted); margin-bottom:20px}
+  .pgrid{display:flex; gap:34px; align-items:flex-start}
+  .pgrid h4{
+    font-size:11px; font-weight:800; color:var(--muted); margin-bottom:11px;
+    letter-spacing:.06em; padding-bottom:6px; border-bottom:1px solid var(--line);
+  }
+  .swatches{display:flex; gap:11px; flex-wrap:wrap}
+  .sw{text-align:center; font-size:11px; color:var(--muted); line-height:1.5}
+  .sw i{
+    display:block; width:74px; height:50px; border-radius:8px;
+    border:1px solid var(--line); margin-bottom:6px;
+  }
+  .sw b{display:block; color:var(--ink); font-weight:700}
+  .note{font-size:12px; color:var(--muted); line-height:1.7; margin-top:12px}
+  .note b{color:var(--brick)}
+  .scale{display:flex; flex-direction:column; gap:7px}
+  .scale div{display:flex; align-items:baseline; gap:10px}
+  .scale i{
+    font-style:normal; font-size:10px; font-weight:800; color:#B0A99E;
+    width:22px; text-align:right; font-variant-numeric:tabular-nums;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════ 폰 ══════════ -->
+<div>
+  <div class="cap">폰 <b>390px</b> — 밭에서 씁니다 <span class="tag">A안 · 기준점</span></div>
+  <div class="phone">
+    <div class="ph-top">
+      <h1>입고 등록</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>2026-07-30 · 한아름농원</span>
+      <span>오늘 등록 <b>4</b>건</span>
+    </div>
+    <div class="ph-body">
+      <div class="field">
+        <label>입고업체 <span class="req">*</span></label>
+        <input class="inp" value="한아름농원">
+      </div>
+      <div class="field">
+        <label>유통명 <span class="req">*</span></label>
+        <input class="inp" value="수크령 '레드헤드'">
+      </div>
+      <div class="field">
+        <label>학명</label>
+        <input class="inp sci" value="Pennisetum alopecuroides 'Red Head'">
+      </div>
+      <div class="pair">
+        <div class="field">
+          <label>규격</label>
+          <input class="inp" value="15cm 포트">
+        </div>
+        <div class="field">
+          <label>수량 <span class="req">*</span></label>
+          <input class="inp num" value="120">
+        </div>
+      </div>
+      <div class="field">
+        <label>매입단가 <span class="req">*</span></label>
+        <input class="inp num" value="2,800">
+      </div>
+      <div class="field">
+        <label>품목코드 <span class="auto">자동 생성</span></label>
+        <input class="inp code" value="PEA03-15">
+      </div>
+      <button class="ph-save">저장하고 다음 등록</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div>
+  <div class="cap">PC <b>1440px</b> — 사무실에서 씁니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="pc-side">
+      <div class="logo">제로가드닝</div>
+      <div class="slogan">GARDENING FROM ZERO</div>
+      <a class="on"><span class="ic">🌿</span>상품 관리</a>
+      <a><span class="ic">📦</span>재고 관리</a>
+      <a><span class="ic">🛒</span>주문 관리</a>
+      <a><span class="ic">📄</span>명세서 발행</a>
+      <a><span class="ic">🏢</span>업체 관리</a>
+      <a><span class="ic">🌱</span>소싱 추천</a>
+    </div>
+    <div class="pc-main">
+      <div class="pc-head">
+        <h2>상품 관리</h2>
+        <div class="path">상품 관리 › 수동 입고</div>
+      </div>
+      <div class="pc-tabs">
+        <span class="on">수동 입고</span>
+        <span>입고 리스트</span>
+        <span>재고 관리</span>
+        <span>품목코드</span>
+      </div>
+
+      <div class="stat">
+        <div><div class="k">이번 달 입고</div><div class="v">1,840<small>주</small></div></div>
+        <div><div class="k">등록 품목</div><div class="v">126<small>종</small></div></div>
+        <div><div class="k">재입고 필요</div><div class="v" style="color:#B5623C">7<small style="color:#B5623C">종</small></div></div>
+      </div>
+
+      <div class="card">
+        <h3>입고 등록 <span class="hint">* 표시는 꼭 채워주세요</span>
+          <button class="btn sm" style="margin-left:auto; font-weight:600">엑셀 불러오기</button></h3>
+        <div class="row">
+          <div class="field" style="width:138px"><label>입고일자 <span class="req">*</span></label><input class="inp" value="2026-07-30"></div>
+          <div class="field" style="width:148px"><label>입고업체 <span class="req">*</span></label><input class="inp" value="한아름농원"></div>
+          <div class="field" style="width:184px"><label>유통명 <span class="req">*</span></label><input class="inp" value="수크령 '레드헤드'"></div>
+          <div class="field" style="flex:1"><label>학명</label><input class="inp sci" value="Pennisetum alopecuroides 'Red Head'"></div>
+        </div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field" style="width:150px"><label>규격</label><input class="inp" value="15cm 포트"></div>
+          <div class="field" style="width:110px"><label>수량 <span class="req">*</span></label><input class="inp num" value="120"></div>
+          <div class="field" style="width:130px"><label>매입단가 <span class="req">*</span></label><input class="inp num" value="2,800"></div>
+          <div class="field" style="width:160px"><label>품목코드 <span class="auto">자동 생성</span></label><input class="inp code" value="PEA03-15"></div>
+          <div style="flex:1"></div>
+          <button class="btn">초기화</button>
+          <button class="btn main" style="padding:10px 34px">저장</button>
+        </div>
+      </div>
+
+      <div class="card" style="padding:20px 12px 8px">
+        <h3>최근 입고 <span class="hint">오늘 4건</span></h3>
+        <table>
+          <colgroup>
+            <col style="width:104px"><col style="width:130px"><col>
+            <col style="width:84px"><col style="width:56px"><col style="width:62px"><col style="width:120px">
+          </colgroup>
+          <tr>
+            <th>품목코드</th><th>유통명</th><th>학명</th><th>규격</th>
+            <th class="r">수량</th><th class="r">단가</th><th>상태</th>
+          </tr>
+          <tr>
+            <td class="code">PEA03-15</td><td>수크령 '레드헤드'</td>
+            <td class="sci">Pennisetum alopecuroides 'Red Head'</td>
+            <td class="dim">15cm 포트</td><td class="r">120</td><td class="r">2,800</td>
+            <td><span class="chip">판매중</span></td>
+          </tr>
+          <tr>
+            <td class="code">CAR01-18</td><td>층꽃 '스털링실버'</td>
+            <td class="sci">Caryopteris × clandonensis 'Sterling Silver'</td>
+            <td class="dim">18cm 포트</td><td class="r">80</td><td class="r">3,200</td>
+            <td><span class="chip">판매중</span></td>
+          </tr>
+          <tr>
+            <td class="code">ANE02-21</td><td>추명국 '휠윈드핑크'</td>
+            <td class="sci">Anemone × hybrida 'Whirlwind Pink'</td>
+            <td class="dim">21cm 포트</td><td class="r zero">0</td><td class="r">4,500</td>
+            <td><span class="chip out">재입고 필요</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 부품 견본 ══════════ -->
+<div class="parts">
+  <h2>공통 부품 — 모든 화면이 이걸 씁니다</h2>
+  <div class="lead">여기서 정한 것은 화면마다 다시 정하지 않습니다.</div>
+  <div class="pgrid">
+
+    <div style="flex:1.35">
+      <h4>색</h4>
+      <div class="swatches">
+        <div class="sw"><i style="background:#FBF8F1"></i><b>바탕</b>#FBF8F1</div>
+        <div class="sw"><i style="background:#3D3833"></i><b>글자</b>#3D3833</div>
+        <div class="sw"><i style="background:#5C7A4A"></i><b>강조</b>#5C7A4A</div>
+        <div class="sw"><i style="background:#B5623C"></i><b>주의</b>#B5623C</div>
+        <div class="sw"><i style="background:#EDF0E4"></i><b>옅은바탕</b>#EDF0E4</div>
+        <div class="sw"><i style="background:#D8CFC0"></i><b>선</b>#D8CFC0</div>
+      </div>
+      <p class="note">
+        브랜드 색 그대로입니다. 재고 0·삭제 같은 위험 표시는<br>
+        <b>빨강 대신 흙벽돌색</b>을 씁니다.
+      </p>
+    </div>
+
+    <div style="flex:.95">
+      <h4>버튼 · 상태 배지</h4>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px">
+        <button class="btn main">저장</button>
+        <button class="btn">보통</button>
+        <button class="btn warn">삭제</button>
+        <button class="btn sm">작은것</button>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center">
+        <span class="chip">판매중</span>
+        <span class="chip out">재입고 필요</span>
+      </div>
+      <p class="note">
+        배지는 색뿐 아니라 <b>앞의 점</b>으로도 구분됩니다.<br>
+        색을 못 가려도 모양이 다릅니다.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>입력칸</h4>
+      <div class="field" style="margin-bottom:11px">
+        <label>유통명 <span class="req">*</span></label>
+        <input class="inp" value="수크령 '레드헤드'">
+      </div>
+      <div class="field" style="margin-bottom:11px">
+        <label>매입단가 <span class="req">*</span></label>
+        <input class="inp num" value="2,800">
+      </div>
+      <div class="field">
+        <label>품목코드 <span class="auto">자동 생성</span></label>
+        <input class="inp code" value="PEA03-15">
+      </div>
+      <p class="note" style="margin-top:10px">
+        숫자는 <b>오른쪽 정렬</b>, 자동으로 채워지는 칸은<br>연한 초록 바탕입니다.
+      </p>
+    </div>
+
+    <div style="flex:.95">
+      <h4>글씨 크기</h4>
+      <div class="scale">
+        <div><i>24</i><span style="font-size:24px; font-weight:800; color:#5C7A4A; font-variant-numeric:tabular-nums">1,840</span></div>
+        <div><i>20</i><span style="font-size:20px; font-weight:800">화면 제목</span></div>
+        <div><i>15</i><span style="font-size:15px; font-weight:500">입력값 — 밭에서도 읽힘</span></div>
+        <div><i>14</i><span style="font-size:14px">본문 · 표</span></div>
+        <div><i>12</i><span style="font-size:12px; color:#8A8279; font-weight:700">항목 이름 · 설명</span></div>
+      </div>
+      <p class="note">
+        글씨체는 <b style="color:#5C7A4A">Pretendard</b>입니다.<br>
+        브랜드 손글씨체는 <b>0과 O, 1과 l</b>이 헷갈려<br>
+        업무 화면에는 쓰지 않았습니다.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
