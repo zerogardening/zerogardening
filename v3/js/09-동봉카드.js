@@ -91,10 +91,14 @@ window.ZG = window.ZG || {};
   function 식물들(g, 특성) {
     var 순서 = [], 본것 = {};
     g.줄들.forEach(function (r) {
-      var 키 = r.품목코드 || r.유통명;
+      // 산 것과 서비스가 같은 품목이면 서비스 쪽이 묻혀 버린다 — 키를 나눠 둘 다 남긴다 (6단계 설계 §2-6)
+      var 키 = (r.품목코드 || r.유통명) + (r.서비스 ? '@s' : '');
       if (본것[키]) return;
       본것[키] = 1;
-      순서.push({ 유통명: r.유통명 || r.원본코드 || '(품목 없음)', 학명: r.학명 || '', 특성: 특성(r.품목코드) });
+      순서.push({
+        유통명: r.유통명 || r.원본코드 || '(품목 없음)', 학명: r.학명 || '',
+        서비스: !!r.서비스, 특성: 특성(r.품목코드)
+      });
     });
     return 순서;
   }
@@ -128,7 +132,10 @@ window.ZG = window.ZG || {};
     });
     return 만들기('div', { class: 'plant' }, [
       만들기('div', { class: 'ph' }, [
-        만들기('span', { class: 'nm', text: 식물.유통명 }),
+        만들기('span', { class: 'nm' }, [
+          document.createTextNode(식물.유통명),
+          식물.서비스 ? 만들기('span', { class: 'svc', text: '서비스' }) : null
+        ]),
         만들기('span', { class: 'sci', text: 식물.학명 })
       ]),
       만들기('div', { class: 'traits' }, 줄들)

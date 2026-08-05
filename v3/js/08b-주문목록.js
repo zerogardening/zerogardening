@@ -201,6 +201,11 @@ window.ZG = window.ZG || {};
     return 만들기('div', { class: 'search' }, [만들기('span', { class: 'mag', text: '🔍' }), 입력]);
   }
 
+  /* 무료로 얹어 나가는 줄임을 목록·상세·표·동봉카드 넷에서 같은 모양으로 알린다 (6단계 설계 §2-6) */
+  function 서비스딱지(r) {
+    return r.서비스 ? 만들기('span', { class: 'svc', text: '서비스' }) : null;
+  }
+
   function 주문카드(g) {
     var 카드 = 만들기('div', {
       class: 'ph-card' + (g.부족여부 ? ' short' : ''), role: 'button', tabindex: '0'
@@ -217,7 +222,9 @@ window.ZG = window.ZG || {};
     var 줄칸 = 만들기('div', { class: 'olines' });
     보임.forEach(function (r) {
       줄칸.appendChild(만들기('div', { class: 'oline' }, [
-        만들기('span', { class: 'nm', text: r.유통명 || r.원본코드 || '(품목 없음)' }),
+        만들기('span', { class: 'nm' }, [
+          document.createTextNode(r.유통명 || r.원본코드 || '(품목 없음)'), 서비스딱지(r)
+        ]),
         만들기('span', { class: 'rg', text: r.규격 || '' }),
         만들기('span', { class: 'q', text: 자.수량(r) + '주' })
       ]));
@@ -308,7 +315,9 @@ window.ZG = window.ZG || {};
     g.줄들.forEach(function (r) {
       상자.appendChild(만들기('div', { class: 'dline' }, [
         만들기('span', {}, [
-          만들기('div', { class: 'nm', text: r.유통명 || r.원본코드 || '(품목 없음)' }),
+          만들기('div', { class: 'nm' }, [
+            document.createTextNode(r.유통명 || r.원본코드 || '(품목 없음)'), 서비스딱지(r)
+          ]),
           만들기('div', {
             class: 'rg',
             text: (r.규격 || '') + ' · ' + u.콤마(r.단가) + '원' + (r.수정됨 ? ' · ✎ 수정됨' : '')
@@ -475,6 +484,7 @@ window.ZG = window.ZG || {};
 
         var 품목칸 = 만들기('td', {}, [
           document.createTextNode(r.유통명 || '(품목 없음)'),
+          서비스딱지(r),
           만들기('div', { class: 'sci', text: r.학명 || '' })
         ]);
         var 모 = g.모자람[r.품목코드];
@@ -575,11 +585,23 @@ window.ZG = window.ZG || {};
   }
 
   function PC아래줄(건들) {
-    var 센것 = 건들.filter(function (g) { return 상태.고른[g.묶음키]; }).length;
+    var 고름 = 건들.filter(function (g) { return 상태.고른[g.묶음키]; });
     var 내려 = 만들기('button', { class: 'btn sm', type: 'button', text: '엑셀로 내려받기' });
     내려.addEventListener('click', function () { ZG.주문파일.내려받기(고른줄들()); });
+
+    /* 🔴 여기서는 「고른 게 없으면 전체」를 쓰지 않는다 — 그 날 주문 전부에 서비스가 들어간다 (설계 §2-5) */
+    var 서비스 = 만들기('button', { class: 'btn sm', type: 'button', text: '🎁 서비스 품목 넣기' });
+    if (!고름.length) {
+      서비스.setAttribute('aria-disabled', 'true');
+      서비스.style.opacity = '.4';
+      서비스.addEventListener('click', function () { u.토스트('서비스를 넣을 주문을 먼저 골라 주세요.'); });
+    } else {
+      서비스.addEventListener('click', function () { ZG.서비스품목.창(고름); });
+    }
+
     return 만들기('div', { class: 'tbar' }, [
-      만들기('span', { class: 'sel', html: '고른 것 <b>' + 센것 + '</b>건' }),
+      만들기('span', { class: 'sel', html: '고른 것 <b>' + 고름.length + '</b>건' }),
+      서비스,
       만들기('span', { class: 'spacer' }),
       내려
     ]);

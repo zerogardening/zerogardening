@@ -21,6 +21,14 @@
 .rnd.edited{background:var(--color-seg-bg); color:var(--color-text-muted); border-color:var(--color-border)}
 .was{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); white-space:nowrap}
 
+/* 서비스(무료) 품목 딱지 — 시안 09-동봉카드-기존느낌.html 값 그대로.
+   인쇄되는 카드와 화면(표·폰 목록·상세)에서 같은 것을 쓴다 (6단계 설계 §2-6) */
+.svc{
+  display:inline-block; font-size:9.5px; font-weight:700; color:#7a5b00; background:#fff6dd;
+  border:1px solid #eddca6; border-radius:9px; padding:1px 7px; margin-left:5px; vertical-align:2px;
+  white-space:nowrap;
+}
+
 /* 고르는 네모칸 */
 .cb{
   display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:-3px; padding:0;
