@@ -280,16 +280,11 @@ table.items .xbtn{
 }
 
 /* ══ 인쇄 — 종이에는 .doc 만 남긴다 (설계 §5) ══
-   .doc 로 가는 길목(.인쇄길)만 남기고 그 형제들을 끈다.
-   `* {display:none}` 으로 싹 끄면 .doc 안쪽 격자까지 무너져서 이렇게 한다. */
+   인쇄 동안 JS 가 .doc 을 body 직계로 옮겨 둔다(11b-명세서작성.js 인쇄()).
+   그래서 여기서는 body 의 직계 형제만 끄면 된다. */
 @media print{
-  body.명세서인쇄중 > *:not(.인쇄길){display:none !important}
-  body.명세서인쇄중 .인쇄길 > *:not(.인쇄길):not(.doc){display:none !important}
-  body.명세서인쇄중 .인쇄길{
-    display:block !important; position:static !important; overflow:visible !important;
-    margin:0 !important; padding:0 !important; background:#fff !important;
-    box-shadow:none !important; width:auto !important; max-width:none !important; min-height:0 !important;
-  }
+  body.명세서인쇄중 > *:not(.doc){display:none !important}
+  body.명세서인쇄중 > .doc{display:block !important}
   body.명세서인쇄중 .doc{box-shadow:none; border-radius:0; padding:0}
   /* 화면에서만 쓰는 것 — 종이에는 안 나간다 */
   body.명세서인쇄중 .doc .tool,

@@ -241,25 +241,38 @@ window.ZG = window.ZG || {};
     ZG.업체앱.요약다시();
   }
 
-  /* 종이에는 .doc 만 남긴다. 길목에 표를 붙여 두고 인쇄가 끝나면 뗀다 */
+  /* 종이에는 .doc 만 남긴다.
+     길목 조상에 클래스를 붙여 형제를 끄는 방식은 .doc 자신까지 꺼져 빈 종이가 나왔다(2026-08-05).
+     그래서 인쇄 동안만 .doc 을 body 직계로 옮긴다. 복제하면 <input> 에 친 값이 안 따라가므로 원본을 옮긴다. */
   function 인쇄() {
-    if (!상태.줄들.length) { u.토스트('품목을 먼저 넣어 주세요'); return; }
+    if (!상태.줄들.length) {
+      u.확인({ 제목: '품목이 없습니다', 본문: '출력할 품목을 먼저 넣어 주세요.', 확인글: '알겠습니다' }, function () {});
+      return;
+    }
     var 문서 = document.querySelector('.doc');
     if (!문서) return;
-    var 길 = [];
-    for (var e = 문서.parentNode; e && e !== document.body; e = e.parentNode) {
-      e.classList.add('인쇄길'); 길.push(e);
-    }
+    var 표식 = document.createComment('doc-자리');
+    문서.parentNode.insertBefore(표식, 문서);
+    document.body.appendChild(문서);
     var 옛제목 = document.title;
     document.title = 계.인쇄파일명(상태.작성일, 상태.받는곳.이름);
     document.body.classList.add('명세서인쇄중');
+
+    var 되돌렸나 = false;
+    function 되돌리기() {
+      if (되돌렸나) return;
+      되돌렸나 = true;
+      window.removeEventListener('afterprint', 되돌리기);
+      document.title = 옛제목;
+      document.body.classList.remove('명세서인쇄중');
+      if (표식.parentNode) 표식.parentNode.insertBefore(문서, 표식);
+      표식.remove();
+    }
+    window.addEventListener('afterprint', 되돌리기);
+
     setTimeout(function () {
       window.print();
-      setTimeout(function () {
-        document.title = 옛제목;
-        document.body.classList.remove('명세서인쇄중');
-        길.forEach(function (e) { e.classList.remove('인쇄길'); });
-      }, 1500);
+      setTimeout(되돌리기, 1500);   // afterprint 를 안 주는 브라우저 대비
     }, 50);
   }
 
