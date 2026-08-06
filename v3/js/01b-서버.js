@@ -107,16 +107,35 @@ window.ZG = window.ZG || {};
   function 적어두기(열쇠, t, f) { 적용시각[열쇠] = { t: t, f: f }; }
 
   /* ── 다시그리기 배분 (200ms 몰아치기 방지) ──────────────────────────────────── */
+
+  /* 🔴 글자를 치고 있는 동안에는 그리지 않는다 (8/6 🔴-8).
+     화면을 통째로 다시 그리면 입력칸 DOM 자체가 새것으로 갈아끼워지고, 그 순간
+     한글 조합이 끊겨 치던 글자와 포커스가 통째로 사라진다
+     (8/4 「휴케라」→「ㅎㅠㅋㅔㄹㅏ」 사고와 같은 원인).
+     🔴 이 자리는 「남이 저장한 것을 받아 그리는」 곳이라 급하지 않다 — 손을 뗄 때까지 미룬다.
+        우람님이 직접 누른 다시그리기(탭·거르개·저장)는 이 자리를 지나지 않으므로 그대로 즉시 그려진다.
+     체크박스·라디오·버튼은 눌러 둔 채로 있는 일이 흔해 막지 않는다 — 글자 치는 칸만 본다. */
+  var 글자칸 = { text: 1, search: 1, tel: 1, email: 1, url: 1, number: 1, password: 1 };
+  function 치는중() {
+    var a = document.activeElement;
+    if (!a) return false;
+    if (a.isContentEditable) return true;
+    if (a.tagName === 'TEXTAREA') return true;
+    return a.tagName === 'INPUT' && 글자칸[(a.type || 'text').toLowerCase()] === 1;
+  }
+
   var 예약 = null;
   function 그리기예약() {
     if (예약) return;
-    예약 = setTimeout(function () {
-      예약 = null;
-      ['앱', '주문', '업체앱', '소싱앱'].forEach(function (이름) {
-        var a = ZG[이름];
-        if (a && typeof a.다시그리기 === 'function') { try { a.다시그리기(); } catch (e) { console.warn(e); } }
-      });
-    }, 200);
+    예약 = setTimeout(그리기, 200);
+  }
+  function 그리기() {
+    예약 = null;
+    if (치는중()) { 예약 = setTimeout(그리기, 400); return; }   // 손 뗄 때까지 되물어본다
+    ['앱', '주문', '업체앱', '소싱앱'].forEach(function (이름) {
+      var a = ZG[이름];
+      if (a && typeof a.다시그리기 === 'function') { try { a.다시그리기(); } catch (e) { console.warn(e); } }
+    });
   }
 
   function 띠(글, 색) {
