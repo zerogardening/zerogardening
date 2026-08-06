@@ -74,6 +74,38 @@ window.ZG = window.ZG || {};
     var x = 지문(a); return x !== null && x === 지문(b);
   }
 
+  /* ── 「나중에 서버에 닿은 쪽이 이긴다」의 근거 (설계 §5) ─────────────────────
+     한 묶음으로 온 두 줄의 도착 순서가 기기마다 정반대라 온 순서대로 덮으면 갈라진다.
+     (A는 [B값,A값] · B는 [A값,B값] 순으로 받는다 — 8/6 실측)
+     그래서 줄마다 「마지막으로 적용한 수정시각」을 적어 두고 그보다 옛 값은 버린다.
+     수정시각은 서버 트리거가 찍으므로 두 기기가 같은 값을 본다.
+     🔴 로컬과 같아 건너뛸 때도 시각은 적어 둬야 한다 — 안 그러면 뒤에 온 옛 값이 통과한다. */
+  var 적용시각 = {};   // '표|id' → { t: ms, f: 지문 }
+
+  /* timestamptz 를 마이크로초 정수로. 🔴 Date.parse 는 소수 3자리까지만 봐서
+     `.088005` 와 `.088006` 이 같아져 버린다 — 실제로 그 자리에서 갈린다. */
+  function 밀리초(v) {
+    if (!v) return null;
+    var s = String(v), 소수 = /\.(\d+)/.exec(s), 마이크로 = 0;
+    if (소수) {
+      var d = (소수[1] + '000000').slice(0, 6);
+      마이크로 = Number(d.slice(3));
+      s = s.replace(/\.\d+/, '.' + d.slice(0, 3));
+    }
+    var t = Date.parse(s);
+    return isNaN(t) ? null : t * 1000 + 마이크로;
+  }
+  /* 같은 밀리초가 실제로 나온다. 그때는 지문이 큰 쪽이 이긴다 —
+     어느 쪽이 서버에 남았는지는 알 수 없지만 두 기기가 반드시 같은 답을 낸다. */
+  function 밀린값인가(열쇠, t, f) {
+    var 앞 = 적용시각[열쇠];
+    if (!앞 || t === null || 앞.t === null) return false;
+    if (t < 앞.t) return true;
+    if (t > 앞.t) return false;
+    return String(f) <= String(앞.f);
+  }
+  function 적어두기(열쇠, t, f) { 적용시각[열쇠] = { t: t, f: f }; }
+
   /* ── 다시그리기 배분 (200ms 몰아치기 방지) ──────────────────────────────────── */
   var 예약 = null;
   function 그리기예약() {
@@ -103,7 +135,7 @@ window.ZG = window.ZG || {};
   function 표받기(표) {
     var 이름 = 'v3_' + 표, 모두 = [];
     function 다음(시작) {
-      return supa.from(이름).select('id,내용,삭제됨').order('id').range(시작, 시작 + 999)
+      return supa.from(이름).select('id,내용,삭제됨,수정시각').order('id').range(시작, 시작 + 999)
         .then(function (r) {
           if (r.error) throw r.error;
           모두 = 모두.concat(r.data || []);
@@ -133,6 +165,13 @@ window.ZG = window.ZG || {};
   function 내려받기(강제) {
     var 저 = ZG.저장소, 건수 = {};
     서버.경고 = [];
+    // 첫 내려받기로 채운 줄도 시각을 적어 둔다 — 안 그러면 뒤에 오는 옛 값을 못 거른다
+    function 시각모으기(표, 행들) {
+      행들.forEach(function (r) {
+        적어두기(표 + '|' + r.id, 밀리초(r.수정시각), r.삭제됨 ? ' 삭제' : 지문(r.내용));
+      });
+    }
+
     var 일 = 표들.map(function (표) {
       return 표받기(표).then(function (행들) {
         var 로컬수 = 저.읽기(키로(표)).length;
@@ -141,12 +180,14 @@ window.ZG = window.ZG || {};
           서버.경고.push('서버 ' + 표 + ' ' + 행들.length + '건 / 이 기기 ' + 로컬수 + '건 — 덮지 않았습니다');
           return;
         }
+        시각모으기(표, 행들);
         var 값 = 행들.filter(function (r) { return !r.삭제됨; }).map(function (r) { return r.내용; });
         저.조용히(true); 저.전체쓰기(키로(표), 값); 저.조용히(false);
         건수[표] = 값.length;
       });
     }).concat([
       표받기('공유설정').then(function (행들) {
+        시각모으기('공유설정', 행들);
         행들.forEach(function (r) {
           if (r.삭제됨 || (r.id !== '동봉카드설정' && r.id !== '키워드')) return;
           저.조용히(true); 저.전체쓰기(키로(r.id), r.내용 || {}); 저.조용히(false);
@@ -178,10 +219,15 @@ window.ZG = window.ZG || {};
     if (!행 || !행.id) return;
     var 저 = ZG.저장소, k = 키로(표);
     var 지움 = p.eventType === 'DELETE' || 행.삭제됨 === true;
+    var 열쇠 = 표 + '|' + 행.id;
+    var 새시각 = 밀리초(행.수정시각);
+    var 새지문 = 지움 ? ' 삭제' : 지문(행.내용);
+    if (밀린값인가(열쇠, 새시각, 새지문)) return;   // 이 줄에 이미 더 새 값을 적용했다
 
     if (표 === '공유설정') {
       if (행.id !== '동봉카드설정' && 행.id !== '키워드') return;
       var 새설정 = 지움 ? {} : (행.내용 || {});
+      적어두기(열쇠, 새시각, 새지문);
       if (같은가(저.읽기(키로(행.id)), 새설정)) return;   // 이미 같다 — 메아리
       저.조용히(true); 저.전체쓰기(키로(행.id), 새설정); 저.조용히(false);
       그리기예약(); return;
@@ -189,6 +235,7 @@ window.ZG = window.ZG || {};
 
     var 목록 = 저.읽기(k);
     var 자리 = 목록.findIndex(function (r) { return 저.레코드키(표, r) === String(행.id); });
+    적어두기(열쇠, 새시각, 새지문);
     if (지움) { if (자리 < 0) return; 목록.splice(자리, 1); }
     else if (자리 >= 0) {
       if (같은가(목록[자리], 행.내용)) return;   // 이미 같다 — 메아리. 다시그리기도 안 한다
