@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 배송완료 변환 팝업 (macOS A안 · 브랜드 초록)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+/* ══ 이 화면에서만 쓰는 부품 — 나머지는 모두 _공통-macA.css 그대로 ══ */
+
+/* PC 머리줄 오른쪽 버튼 묶음 (03-주문 시안과 같은 부품) */
+.headbtns{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+
+/* 주문한 사이트 꼬리표 */
+.mall{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border);
+}
+.cb{
+  display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:-3px;
+  border:var(--border-width) solid var(--color-border); background:var(--color-surface);
+}
+tr.gstart td{border-top:var(--border-width-thick) solid var(--color-border)}
+td.who{vertical-align:top; background:#FAFAFC; border-right:var(--border-width) solid var(--color-border-faint); line-height:1.45}
+td.who .n{font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
+td.who .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+
+/* ── 창 한가운데 뜨는 팝업 ── */
+.modalwrap{position:relative; width:1120px}
+.scrim{position:absolute; inset:0; background:rgba(0,0,0,.36); border-radius:var(--radius-win); z-index:5}
+.modal{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:6;
+  background:var(--color-bg); border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:0 26px 60px rgba(0,0,0,.34), 0 0 0 1px rgba(0,0,0,.09);
+}
+.modal .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+}
+.modal .hd h3{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.modal .hd .hint{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.modal .hd .x{margin-left:auto; font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1}
+.modal .bd{padding:var(--space-3xl) var(--space-3xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-2xl)}
+.modal .ft{
+  padding:var(--space-lg) var(--space-3xl) var(--space-3xl);
+  display:flex; align-items:center; gap:var(--space-sm);
+}
+.modal .ft .spacer{flex:1}
+.modal .ft .fname{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+/* 파일 고르는 자리 */
+.drop{
+  border:2px dashed var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface);
+  padding:var(--space-4xl) var(--space-2xl); text-align:center;
+}
+.drop .ic{font-size:34px; line-height:1; display:block; margin-bottom:var(--space-md)}
+.drop .t{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.drop .s{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:var(--space-3xs)}
+.drop .btn{margin-top:var(--space-2xl)}
+
+/* 고른 파일 한 줄 */
+.fileline{
+  display:flex; align-items:center; gap:var(--space-md); background:var(--color-surface);
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  padding:var(--space-lg) var(--space-2xl);
+}
+.fileline .ic{font-size:var(--font-4xl); line-height:1}
+.fileline .nm{font-size:var(--font-md); font-weight:var(--weight-semibold)}
+.fileline .sz{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+.fileline .btn{margin-left:auto}
+
+/* 결과 숫자 두 칸 */
+.sums{display:flex; gap:var(--space-lg)}
+.sum{
+  flex:1; background:var(--color-surface); border-radius:var(--radius-lg); padding:var(--pad-stat);
+  border:var(--border-width) solid var(--color-border);
+}
+.sum .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.sum .v{font-size:30px; font-weight:var(--weight-bold); letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin-top:var(--space-3xs)}
+.sum .v small{font-size:var(--font-lg); font-weight:var(--weight-semibold); margin-left:2px}
+.sum .s{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:var(--space-2xs); line-height:1.5}
+.sum.ok{background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+.sum.ok .k, .sum.ok .v{color:var(--color-accent-dark)}
+.sum.ng{background:var(--color-danger-bg); border-color:var(--color-danger-border)}
+.sum.ng .k, .sum.ng .v{color:var(--color-danger)}
+
+/* 확인 필요 목록 */
+.needbox{
+  background:var(--color-surface); border:var(--border-width) solid var(--color-danger-border);
+  border-radius:var(--radius-lg); overflow:hidden;
+}
+.needbox > h4{
+  display:flex; align-items:center; gap:var(--space-xs); background:var(--color-danger-bg);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-danger-border);
+  font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger); letter-spacing:-.02em;
+}
+.needbox > h4 .why{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.needbox .inner{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
+.needbox table{width:100%}
+.rowbtns{display:flex; gap:var(--space-2xs); justify-content:flex-end}
+
+/* 「모두 이렇게」 고르는 줄 */
+.allrow{
+  display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap;
+  margin-top:var(--space-lg); padding-top:var(--space-lg);
+  border-top:var(--border-width) solid var(--color-border-faint);
+}
+.allrow .l{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+
+/* 정상 처리 설명 줄 */
+.done{
+  font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium);
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint);
+  border-radius:var(--radius-md); padding:var(--space-md) var(--space-2xl); line-height:1.6;
+}
+.done b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+
+.memo{
+  width:1120px; font-size:var(--font-xs); color:#45474D; font-weight:var(--weight-medium); line-height:1.8;
+  background:var(--overlay-strong); border-radius:var(--radius-md); padding:var(--space-2xl) var(--space-3xl);
+  box-shadow:0 0 0 1px rgba(0,0,0,.06);
+}
+.memo b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+.memo .q{color:var(--color-danger); font-weight:var(--weight-bold)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ① 파일 고르기 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 머리줄 <b>「배송완료」</b>를 누른 순간 <span class="tag">macOS A안 · PC 전용</span> <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+
+  <div class="modalwrap">
+    <div class="pc">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div>
+              <h2>주문 관리</h2>
+              <div class="path">주문 › 주문 조회</div>
+            </div>
+            <div class="headbtns">
+              <button class="btn sm">⬆ 로젠 파일</button>
+              <button class="btn sm main">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm" aria-disabled="true" style="opacity:.4">💌 동봉카드</button>
+            </div>
+          </div>
+
+          <div class="fchips">
+            <span style="font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)">기간</span>
+            <input class="inp" value="2026-08-04" style="width:132px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center">
+            <span style="color:var(--color-text-muted)">~</span>
+            <input class="inp" value="2026-08-04" style="width:132px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center">
+            <button class="fchip on">오늘</button>
+            <button class="fchip">이번 주</button>
+            <button class="fchip">이번 달</button>
+          </div>
+
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-04 · 주문 9건 · 품목 14줄</span></h3>
+            <table>
+              <colgroup>
+                <col style="width:28px"><col style="width:200px"><col style="width:96px"><col style="width:88px">
+                <col><col style="width:86px"><col style="width:74px">
+              </colgroup>
+              <tr>
+                <th><span class="cb"></span></th><th>받는 분 · 전화 · 주소</th><th>주문한 곳</th><th>품목코드</th>
+                <th>품목</th><th>규격</th><th class="r">수량</th>
+              </tr>
+              <tr class="gstart">
+                <td><span class="cb"></span></td>
+                <td class="who"><div class="n">김미정</div><div class="d">010-2481-7735</div><div class="d">경기 남양주시 화도읍 재재기로 22</div></td>
+                <td><span class="mall">스마트스토어</span></td>
+                <td class="code">PER03-15</td>
+                <td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">12</td>
+              </tr>
+              <tr class="gstart">
+                <td><span class="cb"></span></td>
+                <td class="who"><div class="n">박준호</div><div class="d">010-3391-2204</div><div class="d">서울 은평구 진관2로 44</div></td>
+                <td><span class="mall">쿠팡</span></td>
+                <td class="code">CAR01-10</td>
+                <td>청사초</td><td class="dim">10cm 포트</td><td class="r">6</td>
+              </tr>
+              <tr class="gstart">
+                <td><span class="cb"></span></td>
+                <td class="who"><div class="n">이수연</div><div class="d">010-8842-0117</div><div class="d">인천 서구 청라한내로 88</div></td>
+                <td><span class="mall">카페24</span></td>
+                <td class="code">CAS01-18</td>
+                <td>층꽃 '스털링실버'</td><td class="dim">18cm 포트</td><td class="r">8</td>
+              </tr>
+              <tr class="gstart">
+                <td><span class="cb"></span></td>
+                <td class="who"><div class="n">정하늘</div><div class="d">010-2277-9910</div><div class="d">경기 용인시 처인구 백옥대로 31</div></td>
+                <td><span class="mall">전화</span></td>
+                <td class="code">ANW02-21</td>
+                <td>추명국 '휠윈드핑크'</td><td class="dim">21cm 포트</td><td class="r">4</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <!-- 팝업 ① — 로젠 출력완료 파일 고르기 -->
+    <div class="modal" style="width:520px">
+      <div class="hd">
+        <h3>배송완료 처리</h3>
+        <span class="hint">로젠 출력완료 파일</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+        <div class="drop">
+          <span class="ic">📄</span>
+          <div class="t">로젠 「출력완료」 파일을 고르세요</div>
+          <div class="s">여기로 끌어다 놓아도 됩니다 · .xls · .xlsx</div>
+          <button class="btn">파일 고르기</button>
+        </div>
+        <div class="done">
+          이 파일에 실린 주문은 <b>「나갔다」</b>고 기록되고, 그만큼 <b>재고가 줄어듭니다.</b><br>
+          처리가 끝나면 카페24에 올릴 <b>송장 업로드 파일</b>을 바로 내려받습니다.
+        </div>
+      </div>
+      <div class="ft">
+        <span class="spacer"></span>
+        <button class="btn">취소</button>
+        <button class="btn main" style="opacity:.45">배송완료 처리</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ② 처리 결과 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">파일을 고르고 <b>「배송완료 처리」</b>를 누른 뒤 — <span class="q" style="color:var(--color-accent-dark)">🔴 여쭐 곳이 여기입니다</span></div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:760px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div>
+              <h2>주문 관리</h2>
+              <div class="path">주문 › 주문 조회</div>
+            </div>
+            <div class="headbtns">
+              <button class="btn sm">⬆ 로젠 파일</button>
+              <button class="btn sm main">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm" aria-disabled="true" style="opacity:.4">💌 동봉카드</button>
+            </div>
+          </div>
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-04 · 주문 9건 · 품목 14줄</span></h3>
+            <table>
+              <colgroup><col style="width:200px"><col style="width:96px"><col style="width:88px"><col><col style="width:86px"><col style="width:74px"></colgroup>
+              <tr><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th></tr>
+              <tr><td>김미정</td><td><span class="mall">스마트스토어</span></td><td class="code">PER03-15</td><td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">12</td></tr>
+              <tr><td>박준호</td><td><span class="mall">쿠팡</span></td><td class="code">CAR01-10</td><td>청사초</td><td class="dim">10cm 포트</td><td class="r">6</td></tr>
+              <tr><td>이수연</td><td><span class="mall">카페24</span></td><td class="code">CAS01-18</td><td>층꽃 '스털링실버'</td><td class="dim">18cm 포트</td><td class="r">8</td></tr>
+              <tr><td>정하늘</td><td><span class="mall">전화</span></td><td class="code">ANW02-21</td><td>추명국 '휠윈드핑크'</td><td class="dim">21cm 포트</td><td class="r">4</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <!-- 팝업 ② — 처리 결과 -->
+    <div class="modal" style="width:760px">
+      <div class="hd">
+        <h3>배송완료 처리 결과</h3>
+        <span class="hint">로젠_출력완료_20260804.xls · 5줄</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+
+        <div class="sums">
+          <div class="sum ok">
+            <div class="k">정상 처리</div>
+            <div class="v">4<small>건</small></div>
+            <div class="s">주문번호를 찾아 「나갔다」고 기록했습니다</div>
+          </div>
+          <div class="sum ng">
+            <div class="k">확인 필요</div>
+            <div class="v">1<small>건</small></div>
+            <div class="s">주문번호가 비어 있어 어느 주문인지 못 찾았습니다</div>
+          </div>
+        </div>
+
+        <div class="done">
+          정상 4건 — <b>출고 4건 기록</b> · <b>재고 4품목 차감</b> 완료 · 송장 업로드 파일 <b>4줄</b> 준비됨
+        </div>
+
+        <div class="needbox">
+          <h4>⚠️ 확인 필요 1건 <span class="why">운송장번호는 있지만 주문번호 칸이 비어 있습니다 (전화주문으로 보입니다)</span></h4>
+          <div class="inner">
+            <table>
+              <colgroup><col style="width:150px"><col style="width:96px"><col style="width:70px"><col></colgroup>
+              <tr><th>운송장번호</th><th>수하인</th><th class="r">박스</th><th class="r">이 줄을 어떻게 할까요</th></tr>
+              <tr>
+                <td class="code">6512-4471-9930</td>
+                <td>정하늘</td>
+                <td class="r">1</td>
+                <td>
+                  <div class="rowbtns">
+                    <button class="btn sm main">이름으로 주문 찾아 재고 차감</button>
+                    <button class="btn sm">재고 그대로 두고 넘어가기</button>
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <div class="allrow">
+              <span class="l">여러 줄이 나오면 —</span>
+              <button class="btn sm">전부 이름으로 찾기</button>
+              <button class="btn sm">전부 넘어가기</button>
+              <span style="flex:1"></span>
+              <span style="font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)">
+                넘어간 줄도 송장 업로드 파일에는 <b style="color:var(--color-text-sub)">들어가지 않습니다</b>
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="ft">
+        <span class="fname">내려받을 파일 — 카페24_송장업로드_20260804.xlsx</span>
+        <span class="spacer"></span>
+        <button class="btn">닫기</button>
+        <button class="btn main">⬇ 송장 업로드 파일 내려받기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="memo">
+    <b>여쭙는 것 하나</b> — 로젠 「출력완료」 파일 5줄 가운데 <span class="q">1줄은 주문번호 칸이 비어 있었습니다</span>(운송장번호·수하인 이름만 있는 전화주문 줄).
+    주문번호가 없으면 v3 주문을 못 찾아 <b>재고를 줄일지 말지</b>를 프로그램이 스스로 정할 수 없습니다. 셋 중 어느 쪽으로 할까요.<br>
+    ① <b>이름으로 주문을 찾아 재고를 차감</b>한다 — 같은 이름이 여럿이면 다시 여쭙습니다<br>
+    ② <b>재고는 그대로 두고 넘어간다</b> — 전화주문은 따로 재고를 맞추시는 경우<br>
+    ③ 위 팝업처럼 <b>줄마다 그때그때 고른다</b> (지금 그림)
+  </div>
+</div>
+
+</body>
+</html>

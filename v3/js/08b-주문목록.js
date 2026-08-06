@@ -133,8 +133,8 @@ window.ZG = window.ZG || {};
       return b;
     }
     return 만들기('div', { class: 'headbtns' }, [
-      단추('⬆ 카페24 → 로젠 파일', function () { ZG.주문파일.카페24로젠(); }),
-      단추('⬆ 로젠 → 배송완료 파일', function () { ZG.주문파일.배송완료(); }),
+      단추('⬆ 로젠 파일', function () { ZG.주문파일.카페24로젠(); }),
+      단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
       단추('📋 출고리스트', function () { ZG.주문입력.PC출고창(상태, 고른줄들()); }, true),
       단추('💌 동봉카드', function () { 카드열기(고른건들()); }, true)
     ]);
