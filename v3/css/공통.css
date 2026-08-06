@@ -288,6 +288,8 @@ td.zero{color:var(--color-danger); font-weight:var(--weight-bold)}
 .pc-side .ic{width:18px; text-align:center; font-size:var(--font-md)}
 .pc-main{flex:1; min-width:0; padding:var(--pad-main); display:flex; flex-direction:column; gap:var(--space-2xl)}
 .pc-main > *{flex:0 0 auto}
+/* 본문 카드 사이 간격 — 상품.css 에만 있어 업체·소싱이 다 붙어 있었다. 네 화면 공용 */
+.pc-본문{display:flex; flex-direction:column; gap:var(--space-2xl)}
 .pc-head{display:flex; justify-content:space-between; align-items:flex-end}
 .pc-head h2{font-size:var(--font-5xl); font-weight:var(--weight-bold); letter-spacing:-.03em; line-height:1.1}
 .pc-head .path{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-bottom:var(--space-xs)}

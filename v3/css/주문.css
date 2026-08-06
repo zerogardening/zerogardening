@@ -207,8 +207,7 @@ table.mini th{padding:var(--space-xs)}
   body.인쇄중 .pcsheet:has(.encard) .hd{display:none}
 }
 
-/* 기간·회차 고르는 줄이 표에 딱 붙어 답답했다 — 한 칸 띄운다 (주문 화면에서만) */
-.pc-본문 > .fchips{margin-bottom:var(--space-2xl)}
+/* 기간·회차 줄 아래 간격은 공통.css 의 .pc-본문 gap 이 준다 (여기 margin 은 두 칸이 돼 지웠다) */
 
 /* ── 품목 카드 (수동주문 등록 · 수정) ── 한 장이 품목 하나다 */
 .itemstack{display:flex; flex-direction:column; gap:var(--space-md)}
