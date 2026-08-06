@@ -35,6 +35,13 @@ window.ZG = window.ZG || {};
   var 캐시 = {};
   var 조용함 = false;   // 켜 두면 전체쓰기가 큐를 건너뛴다 (시드·이사분이 서버로 새어 나가지 않게)
 
+  /* 다른 탭이 쓴 값은 이 탭 캐시에 안 잡힌다 — 그 키의 캐시를 버려 다음 읽기가 localStorage 를 다시 타게 한다.
+     안 버리면 탭 A 가 넣은 줄을 탭 B 가 못 본 채 다음 쓰기 때 덮어 지운다 */
+  window.addEventListener('storage', function (e) {
+    if (e.key) delete 캐시[e.key];
+    else 캐시 = {};   // key 가 없으면 storage 전체가 비워진 것이다
+  });
+
   function 객체키인가(k) { return k === 키.설정 || k === 키.동봉카드설정 || k === 키.키워드; }
   function 아이디(r) { return r && (r.id || r.품목코드); }
 
