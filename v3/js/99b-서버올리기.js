@@ -54,13 +54,22 @@ window.ZG = window.ZG || {};
     올리기단추.disabled = true; 받기단추.disabled = true;
     var 저 = ZG.저장소, 건수 = {};
 
+    /* 🔴 키를 못 찾은 줄은 조용히 버리지 않는다. 버리면 「즐겨찾기 15건」이라 찍어 놓고
+       서버는 0건인 거짓 성공이 되고, 그 상태로 서버상태 행까지 써 버린다.
+       건수는 서버에 실제로 들어간 수만 센다. */
     var 일 = ZG.서버.표들.reduce(function (앞, 표) {
       return 앞.then(function () {
         var 목록 = 저.읽기(ZG.서버.키로(표));
-        건수[표] = 목록.length;
-        var 행들 = 목록.map(function (r) {
-          return { id: String(r.id || r.품목코드), 내용: r, 삭제됨: false };
-        }).filter(function (r) { return r.id && r.id !== 'undefined'; });
+        var 행들 = [], 못센줄 = 0;
+        목록.forEach(function (r) {
+          var id = 저.레코드키(표, r);
+          if (!id || id === 'undefined') { 못센줄++; return; }
+          행들.push({ id: id, 내용: r, 삭제됨: false });
+        });
+        if (못센줄) {
+          throw new Error(표 + ' ' + 못센줄 + '건에 「' + 저.키필드(표) + '」 칸이 없습니다 — 올리지 않았습니다');
+        }
+        건수[표] = 행들.length;
         return 묶어올리기(표, 행들, 알림);
       });
     }, Promise.resolve());

@@ -45,6 +45,16 @@ window.ZG = window.ZG || {};
   function 객체키인가(k) { return k === 키.설정 || k === 키.동봉카드설정 || k === 키.키워드; }
   function 아이디(r) { return r && (r.id || r.품목코드); }
 
+  /* 🔴 표마다 PK 가 무엇인가 — 여기 한 곳에서만 정한다. 서버 층 세 곳(대조·01c·99b)이 전부 이걸 본다.
+     즐겨찾기·분류폴더 레코드에는 id 칸이 아예 없다(13a 머리말). id 만 보면 조용히 버려진다 */
+  var 표키 = { 품목: '품목코드', 즐겨찾기: '키워드', 분류폴더: '이름' };
+  function 표이름(k) { return String(k).replace('zg.v3.', ''); }
+  function 키필드(표) { return 표키[표] || 'id'; }
+  function 레코드키(표, r) {
+    var v = r && r[키필드(표)];
+    return (v == null || v === '') ? null : String(v);
+  }
+
   function 원문(k) {
     if (캐시[k] != null) return 캐시[k];
     var s = null;
@@ -119,11 +129,12 @@ window.ZG = window.ZG || {};
   }
 
   function 대조(k, 새것, b) {
+    var 표 = 표이름(k);
     var 옛것 = 읽기(k);
     var 옛맵 = {};
-    옛것.forEach(function (r) { var i = 아이디(r); if (i) 옛맵[i] = JSON.stringify(r); });
+    옛것.forEach(function (r) { var i = 레코드키(표, r); if (i) 옛맵[i] = JSON.stringify(r); });
     (새것 || []).forEach(function (r) {
-      var i = 아이디(r); if (!i) return;
+      var i = 레코드키(표, r); if (!i) return;
       var s = JSON.stringify(r);
       if (옛맵[i] !== s) b.줄(k, r);
       delete 옛맵[i];
@@ -191,6 +202,8 @@ window.ZG = window.ZG || {};
     동봉카드설정읽기: 동봉카드설정읽기,
     동봉카드설정쓰기: 동봉카드설정쓰기,
     전부지우기: 전부지우기,
+    키필드: 키필드,
+    레코드키: 레코드키,
     부팅: 부팅
   };
 })(window.ZG);

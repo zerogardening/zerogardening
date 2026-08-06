@@ -22,10 +22,12 @@ window.ZG = window.ZG || {};
     예약 = setTimeout(function () { 예약 = null; 보내기(); }, 300);
   }
 
+  /* 키는 표마다 다르다(품목=품목코드 · 즐겨찾기=키워드 · 분류폴더=이름). 01-저장소가 한 곳에서 정한다 */
   function 줄(k, 레코드) {
-    var id = 레코드 && (레코드.id || 레코드.품목코드);
-    if (!id) return;
-    담기({ 표: 표이름(k), id: String(id), 값: 레코드, 시각: Date.now() });
+    var 표 = 표이름(k);
+    var id = ZG.저장소.레코드키(표, 레코드);
+    if (!id) { console.warn('키가 없어 서버로 못 보냅니다', 표, ZG.저장소.키필드(표), 레코드); return; }
+    담기({ 표: 표, id: id, 값: 레코드, 시각: Date.now() });
   }
   function 삭제(k, id) {
     if (!id) return;
@@ -55,8 +57,9 @@ window.ZG = window.ZG || {};
     var 일 = Object.keys(표별).map(function (표) {
       var 묶음 = 표별[표];
       var 행들 = 묶음.map(function (m) {
-        ZG.서버.에코등록(표, m.it.id);
-        return { id: m.it.id, 내용: m.it.삭제 ? { id: m.it.id } : m.it.값, 삭제됨: !!m.it.삭제 };
+        var 행 = { id: m.it.id, 내용: m.it.삭제 ? { id: m.it.id } : m.it.값, 삭제됨: !!m.it.삭제 };
+        ZG.서버.에코등록(표, 행.id, 행.내용, 행.삭제됨);   // 이 값 그대로 돌아온 것만 버린다
+        return 행;
       });
       return supa.from('v3_' + 표).upsert(행들, { onConflict: 'id' }).then(function (r) {
         if (r.error) throw r.error;

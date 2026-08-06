@@ -51,14 +51,43 @@ window.ZG = window.ZG || {};
   서버.클라이언트 = supa;
   서버.켜짐 = true;
 
-  /* ── 에코 무시 — 방금 내가 보낸 표+id 는 5초간 되돌아와도 버린다 ─────────────── */
+  /* ── 에코 무시 — 「내가 보낸 그 값」이 돌아온 것만 버린다 (설계 §5) ────────────
+     🔴 표+id 로만 막으면 같은 줄을 동시에 고쳤을 때 상대가 보낸 새 값까지 같이 버려
+        양쪽 화면이 서로 다른 값을 든 채 영영 갈라진다. 그래서 내용까지 견준다.
+     내용 지문은 키를 정렬해 만든다 — jsonb 가 칸 순서를 바꿔 돌려주기 때문이다.
+     한 번 맞으면 목록에서 뺀다. 같은 값이 남에게서 또 오면 그때는 받는다. */
   var 에코 = {};
-  function 에코등록(표, id) { 에코[표 + '|' + id] = Date.now(); }
-  function 에코중(표, id) {
-    var t = 에코[표 + '|' + id];
-    if (!t) return false;
-    if (Date.now() - t > 5000) { delete 에코[표 + '|' + id]; return false; }
-    return true;
+  function 정렬(v) {
+    if (Array.isArray(v)) return v.map(정렬);
+    if (v && typeof v === 'object') {
+      var o = {};
+      Object.keys(v).sort().forEach(function (k) { if (v[k] !== undefined) o[k] = 정렬(v[k]); });
+      return o;
+    }
+    return v;
+  }
+  function 지문(내용, 삭제됨) {
+    try { return (삭제됨 ? 'D' : 'U') + JSON.stringify(정렬(내용 == null ? null : 내용)); }
+    catch (e) { return null; }
+  }
+  function 신선(e) { return Date.now() - e.때 <= 5000; }
+
+  function 에코등록(표, id, 내용, 삭제됨) {
+    var f = 지문(내용, 삭제됨); if (!f) return;
+    var k = 표 + '|' + id;
+    에코[k] = (에코[k] || []).filter(신선);
+    에코[k].push({ 지문: f, 때: Date.now() });
+  }
+  function 에코중(표, id, 행) {
+    var k = 표 + '|' + id;
+    var 목록 = (에코[k] || []).filter(신선);
+    if (!목록.length) { delete 에코[k]; return false; }
+    에코[k] = 목록;
+    var f = 지문(행 && 행.내용, !!(행 && 행.삭제됨));
+    for (var i = 0; i < 목록.length; i++) {
+      if (목록[i].지문 === f) { 목록.splice(i, 1); return true; }
+    }
+    return false;
   }
 
   /* ── 다시그리기 배분 (200ms 몰아치기 방지) ──────────────────────────────────── */
@@ -163,7 +192,7 @@ window.ZG = window.ZG || {};
   function 받은줄(표, p) {
     var 행 = p['new'] && p['new'].id ? p['new'] : p.old;
     if (!행 || !행.id) return;
-    if (에코중(표, 행.id)) return;
+    if (에코중(표, 행.id, 행)) return;
     var 저 = ZG.저장소, k = 키로(표);
     var 지움 = p.eventType === 'DELETE' || 행.삭제됨 === true;
 
@@ -174,7 +203,7 @@ window.ZG = window.ZG || {};
     }
 
     var 목록 = 저.읽기(k);
-    var 자리 = 목록.findIndex(function (r) { return (r.id || r.품목코드) === 행.id; });
+    var 자리 = 목록.findIndex(function (r) { return 저.레코드키(표, r) === String(행.id); });
     if (지움) { if (자리 < 0) return; 목록.splice(자리, 1); }
     else if (자리 >= 0) 목록[자리] = 행.내용;
     else 목록.push(행.내용);
