@@ -7,7 +7,8 @@ window.ZG = window.ZG || {};
 
   var u = ZG.ui, 만들기 = u.만들기;
   var 쪽크기 = 25;
-  var 상태 = { 검색어: '', 목록: null, 쪽: 1, 담을폴더: '' };
+  // 대상·자세히·부르는중·실패 넷은 네이버 진단 카드(맨 위) 몫이다
+  var 상태 = { 검색어: '', 목록: null, 쪽: 1, 담을폴더: '', 대상: '', 자세히: null, 부르는중: false, 실패: '' };
   var 결과칸, 검색입력;
 
   function 자() { return ZG.소싱자료; }
@@ -72,13 +73,41 @@ window.ZG = window.ZG || {};
     결과채우기();
   }
 
-  /* ── 검색 ── */
+  /* ── 검색 ──
+     ① 내 데이터 목록을 먼저 그린다(기다리지 않게) ② 검색어 본인을 네이버에 묻는다(그래프용 추이 포함)
+     ③ 이번 쪽 키워드들의 월간검색수를 채운다 — 값찾기()가 캐시를 먼저 보므로 표 코드는 안 바꿔도 된다 */
   function 검색하기() {
     var q = String(상태.검색어 || '').trim();
     if (!q) { u.흔들기(검색입력); if (검색입력) 검색입력.focus(); return; }
+
+    상태.대상 = q;
+    상태.자세히 = null;
+    상태.실패 = '';
+    상태.부르는중 = true;
+
     ZG.검색량.연관(q).then(function (r) {
       상태.목록 = r.목록;
       상태.쪽 = 1;
+      결과채우기();
+
+      ZG.검색량.자세히([q], { 추이: true }).then(function (답) {
+        // 검색칸을 다시 쳐서 대상이 바뀌었으면 늦게 온 답은 버린다
+        if (상태.대상 !== q) return;
+        상태.부르는중 = false;
+        상태.실패 = (답.상태 === '실패') ? 답.이유 : '';
+        상태.자세히 = 답.값[q] || null;
+        결과채우기();
+        쪽채우기(q);
+      });
+    });
+  }
+
+  /* 표에 보이는 줄들의 숫자만 뒤늦게 채운다. 실패해도 조용히 넘어간다 — 목록은 이미 보인다 */
+  function 쪽채우기(q) {
+    var 것들 = 이번쪽().map(function (it) { return it.키워드; });
+    if (!것들.length) return;
+    ZG.검색량.자세히(것들).then(function () {
+      if (상태.대상 !== q) return;
       결과채우기();
     });
   }
@@ -239,7 +268,7 @@ window.ZG = window.ZG || {};
       }
       var 값칸 = 만들기('span', { class: 'v' }, [
         만들기('b', { class: 월 === '—' ? '' : 'has', text: 월 }),
-        만들기('span', { text: 월 === '—' ? '키 없음' : '월간' })
+        만들기('span', { text: 월 === '—' ? '못 받음' : '월간' })
       ]);
 
       var 몸 = 만들기('button', { type: 'button', class: 'rest' }, [이름, 값칸]);
@@ -273,7 +302,121 @@ window.ZG = window.ZG || {};
     });
   }
 
+  /* ── 월별 검색추이 그래프 ──
+     🔴 SVG 는 만들기()(DOM)로 못 만든다(네임스페이스가 다르다) — 문자열을 짜서 innerHTML 로 넣는다.
+     넣는 값은 전부 숫자라 주입 위험이 없다. 색은 소싱.css 가 잡는다(여기 색을 박지 않는다).
+     원본은 app.html trendSVG — 폰에서는 점 아래 숫자 줄을 뺀다(375px 에서 12개가 겹친다) */
+  function 달(p) { return parseInt(String(p.period).slice(5, 7), 10) || 0; }
+  function 점값(p) { return p.est != null ? p.est : p.ratio; }
+  function 짧게(v) { return v >= 10000 ? Math.round(v / 1000) + '천' : u.콤마(Math.round(v)); }
+
+  function 추이그래프(추이) {
+    var tr = (추이 || []).slice().sort(function (a, b) { return 달(a) - 달(b); });
+    var n = tr.length;
+    if (!n) return '';
+
+    var 폰 = u.폰인가();
+    var W = 폰 ? 360 : 720, H = 폰 ? 176 : 236;
+    var 왼 = 폰 ? 36 : 50, 오 = 폰 ? 8 : 14, 위 = 폰 ? 14 : 18, 아래 = 폰 ? 28 : 50;
+    var 밑 = H - 아래;
+    var 최대 = Math.max.apply(null, tr.map(점값)) || 1;
+
+    function x(i) { return +(왼 + i * (W - 왼 - 오) / Math.max(1, n - 1)).toFixed(1); }
+    function y(v) { return +(밑 - (v / 최대) * (밑 - 위)).toFixed(1); }
+
+    var 격자 = '';
+    for (var g = 0; g <= 2; g++) {
+      var gv = 최대 * g / 2, gy = y(gv);
+      격자 += '<line class="g" x1="' + 왼 + '" y1="' + gy + '" x2="' + (W - 오) + '" y2="' + gy + '"/>' +
+              '<text class="gl" x="' + (왼 - 5) + '" y="' + (gy + 3) + '" text-anchor="end">' + 짧게(gv) + '</text>';
+    }
+
+    var 선 = tr.map(function (p, i) { return x(i) + ',' + y(점값(p)); }).join(' ');
+    var 면 = 왼 + ',' + 밑 + ' ' + 선 + ' ' + (W - 오) + ',' + 밑;
+
+    var 점 = tr.map(function (p, i) {
+      var v = 점값(p), 꼭 = (v === 최대);
+      return '<circle class="dt' + (꼭 ? ' pk' : '') + '" cx="' + x(i) + '" cy="' + y(v) + '" r="' + (꼭 ? 4.5 : 3.2) + '">' +
+             '<title>' + 달(p) + '월: ' + u.콤마(Math.round(v)) + '</title></circle>';
+    }).join('');
+
+    var 월줄 = tr.map(function (p, i) {
+      return '<text class="mo" x="' + x(i) + '" y="' + (밑 + (폰 ? 15 : 18)) + '" text-anchor="middle">' + 달(p) + '월</text>';
+    }).join('');
+
+    // 폰은 12개를 다 적으면 겹친다 — 가장 높은 달 하나만 점 위에 적는다
+    var 값줄 = tr.map(function (p, i) {
+      var v = 점값(p), 꼭 = (v === 최대);
+      if (폰) {
+        if (!꼭) return '';
+        return '<text class="va pk" x="' + x(i) + '" y="' + (y(v) - 7) + '" text-anchor="middle">' + 짧게(v) + '</text>';
+      }
+      return '<text class="va' + (꼭 ? ' pk' : '') + '" x="' + x(i) + '" y="' + (밑 + 34) + '" text-anchor="middle">' + 짧게(v) + '</text>';
+    }).join('');
+
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="월별 검색추이">' +
+           격자 + '<polygon class="ar" points="' + 면 + '"/>' +
+           '<polyline class="ln" points="' + 선 + '"/>' + 점 +
+           '<line class="g" x1="' + 왼 + '" y1="' + (밑 + 4) + '" x2="' + (W - 오) + '" y2="' + (밑 + 4) + '"/>' +
+           월줄 + 값줄 + '</svg>';
+  }
+
+  /* ── 네이버 진단 카드 (결과칸 맨 위) ── */
+  function 숫자상자(이름, 값, 밑글) {
+    return 만들기('div', { class: 'stat' }, [
+      만들기('span', { class: 'k', text: 이름 }),
+      만들기('b', { text: 값 }),
+      만들기('span', { class: 's', text: 밑글 })
+    ]);
+  }
+
+  function 진단카드() {
+    if (!상태.대상) return null;
+    var 카드 = 만들기('div', { class: 'card' });
+    카드.appendChild(만들기('h3', { html: '「' + u.안전(상태.대상) + '」 네이버 검색량' }));
+
+    if (상태.부르는중) {
+      카드.appendChild(만들기('div', { class: 'empty', text: '네이버에서 불러오는 중…' }));
+      return 카드;
+    }
+    if (상태.실패) {
+      카드.appendChild(만들기('div', {
+        class: 'empty',
+        html: '불러오지 못했습니다 — <b>' + u.안전(상태.실패) + '</b><br>아래 목록은 그대로 쓰실 수 있습니다.'
+      }));
+      return 카드;
+    }
+
+    var 값 = 상태.자세히;
+    if (!값 || 값.월검색 == null) {
+      카드.appendChild(만들기('div', { class: 'empty', text: '네이버에 검색량 기록이 없는 키워드입니다.' }));
+      return 카드;
+    }
+
+    카드.appendChild(만들기('div', { class: 'stats' }, [
+      숫자상자('연간 검색량', u.콤마(값.연검색 || 0), '최근 12개월 합'),
+      숫자상자('월간 검색량', u.콤마(값.월검색 || 0), '최근 한 달'),
+      숫자상자('PC · 모바일', u.콤마(값.PC || 0) + ' · ' + u.콤마(값.모바일 || 0), '월간 기준')
+    ]));
+
+    if (값.월별추이 && 값.월별추이.length) {
+      var 그림 = 만들기('div', { class: 'trend' });
+      그림.innerHTML = 추이그래프(값.월별추이);
+      카드.appendChild(그림);
+      카드.appendChild(만들기('div', {
+        class: 'tnote',
+        text: u.폰인가() ? '월별은 추정치입니다 — 데이터랩 비율 × 최근 검색량'
+                        : '월별은 추정치입니다 — 데이터랩 비율 × 최근 검색량 · 점에 커서를 대면 수치가 나옵니다'
+      }));
+    } else {
+      카드.appendChild(만들기('div', { class: 'tnote', text: '이 키워드는 월별 추이가 없습니다.' }));
+    }
+    return 카드;
+  }
+
   /* ── 결과칸만 다시 ── */
+  function 쪽바꾸기() { 결과채우기(); 쪽채우기(상태.대상); }
+
   function 결과채우기() {
     if (!결과칸) return;
     u.비우기(결과칸);
@@ -289,6 +432,9 @@ window.ZG = window.ZG || {};
 
     var 담긴수 = 상태.목록.filter(function (it) { return 자().담김(it.키워드); }).length;
 
+    var 진단 = 진단카드();
+    if (진단) 결과칸.appendChild(진단);
+
     if (u.폰인가()) {
       if (!상태.목록.length) {
         결과칸.appendChild(만들기('div', { class: 'card' }, [만들기('div', {
@@ -297,7 +443,7 @@ window.ZG = window.ZG || {};
         return;
       }
       결과칸.appendChild(폰목록());
-      if (상태.목록.length > 쪽크기) 결과칸.appendChild(쪽번호(상태.목록.length, 결과채우기));
+      if (상태.목록.length > 쪽크기) 결과칸.appendChild(쪽번호(상태.목록.length, 쪽바꾸기));
       return;
     }
 
@@ -306,14 +452,14 @@ window.ZG = window.ZG || {};
       style: 'padding:0 var(--space-sm)',
       html: '「' + u.안전(상태.검색어.trim()) + '」 연관 키워드 ' +
             '<span class="hint">내 데이터에서 찾은 ' + 상태.목록.length + '개 · ★ ' + 담긴수 + '개 담김 — ' +
-            '키가 붙으면 네이버 연관 키워드로 바뀝니다</span>' +
-            '<span class="right"><span class="chip warn">숫자 칸 비어 있음</span></span>'
+            '네이버 연관 키워드는 아직 안 옵니다</span>' +
+            '<span class="right"><span class="chip warn">상품수 비어 있음</span></span>'
     }));
     if (!상태.목록.length) {
       카드.appendChild(만들기('div', { class: 'empty', html: '찾은 키워드가 없습니다.' }));
     } else {
       카드.appendChild(PC표());
-      카드.appendChild(쪽번호(상태.목록.length, 결과채우기));
+      카드.appendChild(쪽번호(상태.목록.length, 쪽바꾸기));
     }
     결과칸.appendChild(카드);
   }
@@ -322,7 +468,9 @@ window.ZG = window.ZG || {};
     // 분류 탭에서 폴더를 지우고 돌아왔을 수 있다 — 없어진 폴더면 미분류로 리셋
     상태.담을폴더 = 자().실제폴더(상태.담을폴더);
     var 폰 = u.폰인가();
-    var 띠 = ZG.검색량.키있나() ? null : 만들기('div', { class: 'nokey', html: ZG.검색량.안내() });
+    // 🔴 「키 없음」이 아니라 「쇼핑 API 만 죽었다」는 안내다 — 안내()가 비어 있을 때만 띠를 뺀다
+    var 안내글 = ZG.검색량.안내();
+    var 띠 = 안내글 ? 만들기('div', { class: 'nokey', html: 안내글 }) : null;
     // 시안 — 폰은 검색칸이 위, PC는 안내 띠가 위다
     if (폰) { 부모.appendChild(검색칸(true)); if (띠) 부모.appendChild(띠); }
     else { if (띠) 부모.appendChild(띠); 부모.appendChild(검색칸(false)); }
