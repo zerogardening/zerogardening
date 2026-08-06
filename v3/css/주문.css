@@ -637,6 +637,14 @@ tr.editing td{background:var(--color-accent-bg)}
 .pcsheet.dlv .rowbtns{display:flex; gap:var(--space-2xs); justify-content:flex-end; flex-wrap:wrap}
 .pcsheet.dlv td.gone{color:var(--color-text-muted)}
 .pcsheet.dlv td.went{color:var(--color-accent-dark); font-weight:var(--weight-semibold)}
+/* 재고를 못 깎은 줄 — 「이미 처리됨」과 눈으로 갈라 보이게 한다 */
+.pcsheet.dlv td.warn{color:var(--color-danger); font-weight:var(--weight-semibold)}
+
+/* 수하인 이름 밑에 「왜 확인이 필요한지」 한 줄. 줄마다 사유가 다르므로 상자 머리에 뭉치지 않는다 */
+.pcsheet.dlv .needbox td .sub{
+  font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+  margin-top:1px; line-height:1.4; overflow-wrap:break-word;   /* 주문번호가 숫자 한가운데서 잘리지 않게 */
+}
 
 /* 「모두 이렇게」 고르는 줄 */
 .pcsheet.dlv .allrow{
