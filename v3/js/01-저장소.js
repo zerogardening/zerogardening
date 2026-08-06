@@ -1,7 +1,11 @@
-/* 01-저장소 — localStorage 읽기/쓰기 (설계 §3)
+/* 01-저장소 — localStorage 읽기/쓰기 (설계 §3, 7단계 §4-1)
    표마다 키 하나. 한 덩어리 JSON 은 만들지 않는다.
    쓰기는 언제나 「다시 읽기 → 한 건만 손대기 → 쓰기」다.
-   다른 탭이 그 사이에 넣은 것을 지우지 않기 위해서다. */
+   다른 탭이 그 사이에 넣은 것을 지우지 않기 위해서다.
+
+   7단계에서 캐시와 서버 큐가 붙었다.
+   내부용 저장(캐시+localStorage)과 외부용 전체쓰기(대조 후 큐)를 이름부터 나눈다 —
+   덧붙이기·바꾸기·지우기가 전부 저장을 부르므로, 대조를 저장 안에 넣으면 같은 줄이 큐에 두 번 실린다. */
 window.ZG = window.ZG || {};
 (function (ZG) {
   'use strict';
@@ -25,15 +29,29 @@ window.ZG = window.ZG || {};
   };
   var 스키마버전 = 4;   // 4 — 목데이터 주문줄에 주문번호(배송완료 변환 검수용). 올리면 기존 목데이터를 지우고 다시 심는다
 
+  /* 캐시는 「키 → 값의 JSON 문자열」로 든다.
+     읽기가 매번 parse 하므로 호출부는 언제나 자기만의 사본을 받는다(지금까지와 동작이 같다).
+     문자열로 두면 전체쓰기의 줄 단위 대조도 parse 한 번으로 끝난다. */
+  var 캐시 = {};
+  var 조용함 = false;   // 켜 두면 전체쓰기가 큐를 건너뛴다 (시드·이사분이 서버로 새어 나가지 않게)
+
   function 객체키인가(k) { return k === 키.설정 || k === 키.동봉카드설정 || k === 키.키워드; }
+  function 아이디(r) { return r && (r.id || r.품목코드); }
+
+  function 원문(k) {
+    if (캐시[k] != null) return 캐시[k];
+    var s = null;
+    try { s = localStorage.getItem(k); } catch (e) { console.warn('저장소를 못 읽었습니다', k, e); }
+    캐시[k] = s == null ? '' : s;
+    return 캐시[k];
+  }
 
   function 읽기(k) {
     var 빈값 = 객체키인가(k) ? {} : [];
-    var 원문;
-    try { 원문 = localStorage.getItem(k); } catch (e) { console.warn('저장소를 못 읽었습니다', k, e); return 빈값; }
-    if (원문 == null) return 빈값;
+    var s = 원문(k);
+    if (!s) return 빈값;
     try {
-      var 값 = JSON.parse(원문);
+      var 값 = JSON.parse(s);
       if (객체키인가(k)) return (값 && typeof 값 === 'object') ? 값 : {};
       return Array.isArray(값) ? 값 : [];
     } catch (e) {
@@ -42,44 +60,79 @@ window.ZG = window.ZG || {};
     }
   }
 
-  function 쓰기(k, 값) {
-    try { localStorage.setItem(k, JSON.stringify(값)); }
+  /* 내부 전용. 밖으로 안 내보낸다 — 큐를 건드리지 않는다 */
+  function 저장(k, 값) {
+    var s = JSON.stringify(값);
+    캐시[k] = s;
+    try { localStorage.setItem(k, s); }
     catch (e) { console.warn('저장소에 못 썼습니다', k, e); }
   }
+
+  function 보내기() { return (!조용함 && ZG.보내기) ? ZG.보내기 : null; }
 
   function 덧붙이기(k, 레코드) {
     var 목록 = 읽기(k);
     목록.push(레코드);
-    쓰기(k, 목록);
+    저장(k, 목록);
+    var b = 보내기(); if (b) b.줄(k, 레코드);
     return 레코드;
   }
 
   function 바꾸기(k, id, 변경) {
     var 목록 = 읽기(k);
-    var 대상 = 목록.find(function (r) { return (r.id || r.품목코드) === id; });
+    var 대상 = 목록.find(function (r) { return 아이디(r) === id; });
     if (!대상) return null;
     Object.assign(대상, 변경);
-    쓰기(k, 목록);
+    저장(k, 목록);
+    var b = 보내기(); if (b) b.줄(k, 대상);
     return 대상;
   }
 
   /* 원본 레코드를 실제로 지운다. 상쇄 레코드를 따로 만들지 않는다 —
-     현재고가 입고 합산으로 계산되므로 지운 만큼 저절로 빠진다 (설계 §16-1) */
+     현재고가 입고 합산으로 계산되므로 지운 만큼 저절로 빠진다 (설계 §16-1)
+     서버는 행을 지우지 않고 삭제됨=true 로 둔다 (업무규칙 §8) */
   function 지우기(k, id) {
     var 목록 = 읽기(k);
-    var 자리 = 목록.findIndex(function (r) { return (r.id || r.품목코드) === id; });
+    var 자리 = 목록.findIndex(function (r) { return 아이디(r) === id; });
     if (자리 < 0) return false;
     목록.splice(자리, 1);
-    쓰기(k, 목록);
+    저장(k, 목록);
+    var b = 보내기(); if (b) b.삭제(k, id);
     return true;
   }
 
+  /* 배열 통째로 갈아끼우기. 이전 값과 줄 단위로 대조해 달라진 것만 큐에 싣는다 */
+  function 전체쓰기(k, 값) {
+    var b = 보내기();
+    if (b && k !== 키.설정) {
+      if (객체키인가(k)) b.설정(k, 값);
+      else 대조(k, 값, b);
+    }
+    저장(k, 값);
+  }
+
+  function 대조(k, 새것, b) {
+    var 옛것 = 읽기(k);
+    var 옛맵 = {};
+    옛것.forEach(function (r) { var i = 아이디(r); if (i) 옛맵[i] = JSON.stringify(r); });
+    (새것 || []).forEach(function (r) {
+      var i = 아이디(r); if (!i) return;
+      var s = JSON.stringify(r);
+      if (옛맵[i] !== s) b.줄(k, r);
+      delete 옛맵[i];
+    });
+    Object.keys(옛맵).forEach(function (i) { b.삭제(k, i); });
+  }
+
+  function 조용히(참거짓) { 조용함 = !!참거짓; }
+
   function 설정읽기() { return 읽기(키.설정); }
 
+  /* 설정은 기기마다 달라야 하는 값이다 — 서버에 안 보낸다 */
   function 설정쓰기(변경) {
     var s = 설정읽기();
     Object.assign(s, 변경);
-    쓰기(키.설정, s);
+    저장(키.설정, s);
     return s;
   }
 
@@ -88,14 +141,18 @@ window.ZG = window.ZG || {};
   function 동봉카드설정쓰기(변경) {
     var s = 동봉카드설정읽기();
     Object.assign(s, 변경);
-    쓰기(키.동봉카드설정, s);
+    저장(키.동봉카드설정, s);
+    var b = 보내기(); if (b) b.설정(키.동봉카드설정, s);
     return s;
   }
 
+  /* 로컬·캐시·큐만 지운다. 서버는 안 지운다 — 새로고침하면 다시 내려온다 */
   function 전부지우기() {
     Object.keys(키).forEach(function (이름) {
       try { localStorage.removeItem(키[이름]); } catch (e) { console.warn(e); }
     });
+    캐시 = {};
+    if (ZG.보내기) ZG.보내기.비우기();
   }
 
   function 부팅() {
@@ -105,6 +162,8 @@ window.ZG = window.ZG || {};
     var 설정 = 설정읽기();
     // 🔴 실데이터를 이사해 넣었으면 무슨 일이 있어도 다시 심지 않는다. 목데이터가 실주문을 덮는다
     if (설정.실데이터 === true) return;
+    // 로그인했으면 서버 것이 곧 내려온다 — 목데이터를 잠깐 깔았다 덮지 않는다
+    if (ZG.서버 && ZG.서버.로그인됨) return;
     if (초기화요청 || 설정.스키마버전 !== 스키마버전 || 설정.시드완료 !== true) {
       ZG.시드.심기();
       설정쓰기({ 스키마버전: 스키마버전, 시드완료: true, 마지막입고업체: '한아름농원' });
@@ -118,7 +177,8 @@ window.ZG = window.ZG || {};
     덧붙이기: 덧붙이기,
     바꾸기: 바꾸기,
     지우기: 지우기,
-    전체쓰기: 쓰기,
+    전체쓰기: 전체쓰기,
+    조용히: 조용히,
     설정읽기: 설정읽기,
     설정쓰기: 설정쓰기,
     동봉카드설정읽기: 동봉카드설정읽기,
