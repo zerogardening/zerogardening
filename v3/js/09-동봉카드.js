@@ -76,7 +76,7 @@ window.ZG = window.ZG || {};
 
   /* 특성은 품목에 붙어 있다. 그 규격에 없으면 같은 접두(같은 식물)의 다른 규격 것을 쓴다 */
   function 특성찾개() {
-    var 품목 = ZG.저장소.읽기(ZG.저장소.키.품목);
+    var 품목 = ZG.저장소.품목들();
     return function (코드) {
       if (!코드) return null;
       var 딱 = 품목.filter(function (p) { return p.품목코드 === 코드 && p.특성; })[0];

@@ -17,6 +17,7 @@ window.ZG = window.ZG || {};
     (u.폰인가() ? 폰목록속(걸러진) : PC목록속(걸러진)).forEach(function (c) {
       if (c) 참조.목록칸.appendChild(c);
     });
+    목.선택바갱신();   // 목록칸이 갈렸으니 체크 상태와 개수를 다시 맞춘다
   }
 
   function PC목록속(걸러진) {
@@ -24,7 +25,14 @@ window.ZG = window.ZG || {};
   }
 
   function 폰목록속(걸러진) {
-    var 조각 = [만들기('div', { class: 'ph-sec', html: '소진일 빠른 순 <span class="r">' + 걸러진.length + '종</span>' })];
+    var 줄 = 만들기('div', { class: 'ph-sec 고름줄' });
+    줄.appendChild(만들기('span', {
+      html: (상태.선택모드 ? '지울 것을 고르세요' : '소진일 빠른 순') +
+        ' <span class="r">' + 걸러진.length + '종</span>'
+    }));
+    // 목록칸만 갈면 위쪽 재입고 칸이 그대로 남는다 — 화면을 통째로 다시 그린다
+    줄.appendChild(목.선택단추(다시));
+    var 조각 = [줄];
     var 목록 = 만들기('div', { class: 'ph-list' });
     걸러진.slice(0, 상태.폰보임).forEach(function (요) { 목록.appendChild(목.폰카드(요, false)); });
     if (!걸러진.length) 목록.appendChild(만들기('div', { class: 'ph-card', text: '이 조건에 맞는 품목이 없습니다' }));
@@ -36,6 +44,7 @@ window.ZG = window.ZG || {};
       더.addEventListener('click', function () { 상태.폰보임 += 15; 목록다시(); });
       조각.push(더);
     }
+    if (상태.선택모드) 조각.push(목.폰삭제막대());
     return 조각;
   }
 
@@ -64,6 +73,7 @@ window.ZG = window.ZG || {};
     찾기.style.width = '264px'; 찾기.style.height = 'var(--h-btn)';
     칩줄.appendChild(찾기);
     조건.appendChild(칩줄);
+    조건.appendChild(목.선택바());
     카드.appendChild(조건);
 
     참조.목록칸 = 만들기('div');
@@ -85,8 +95,11 @@ window.ZG = window.ZG || {};
     var 걸러진 = 목.거르기(전부);
     참조.목록칸 = null;
 
-    var 급 = 목.급한카드들(전부, true);
-    if (급) 뿌리.appendChild(급);
+    // 고르는 중에는 재입고 칸을 감춘다 — 같은 품목이 두 곳에 나와 체크가 어긋난다
+    if (!상태.선택모드) {
+      var 급 = 목.급한카드들(전부, true);
+      if (급) 뿌리.appendChild(급);
+    }
 
     뿌리.appendChild(만들기('div', { class: 'field' }, [목.검색칸(목록다시)]));
     뿌리.appendChild(목.필터칩들(전부, 다시));

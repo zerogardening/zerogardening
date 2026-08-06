@@ -79,16 +79,20 @@ window.ZG = window.ZG || {};
     var 위 = 만들기('div', { class: 'ph-top' });
     var 왼쪽 = 만들기('div');
     if (정보.뒤로) {
-      var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: '‹ 재고 목록' });
+      // 제목이 없는 화면은 뒤로가기가 유일한 길잡이다 — 크게 뽑는다 (8/6 우람님)
+      var 뒤 = 만들기('button', {
+        class: 'ph-back' + (정보.제목 ? '' : ' 큼'), type: 'button',
+        text: '‹ ' + (정보.뒤로글 || '재고 목록')
+      });
       뒤.addEventListener('click', 정보.뒤로);
       왼쪽.appendChild(뒤);
     }
-    왼쪽.appendChild(만들기('h1', { text: 정보.제목, style: 정보.작게 ? 'font-size:22px' : null }));
+    if (정보.제목) 왼쪽.appendChild(만들기('h1', { text: 정보.제목, style: 정보.작게 ? 'font-size:22px' : null }));
     위.appendChild(왼쪽);
 
-    var 아래 = 만들기('div', { class: 'ph-sub' }, [
+    var 아래 = (정보.왼 || 정보.오) ? 만들기('div', { class: 'ph-sub' }, [
       만들기('span', { html: 정보.왼 }), 만들기('span', { html: 정보.오 })
-    ]);
+    ]) : null;
 
     본문 = 만들기('div', { class: 'ph-body' });
 

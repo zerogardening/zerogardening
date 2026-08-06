@@ -62,7 +62,7 @@ window.ZG = window.ZG || {};
       if (String(r.키워드).toLowerCase().indexOf(낮) >= 0) 넣기(r.키워드);
     });
 
-    ZG.저장소.읽기(ZG.저장소.키.품목).forEach(function (p) {
+    ZG.저장소.품목들().forEach(function (p) {
       var 이름 = String(p.유통명 || '').trim();
       if (이름 && 이름.toLowerCase().indexOf(낮) >= 0) 넣기(이름);
     });

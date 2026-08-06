@@ -170,7 +170,10 @@
 
 *{box-sizing:border-box; margin:0; padding:0}
 html{-webkit-text-size-adjust:100%}
+/* 빈 곳을 두 번 탁탁 치면 화면이 확대되던 것을 막는다 (8/6 우람님).
+   핀치(두 손가락) 확대는 그대로 살아 있다 — 더블탭 줌만 꺼진다. */
 body{
+  touch-action:manipulation;
   font-family:var(--font-family);
   background:var(--color-bg);
   color:var(--color-text);
@@ -227,6 +230,13 @@ button{font-family:inherit; color:inherit}
   font-family:var(--font-mono); font-size:var(--font-md); font-weight:var(--weight-bold);
   color:var(--color-accent-dark); background:var(--color-accent-bg); border-color:var(--color-accent-border);
   box-shadow:none;
+}
+/* 골라 넣는 칸 — 주문·업체 화면에도 같은 규칙이 있다(자기 css 가 뒤에 실려 그대로 덮는다).
+   상품 화면(식물 특성)에도 필요해져 여기로 들여왔다 */
+select.inp{
+  appearance:none; -webkit-appearance:none; padding-right:30px; cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path d='M1 1.5l4 4 4-4' stroke='%2386868B' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat; background-position:right 11px center;
 }
 .err{font-size:var(--font-xs); color:var(--color-danger); font-weight:var(--weight-semibold)}
 
@@ -628,6 +638,48 @@ div.sci{
   display:flex; align-items:center; gap:2px; margin-bottom:2px; cursor:pointer;
   background:none; border:none; font-family:inherit; padding:0;
 }
+/* 제목을 없앤 화면에서는 이것이 유일한 길잡이라 크게 뽑는다 (8/6 우람님) */
+.ph-back.큼{
+  font-size:var(--font-title); font-weight:var(--weight-bold); letter-spacing:-.03em;
+  gap:var(--space-xs); margin-bottom:0; padding:var(--space-xs) 0;
+}
+
+/* ══ 골라 지우기 (8/6) ══ */
+/* PC — 고른 게 없으면 자리도 차지하지 않는다 */
+.선택바{display:none}
+.선택바.보임{
+  display:flex; align-items:center; gap:var(--space-sm);
+  padding:var(--space-md) var(--space-lg); border-radius:var(--radius-md);
+  background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+  font-size:var(--font-sm); color:var(--color-accent-dark);
+}
+th.ck, td.ck{text-align:center; padding-left:0; padding-right:0}
+td.ck input, th.ck input{width:16px; height:16px; accent-color:var(--color-accent); cursor:pointer}
+tr.골랐다{background:var(--color-accent-bg)}
+
+/* 폰 — 카드 왼쪽 동그라미. 고르는 중에만 나온다 */
+.ph-sec.고름줄{display:flex; align-items:center; justify-content:space-between; gap:var(--space-sm)}
+/* 동그라미 자리(16 + 22)만큼 글을 밀어낸다 — 덜 밀면 학명 위에 겹쳐 앉는다 */
+.ph-card.고르는중{padding-left:50px; position:relative}
+.ph-card .동그라미{
+  position:absolute; left:16px; top:50%; transform:translateY(-50%);
+  width:22px; height:22px; border-radius:50%;
+  border:2px solid var(--color-border); background:var(--color-surface);
+}
+.ph-card.골랐다{background:var(--color-accent-bg); box-shadow:inset 0 0 0 2px var(--color-accent)}
+.ph-card.골랐다 .동그라미{
+  border-color:var(--color-accent); background:var(--color-accent);
+  box-shadow:inset 0 0 0 3px var(--color-surface);
+}
+/* 아래 붙는 삭제 막대 — 탭바 위에 뜬다 */
+.ph-삭제{
+  display:none; position:fixed; left:var(--space-lg); right:var(--space-lg);
+  bottom:calc(76px + env(safe-area-inset-bottom)); z-index:31;
+  padding:var(--pad-ph-save); font-size:var(--font-xl); font-weight:var(--weight-bold);
+  background:var(--color-danger); color:#fff; border:none; border-radius:var(--radius-xl);
+  font-family:inherit; box-shadow:var(--shadow-btn-main); cursor:pointer;
+}
+.ph-삭제.보임{display:block}
 .chev{margin-left:var(--space-xs); color:var(--color-text-faint); font-weight:var(--weight-bold); font-size:var(--font-lg)}
 
 /* PC 개별 수정 — 오른쪽에서 들어오는 시트 */

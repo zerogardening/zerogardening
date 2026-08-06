@@ -296,7 +296,7 @@ window.ZG = window.ZG || {};
      재고가 없다고 막지 않는다 — 재고부족은 화면에서 경고만 한다 (설계 §2-3) */
   function 코드정보(st) {
     var 코드 = st.접두 + '-' + st.cm;
-    var p = ZG.저장소.읽기(ZG.저장소.키.품목).filter(function (x) { return x.품목코드 === 코드; })[0];
+    var p = ZG.저장소.품목들().filter(function (x) { return x.품목코드 === 코드; })[0];
     var 단가 = Number(st.단가) || 0;
     // 서비스 줄은 적어 넣은 값(기본 0원)이 그대로 값이다. 소매가로 덮으면 무료가 사라진다 (설계 §2-3)
     if (!st.서비스 && st.원코드 !== 코드) 단가 = p ? Math.round((Number(p.매입단가) || 0) * 1.7) : 단가;

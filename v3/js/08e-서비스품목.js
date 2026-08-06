@@ -88,7 +88,7 @@ window.ZG = window.ZG || {};
     }
     var 저 = ZG.저장소;
     var 있는코드 = {};
-    저.읽기(저.키.품목).forEach(function (p) { 있는코드[p.품목코드] = 1; });
+    저.품목들().forEach(function (p) { 있는코드[p.품목코드] = 1; });
     var 없는 = null;
     읽은.forEach(function (st) {
       var 코드 = st.접두 + '-' + st.cm;

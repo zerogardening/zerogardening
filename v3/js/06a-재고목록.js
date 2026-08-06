@@ -8,12 +8,43 @@ window.ZG = window.ZG || {};
 
   /* 급열림: 재입고 요청 접기칸. 앱을 새로 열면 늘 접힌 채로 시작하고(밭에서는 목록이 먼저다),
      한 번 펼치면 그 세션 동안은 다시 그려도 펼친 채로 둔다. */
-  var 상태 = { 필터: '전체', 소진만: false, 검색: '', 쪽: 1, 폰보임: 15, 상세코드: null, 스크롤: 0, 급열림: false };
+  var 상태 = {
+    필터: '전체', 소진만: false, 검색: '', 쪽: 1, 폰보임: 15, 상세코드: null, 스크롤: 0, 급열림: false,
+    선택: {},        // 품목코드 → true. 골라 놓은 것 (8/6 선택 삭제)
+    선택모드: false  // 폰에서만 쓴다 — 「선택」을 눌러야 동그라미가 나온다
+  };
   var 참조 = {};
+
+  function 고른것들() { return Object.keys(상태.선택); }
+  function 선택비우기() { 상태.선택 = {}; }
+
+  /* 고른 개수가 바뀔 때마다 부른다. 목록은 다시 그리지 않는다 —
+     다시 그리면 체크를 누르는 족족 화면이 튀고 누르던 자리를 잃는다 */
+  function 선택바갱신() {
+    var 수 = 고른것들().length;
+    if (참조.선택바) {
+      참조.선택바.classList.toggle('보임', 수 > 0);
+      if (참조.선택수) 참조.선택수.textContent = 수 + '종 골랐습니다';
+    }
+    if (참조.폰삭제) {
+      참조.폰삭제.classList.toggle('보임', 수 > 0);
+      참조.폰삭제.textContent = 수 ? 수 + '종 삭제' : '삭제';
+    }
+    if (참조.전체체크) {
+      var 보이는 = 참조.보이는코드 || [];
+      참조.전체체크.checked = 보이는.length > 0 && 보이는.every(function (c) { return 상태.선택[c]; });
+    }
+  }
+
+  function 고르기(코드, 켬) {
+    if (켬) 상태.선택[코드] = true;
+    else delete 상태.선택[코드];
+    선택바갱신();
+  }
 
   function 전부요약() {
     var 장 = ZG.계산.장부();
-    var 품목 = ZG.저장소.읽기(ZG.저장소.키.품목);
+    var 품목 = ZG.저장소.품목들();
     var 접두수 = {};
     품목.forEach(function (p) { 접두수[p.접두] = (접두수[p.접두] || 0) + 1; });
     return ZG.계산.소진순정렬(품목.map(function (p) {
@@ -152,36 +183,95 @@ window.ZG = window.ZG || {};
   /* ── 폰 카드 ── */
   function 폰카드(요, 짧게) {
     var p = 요.품목;
-    var 칸 = 만들기('button', { class: 'ph-card', type: 'button' });
-    var 속 = '<div class="r1"><div class="nm">' + u.안전(p.유통명) + '</div>' +
-      '<div class="days big ' + 요.등급 + '">' + u.안전(요.소진.표시) + '</div><span class="chev">›</span></div>';
+    var 고름 = 상태.선택모드;
+    var 칸 = 만들기('button', {
+      class: 'ph-card' + (고름 ? ' 고르는중' : '') + (고름 && 상태.선택[p.품목코드] ? ' 골랐다' : ''),
+      type: 'button'
+    });
+    var 속 = (고름 ? '<span class="동그라미"></span>' : '') +
+      '<div class="r1"><div class="nm">' + u.안전(p.유통명) + '</div>' +
+      '<div class="days big ' + 요.등급 + '">' + u.안전(요.소진.표시) + '</div>' +
+      (고름 ? '' : '<span class="chev">›</span>') + '</div>';
     if (!짧게) 속 += '<div class="sci">' + u.안전(p.학명) + '</div>';
     속 += '<div class="r2">' + u.안전(p.품목코드) + ' · <b>' + u.콤마(Math.max(0, 요.현재고)) + '</b>주 · 월 ' +
       u.콤마(요.월출고) + '주 나감</div>';
     칸.innerHTML = 속;
-    칸.addEventListener('click', function () { ZG.재고수정.폰상세열기(p.품목코드); });
+    칸.addEventListener('click', function () {
+      if (!상태.선택모드) { ZG.재고수정.폰상세열기(p.품목코드); return; }
+      var 켬 = !상태.선택[p.품목코드];
+      고르기(p.품목코드, 켬);
+      칸.classList.toggle('골랐다', 켬);
+    });
     return 칸;
+  }
+
+  /* ── 고른 것 알림줄 (PC) — 목록칸 밖에 둔다. 목록을 다시 그려도 살아남아야 한다 ── */
+  function 선택바() {
+    var 수글 = 만들기('b', { text: '0종 골랐습니다' });
+    참조.선택수 = 수글;
+    var 풀기 = 만들기('button', { class: 'btn sm', type: 'button', text: '선택 해제' });
+    풀기.addEventListener('click', function () { 선택비우기(); ZG.재고.목록다시(); 선택바갱신(); });
+    var 지움 = 만들기('button', { class: 'btn sm warn', type: 'button', text: '선택 삭제' });
+    지움.addEventListener('click', function () { ZG.재고수정.선택삭제(); });
+    var 바 = 만들기('div', { class: '선택바' }, [수글, 만들기('div', { style: 'flex:1' }), 풀기, 지움]);
+    참조.선택바 = 바;
+    return 바;
+  }
+
+  /* ── 폰: 「선택」 단추와 아래 고정 삭제 막대 ── */
+  function 선택단추(다시) {
+    var b = 만들기('button', { class: 'btn sm', type: 'button', text: 상태.선택모드 ? '취소' : '선택' });
+    b.addEventListener('click', function () {
+      상태.선택모드 = !상태.선택모드;
+      if (!상태.선택모드) 선택비우기();
+      다시();
+    });
+    return b;
+  }
+
+  function 폰삭제막대() {
+    var b = 만들기('button', { class: 'ph-삭제', type: 'button', text: '삭제' });
+    b.addEventListener('click', function () { ZG.재고수정.선택삭제(); });
+    참조.폰삭제 = b;
+    return b;
   }
 
   /* ── PC 표 ── */
   function 표그리기(걸러진) {
     var 표 = 만들기('table');
     표.innerHTML =
-      '<colgroup><col style="width:104px"><col>' +
+      '<colgroup><col style="width:38px"><col style="width:104px"><col>' +
       '<col style="width:100px"><col style="width:86px"><col style="width:76px">' +
       '<col style="width:86px"><col style="width:104px"><col style="width:70px"></colgroup>' +
-      '<thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th>' +
+      '<thead><tr><th class="ck"></th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th>' +
       '<th class="r">현재고</th><th class="r">소진일</th><th class="r">매입단가</th><th>상태</th><th></th></tr></thead>';
 
     var 몸 = 만들기('tbody');
     var 처음 = (상태.쪽 - 1) * 쪽크기;
     var 쪽것 = 걸러진.slice(처음, 처음 + 쪽크기);
 
+    // 「이 쪽 전부」 체크는 지금 보이는 줄만 본다 — 안 보이는 줄까지 골라 지우면 사고다
+    참조.보이는코드 = 쪽것.map(function (요) { return 요.품목.품목코드; });
+    var 전체체크 = 만들기('input', { type: 'checkbox', 'aria-label': '이 쪽 전부 고르기' });
+    참조.전체체크 = 전체체크;
+    전체체크.addEventListener('change', function () {
+      참조.보이는코드.forEach(function (c) {
+        if (전체체크.checked) 상태.선택[c] = true; else delete 상태.선택[c];
+      });
+      Array.prototype.forEach.call(몸.querySelectorAll('input[type=checkbox]'), function (c) {
+        c.checked = 전체체크.checked;
+        c.closest('tr').classList.toggle('골랐다', 전체체크.checked);
+      });
+      선택바갱신();
+    });
+    표.querySelector('th.ck').appendChild(전체체크);
+
     쪽것.forEach(function (요) {
       var p = 요.품목;
       var 줄 = 만들기('tr');
       줄.dataset.코드 = p.품목코드;
       줄.innerHTML =
+        '<td class="ck"></td>' +
         '<td class="code' + (요.같은접두 ? ' same' : '') + '">' + u.안전(p.품목코드) + '</td>' +
         '<td>' + u.안전(p.유통명) + '<div class="sci">' + u.안전(p.학명) + '</div></td>' +
         '<td class="dim">' + u.안전(p.규격) + '</td>' +
@@ -192,6 +282,15 @@ window.ZG = window.ZG || {};
           : '<td class="r"><span class="days ' + 요.등급 + '">' + u.안전(요.소진.표시) + '</span></td>') +
         '<td class="r">' + u.콤마(p.매입단가) + '</td>' +
         '<td>' + 배지(요) + '</td><td></td>';
+      var 체크 = 만들기('input', { type: 'checkbox', 'aria-label': p.유통명 + ' 고르기' });
+      체크.checked = !!상태.선택[p.품목코드];
+      줄.classList.toggle('골랐다', 체크.checked);
+      체크.addEventListener('change', function () {
+        고르기(p.품목코드, 체크.checked);
+        줄.classList.toggle('골랐다', 체크.checked);
+      });
+      줄.firstChild.appendChild(체크);
+
       var 고침 = 만들기('button', { class: 'btn sm', type: 'button', text: '수정' });
       고침.addEventListener('click', function () { ZG.재고수정.시트열기(p.품목코드, 고침, 줄); });
       줄.lastChild.appendChild(고침);
@@ -199,7 +298,7 @@ window.ZG = window.ZG || {};
     });
 
     if (!쪽것.length) {
-      몸.innerHTML = '<tr><td colspan="8" class="dim" style="text-align:center; padding:var(--space-4xl) 0">' +
+      몸.innerHTML = '<tr><td colspan="9" class="dim" style="text-align:center; padding:var(--space-4xl) 0">' +
         '이 조건에 맞는 품목이 없습니다</td></tr>';
     }
     표.appendChild(몸);
@@ -240,6 +339,8 @@ window.ZG = window.ZG || {};
   ZG.재고목록 = {
     상태: 상태, 참조: 참조, 전부요약: 전부요약, 거르기: 거르기, 요약글: 요약글,
     필터칩들: 필터칩들, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
-    표그리기: 표그리기, 쪽번호: 쪽번호, 배지: 배지
+    표그리기: 표그리기, 쪽번호: 쪽번호, 배지: 배지,
+    고른것들: 고른것들, 선택비우기: 선택비우기, 선택바갱신: 선택바갱신,
+    선택바: 선택바, 선택단추: 선택단추, 폰삭제막대: 폰삭제막대
   };
 })(window.ZG);

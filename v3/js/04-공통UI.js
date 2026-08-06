@@ -316,7 +316,7 @@ window.ZG = window.ZG || {};
     var 열쇠 = String(글).toLowerCase().replace(/\s/g, '');
     if (!열쇠) return [];
     var 저 = ZG.저장소;
-    var 품목 = 저.읽기(저.키.품목);
+    var 품목 = 저.품목들();
     var 입고 = 저.읽기(저.키.입고);
 
     var 묶음 = {};
