@@ -108,11 +108,7 @@ window.ZG = window.ZG || {};
       필드('과세 · 면세', 과세칸()),
       필드('메모 <span class="auto">선택</span>', 글칸('메모', { placeholder: '예) 잎 상태 좋음' })),
       필드('품목코드 <span class="auto">🔒 못 고침</span>',
-        만들기('input', { class: 'inp code', value: 열림.기록.품목코드, disabled: 'disabled' })),
-      만들기('p', {
-        class: 'err', style: 'color:var(--color-text-muted)',
-        text: '규격은 품목코드에 묶여 있습니다 — 규격이나 품목을 바꾸려면 이 입고를 지우고 새로 등록해 주세요.'
-      })
+        만들기('input', { class: 'inp code', value: 열림.기록.품목코드, disabled: 'disabled' }))
     ];
     금액다시();
     return 조각;

@@ -55,14 +55,20 @@ window.ZG = window.ZG || {};
 
   /* ══ 뼈대 ══ */
   function 폰뼈대(뷰) {
-    var 위 = 만들기('div', { class: 'ph-top' }, [만들기('h1', { text: 뷰.제목 })]);
+    // 뒤로갈 데가 있을 때(하위 뷰)만 제목 왼쪽에 「‹」 하나 (8/6 우람님) — 다른 장과 같은 자리다
+    var 왼쪽 = 만들기('div', { class: '왼' });
+    if (뷰.왼) {
+      var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: '‹', 'aria-label': '뒤로' });
+      뒤.addEventListener('click', function () { 열기('목록'); });
+      왼쪽.appendChild(뒤);
+    }
+    왼쪽.appendChild(만들기('h1', { text: 뷰.제목 }));
+    var 위 = 만들기('div', { class: 'ph-top' }, [왼쪽]);
     var 조각 = [위];
 
-    if (뷰.왼 || 뷰.오) {
-      var 뒤 = 만들기('button', { class: 'back', type: 'button', text: '‹ 주문' });
-      뒤.addEventListener('click', function () { 열기('목록'); });
+    if (뷰.오) {
       조각.push(만들기('div', { class: 'ph-sub' }, [
-        만들기('span', {}, [뒤]), 만들기('span', { text: 뷰.오 || '' })
+        만들기('span', {}), 만들기('span', { text: 뷰.오 })
       ]));
     }
 

@@ -201,7 +201,7 @@ window.ZG = window.ZG || {};
     var 내역 = 만들기('div', { class: 'card table-card' });
     내역.appendChild(만들기('h3', {
       style: 'padding:0 var(--space-sm)',
-      html: '입고 내역 <span class="hint">방금 넣은 것은 「오늘」에 바로 보입니다 · 줄 오른쪽에서 고치거나 지웁니다</span>' +
+      html: '입고 내역' +
         '<span class="right" style="display:flex; gap:var(--space-sm)">' +
         '<button class="btn sm" aria-disabled="true">⬇ 엑셀 내려받기</button>' +
         '<button class="btn sm" aria-disabled="true">인쇄</button></span>'

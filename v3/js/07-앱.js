@@ -77,13 +77,10 @@ window.ZG = window.ZG || {};
   function 폰뼈대() {
     var 정보 = 머리정보();
     var 위 = 만들기('div', { class: 'ph-top' });
-    var 왼쪽 = 만들기('div');
+    // 뒤로갈 데가 있을 때만 제목 왼쪽에 「‹」 하나 (8/6 우람님) — 돌아갈 곳 이름은 적지 않는다
+    var 왼쪽 = 만들기('div', { class: '왼' });
     if (정보.뒤로) {
-      // 제목이 없는 화면은 뒤로가기가 유일한 길잡이다 — 크게 뽑는다 (8/6 우람님)
-      var 뒤 = 만들기('button', {
-        class: 'ph-back' + (정보.제목 ? '' : ' 큼'), type: 'button',
-        text: '‹ ' + (정보.뒤로글 || '재고 목록')
-      });
+      var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: '‹', 'aria-label': '뒤로' });
       뒤.addEventListener('click', 정보.뒤로);
       왼쪽.appendChild(뒤);
     }
@@ -132,8 +129,28 @@ window.ZG = window.ZG || {};
     줄.children[1].innerHTML = 정보.오;
   }
 
+  /* ── 탭만 눌렀는데 폰 키보드가 올라오지 않게 한다 (8/6 우람님) ──
+     재고 화면을 그리는 코드에는 검색칸에 커서를 주는 명령이 없다(06a·06b·06c 확인).
+     탭을 바꾸면 화면을 통째로 다시 그리는데, 그때 사파리가 남아 있던 커서를
+     새로 생긴 입력칸으로 옮겨 붙인다. 그래서 앞뒤로 한 번씩 뗀다.
+     검색은 칸을 직접 누르시면 그때 올라온다. */
+  function 키보드내리기() {
+    var 것 = document.activeElement;
+    if (것 && 것 !== document.body && 것.blur) 것.blur();
+  }
+
+  /* 다시 그린 직후 — 모듈이 일부러 준 커서(입고 수량칸 등)는 건드리지 않고
+     저 혼자 잡힌 검색칸(type=search)만 뗀다. 검색칸에 커서를 주는 코드는 없다. */
+  function 검색칸커서떼기() {
+    requestAnimationFrame(function () {
+      var 것 = document.activeElement;
+      if (것 && 것.type === 'search' && 것.blur) 것.blur();
+    });
+  }
+
   function 탭으로(이름) {
-    if (location.hash === '#' + 이름) { 지금 = 이름; 다시그리기(); return; }
+    키보드내리기();
+    if (location.hash === '#' + 이름) { 지금 = 이름; 다시그리기(); 검색칸커서떼기(); return; }
     location.hash = '#' + 이름;
   }
 
@@ -141,9 +158,11 @@ window.ZG = window.ZG || {};
     var 새것 = 해시읽기();
     if (!새것) 새것 = '입고';
     if (새것 === 지금) return;
+    키보드내리기();
     지금 = 새것;
     ZG.저장소.설정쓰기({ 마지막탭: 지금 });
     다시그리기();
+    검색칸커서떼기();
   }
 
   function 시작() {

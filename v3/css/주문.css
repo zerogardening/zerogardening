@@ -154,11 +154,6 @@ td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(-
 .foldin .k{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .foldin .v{font-size:var(--font-md); font-weight:var(--weight-semibold); margin-top:1px; line-height:1.45}
 
-/* 폰 ph-sub 안의 「‹ 주문」 */
-.ph-sub .back{
-  background:none; border:none; padding:0; font-family:inherit; font-size:inherit; color:inherit;
-  font-weight:inherit; cursor:pointer;
-}
 /* 폰 규격·경로 고르는 칸 — 한 줄에 다 들어가게 */
 .segsm button{min-width:50px; padding:var(--space-sm) var(--space-2xs); font-size:var(--font-sm)}
 

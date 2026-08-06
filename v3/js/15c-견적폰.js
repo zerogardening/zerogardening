@@ -23,7 +23,7 @@ window.ZG = window.ZG || {};
     if (상태.뷰 === '등록') {
       var 오늘 = u.오늘문자();
       var 오늘것 = 자.전부().filter(function (q) { return q.요청일 === 오늘; }).length;
-      return { 왼: '* 표시는 꼭 채워주세요', 오: '오늘 접수 <b>' + 오늘것 + '</b>건' };
+      return { 왼: '', 오: '오늘 접수 <b>' + 오늘것 + '</b>건' };
     }
     if (상태.뷰 === '상세') {
       var g = 지금건();

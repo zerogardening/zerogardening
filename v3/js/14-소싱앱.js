@@ -61,8 +61,8 @@ window.ZG = window.ZG || {};
     var 정보 = 지금모듈().요약 ? 지금모듈().요약() : { 왼: '', 오: '' };
     var 폴더안 = 탭 === '분류' && 연폴더값 != null;
 
-    var 왼쪽 = 만들기('div', { style: 'min-width:0' });
-    var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: 폴더안 ? '‹ 폴더 목록' : '‹ 상품' });
+    var 왼쪽 = 만들기('div', { class: '왼', style: 'min-width:0' });
+    var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: '‹', 'aria-label': '뒤로' });
     뒤.addEventListener('click', function () {
       if (폴더안) 폴더열기(null); else location.href = 'index.html';
     });

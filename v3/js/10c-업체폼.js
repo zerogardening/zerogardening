@@ -146,7 +146,7 @@ window.ZG = window.ZG || {};
     등록단추.addEventListener('click', 저장);
 
     부모.appendChild(만들기('div', { class: 'card' }, [
-      만들기('h3', { html: '새 업체 등록 <span class="hint">* 표시는 꼭 채워주세요</span>' }),
+      만들기('h3', { html: '새 업체 등록' }),
       격자,
       만들기('div', { class: 'formfoot' }, [되돌리기, 등록단추])
     ]));
@@ -157,7 +157,7 @@ window.ZG = window.ZG || {};
     var 셈 = ZG.업체자료.목록().filter(function (c) {
       return ZG.계산.날짜문자(c.등록일시) === 오늘;
     }).length;
-    return { 왼: '* 표시는 꼭 채워주세요', 오: '오늘 등록 <b>' + 셈 + '</b>곳' };
+    return { 왼: '', 오: '오늘 등록 <b>' + 셈 + '</b>곳' };
   }
 
   /* ── 수정 — PC 는 시트, 폰도 같은 시트를 전체화면으로 쓴다 ── */

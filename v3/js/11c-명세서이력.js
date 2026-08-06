@@ -155,7 +155,7 @@ window.ZG = window.ZG || {};
       return;
     }
     부모.appendChild(만들기('div', { class: 'card' }, [
-      만들기('h3', { html: '발행 이력 <span class="hint">💾 저장을 누르면 이력에 쌓입니다</span>' })
+      만들기('h3', { html: '발행 이력' })
     ].concat(검색칸(false))));
     표칸 = 만들기('div');
     부모.appendChild(만들기('div', { class: 'card table-card' }, [표칸]));

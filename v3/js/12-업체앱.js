@@ -77,8 +77,8 @@ window.ZG = window.ZG || {};
     var 정보 = 지금모듈().요약 ? 지금모듈().요약() : { 왼: '', 오: '' };
     var 제목 = 탭 === '명세서' ? '명세서' : (탭 === '등록' ? '업체 등록' : '업체');
 
-    var 왼쪽 = 만들기('div');
-    var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: 탭 === '목록' ? '‹ 상품' : '‹ 업체' });
+    var 왼쪽 = 만들기('div', { class: '왼' });
+    var 뒤 = 만들기('button', { class: 'ph-back', type: 'button', text: '‹', 'aria-label': '뒤로' });
     뒤.addEventListener('click', function () {
       if (탭 === '목록') location.href = 'index.html';
       else 탭으로('목록');

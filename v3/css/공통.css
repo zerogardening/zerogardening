@@ -3,6 +3,13 @@
    시안 _공통-macA.css 의 :root 와 부품을 그대로 옮기고,
    그림용 껍데기(.phone 베젤 · .pc 창 · .cap · .parts)만 뺐다.
    ══════════════════════════════════════════════════════════════ */
+
+/* ── 확대 금지 ── 폰에서 앱처럼 쓰시게 두 손가락·두 번 탭 확대를 막는다.
+   동봉카드 창(.pcsheet.카드)이 떠 있을 때만 푼다 — 카드 글씨가 작아 키워 보셔야 한다.
+   아이폰 사파리는 이것만으론 안 막혀서 js/00-확대금지.js 가 제스처를 직접 막는다. */
+html{ touch-action: pan-x pan-y; }        /* 확대만 막고 스크롤은 그대로 */
+html:has(.pcsheet.카드){ touch-action: auto; }
+
 :root{
 
   /* ── 글씨체 ── */
@@ -633,15 +640,13 @@ div.sci{
 }
 .inp.code:disabled{background:var(--color-accent-bg); color:var(--color-accent-dark); opacity:.75}
 
+/* ── 뒤로가기 ── 제목 왼쪽에 「‹」 하나. 돌아갈 곳 이름은 적지 않는다 (8/6 우람님)
+   제목과 같은 크기·굵기로 맞춘다. 넉 장(상품·주문·업체·소싱)이 모두 이 한 벌을 쓴다 */
+.ph-top .왼{display:flex; align-items:center; gap:var(--space-sm); min-width:0}
 .ph-back{
-  font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-accent-dark);
-  display:flex; align-items:center; gap:2px; margin-bottom:2px; cursor:pointer;
-  background:none; border:none; font-family:inherit; padding:0;
-}
-/* 제목을 없앤 화면에서는 이것이 유일한 길잡이라 크게 뽑는다 (8/6 우람님) */
-.ph-back.큼{
   font-size:var(--font-title); font-weight:var(--weight-bold); letter-spacing:-.03em;
-  gap:var(--space-xs); margin-bottom:0; padding:var(--space-xs) 0;
+  line-height:1.15; color:var(--color-accent-dark); cursor:pointer;
+  background:none; border:none; font-family:inherit; padding:0; flex:none;
 }
 
 /* ══ 골라 지우기 (8/6) ══ */

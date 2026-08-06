@@ -5,6 +5,23 @@
 <title>제로가드닝 통합관리</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<!-- ── 확대 금지 ── 폰에서 앱처럼 쓰시게 두 손가락·두 번 탭 확대를 막는다.
+     동봉카드 인쇄 화면(#card-modal)이 떠 있을 때만 푼다 — 카드 글씨가 작아 키워 보셔야 한다. -->
+<style>
+  html{ touch-action: pan-x pan-y; }               /* 안드로이드·PC: 확대만 막고 스크롤은 그대로 */
+  html:has(#card-modal:not(.hidden)){ touch-action: auto; }
+</style>
+<script>
+  /* 아이폰 사파리는 viewport·touch-action 으로 확대가 안 막힌다. 제스처를 직접 막는다 */
+  ['gesturestart','gesturechange','gestureend'].forEach(function(t){
+    document.addEventListener(t, function(e){
+      var m = document.getElementById('card-modal');
+      if(m && !m.classList.contains('hidden')) return;   // 동봉카드 화면에서는 확대 허용
+      e.preventDefault();
+    }, { passive:false });
+  });
+</script>
+
 <!-- 외부 라이브러리 (엑셀 읽기) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- Supabase JS 클라이언트 (클라우드 DB + 인증) -->
@@ -3109,7 +3126,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
         <section id="srctab-picks" class="src-pane">
           <div class="card">
-            <div class="card-title">🌱 시즌에 팔릴 식물 찾기 <span class="muted" style="font-weight:400;font-size:12px">(앱이 검색량으로 골라줘요)</span></div>
+            <div class="card-title">🌱 시즌에 팔릴 식물 찾기</div>
             <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:10px;line-height:1.6">
               타입·시즌을 고르고 버튼을 누르면, 앱이 가진 <b>정원식물 후보들을 네이버 검색량으로 돌려</b> 그 시즌에 <b>검색이 오르는(수요 느는)</b> 식물을 <b>판매가능성 높은 순</b>으로 골라줘요.
             </div>
@@ -3132,7 +3149,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
 
         <section id="srctab-reco" class="src-pane hidden">
           <div class="card">
-            <div class="card-title">🔎 키워드 직접 검색 <span class="muted" style="font-weight:400;font-size:12px">(아무 식물·키워드나 입력 → 소싱 가능성 즉시 진단)</span></div>
+            <div class="card-title">🔎 키워드 직접 검색</div>
             <div class="form-grid">
               <div class="form-group" style="grid-column:span 2"><label class="form-label">키워드</label><input type="text" id="src-kw-input" class="form-control" placeholder="예: 라넌큘러스, 무스카리, 사철나무..."></div>
               <div class="form-group"><label class="form-label">타입 <span class="muted">(저장용)</span></label><select id="src-kw-type" class="form-control"></select></div>
@@ -3205,7 +3222,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
           </div>
 
           <div class="card">
-            <div class="card-title">수동 경쟁가 입력 <span class="muted" style="font-weight:400;font-size:12px">(경쟁사 가격을 직접 넣어 비교 정확도↑)</span></div>
+            <div class="card-title">수동 경쟁가 입력</div>
             <div class="form-grid">
               <div class="form-group"><label class="form-label">타입</label><select id="src-comp-type" class="form-control"></select></div>
               <div class="form-group"><label class="form-label">사이즈</label><input type="text" id="src-comp-size" class="form-control" placeholder="15cm"></div>
@@ -3631,10 +3648,6 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
       <div class="modal-title">⚙️ 메모 프리셋 관리</div>
       <button class="modal-close" id="preset-modal-close">×</button>
     </div>
-    <div style="font-size:12px;color:var(--muted);background:var(--bg);padding:10px 12px;border-radius:6px;margin-bottom:14px;line-height:1.6">
-      자주 쓰는 메모를 프리셋으로 저장해두면 동봉카드 출력 시 빠르게 불러올 수 있습니다.<br>
-      빌트인 프리셋(🔒)은 수정/삭제할 수 없지만, 새로운 프리셋은 자유롭게 추가하고 편집할 수 있어요.
-    </div>
     <form id="preset-form" style="margin-bottom:16px">
       <input type="hidden" name="id">
       <div class="form-grid" style="grid-template-columns:1fr">
@@ -3827,7 +3840,7 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
         </div>
 
         <div class="form-group full">
-          <label class="form-label">📝 특이사항 <span style="font-weight:400;color:var(--muted);font-size:11px">(동봉카드의 "특이사항"에 출력)</span></label>
+          <label class="form-label">📝 특이사항</label>
           <textarea name="note" class="form-control" rows="3" placeholder="예: 그늘에서 적응 중 — 직사광선 피해주세요 / 분갈이 후 일주일 안정기 / ..." style="resize:vertical;font-family:inherit;line-height:1.5"></textarea>
         </div>
       </div>
@@ -11032,7 +11045,7 @@ window.openSkuDetail = function(barcode){
           <input type="text" name="scientificName" placeholder="예: Eryngium 'Big Blue'" value="${escapeHtml(s.scientificName||'')}">
         </div>
         <div class="field" style="grid-column:1/-1">
-          <label>📝 특이사항 <span style="font-weight:400;color:var(--muted);font-size:10px">(동봉카드의 "특이사항" 영역에 그대로 출력됩니다)</span></label>
+          <label>📝 특이사항</label>
           <textarea name="note" placeholder="예: 그늘에서 적응 중 — 직사광선 피해주세요 / 분갈이 후 일주일 안정기 / ..."
                     rows="3" style="resize:vertical;font-family:inherit;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;line-height:1.5">${escapeHtml(s.note||'')}</textarea>
         </div>
@@ -11451,7 +11464,7 @@ window.openBulkCardModal = function(orderNos){
   _currentCardOrderNo = null;
 
   document.getElementById('card-modal-title').textContent =
-    `📦 일괄 동봉카드 출력 — ${orderNos.length}건의 주문 (인쇄 시 PDF 저장 권장)`;
+    `📦 일괄 동봉카드 출력 — ${orderNos.length}건의 주문`;
   refreshCardPresetSelect();
   const presets = Store.listCardPresets();
   const memoEl = document.getElementById('card-memo');

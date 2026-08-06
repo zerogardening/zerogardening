@@ -393,7 +393,6 @@ window.ZG = window.ZG || {};
     }
     return 만들기('div', { class: 'stbar' }, [
       종류,
-      만들기('span', { class: 'hint', text: '세금계산서는 홈택스에서 발행합니다 · 💾 저장을 누르면 이력에 쌓입니다' }),
       만들기('span', { class: 'sp' }),
       단추('⚙ 내 업체정보', function () { ZG.업체앱.내업체정보(); }),
       단추('↺ 초기화', function () {

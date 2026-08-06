@@ -150,12 +150,6 @@ window.ZG = window.ZG || {};
       급.slice(0, 최대).forEach(function (요) { 판.appendChild(급한카드(요)); });
       속.appendChild(판);
       u.목록등장(판.children);
-      if (급.length > 최대) {
-        속.appendChild(만들기('p', {
-          style: 'margin-top:var(--space-lg)',
-          html: '소진일이 빠른 순입니다. 나머지 <b>' + (급.length - 최대) + '종</b>은 아래 목록에서 「3주 내 소진」을 누르면 보입니다.'
-        }));
-      }
     }
 
     var 전체보기 = 만들기('button', { class: 'btn sm', type: 'button', text: 폰 ? '전체 ›' : '3주 내 소진만 보기' });

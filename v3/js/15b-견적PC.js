@@ -63,7 +63,7 @@ window.ZG = window.ZG || {};
         ? '견적 요청 수정 <span class="hint">' + u.안전(대상.요청일) + ' 접수 · 마지막 수정 ' +
           u.안전(ZG.계산.날짜문자(대상.수정일시 || 대상.등록일시 || Date.now())) + '</span>' +
           '<span class="right">' + 칩글(자.보일상태(대상.상태)) + '</span>'
-        : '새 견적 요청 등록 <span class="hint">* 표시는 꼭 채워주세요 · 즉시 견적이 어려운 문의를 메모로 남깁니다</span>'
+        : '새 견적 요청 등록'
     });
 
     return 만들기('div', { class: 'card' }, [

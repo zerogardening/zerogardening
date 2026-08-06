@@ -19,7 +19,7 @@ window.ZG = window.ZG || {};
 
     var 폼 = 만들기('div', { class: 'card' });
     폼.appendChild(만들기('h3', {
-      html: '입고 등록 <span class="hint">* 표시는 꼭 채워주세요 · 저장하면 칸이 비고 다음 것을 이어서 넣습니다</span>' +
+      html: '입고 등록' +
         '<span class="right" style="display:flex; gap:var(--space-sm)">' +
         '<button class="btn sm" aria-disabled="true">엑셀 불러오기</button>' +
         '<button class="btn sm" aria-disabled="true">여러 건 한꺼번에</button></span>'

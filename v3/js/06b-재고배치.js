@@ -79,11 +79,6 @@ window.ZG = window.ZG || {};
     참조.목록칸 = 만들기('div');
     PC목록속(걸러진).forEach(function (c) { 참조.목록칸.appendChild(c); });
     카드.appendChild(참조.목록칸);
-    카드.appendChild(만들기('p', {
-      style: 'padding:0 var(--space-2xl) var(--space-lg); font-size:var(--font-xs); color:var(--color-text-muted); line-height:1.7',
-      html: '품목코드 왼쪽의 <b style="color:var(--color-accent-dark)">초록 띠</b>는 앞자리가 같은 다른 규격입니다 — ' +
-        전부.filter(function (요) { return 요.같은접두; }).length + '종.'
-    }));
 
     감쌈.appendChild(카드);
     참조.감쌈 = 감쌈;

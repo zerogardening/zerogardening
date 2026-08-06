@@ -211,7 +211,7 @@ window.ZG = window.ZG || {};
     부모.appendChild(만들기('div', { class: 'card table-card' }, [
       만들기('h3', {
         style: 'padding:0 var(--space-sm)',
-        html: '업체 목록 <span class="hint">업체명을 누르면 수정 창이 열립니다</span>'
+        html: '업체 목록'
       }),
       표칸
     ]));

@@ -209,7 +209,8 @@ window.ZG = window.ZG || {};
     var 닫기버튼 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     닫기버튼.addEventListener('click', 닫기);
 
-    var 창 = 만들기('div', { class: 'pcsheet', role: 'dialog', 'aria-modal': 'true' }, [
+    /* '카드' — 출고리스트 창과 구분하는 표식. 이 창에서만 손가락 확대를 푼다(공통.css 맨 위) */
+    var 창 = 만들기('div', { class: 'pcsheet 카드', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
         만들기('h3', { text: '동봉카드' }),
         만들기('span', { class: 'hint', text: 건들.length + '건 · ' + 판들.length + '장' }),
