@@ -57,9 +57,8 @@ window.ZG = window.ZG || {};
     var 일 = Object.keys(표별).map(function (표) {
       var 묶음 = 표별[표];
       var 행들 = 묶음.map(function (m) {
-        var 행 = { id: m.it.id, 내용: m.it.삭제 ? { id: m.it.id } : m.it.값, 삭제됨: !!m.it.삭제 };
-        ZG.서버.에코등록(표, 행.id, 행.내용, 행.삭제됨);   // 이 값 그대로 돌아온 것만 버린다
-        return 행;
+        // 메아리는 받는 쪽에서 「로컬과 같은가」로 거른다 — 보낸 값을 따로 적어 둘 필요가 없다
+        return { id: m.it.id, 내용: m.it.삭제 ? { id: m.it.id } : m.it.값, 삭제됨: !!m.it.삭제 };
       });
       return supa.from('v3_' + 표).upsert(행들, { onConflict: 'id' }).then(function (r) {
         if (r.error) throw r.error;

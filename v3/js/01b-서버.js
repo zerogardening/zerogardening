@@ -14,7 +14,7 @@ window.ZG = window.ZG || {};
   var 서버 = {
     로그인됨: false, 켜짐: false, 아직안올림: false,
     클라이언트: null, 표들: 표들, 경고: [],
-    표이름: 표이름, 키로: 키로, 에코등록: 에코등록,
+    표이름: 표이름, 키로: 키로,
     받아오기: function () { return 내려받기(true); },
     올림표시: 올림표시,
     상태: 상태
@@ -51,12 +51,12 @@ window.ZG = window.ZG || {};
   서버.클라이언트 = supa;
   서버.켜짐 = true;
 
-  /* ── 에코 무시 — 「내가 보낸 그 값」이 돌아온 것만 버린다 (설계 §5) ────────────
-     🔴 표+id 로만 막으면 같은 줄을 동시에 고쳤을 때 상대가 보낸 새 값까지 같이 버려
-        양쪽 화면이 서로 다른 값을 든 채 영영 갈라진다. 그래서 내용까지 견준다.
-     내용 지문은 키를 정렬해 만든다 — jsonb 가 칸 순서를 바꿔 돌려주기 때문이다.
-     한 번 맞으면 목록에서 뺀다. 같은 값이 남에게서 또 오면 그때는 받는다. */
-  var 에코 = {};
+  /* ── 에코 무시 — 「지금 로컬에 이미 있는 값」이 돌아온 것만 버린다 (설계 §5) ────
+     🔴 「내가 보낸 값인가」로 판단하면 안 된다. 그사이 남의 값을 로컬에 덮어썼다면
+        되돌아온 내 값은 메아리가 아니라 서버의 최신값이라 반드시 받아야 한다.
+        (안 받으면 A·B가 서로 상대 값을 든 채 갈라진다 — 8/6 실측)
+     로컬과 같을 때만 건너뛰므로 진짜 메아리는 그대로 걸러져 화면이 안 튄다.
+     지문은 키를 정렬해 만든다 — jsonb 가 칸 순서를 바꿔 돌려주기 때문이다. */
   function 정렬(v) {
     if (Array.isArray(v)) return v.map(정렬);
     if (v && typeof v === 'object') {
@@ -66,28 +66,12 @@ window.ZG = window.ZG || {};
     }
     return v;
   }
-  function 지문(내용, 삭제됨) {
-    try { return (삭제됨 ? 'D' : 'U') + JSON.stringify(정렬(내용 == null ? null : 내용)); }
+  function 지문(값) {
+    try { return JSON.stringify(정렬(값 === undefined ? null : 값)); }
     catch (e) { return null; }
   }
-  function 신선(e) { return Date.now() - e.때 <= 5000; }
-
-  function 에코등록(표, id, 내용, 삭제됨) {
-    var f = 지문(내용, 삭제됨); if (!f) return;
-    var k = 표 + '|' + id;
-    에코[k] = (에코[k] || []).filter(신선);
-    에코[k].push({ 지문: f, 때: Date.now() });
-  }
-  function 에코중(표, id, 행) {
-    var k = 표 + '|' + id;
-    var 목록 = (에코[k] || []).filter(신선);
-    if (!목록.length) { delete 에코[k]; return false; }
-    에코[k] = 목록;
-    var f = 지문(행 && 행.내용, !!(행 && 행.삭제됨));
-    for (var i = 0; i < 목록.length; i++) {
-      if (목록[i].지문 === f) { 목록.splice(i, 1); return true; }
-    }
-    return false;
+  function 같은가(a, b) {
+    var x = 지문(a); return x !== null && x === 지문(b);
   }
 
   /* ── 다시그리기 배분 (200ms 몰아치기 방지) ──────────────────────────────────── */
@@ -192,20 +176,24 @@ window.ZG = window.ZG || {};
   function 받은줄(표, p) {
     var 행 = p['new'] && p['new'].id ? p['new'] : p.old;
     if (!행 || !행.id) return;
-    if (에코중(표, 행.id, 행)) return;
     var 저 = ZG.저장소, k = 키로(표);
     var 지움 = p.eventType === 'DELETE' || 행.삭제됨 === true;
 
     if (표 === '공유설정') {
       if (행.id !== '동봉카드설정' && 행.id !== '키워드') return;
-      저.조용히(true); 저.전체쓰기(키로(행.id), 지움 ? {} : (행.내용 || {})); 저.조용히(false);
+      var 새설정 = 지움 ? {} : (행.내용 || {});
+      if (같은가(저.읽기(키로(행.id)), 새설정)) return;   // 이미 같다 — 메아리
+      저.조용히(true); 저.전체쓰기(키로(행.id), 새설정); 저.조용히(false);
       그리기예약(); return;
     }
 
     var 목록 = 저.읽기(k);
     var 자리 = 목록.findIndex(function (r) { return 저.레코드키(표, r) === String(행.id); });
     if (지움) { if (자리 < 0) return; 목록.splice(자리, 1); }
-    else if (자리 >= 0) 목록[자리] = 행.내용;
+    else if (자리 >= 0) {
+      if (같은가(목록[자리], 행.내용)) return;   // 이미 같다 — 메아리. 다시그리기도 안 한다
+      목록[자리] = 행.내용;
+    }
     else 목록.push(행.내용);
     저.조용히(true); 저.전체쓰기(k, 목록); 저.조용히(false);
     그리기예약();
