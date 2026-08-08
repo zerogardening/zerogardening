@@ -57,15 +57,33 @@ window.ZG = window.ZG || {};
     return !!숫자키 && 전화숫자(줄.수령인전화).indexOf(숫자키) >= 0;
   }
 
+  /* ── 조회 기준일 = 「올린 날」 (묶음의 올린날) ──
+     주문일로 보면 안 된다. 오늘 들어온 주문을 내일 보내기도 하고, 하루에 2~3일치를 한꺼번에 올리기도 하신다.
+     주문일 기준이면 오늘 올린 파일이 지난 날짜로 흩어져 오늘 화면에서 사라진다.
+     🔴 줄에 올린날을 심지 않고 묶음에서 끌어온다 — 이미 올려둔 주문도 고치지 않고 그대로 맞는다.
+     묶음이 없는 줄(손입력·전화주문)은 주문일이 곧 넣은 날이라 그대로 쓴다. */
+  function 올린날표() {
+    var 표 = {};
+    저.읽기(저.키.주문묶음).forEach(function (b) { if (b.올린날) 표[b.id] = String(b.올린날); });
+    return 표;
+  }
+
+  function 기준일(줄, 표) {
+    return (줄.묶음id && 표[줄.묶음id]) || String(줄.주문일 || '');
+  }
+
   function 읽기(조건) {
     조건 = 조건 || {};
+    var 표 = 올린날표();
     return 전부().filter(function (r) {
-      if (조건.부터 && String(r.주문일) < 조건.부터) return false;
-      if (조건.까지 && String(r.주문일) > 조건.까지) return false;
+      var 날 = 기준일(r, 표);
+      if (조건.부터 && 날 < 조건.부터) return false;
+      if (조건.까지 && 날 > 조건.까지) return false;
       if (조건.묶음id && r.묶음id !== 조건.묶음id) return false;
       return 맞나(r, 조건.글, 조건.주소포함);
     }).sort(function (a, b) {
-      if (a.주문일 !== b.주문일) return a.주문일 < b.주문일 ? -1 : 1;
+      var 갑 = 기준일(a, 표), 을 = 기준일(b, 표);
+      if (갑 !== 을) return 갑 < 을 ? -1 : 1;
       return (a.등록일시 || 0) - (b.등록일시 || 0);
     });
   }

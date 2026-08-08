@@ -9093,6 +9093,18 @@ const CAFE24_COLUMN_MAP = {
   '옵션추가 가격':'optionExtraPrice', '배송비 정보':'shippingInfo', '배송비':'shippingInfo',
 };
 
+/* 조회 기준일 = 「올린 날」(createdAt). 주문일(orderedAt)로 보면 안 된다 —
+   오늘 들어온 주문을 내일 보내기도 하고, 하루에 2~3일치를 한꺼번에 올리기도 하신다.
+   주문일 기준이면 오늘 올린 파일이 지난 날짜로 흩어져 「오늘」 화면에서 사라진다.
+   createdAt 이 없는 옛 주문만 주문일로 넘긴다. */
+function orderBasisDate(o){
+  if(o && o.createdAt){
+    const d = new Date(Number(o.createdAt));
+    if(!isNaN(d.getTime())) return d;
+  }
+  return new Date(o && o.orderedAt);
+}
+
 function getDateRanges(){
   const now = new Date();
   const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
@@ -10420,7 +10432,7 @@ function renderOrderDashboard(){
   let todayCount=0, todayRev=0, weekCount=0, weekRev=0, monthCount=0, monthRev=0;
   const seenToday = new Set(), seenWeek = new Set(), seenMonth = new Set();
   orders.forEach(o => {
-    const dt = new Date(o.orderedAt);
+    const dt = orderBasisDate(o);
     if(isNaN(dt.getTime())) return;
     const rev = orderRevenue(o);
     if(dt >= todayStart){
@@ -10448,7 +10460,7 @@ function renderOrderDashboard(){
   // 인기 품목 TOP 10 (이번 달)
   const itemAgg = {};
   orders.forEach(o => {
-    const dt = new Date(o.orderedAt);
+    const dt = orderBasisDate(o);
     if(isNaN(dt.getTime()) || dt < monthStart) return;
     const key = (o.itemCode||o.productName||'-')+'||'+(o.productName||'-');
     if(!itemAgg[key]) itemAgg[key] = { name: o.productName||'-', code: o.itemCode||'', qty:0, rev:0 };
@@ -10522,7 +10534,7 @@ function renderOrderList(){
 
   const filtered = all.filter(o => {
     if(startDate){
-      const dt = new Date(o.orderedAt);
+      const dt = orderBasisDate(o);
       if(isNaN(dt.getTime()) || dt < startDate) return false;
     }
     if(!q) return true;
@@ -12284,7 +12296,7 @@ function renderOrderList(){
 
   const filtered = all.filter(o => {
     if(startDate){
-      const dt = new Date(o.orderedAt);
+      const dt = orderBasisDate(o);
       if(isNaN(dt.getTime()) || dt < startDate) return false;
     }
     if(!q) return true;
