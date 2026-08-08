@@ -674,3 +674,24 @@ tr.editing td{background:var(--color-accent-bg)}
 }
 .pcsheet.dlv .done > span{flex:1}
 .pcsheet.dlv .done b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+
+/* ── ☁ 카페24 발송처리 상자 (9단계 설계 §4-1) ──
+   확인 필요 상자와 같은 생김새인데 「위험」이 아니라 「할 수 있는 일」이라 빨강을 벗긴다 */
+.pcsheet.dlv .needbox.c24{border-color:var(--color-border)}
+.pcsheet.dlv .needbox.c24 > h4{
+  background:var(--color-bg); color:var(--color-text);
+  border-bottom-color:var(--color-border-faint);
+}
+.pcsheet.dlv .c24row{
+  display:flex; align-items:center; gap:var(--space-md); flex-wrap:wrap;
+  font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); line-height:1.6;
+}
+.pcsheet.dlv .c24row > span:first-child{flex:1; min-width:240px}
+.pcsheet.dlv .c24row b{color:var(--color-text)}
+/* 진짜로 올리면 되돌릴 수 없다 — 이 경고는 모달 맨 위에 늘 붙어 있다 */
+.pcsheet.dlv .c24warn{
+  background:var(--color-danger-bg); border:var(--border-width) solid var(--color-danger-border);
+  border-radius:var(--radius-md); padding:var(--space-md) var(--space-2xl);
+  font-size:var(--font-xs); color:var(--color-danger); font-weight:var(--weight-medium); line-height:1.6;
+}
+.pcsheet.dlv .c24note{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}

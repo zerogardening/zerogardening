@@ -511,6 +511,19 @@ window.ZG = window.ZG || {};
       ZG.주문입력.건삭제(g, function () { 열기('목록'); });
     });
     칸.appendChild(만들기('div', { class: 'topbtns' }, [수정, 삭제]));
+
+    /* ③ 손으로 배송완료 — 그 건의 상태에 따라 한 개만 보인다 (9단계 설계 §5-2).
+       카페24·심폴에는 아무 것도 안 보낸다 — 08n 이 확인창에 그 말을 적는다 */
+    var 봄 = ZG.수동배송완료.상태보기(g), 손 = null;
+    function 마치면(했나) { if (했나) 다시그리기(); }
+    if (봄.나감) {
+      손 = 만들기('button', { class: 'btn warn', type: 'button', text: '↩ 배송완료 되돌리기' });
+      손.addEventListener('click', function () { ZG.수동배송완료.되돌리기([g], 마치면); });
+    } else if (봄.넘길수있는) {
+      손 = 만들기('button', { class: 'btn', type: 'button', text: '✋ 배송완료로 넘기기' });
+      손.addEventListener('click', function () { ZG.수동배송완료.넘기기([g], 마치면); });
+    }
+    if (손) 칸.appendChild(만들기('div', { class: 'topbtns' }, [손]));
   }
 
   /* ══ PC — 표 ══ */
