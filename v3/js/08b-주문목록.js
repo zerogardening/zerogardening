@@ -10,8 +10,34 @@ window.ZG = window.ZG || {};
 
   var 상태 = {
     뷰: '목록', 날짜: '', 부터: '', 까지: '', 글: '', 묶음id: '',
-    상세키: '', 폈다: {}, 고른: {}, 쪽: 1, 기간칩: '오늘'
+    상세키: '', 폈다: {}, 고른: {}, 쪽: 1, 기간칩: '오늘', 상태칩: ''
   };
+
+  /* ══ 카페24 배송상태 ══
+     🔴 v3 의 출고 기록이 아니라 **카페24 상태가 진실**이다 — 우람님이 카페24 관리자에서
+        직접 발송처리하실 수 있고, 그때 v3 에는 출고줄이 없다.
+     🔴 상태를 아직 못 받은 줄(자동수집 전에 올린 옛 주문)은 '' 이다. 어느 쪽으로도 거르지 않고
+        배지도 안 붙인다 — 「모름」을 「안 나감」으로 보이면 이미 보낸 주문을 또 보내신다. */
+  function 준비중인가(r) { return r.카페24상태 === '배송준비중'; }
+  function 나갔나(r) { return !!r.카페24상태 && r.카페24상태 !== '배송준비중'; }
+
+  /* 한 건(합포장) 안에 섞여 있을 수 있다 */
+  function 건상태(g) {
+    var 줄 = g.줄들 || [];
+    if (!줄.length) return '';
+    if (줄.every(준비중인가)) return '준비중';
+    if (줄.every(나갔나)) return '나감';
+    if (줄.some(나갔나)) return '섞임';
+    return '';
+  }
+
+  var 상태배지글 = { 준비중: '배송준비중', 나감: '배송완료', 섞임: '일부 발송' };
+
+  function 상태배지(g) {
+    var s = 건상태(g);
+    if (!s) return null;
+    return 만들기('span', { class: 'stat stat-' + s, text: 상태배지글[s] });
+  }
 
   /* ── 날짜 도우미 ── */
   function 날더하기(날짜, 일) {
@@ -25,12 +51,16 @@ window.ZG = window.ZG || {};
 
   /* ── 지금 화면에 걸린 줄들 ── */
   function 줄들() {
-    return 자.읽기({
+    var 목록 = 자.읽기({
       부터: u.폰인가() ? 상태.날짜 : 상태.부터,
       까지: u.폰인가() ? 상태.날짜 : 상태.까지,
       묶음id: u.폰인가() ? '' : 상태.묶음id,
       글: 상태.글, 주소포함: !u.폰인가()
     });
+    /* 🔴 기본은 거르지 않는다 — 일자별로는 그냥 다 보이고, 탭을 고를 때만 걸러진다 */
+    if (상태.상태칩 === '준비중') return 목록.filter(준비중인가);
+    if (상태.상태칩 === '나감') return 목록.filter(나갔나);
+    return 목록;
   }
 
   /* ── 뷰 전환 ── */
@@ -138,13 +168,51 @@ window.ZG = window.ZG || {};
     return ZG.로젠파일 ? ZG.로젠파일.포장순으로(건들) : 건들;
   }
 
+  /* ══ 카페24에서 지금 받아오기 ══
+     🔴 브라우저가 카페24를 직접 못 부른다(CORS · 열쇠가 공개된다). Supabase 함수가 대신 부른다.
+        같은 함수를 08·12·15시에 Cron 도 부른다 — 여러 번 눌러도 중복은 안 생긴다(함수가 거른다) */
+  var 수집중 = false;
+
+  function 주문수집하기(단추) {
+    if (수집중) return;
+    var supa = ZG.서버 && ZG.서버.클라이언트;
+    if (!supa) { u.토스트('서버에 연결돼 있지 않습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
+
+    수집중 = true;
+    var 본디 = 단추 ? 단추.textContent : '';
+    if (단추) { 단추.disabled = true; 단추.textContent = '받아오는 중…'; }
+
+    supa.functions.invoke('order-collect', { body: { 일수: 14 } })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        var d = r.data || {};
+        if (!d.ok) throw new Error(d.오류 || '알 수 없는 오류');
+        var 말 = d.새것 ? ('새 주문 ' + d.새것 + '줄을 받았습니다')
+                        : '새로 들어온 주문이 없습니다';
+        if (d.상태고침) 말 += ' · 배송상태 ' + d.상태고침 + '줄 갱신';
+        u.토스트('📥 ' + 말);
+        /* 서버가 넣은 줄을 받아온다. Realtime 이 놓쳤을 때도 화면이 맞는다 */
+        return ZG.서버.받아오기 ? ZG.서버.받아오기() : null;
+      })
+      .catch(function (e) {
+        u.토스트('주문수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
+      })
+      .then(function () {
+        수집중 = false;
+        if (단추) { 단추.disabled = false; 단추.textContent = 본디; }
+        다시그리기();
+      });
+  }
+
   function PC머리버튼() {
     function 단추(글, 눌림, 주) {
       var b = 만들기('button', { class: 'btn sm' + (주 ? ' main' : ''), type: 'button', text: 글 });
       b.addEventListener('click', 눌림);
       return b;
     }
+    var 수집단추 = 단추('📥 주문수집', function () { 주문수집하기(수집단추); }, true);
     return 만들기('div', { class: 'headbtns' }, [
+      수집단추,
       단추('⬆ 주문 올리기', function () { ZG.주문파일.카페24로젠(); }),
       단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
       단추('📋 출고리스트', function () { ZG.주문입력.PC출고창(상태, 고른줄들()); }, true),
@@ -162,7 +230,9 @@ window.ZG = window.ZG || {};
     출고.addEventListener('click', function () { 열기('출고'); });
     var 카드 = 만들기('button', { class: 'btn', type: 'button', text: '💌 동봉카드' });
     카드.addEventListener('click', function () { 카드열기(포장순(자.건으로묶기(줄들()))); });
-    칸.appendChild(만들기('div', { class: 'topbtns' }, [수동, 출고, 카드]));
+    var 수집 = 만들기('button', { class: 'btn', type: 'button', text: '📥 주문수집' });
+    수집.addEventListener('click', function () { 주문수집하기(수집); });
+    칸.appendChild(만들기('div', { class: 'topbtns' }, [수집, 수동, 출고, 카드]));
 
     var 목록 = 만들기('div', { class: 'ph-list' });
     function 채우기() {
@@ -176,8 +246,25 @@ window.ZG = window.ZG || {};
     }
 
     칸.appendChild(찾는칸('이름 · 전화번호 · 상품명으로 찾기', 채우기));
+    칸.appendChild(상태칩줄(채우기));
     칸.appendChild(목록);
     채우기();
+  }
+
+  /* 폰에도 같은 탭을 둔다 — 밭에서 「아직 안 나간 것」만 보시는 게 실제 쓰임이다 */
+  function 상태칩줄(채우기) {
+    var 줄 = 만들기('div', { class: 'fchips', style: 'padding:0 var(--space-md) var(--space-xs)' });
+    [['', '전체'], ['준비중', '배송준비중'], ['나감', '배송완료']].forEach(function (쌍) {
+      var b = 만들기('button', { class: 'fchip' + (상태.상태칩 === 쌍[0] ? ' on' : ''), type: 'button', text: 쌍[1] });
+      b.addEventListener('click', function () {
+        상태.상태칩 = 쌍[0];
+        줄.querySelectorAll('.fchip').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        채우기();                      // 🔴 통째로 다시 그리지 않는다 — 찾는칸의 한글 조합이 끊긴다
+      });
+      줄.appendChild(b);
+    });
+    return 줄;
   }
 
   function 날짜줄() {
@@ -225,7 +312,9 @@ window.ZG = window.ZG || {};
     var 별 = 자.재주문횟수(g.묶음키, 상태.날짜);
     var 첫줄 = [만들기('span', { class: 'who', text: g.수령인 })];
     if (별 > 0) 첫줄.push(만들기('span', { class: 'star', text: '⭐ ' + 별 }));
-    첫줄.push(만들기('span', { class: 'mall', text: g.판매처 || '기타', style: 'margin-left:auto' }));
+    var 폰배지 = 상태배지(g);
+    if (폰배지) { 폰배지.style.marginLeft = 'auto'; 첫줄.push(폰배지); }
+    첫줄.push(만들기('span', { class: 'mall', text: g.판매처 || '기타', style: 폰배지 ? '' : 'margin-left:auto' }));
     첫줄.push(만들기('span', { class: 'chev', text: '›' }));
     카드.appendChild(만들기('div', { class: 'r0' }, 첫줄));
 
@@ -423,6 +512,15 @@ window.ZG = window.ZG || {};
       칩판.appendChild(b);
     });
 
+    /* 🔴 카페24 기준 배송상태. 「전체」가 기본이라 일자별로는 지금까지처럼 다 보인다 */
+    칩판.appendChild(만들기('span', { style: 'width:1px; height:20px; background:var(--color-border); margin:0 var(--space-xs)' }));
+    칩판.appendChild(글자('배송'));
+    [['', '전체'], ['준비중', '배송준비중'], ['나감', '배송완료']].forEach(function (쌍) {
+      var b = 만들기('button', { class: 'fchip' + (상태.상태칩 === 쌍[0] ? ' on' : ''), type: 'button', text: 쌍[1] });
+      b.addEventListener('click', function () { 상태.상태칩 = 쌍[0]; 상태.쪽 = 1; 다시그리기(); });
+      칩판.appendChild(b);
+    });
+
     칩판.appendChild(만들기('span', { style: 'width:1px; height:20px; background:var(--color-border); margin:0 var(--space-xs)' }));
     칩판.appendChild(글자('올린 회차'));
     var 전체 = 만들기('button', { class: 'fchip' + (상태.묶음id ? '' : ' on'), type: 'button', text: '전체' });
@@ -498,7 +596,10 @@ window.ZG = window.ZG || {};
           var n = String(g.줄들.length);
           tr.appendChild(만들기('td', { rowspan: n }, [고름칸(g)]));
           tr.appendChild(누구칸(g, n));
-          tr.appendChild(만들기('td', { rowspan: n }, [만들기('span', { class: 'mall', text: g.판매처 || '기타' })]));
+          var 곳칸 = 만들기('td', { rowspan: n }, [만들기('span', { class: 'mall', text: g.판매처 || '기타' })]);
+          var 배지 = 상태배지(g);          // 한 날짜 안에서도 나간 것과 안 나간 것이 구분된다
+          if (배지) 곳칸.appendChild(만들기('div', {}, [배지]));
+          tr.appendChild(곳칸);
         }
         var 코드칸 = 만들기('td', { class: 'code', text: r.품목코드 || r.원본코드 || '—' });
         if (r.원본품목코드 && r.원본품목코드 !== r.품목코드) 코드칸.appendChild(원래줄(r.원본품목코드));
