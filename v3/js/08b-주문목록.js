@@ -96,11 +96,17 @@ window.ZG = window.ZG || {};
     return 요일[new Date(+p[0], +p[1] - 1, +p[2]).getDay()] + '요일';
   }
 
+  /* 🔴 「배송준비중」탭에서만 기간을 버리고 전체 기간에서 찾는다 — 기간 밖에 남아 있는 미발송 주문을
+     못 보면 그날 안 보내신다(우람님 8/9). 폰의 하루치(상태.날짜)도 같이 무시한다.
+     「전체」·「배송완료」는 그대로 기간을 지킨다 — 배송완료를 전체 기간으로 열면 1,300건이 통째로 쏟아진다 */
+  function 기간무시() { return 상태.상태칩 === '준비중'; }
+
   /* ── 지금 화면에 걸린 줄들 ── */
   function 줄들() {
+    var 온통 = 기간무시();
     var 목록 = 자.읽기({
-      부터: u.폰인가() ? 상태.날짜 : 상태.부터,
-      까지: u.폰인가() ? 상태.날짜 : 상태.까지,
+      부터: 온통 ? '' : (u.폰인가() ? 상태.날짜 : 상태.부터),
+      까지: 온통 ? '' : (u.폰인가() ? 상태.날짜 : 상태.까지),
       묶음id: u.폰인가() ? '' : 상태.묶음id,
       글: 상태.글, 주소포함: !u.폰인가()
     });
@@ -271,7 +277,8 @@ window.ZG = window.ZG || {};
 
   /* ══ 폰 — 목록 ══ */
   function 폰목록(칸) {
-    칸.appendChild(날짜줄());
+    var 날바 = 만들기('div', { class: 'datebar' });
+    칸.appendChild(날바);
 
     var 수동 = 만들기('button', { class: 'btn', type: 'button', text: '＋ 수동주문' });
     수동.addEventListener('click', function () { 열기('수동'); });
@@ -285,10 +292,13 @@ window.ZG = window.ZG || {};
 
     var 목록 = 만들기('div', { class: 'ph-list' });
     function 채우기() {
+      날짜줄채우기(날바);          // 🔴 탭을 바꾸면 「무슨 기간을 보고 있는지」도 같이 바뀌어야 한다
       u.비우기(목록);
       var 건들 = 자.건으로묶기(줄들());
       if (!건들.length) {
-        목록.appendChild(만들기('div', { class: 'ph-card', text: 상태.글 ? '찾는 주문이 없습니다.' : '이 날짜에 들어온 주문이 없습니다.' }));
+        var 없음 = 상태.글 ? '찾는 주문이 없습니다.'
+                 : (기간무시() ? '아직 안 나간 주문이 없습니다.' : '이 날짜에 들어온 주문이 없습니다.');
+        목록.appendChild(만들기('div', { class: 'ph-card', text: 없음 }));
       }
       건들.forEach(function (g) { 목록.appendChild(주문카드(g)); });
       u.목록등장(목록.children);
@@ -316,20 +326,29 @@ window.ZG = window.ZG || {};
     return 줄;
   }
 
-  function 날짜줄() {
+  function 날짜줄채우기(줄) {
+    u.비우기(줄);
+    if (기간무시()) {
+      // 화살표 자리는 비워 둔 채 남긴다 — 가운데 글이 그대로 가운데 온다
+      줄.appendChild(만들기('span', { class: 'ar', style: 'visibility:hidden' }));
+      줄.appendChild(만들기('span', { class: 'd' }, [
+        만들기('div', { class: 'big', text: '전체 기간' }),
+        만들기('div', { class: 'sml', text: '날짜와 상관없이 아직 안 나간 주문' })
+      ]));
+      줄.appendChild(만들기('span', { class: 'ar', style: 'visibility:hidden' }));
+      return;
+    }
     var 왼 = 만들기('button', { class: 'ar', type: 'button', text: '‹', 'aria-label': '하루 앞' });
     var 오 = 만들기('button', { class: 'ar', type: 'button', text: '›', 'aria-label': '하루 뒤' });
     왼.addEventListener('click', function () { 날짜로(날더하기(상태.날짜, -1)); });
     오.addEventListener('click', function () { 날짜로(날더하기(상태.날짜, 1)); });
     var 오늘인가 = 상태.날짜 === u.오늘문자();
-    return 만들기('div', { class: 'datebar' }, [
-      왼,
-      만들기('span', { class: 'd' }, [
-        만들기('div', { class: 'big', text: 상태.날짜 }),
-        만들기('div', { class: 'sml', text: (오늘인가 ? '오늘 · ' : '') + 요일글(상태.날짜) })
-      ]),
-      오
-    ]);
+    줄.appendChild(왼);
+    줄.appendChild(만들기('span', { class: 'd' }, [
+      만들기('div', { class: 'big', text: 상태.날짜 }),
+      만들기('div', { class: 'sml', text: (오늘인가 ? '오늘 · ' : '') + 요일글(상태.날짜) })
+    ]));
+    줄.appendChild(오);
   }
 
   function 날짜로(날짜) {
@@ -358,8 +377,9 @@ window.ZG = window.ZG || {};
     var 카드 = 만들기('div', {
       class: 'ph-card' + (g.부족여부 ? ' short' : ''), role: 'button', tabindex: '0'
     });
-    var 별 = 자.재주문횟수(g.묶음키, 상태.날짜);
-    var 첫줄 = [만들기('span', { class: 'who', text: g.수령인 })];
+    // 기준은 그 건의 주문일이다 — 준비중 탭은 화면 날짜와 다른 날 주문도 섞여 나온다
+    var 별 = 자.재주문횟수(g.묶음키, g.주문일 || 상태.날짜);
+    var 첫줄 =[만들기('span', { class: 'who', text: g.수령인 })];
     if (별 > 0) 첫줄.push(만들기('span', { class: 'star', text: '⭐ ' + 별 }));
     var 폰배지 = 상태배지(g);
     if (폰배지) { 폰배지.style.marginLeft = 'auto'; 첫줄.push(폰배지); }
@@ -401,8 +421,9 @@ window.ZG = window.ZG || {};
   }
 
   /* ══ 폰 — 상세 ══ */
+  /* 🔴 준비중 탭에서 들어온 상세는 그 날짜 밖의 건일 수 있다 — 같은 범위로 찾지 않으면 「못 찾았습니다」가 뜬다 */
   function 찾은건() {
-    var 것들 = 자.건으로묶기(자.읽기({ 부터: 상태.날짜, 까지: 상태.날짜 }));
+    var 것들 = 자.건으로묶기(기간무시() ? 자.읽기({}) : 자.읽기({ 부터: 상태.날짜, 까지: 상태.날짜 }));
     return 것들.filter(function (g) { return g.묶음키 === 상태.상세키; })[0] || null;
   }
 
@@ -415,7 +436,7 @@ window.ZG = window.ZG || {};
     return {
       제목: '주문 상세',
       왼: '‹ 주문',
-      오: 상태.날짜 + ' · ' + (g.판매처 || '기타'),
+      오: (g.주문일 || 상태.날짜) + ' · ' + (g.판매처 || '기타'),
       그리기: function (칸) { 상세그리기(칸, g); },
       바닥: function () {
         var 카드 = 만들기('button', { class: 'btn main', type: 'button', text: '💌 동봉카드' });
@@ -430,7 +451,7 @@ window.ZG = window.ZG || {};
   }
 
   function 상세그리기(칸, g) {
-    var 별 = 자.재주문횟수(g.묶음키, 상태.날짜);
+    var 별 = 자.재주문횟수(g.묶음키, g.주문일 || 상태.날짜);
     var 머리자식 = [만들기('span', {
       text: g.수령인,
       style: 'font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; color:var(--color-text)'
@@ -530,7 +551,10 @@ window.ZG = window.ZG || {};
     채우기();
   }
 
-  function 기간글() { return 상태.부터 === 상태.까지 ? 상태.부터 : 상태.부터 + ' ~ ' + 상태.까지; }
+  function 기간글() {
+    if (기간무시()) return '전체 기간 (배송준비중)';
+    return 상태.부터 === 상태.까지 ? 상태.부터 : 상태.부터 + ' ~ ' + 상태.까지;
+  }
 
   /* 회차 칩에 쓰는 글. 여러 날을 걸쳐 보면 「1회차」가 날마다 또 나와 어느 날 것인지 알 수 없다 — 그때만 날짜를 붙인다.
      아래 `회차글(묶음id)` 과 다른 함수다. 이름을 겹치게 두면 나중 것이 앞 것을 덮어 표 배지가 깨진다(8/4 겪음). */
@@ -544,6 +568,10 @@ window.ZG = window.ZG || {};
     function 글자(t) { return 만들기('span', { text: t, style: 'font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)' }); }
     function 날짜칸(어느) {
       var i = 만들기('input', { class: 'inp', type: 'date', value: 상태[어느], style: 'width:138px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center' });
+      if (기간무시()) {                      // 지금 안 걸리는 값이라는 걸 눈으로 알게 흐린다
+        i.style.opacity = '.4';
+        i.title = '배송준비중 탭은 기간을 보지 않습니다';
+      }
       i.addEventListener('change', function () {
         if (!i.value) return;
         상태[어느] = i.value; 상태.기간칩 = ''; 상태.쪽 = 1; 다시그리기();
@@ -569,6 +597,10 @@ window.ZG = window.ZG || {};
       b.addEventListener('click', function () { 상태.상태칩 = 쌍[0]; 상태.쪽 = 1; 다시그리기(); });
       칩판.appendChild(b);
     });
+    if (기간무시()) 칩판.appendChild(만들기('span', {
+      text: '⚠ 기간을 무시하고 전체 기간의 미발송 주문을 봅니다',
+      style: 'font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-danger)'
+    }));
 
     칩판.appendChild(만들기('span', { style: 'width:1px; height:20px; background:var(--color-border); margin:0 var(--space-xs)' }));
     칩판.appendChild(글자('올린 회차'));
@@ -634,7 +666,10 @@ window.ZG = window.ZG || {};
     표.appendChild(머리);
 
     if (!건들.length) {
-      표.appendChild(만들기('tr', {}, [만들기('td', { colspan: '9', class: 'dim', text: '이 기간에 들어온 주문이 없습니다.' })]));
+      표.appendChild(만들기('tr', {}, [만들기('td', {
+        colspan: '9', class: 'dim',
+        text: 기간무시() ? '아직 안 나간 주문이 없습니다.' : '이 기간에 들어온 주문이 없습니다.'
+      })]));
       return 표;
     }
 
