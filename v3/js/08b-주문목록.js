@@ -36,14 +36,32 @@ window.ZG = window.ZG || {};
   }
 
   function 심폴인가(r) { return r.판매처 === '심폴'; }
-  function 심폴나갔나(r) { return !!출고색인()[r.id]; }
 
-  function 준비중인가(r) {
-    if (심폴인가(r)) return !심폴나갔나(r);
+  /* 🔴 서비스 줄은 자기 출고로 판정하지 않는다 — 08e 가 넣는 그 순간 출고줄을 만들어 두기 때문에
+     발송 전인데도 그 줄만 「배송완료」로 떨어진다(8/8 신고). 같은 건의 「진짜 상품 줄」 판정을 따라간다.
+     묶는 열쇠는 08a 의 묶음키 그대로다 — 화면이 건으로 묶는 것과 어긋나면 안 된다.
+     상품 줄이 하나도 없는 건(서비스만)은 준비중으로 둔다 — 놓치는 쪽보다 낫다 (우람님 8/8) */
+  function 상품기준(줄들) {
+    var 표 = Object.create(null), 색 = 출고색인();
+    (줄들 || []).forEach(function (r) {
+      if (!심폴인가(r) || r.서비스 === true) return;
+      var k = r.묶음키 || 자.묶음키(r);
+      if (표[k] !== false) 표[k] = !!색[r.id];    // 안 나간 상품 줄이 하나라도 있으면 그 건은 준비중
+    });
+    return 표;
+  }
+
+  function 심폴나갔나(r, 표) {
+    if (r.서비스 === true) return !!표 && 표[r.묶음키 || 자.묶음키(r)] === true;
+    return !!출고색인()[r.id];
+  }
+
+  function 준비중인가(r, 표) {
+    if (심폴인가(r)) return !심폴나갔나(r, 표);
     return r.카페24상태 === '배송준비중';
   }
-  function 나갔나(r) {
-    if (심폴인가(r)) return 심폴나갔나(r);
+  function 나갔나(r, 표) {
+    if (심폴인가(r)) return 심폴나갔나(r, 표);
     return !!r.카페24상태 && r.카페24상태 !== '배송준비중';
   }
 
@@ -51,9 +69,12 @@ window.ZG = window.ZG || {};
   function 건상태(g) {
     var 줄 = g.줄들 || [];
     if (!줄.length) return '';
-    if (줄.every(준비중인가)) return '준비중';
-    if (줄.every(나갔나)) return '나감';
-    if (줄.some(나갔나)) return '섞임';
+    var 표 = 상품기준(줄);                       // 그 건의 줄들만 보면 된다 — 이미 묶여 들어온다
+    function 준비(r) { return 준비중인가(r, 표); }
+    function 나감(r) { return 나갔나(r, 표); }
+    if (줄.every(준비)) return '준비중';
+    if (줄.every(나감)) return '나감';
+    if (줄.some(나감)) return '섞임';
     return '';
   }
 
@@ -84,8 +105,10 @@ window.ZG = window.ZG || {};
       글: 상태.글, 주소포함: !u.폰인가()
     });
     /* 🔴 기본은 거르지 않는다 — 일자별로는 그냥 다 보이고, 탭을 고를 때만 걸러진다 */
-    if (상태.상태칩 === '준비중') return 목록.filter(준비중인가);
-    if (상태.상태칩 === '나감') return 목록.filter(나갔나);
+    if (!상태.상태칩) return 목록;
+    var 표 = 상품기준(목록);                     // 거르기 전 목록으로 한 번만 만든다 (O(n))
+    if (상태.상태칩 === '준비중') return 목록.filter(function (r) { return 준비중인가(r, 표); });
+    if (상태.상태칩 === '나감') return 목록.filter(function (r) { return 나갔나(r, 표); });
     return 목록;
   }
 
