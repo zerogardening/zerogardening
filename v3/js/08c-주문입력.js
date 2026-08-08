@@ -156,6 +156,7 @@ window.ZG = window.ZG || {};
 
     var 추가 = 만들기('button', { class: 'btn', type: 'button', text: '＋ 품목 추가' });
     추가.addEventListener('click', function () { 넣기(null); });
+    if (옵션.한장만) 추가.style.display = 'none';   // 심폴 짝짓기는 카드 한 장만 쓴다 (8단계 설계 §7-2)
 
     return {
       요소: 만들기('div', { class: 'itemstack' }, [판, 추가]),

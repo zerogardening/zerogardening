@@ -9,7 +9,7 @@ window.ZG = window.ZG || {};
   var 공개키 = 'sb_publishable_ds8hYFdqgj-vsotoaqtv4w_XhkL_DN2';
   var 토큰키 = 'sb-vjqfhwrgrocapcyndgtx-auth-token';
   var 표들 = ['품목', '입고', '출고', '재고조정', '업체', '주문', '주문묶음',
-              '명세서', '명세서줄', '견적요청', '즐겨찾기', '분류폴더'];
+              '명세서', '명세서줄', '견적요청', '즐겨찾기', '분류폴더', '심폴짝'];
 
   var 서버 = {
     로그인됨: false, 켜짐: false, 아직안올림: false,
@@ -203,6 +203,11 @@ window.ZG = window.ZG || {};
         var 값 = 행들.filter(function (r) { return !r.삭제됨; }).map(function (r) { return r.내용; });
         저.조용히(true); 저.전체쓰기(키로(표), 값); 저.조용히(false);
         건수[표] = 값.length;
+      })
+      /* 🔴 표 하나가 넘어져도 나머지가 같이 죽지 않게 — Promise.all 이 통째로 거부되면
+         다른 표도 안 내려오고 보내기 큐도 안 깨어난다 (8단계 설계 §5-3) */
+      .catch(function (e) {
+        서버.경고.push(표 + ' 를 못 받았습니다 (' + (e.message || e) + ')');
       });
     }).concat([
       표받기('공유설정').then(function (행들) {
