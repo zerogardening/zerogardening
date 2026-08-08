@@ -601,7 +601,9 @@ window.ZG = window.ZG || {};
           if (배지) 곳칸.appendChild(만들기('div', {}, [배지]));
           tr.appendChild(곳칸);
         }
-        var 코드칸 = 만들기('td', { class: 'code', text: r.품목코드 || r.원본코드 || '—' });
+        var 코드값 = String(r.품목코드 || r.원본코드 || '—');
+        var 코드칸 = 만들기('td', { class: 'code', text: 줄인코드(코드값) });
+        if (코드값 !== 줄인코드(코드값)) 코드칸.title = 코드값;
         if (r.원본품목코드 && r.원본품목코드 !== r.품목코드) 코드칸.appendChild(원래줄(r.원본품목코드));
         tr.appendChild(코드칸);
 
@@ -632,6 +634,11 @@ window.ZG = window.ZG || {};
   }
 
   function 원래줄(값) { return 만들기('div', { class: 'was', text: '원래 ' + 값 }); }
+
+  /* 짝이 안 지어진 심폴 줄은 18자리 원본코드가 그대로 온다 — 좁은 코드 칸을 넘쳐 옆 「품목」 글자와 겹친다.
+     뒤 6자리만 남겨 어느 상품인지는 구분되게 하고, 전체 값은 title 로 붙인다.
+     v3 품목코드(VEA01 등)는 짧아 손대지 않는다 */
+  function 줄인코드(값) { return 값.length > 10 ? '…' + 값.slice(-6) : 값; }
 
   /* 그 건 안에 고친 줄이 하나라도 있으면 마지막으로 고친 때를 돌려준다 */
   function 고친때(g) {
