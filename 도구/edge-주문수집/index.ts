@@ -21,14 +21,22 @@ const db = createClient(
 
 /* ══ 카페24 출입증 — 표에 두고 스스로 갱신한다 ══ */
 
-async function 출입증(): Promise<string> {
+/* 🔴 카페24가 주는 `2026-08-08T20:42:07.000` 은 **한국시각인데 표시가 없다.**
+   그대로 new Date() 하면 서버(UTC)가 UTC 로 읽어 9시간 뒤로 착각하고, 만료된 출입증을
+   「아직 두 시간 남았다」고 판단해 갱신을 건너뛴다 → 카페24가 401 (8/8 겪음). */
+function 때(문자: string): number {
+  const s = 글(문자);
+  return Date.parse(/[Z+]|-\d\d:\d\d$/.test(s) ? s : s + "+09:00");
+}
+
+async function 출입증(강제?: boolean): Promise<string> {
   const { data, error } = await db.from("카페24토큰").select("내용").eq("id", "현재").single();
   if (error) throw new Error("출입증을 못 읽었습니다: " + error.message);
   const tok = data!.내용;
 
   // 만료 5분 전부터 미리 바꾼다 — 받아오는 중에 만료되면 통째로 실패한다
-  const 남음 = new Date(tok.expires_at).getTime() - Date.now();
-  if (남음 > 5 * 60 * 1000) return tok.access_token;
+  const 남음 = 때(tok.expires_at) - Date.now();
+  if (!강제 && 남음 > 5 * 60 * 1000) return tok.access_token;
 
   const res = await fetch(`https://${MALL}.cafe24api.com/api/v2/oauth/token`, {
     method: "POST",
@@ -45,7 +53,9 @@ async function 출입증(): Promise<string> {
   return 새것.access_token;
 }
 
-async function 카페24(경로: string, token: string) {
+/* 🔴 401 이 오면 한 번만 새 출입증을 받아 다시 부른다 — 만료시각 계산이 어긋나도 살아남는다.
+   상품쪽 `카페24.py` 도 같은 방식이다 */
+async function 카페24(경로: string, token: string, 다시?: boolean): Promise<any> {
   const res = await fetch(`https://${MALL}.cafe24api.com/api/v2/admin/${경로}`, {
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -53,6 +63,9 @@ async function 카페24(경로: string, token: string) {
       "X-Cafe24-Api-Version": API_VER,
     },
   });
+  if (res.status === 401 && !다시) {
+    return await 카페24(경로, await 출입증(true), true);
+  }
   if (!res.ok) throw new Error(`카페24 ${경로} → ${res.status}: ${await res.text()}`);
   return await res.json();
 }
@@ -331,7 +344,10 @@ async function 수집(일수: number, 시험: boolean) {
 Deno.serve(async (req) => {
   const cors = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "authorization, content-type, apikey",
+    /* 🔴 supabase-js 는 `x-client-info`(그리고 새 키에선 `x-supabase-api-version`)를 같이 보낸다.
+       하나라도 빠지면 브라우저가 프리플라이트에서 막고 화면엔 그냥 「실패」만 뜬다 (8/8 겪음) */
+    "Access-Control-Allow-Headers":
+      "authorization, content-type, apikey, x-client-info, x-supabase-api-version",
     "Content-Type": "application/json; charset=utf-8",
   };
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
