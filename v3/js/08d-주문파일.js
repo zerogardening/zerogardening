@@ -6,7 +6,6 @@ window.ZG = window.ZG || {};
   'use strict';
 
   var u = ZG.ui, 자 = null;
-  var 아직 = '실제 엑셀 양식을 받은 뒤 연결합니다.';
 
   function 준비됐나() {
     if (window.XLSX) return true;
@@ -14,7 +13,10 @@ window.ZG = window.ZG || {};
     return false;
   }
 
-  function 카페24로젠() { u.토스트('카페24 → 로젠 파일 — ' + 아직); }
+  function 카페24로젠() {
+    if (ZG.주문올리기) ZG.주문올리기.열기();
+    else u.토스트('주문 올리기를 못 읽었습니다 — js/08h-주문올리기.js 를 확인해 주세요.');
+  }
 
   function 배송완료() {
     if (ZG.배송완료창) ZG.배송완료창.열기();
@@ -38,14 +40,18 @@ window.ZG = window.ZG || {};
     칸.click();
   }
 
-  /* 첫 시트를 2차원 배열로. 그때({ok, 오류, 행들, 시트}) */
-  function 시트배열(파일, 그때) {
+  /* 첫 시트를 2차원 배열로. 그때({ok, 오류, 행들, 시트})
+     🔴 옵션은 없어도 된다 — 인자를 안 주면 지금까지와 완전히 같이 동작한다(08f·08g 가 그대로 탄다) */
+  function 시트배열(파일, 그때, 옵션) {
     if (!준비됐나()) { 그때({ ok: false, 오류: '엑셀 도구를 못 읽었습니다 — js/lib/xlsx.min.js 를 확인해 주세요.' }); return; }
     var 읽개 = new FileReader();
     읽개.onerror = function () { 그때({ ok: false, 오류: '파일을 못 읽었습니다.' }); };
     읽개.onload = function (e) {
       try {
-        var 책 = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        var 설정 = { type: 'array' };
+        // 카페24 xlsx 는 발주일이 날짜 셀일 수 있다 — 안 켜면 46000 이 1970-01-01 이 된다
+        if (옵션 && 옵션.cellDates) 설정.cellDates = true;
+        var 책 = XLSX.read(new Uint8Array(e.target.result), 설정);
         var 이름 = 책.SheetNames[0];
         /* 🔴 raw:true — raw:false 는 서식을 입힌 글자를 줘서 숫자 칸에 천단위 쉼표가 붙는다.
            blankrows:false 는 빈 줄을 지워 행 번호를 밀어 버린다 (6단계-4 설계 §2) */
@@ -57,6 +63,39 @@ window.ZG = window.ZG || {};
       }
     };
     읽개.readAsArrayBuffer(파일);
+  }
+
+  /* 확장자를 보고 알아서 갈라 읽는다. csv·xlsx 둘 다 같은 모양(2차원 배열)으로 돌려준다.
+     🔴 파싱을 SheetJS 하나로 모은 이유 — 카페24 주소에 쉼표가 흔하다.
+        따옴표 안의 쉼표·줄바꿈은 손파서보다 낫고, xlsx 경로와 코드가 하나가 된다 */
+  function 읽기(파일, 그때) {
+    if (!/\.csv$/i.test((파일 && 파일.name) || '')) { 시트배열(파일, 그때, { cellDates: true }); return; }
+    if (!준비됐나()) { 그때({ ok: false, 오류: '엑셀 도구를 못 읽었습니다 — js/lib/xlsx.min.js 를 확인해 주세요.' }); return; }
+
+    var 읽개 = new FileReader();
+    읽개.onerror = function () { 그때({ ok: false, 오류: '파일을 못 읽었습니다.' }); };
+    읽개.onload = function (e) {
+      try {
+        // raw:true 가 없으면 우편번호 04524 가 숫자 4524 가 되고 판매가에 서식이 붙는다
+        var 책 = XLSX.read(글자로(new Uint8Array(e.target.result)), { type: 'string', raw: true });
+        var 이름 = 책.SheetNames[0];
+        var 행들 = XLSX.utils.sheet_to_json(책.Sheets[이름], { header: 1, defval: '', raw: true });
+        그때({ ok: true, 오류: '', 행들: 행들, 시트: 이름 });
+      } catch (err) {
+        console.warn('CSV 열기 실패', err);
+        그때({ ok: false, 오류: 'CSV 파일을 여는 데 실패했습니다 — 파일이 손상된 것 같습니다.' });
+      }
+    };
+    읽개.readAsArrayBuffer(파일);
+  }
+
+  /* 🔴 fatal:true 가 바이트로 판정한다 — 정규식 추측보다 정확하다.
+     🔴 UTF-8 BOM(U+FEFF)을 안 떼면 첫 머리글이 `﻿쇼핑몰`이 돼 매핑이 통째로 어긋난다. 실물에 실제로 있다 */
+  function 글자로(바이트) {
+    var 글;
+    try { 글 = new TextDecoder('utf-8', { fatal: true }).decode(바이트); }
+    catch (e) { 글 = new TextDecoder('euc-kr').decode(바이트); }
+    return 글.charCodeAt(0) === 0xFEFF ? 글.slice(1) : 글;
   }
 
   /* 엑셀 열 이름으로 값 꺼내기 — 칸(행, 'S'). 설계서가 열을 알파벳으로 적어 뒀다 */
@@ -92,6 +131,6 @@ window.ZG = window.ZG || {};
 
   ZG.주문파일 = {
     카페24로젠: 카페24로젠, 배송완료: 배송완료, 내려받기: 내려받기,
-    파일고르기: 파일고르기, 시트배열: 시트배열, 칸: 칸, 준비됐나: 준비됐나
+    파일고르기: 파일고르기, 시트배열: 시트배열, 읽기: 읽기, 칸: 칸, 준비됐나: 준비됐나
   };
 })(window.ZG);

@@ -132,6 +132,12 @@ window.ZG = window.ZG || {};
     else ZG.카드설정.수동창();
   }
 
+  /* 로젠 파일을 뽑았으면 그때 매긴 출력번호대로 카드를 뽑는다 — 송장과 종이가 번호로 맞는다.
+     아직 번호가 없으면 08i 가 받은 그대로 돌려준다(회귀 없음) */
+  function 포장순(건들) {
+    return ZG.로젠파일 ? ZG.로젠파일.포장순으로(건들) : 건들;
+  }
+
   function PC머리버튼() {
     function 단추(글, 눌림, 주) {
       var b = 만들기('button', { class: 'btn sm' + (주 ? ' main' : ''), type: 'button', text: 글 });
@@ -139,10 +145,10 @@ window.ZG = window.ZG || {};
       return b;
     }
     return 만들기('div', { class: 'headbtns' }, [
-      단추('⬆ 로젠 파일', function () { ZG.주문파일.카페24로젠(); }),
+      단추('⬆ 주문 올리기', function () { ZG.주문파일.카페24로젠(); }),
       단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
       단추('📋 출고리스트', function () { ZG.주문입력.PC출고창(상태, 고른줄들()); }, true),
-      단추('💌 동봉카드', function () { 카드열기(고른건들()); }, true)
+      단추('💌 동봉카드', function () { 카드열기(포장순(고른건들())); }, true)
     ]);
   }
 
@@ -155,7 +161,7 @@ window.ZG = window.ZG || {};
     var 출고 = 만들기('button', { class: 'btn', type: 'button', text: '📋 출고리스트' });
     출고.addEventListener('click', function () { 열기('출고'); });
     var 카드 = 만들기('button', { class: 'btn', type: 'button', text: '💌 동봉카드' });
-    카드.addEventListener('click', function () { 카드열기(자.건으로묶기(줄들())); });
+    카드.addEventListener('click', function () { 카드열기(포장순(자.건으로묶기(줄들()))); });
     칸.appendChild(만들기('div', { class: 'topbtns' }, [수동, 출고, 카드]));
 
     var 목록 = 만들기('div', { class: 'ph-list' });

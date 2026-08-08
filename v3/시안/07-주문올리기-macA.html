@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 주문 올리기 + 로젠 대량등록 (macOS A안 · 브랜드 초록)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+/* ══ 06-배송완료변환-macA 의 부품을 그대로 가져다 쓴다 (.pcsheet.dlv 한 벌) — 새로 만든 것은
+     맨 아래 「노랑 톤 한 벌」뿐이다. 품목 못 찾은 줄은 막지 않는 경고라 빨강이면 안 된다 ══ */
+
+.headbtns{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+
+.mall{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border);
+}
+
+.modalwrap{position:relative; width:1120px}
+.scrim{position:absolute; inset:0; background:rgba(0,0,0,.36); border-radius:var(--radius-win); z-index:5}
+.modal{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:6;
+  background:var(--color-bg); border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:0 26px 60px rgba(0,0,0,.34), 0 0 0 1px rgba(0,0,0,.09);
+}
+.modal .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+}
+.modal .hd h3{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.modal .hd .hint{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.modal .hd .x{margin-left:auto; font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1}
+.modal .bd{padding:var(--space-3xl) var(--space-3xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-2xl)}
+.modal .ft{
+  padding:var(--space-lg) var(--space-3xl) var(--space-3xl);
+  display:flex; align-items:center; gap:var(--space-sm);
+}
+.modal .ft .spacer{flex:1}
+.modal .ft .fname{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+/* 파일 고르는 자리 */
+.drop{
+  border:2px dashed var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface);
+  padding:var(--space-4xl) var(--space-2xl); text-align:center;
+}
+.drop .ic{font-size:34px; line-height:1; display:block; margin-bottom:var(--space-md)}
+.drop .t{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.drop .s{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:var(--space-3xs)}
+.drop .btn{margin-top:var(--space-2xl)}
+
+/* 고른 파일 한 줄 */
+.fileline{
+  display:flex; align-items:center; gap:var(--space-md); background:var(--color-surface);
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  padding:var(--space-lg) var(--space-2xl);
+}
+.fileline .ic{font-size:var(--font-4xl); line-height:1}
+.fileline .nm{font-size:var(--font-md); font-weight:var(--weight-semibold)}
+.fileline .sz{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+.fileline .btn{margin-left:auto}
+
+/* 결과 숫자 칸 */
+.sums{display:flex; gap:var(--space-lg)}
+.sum{
+  flex:1; background:var(--color-surface); border-radius:var(--radius-lg); padding:var(--pad-stat);
+  border:var(--border-width) solid var(--color-border);
+}
+.sum .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.sum .v{font-size:30px; font-weight:var(--weight-bold); letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin-top:var(--space-3xs)}
+.sum .v small{font-size:var(--font-lg); font-weight:var(--weight-semibold); margin-left:2px}
+.sum .s{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:var(--space-2xs); line-height:1.5}
+.sum.ok{background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+.sum.ok .k, .sum.ok .v{color:var(--color-accent-dark)}
+.sum.ng{background:var(--color-danger-bg); border-color:var(--color-danger-border)}
+.sum.ng .k, .sum.ng .v{color:var(--color-danger)}
+
+/* 확인 필요 목록 */
+.needbox{
+  background:var(--color-surface); border:var(--border-width) solid var(--color-danger-border);
+  border-radius:var(--radius-lg); overflow:hidden;
+}
+.needbox > h4{
+  display:flex; align-items:center; gap:var(--space-xs); background:var(--color-danger-bg);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-danger-border);
+  font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger); letter-spacing:-.02em;
+}
+.needbox > h4 > span:first-child{white-space:nowrap}
+.needbox > h4 .why{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); text-align:right}
+.needbox .inner{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
+.needbox table{width:100%}
+.needbox td .sub{
+  font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium);
+  margin-top:1px; line-height:1.4; overflow-wrap:break-word;
+}
+.rowbtns{display:flex; gap:var(--space-2xs); justify-content:flex-end; flex-wrap:wrap}
+td.gone{color:var(--color-text-muted)}
+td.went{color:var(--color-accent-dark); font-weight:var(--weight-semibold)}
+td.warn{color:#9A6400; font-weight:var(--weight-semibold)}
+
+/* 「모두 이렇게」 고르는 줄 */
+.allrow{
+  display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap;
+  margin-top:var(--space-lg); padding-top:var(--space-lg);
+  border-top:var(--border-width) solid var(--color-border-faint);
+}
+.allrow .l{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.allrow .note{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.allrow .note b{color:var(--color-text-sub)}
+
+/* 설명 줄 */
+.done{
+  display:flex; align-items:center; gap:var(--space-md);
+  font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium);
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint);
+  border-radius:var(--radius-md); padding:var(--space-md) var(--space-2xl); line-height:1.6;
+}
+.done > span{flex:1}
+.done b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+
+/* ── 여기부터가 이 화면에서 새로 쓰는 것 — 막지 않는 경고의 노랑/회색 톤 ──
+     빨강(.needbox)은 「멈춰야 하는 줄」이다. 품목 못 찾은 줄과 이미 있는 줄은 그냥 지나가도 되므로
+     같은 뼈대에 색만 바꿔 쓴다 */
+.sum.warn{background:#FFF8E6; border-color:#F2DFA8}
+.sum.warn .k, .sum.warn .v{color:#9A6400}
+.needbox.warn{border-color:#F2DFA8}
+.needbox.warn > h4{background:#FFF8E6; color:#9A6400; border-bottom-color:#F2DFA8}
+.needbox.gray{border-color:var(--color-border)}
+.needbox.gray > h4{background:var(--color-seg-bg); color:var(--color-text-sub); border-bottom-color:var(--color-border)}
+
+.memo{
+  width:1120px; font-size:var(--font-xs); color:#45474D; font-weight:var(--weight-medium); line-height:1.8;
+  background:var(--overlay-strong); border-radius:var(--radius-md); padding:var(--space-2xl) var(--space-3xl);
+  box-shadow:0 0 0 1px rgba(0,0,0,.06);
+}
+.memo b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+.memo .q{color:var(--color-danger); font-weight:var(--weight-bold)}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ① 파일 고르기 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 머리줄 <b>「⬆ 주문 올리기」</b>를 누른 순간 <span class="tag">macOS A안 · PC 전용</span> <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:700px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div>
+              <h2>주문 관리</h2>
+              <div class="path">주문 › 주문 조회</div>
+            </div>
+            <div class="headbtns">
+              <button class="btn sm main">⬆ 주문 올리기</button>
+              <button class="btn sm">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm" aria-disabled="true" style="opacity:.4">💌 동봉카드</button>
+            </div>
+          </div>
+
+          <div class="fchips">
+            <span style="font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)">기간</span>
+            <input class="inp" value="2026-08-08" style="width:132px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center">
+            <span style="color:var(--color-text-muted)">~</span>
+            <input class="inp" value="2026-08-08" style="width:132px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center">
+            <button class="fchip on">오늘</button>
+            <button class="fchip">이번 주</button>
+            <button class="fchip">이번 달</button>
+          </div>
+
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-08 · 주문 6건 · 품목 8줄</span></h3>
+            <table>
+              <colgroup><col style="width:200px"><col style="width:96px"><col style="width:88px"><col><col style="width:86px"><col style="width:74px"></colgroup>
+              <tr><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th></tr>
+              <tr><td>김미정</td><td><span class="mall">카페24</span></td><td class="code">PER03-15</td><td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">12</td></tr>
+              <tr><td>박준호</td><td><span class="mall">카페24</span></td><td class="code">CAR01-10</td><td>청사초</td><td class="dim">10cm 포트</td><td class="r">6</td></tr>
+              <tr><td>이수연</td><td><span class="mall">카페24</span></td><td class="code">CAS01-18</td><td>층꽃 '스털링실버'</td><td class="dim">18cm 포트</td><td class="r">8</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <!-- 팝업 ① — 카페24 주문 CSV 고르기 -->
+    <div class="modal" style="width:520px">
+      <div class="hd">
+        <h3>주문 올리기</h3>
+        <span class="hint">카페24 주문 CSV</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+        <div class="drop">
+          <span class="ic">📄</span>
+          <div class="t">카페24에서 받은 주문 파일을 고르세요</div>
+          <div class="s">여기로 끌어다 놓아도 됩니다 · .csv · .xls · .xlsx</div>
+          <button class="btn">파일 고르기</button>
+        </div>
+        <div class="done">
+          <span>
+            파일을 고르면 <b>먼저 보여드립니다</b> — 들어올 줄 · 이미 있는 줄 · 품목 못 찾은 줄.<br>
+            저장한 뒤 <b>이 화면에서 바로</b> 로젠 대량등록 파일을 내려받습니다.
+          </span>
+        </div>
+      </div>
+      <div class="ft">
+        <span class="spacer"></span>
+        <button class="btn">취소</button>
+        <button class="btn main" style="opacity:.45">미리보기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ② 미리보기 — 세 갈래 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">파일을 고른 뒤 — <b>저장하기 전에</b> 세 갈래를 먼저 보여드립니다 <span class="tag">아직 아무것도 저장되지 않았습니다</span></div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:1420px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div>
+              <h2>주문 관리</h2>
+              <div class="path">주문 › 주문 조회</div>
+            </div>
+            <div class="headbtns">
+              <button class="btn sm main">⬆ 주문 올리기</button>
+              <button class="btn sm">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm" aria-disabled="true" style="opacity:.4">💌 동봉카드</button>
+            </div>
+          </div>
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-08 · 주문 6건 · 품목 8줄</span></h3>
+            <table>
+              <colgroup><col style="width:200px"><col style="width:96px"><col style="width:88px"><col><col style="width:86px"><col style="width:74px"></colgroup>
+              <tr><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th></tr>
+              <tr><td>김미정</td><td><span class="mall">카페24</span></td><td class="code">PER03-15</td><td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">12</td></tr>
+              <tr><td>박준호</td><td><span class="mall">카페24</span></td><td class="code">CAR01-10</td><td>청사초</td><td class="dim">10cm 포트</td><td class="r">6</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <!-- 팝업 ② — 미리보기 -->
+    <div class="modal" style="width:880px">
+      <div class="hd">
+        <h3>주문 올리기 — 미리보기</h3>
+        <span class="hint">cafe24_order_20260808.csv · 14줄 읽음</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+
+        <div class="fileline">
+          <span class="ic">📄</span>
+          <div>
+            <div class="nm">cafe24_order_20260808.csv</div>
+            <div class="sz">86 KB · 14줄</div>
+          </div>
+          <button class="btn sm">다시 고르기</button>
+        </div>
+
+        <div class="sums">
+          <div class="sum ok">
+            <div class="k">들어올 줄</div>
+            <div class="v">12<small>건</small></div>
+            <div class="s">주문 9건 · 새 주문으로 저장됩니다</div>
+          </div>
+          <div class="sum">
+            <div class="k">이미 있는 줄</div>
+            <div class="v">2<small>건</small></div>
+            <div class="s">같은 주문번호가 이미 있어 건너뜁니다</div>
+          </div>
+          <div class="sum warn">
+            <div class="k">품목 못 찾은 줄</div>
+            <div class="v">2<small>건</small></div>
+            <div class="s">들어올 12건 안에 들어 있습니다 · 막지 않습니다</div>
+          </div>
+        </div>
+
+        <div class="done">
+          <span>
+            <b>「이 회차로 저장하기」</b>를 누르면 12줄이 <b>2026-08-08 주문</b>으로 들어갑니다.
+            누르기 전에는 아무것도 저장되지 않습니다.
+          </span>
+        </div>
+
+        <!-- 들어올 줄 -->
+        <div class="needbox gray">
+          <h4><span>🟢 들어올 줄 12건</span><span class="why">앞 5줄만 보여드립니다 — 나머지 7줄도 같은 모양입니다</span></h4>
+          <div class="inner">
+            <table>
+              <colgroup><col style="width:112px"><col style="width:148px"><col style="width:92px"><col><col style="width:96px"><col style="width:56px"></colgroup>
+              <tr><th>주문번호</th><th>받는 분</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th></tr>
+              <tr>
+                <td class="code">20260808-01</td>
+                <td>최영주<div class="sub">경기 광주시 초월읍 산수로 118</div></td>
+                <td class="code">PER03-15</td><td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">10</td>
+              </tr>
+              <tr>
+                <td class="code">20260808-01</td>
+                <td>최영주<div class="sub">같은 주문 · 두 번째 품목</div></td>
+                <td class="code">CAR01-10</td><td>청사초</td><td class="dim">10cm 포트</td><td class="r">4</td>
+              </tr>
+              <tr>
+                <td class="code">20260808-02</td>
+                <td>한지수<div class="sub">서울 강동구 양재대로 1621</div></td>
+                <td class="code">CAS01-18</td><td>층꽃 '스털링실버'</td><td class="dim">18cm 포트</td><td class="r">6</td>
+              </tr>
+              <tr>
+                <td class="code">20260808-03</td>
+                <td>오세라<div class="sub">충북 청주시 흥덕구 오송읍 오송생명로 90</div></td>
+                <td class="code">ANW02-21</td><td>추명국 '휠윈드핑크'</td><td class="dim">21cm 포트</td><td class="r">3</td>
+              </tr>
+              <tr>
+                <td class="code">20260808-04</td>
+                <td>임도현<div class="sub">전북 완주군 삼례읍 삼례로 66</div></td>
+                <td class="code">HEU04-15</td><td>휴케라 '팜므파탈'</td><td class="dim">15cm 포트</td><td class="r">8</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- 품목 못 찾은 줄 — 막지 않는다 -->
+        <div class="needbox warn">
+          <h4><span>⚠️ 품목 못 찾은 줄 2건</span><span class="why">그대로 저장됩니다 — 품목코드는 나중에 주문 화면에서 지정하시면 됩니다</span></h4>
+          <div class="inner">
+            <table>
+              <colgroup><col style="width:110px"><col style="width:130px"><col><col style="width:60px"><col style="width:210px"></colgroup>
+              <tr><th>주문번호</th><th>받는 분</th><th>카페24에 적힌 상품명</th><th class="r">수량</th><th class="r">이 줄은 어떻게 됩니까</th></tr>
+              <tr>
+                <td class="code">20260808-05</td>
+                <td>서민경</td>
+                <td>여름 초화 모둠세트 A (랜덤 5종)<div class="sub">v3 품목코드와 이름이 맞는 것이 없습니다</div></td>
+                <td class="r">1</td>
+                <td class="r warn">품목코드 없이 저장 · 나중에 지정</td>
+              </tr>
+              <tr>
+                <td class="code">20260808-06</td>
+                <td>강태우</td>
+                <td>[사은품] 원예용 장갑<div class="sub">v3 품목코드와 이름이 맞는 것이 없습니다</div></td>
+                <td class="r">1</td>
+                <td class="r warn">품목코드 없이 저장 · 나중에 지정</td>
+              </tr>
+            </table>
+            <div class="allrow">
+              <span class="l">여러 줄이 나오면 —</span>
+              <button class="btn sm">전부 품목코드 지정하기</button>
+              <button class="btn sm">전부 그대로 두기</button>
+              <span style="flex:1"></span>
+              <span class="note">이 줄들도 <b>로젠 대량등록 파일에는 들어갑니다</b></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이미 있는 줄 -->
+        <div class="needbox gray">
+          <h4><span>이미 있는 줄 2건</span><span class="why">같은 주문번호가 이미 v3에 있어 건너뜁니다 — 막지 않습니다</span></h4>
+          <div class="inner">
+            <table>
+              <colgroup><col style="width:110px"><col style="width:130px"><col><col style="width:60px"><col style="width:210px"></colgroup>
+              <tr><th>주문번호</th><th>받는 분</th><th>품목</th><th class="r">수량</th><th class="r">이 줄은 어떻게 됩니까</th></tr>
+              <tr>
+                <td class="code">20260807-11</td><td>김미정</td>
+                <td>수크령 '레드헤드'<div class="sub">2026-08-07에 이미 올린 주문입니다</div></td>
+                <td class="r">12</td><td class="r gone">건너뜁니다</td>
+              </tr>
+              <tr>
+                <td class="code">20260807-12</td><td>박준호</td>
+                <td>청사초<div class="sub">2026-08-07에 이미 올린 주문입니다</div></td>
+                <td class="r">6</td><td class="r gone">건너뜁니다</td>
+              </tr>
+            </table>
+            <div class="allrow">
+              <span class="l">겹친 줄을 —</span>
+              <button class="btn sm">그래도 새로 넣기</button>
+              <span style="flex:1"></span>
+              <span class="note">기본은 <b>건너뛰기</b>입니다</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="ft">
+        <span class="fname">저장될 회차 — 2026-08-08 (1회차)</span>
+        <span class="spacer"></span>
+        <button class="btn">취소</button>
+        <button class="btn main">이 회차로 저장하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ③ 저장 뒤 — 로젠 대량등록 파일 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">저장이 끝나면 <b>같은 창</b>에서 로젠 파일이 이어집니다 — <b>창을 다시 열지 않습니다</b></div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:900px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div>
+              <h2>주문 관리</h2>
+              <div class="path">주문 › 주문 조회</div>
+            </div>
+            <div class="headbtns">
+              <button class="btn sm main">⬆ 주문 올리기</button>
+              <button class="btn sm">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm" aria-disabled="true" style="opacity:.4">💌 동봉카드</button>
+            </div>
+          </div>
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-08 · 주문 15건 · 품목 20줄</span></h3>
+            <table>
+              <colgroup><col style="width:200px"><col style="width:96px"><col style="width:88px"><col><col style="width:86px"><col style="width:74px"></colgroup>
+              <tr><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th></tr>
+              <tr><td>최영주</td><td><span class="mall">카페24</span></td><td class="code">PER03-15</td><td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">10</td></tr>
+              <tr><td>한지수</td><td><span class="mall">카페24</span></td><td class="code">CAS01-18</td><td>층꽃 '스털링실버'</td><td class="dim">18cm 포트</td><td class="r">6</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <!-- 팝업 ③ — 저장 완료 + 로젠 -->
+    <div class="modal" style="width:760px">
+      <div class="hd">
+        <h3>저장했습니다 — 이제 로젠 파일</h3>
+        <span class="hint">cafe24_order_20260808.csv · 2026-08-08 (1회차)</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+
+        <div class="sums">
+          <div class="sum ok">
+            <div class="k">저장된 줄</div>
+            <div class="v">12<small>건</small></div>
+            <div class="s">주문 9건으로 들어갔습니다</div>
+          </div>
+          <div class="sum">
+            <div class="k">건너뛴 줄</div>
+            <div class="v">2<small>건</small></div>
+            <div class="s">이미 있던 주문입니다</div>
+          </div>
+          <div class="sum warn">
+            <div class="k">품목코드 없이 저장</div>
+            <div class="v">2<small>건</small></div>
+            <div class="s">주문 화면에서 코드를 지정해 주세요</div>
+          </div>
+        </div>
+
+        <div class="done">
+          <span>
+            <b>2026-08-08 (1회차)</b>로 저장되었습니다 — 주문 <b>9건</b> · 품목 <b>12줄</b>.
+            잘못 올리셨으면 지금 되돌릴 수 있습니다.
+          </span>
+          <button class="btn sm">이 회차 되돌리기</button>
+        </div>
+
+        <div class="needbox gray">
+          <h4><span>⬇ 로젠 대량등록 파일</span><span class="why">방금 저장한 회차 그대로 만듭니다</span></h4>
+          <div class="inner">
+            <table>
+              <colgroup><col style="width:170px"><col></colgroup>
+              <tr><th>파일에 들어갈 것</th><th class="r">내용</th></tr>
+              <tr><td>받는 분</td><td class="r">9명 (주문 1건 = 1줄)</td></tr>
+              <tr><td>박스 수</td><td class="r">9박스</td></tr>
+              <tr><td>보내는 분</td><td class="r">제로가드닝 · 041-000-0000 · 충남 예산군 ○○면 ○○로 12</td></tr>
+              <tr><td>품목명 칸</td><td class="r">품목코드 없는 2줄은 <span class="warn" style="color:#9A6400; font-weight:var(--weight-semibold)">카페24 상품명 그대로</span> 들어갑니다</td></tr>
+            </table>
+            <div class="allrow">
+              <span class="l">파일 이름 —</span>
+              <span class="note"><b>로젠_대량등록_20260808.xlsx</b></span>
+              <span style="flex:1"></span>
+              <span class="note">로젠 홈페이지 → 대량등록 → 이 파일 올리기</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="ft">
+        <span class="fname">내려받을 파일 — 로젠_대량등록_20260808.xlsx · 9줄</span>
+        <span class="spacer"></span>
+        <button class="btn">닫기</button>
+        <button class="btn main">⬇ 로젠 대량등록 파일 내려받기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="memo">
+    <b>한 창으로 합쳤습니다</b> — 예전에는 「주문 올리기」와 「로젠 파일 만들기」가 따로였습니다.
+    올린 회차를 다시 골라야 로젠 파일이 나왔는데, <span class="q">그 사이에 회차를 잘못 고르면 엉뚱한 송장이 찍힙니다.</span>
+    저장한 그 자리에서 바로 내려받게 하면 회차를 다시 고를 일이 없습니다.<br>
+    <b>막지 않는 두 갈래</b> — ① <b>품목 못 찾은 줄</b>(노랑)은 그대로 저장하고 로젠 파일에도 넣습니다. 상품명은 카페24 것을 씁니다.
+    ② <b>이미 있는 줄</b>(회색)은 기본이 건너뛰기이고, 필요하면 「그래도 새로 넣기」로 넣습니다.<br>
+    <b>여쭙는 것</b> — 로젠 파일은 <span class="q">주문 1건 = 1줄(1박스)</span>로 만들었습니다. 한 주문이 두 박스로 나가는 일이 있으면 박스 수를 어디서 정할지 알려주세요.
+  </div>
+</div>
+
+</body>
+</html>
