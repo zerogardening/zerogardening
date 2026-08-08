@@ -429,7 +429,24 @@ window.ZG = window.ZG || {};
     return true;
   }
 
-  function 수동삭제(g, 끝나면) {
+  /* ── 지우기 (우람님 지시 8/8) ──
+     올린 건도 지울 수 있다. 다만 🔴 이미 배송완료된 줄이 하나라도 있으면 막는다 —
+     출고를 같이 지우면 나간 물건인데 재고가 되살아나고, 안 지우면 주인 없는 출고가 남는다.
+     서비스 품목 출고(출처 '서비스')는 주문에 딸린 것이라 같이 지운다. 막는 것은 출처 '주문' 뿐이다. */
+  function 나간줄(줄들) {
+    var 저 = ZG.저장소, 나간 = {};
+    저.읽기(저.키.출고).forEach(function (r) {
+      if (r.주문id && r.출처 === '주문') 나간[r.주문id] = 1;
+    });
+    return (줄들 || []).filter(function (r) { return 나간[r.id]; });
+  }
+
+  function 건삭제(g, 끝나면) {
+    var 나간것 = 나간줄(g.줄들);
+    if (나간것.length) {
+      u.토스트('이미 배송완료된 줄이 ' + 나간것.length + '개 있어 지울 수 없습니다.');
+      return;
+    }
     u.확인({
       제목: '이 주문을 지울까요?',
       본문: u.안전(g.수령인) + ' · ' + g.줄들.length + '품목',
@@ -441,6 +458,35 @@ window.ZG = window.ZG || {};
         if (ZG.서비스품목) ZG.서비스품목.출고지우기(r.id);   // 서비스가 아닌 줄엔 찾는 게 없어 아무 일도 안 난다
       });
       u.토스트(g.수령인 + ' 주문을 지웠습니다.');
+      끝나면();
+    });
+  }
+
+  /* 회차 통째로 무르기 — 잘못 올린 파일을 되돌린다. 묶음까지 지워야 빈 회차 칩이 안 남는다 */
+  function 회차삭제(묶음id, 끝나면) {
+    var 저 = ZG.저장소;
+    var 묶음 = 저.읽기(저.키.주문묶음).filter(function (b) { return b.id === 묶음id; })[0];
+    var 줄들 = ZG.주문자료.읽기({ 묶음id: 묶음id });
+    if (!줄들.length) { u.토스트('이 회차에 남은 주문이 없습니다.'); return; }
+
+    var 나간것 = 나간줄(줄들);
+    if (나간것.length) {
+      u.토스트('이 회차에 배송완료된 줄이 ' + 나간것.length + '개 있어 물릴 수 없습니다.');
+      return;
+    }
+    var 이름 = 묶음 ? (묶음.올린날 + ' ' + 묶음.회차 + '회차 ' + 묶음.올린시각) : 묶음id;
+    u.확인({
+      제목: '이 회차를 통째로 물릴까요?',
+      본문: 이름 + ' · 주문 ' + ZG.주문자료.건으로묶기(줄들).length + '건 · 품목 ' + 줄들.length + '줄',
+      확인글: '물리기', 위험: true
+    }, function (예) {
+      if (!예) return;
+      줄들.forEach(function (r) {
+        저.지우기(저.키.주문, r.id);
+        if (ZG.서비스품목) ZG.서비스품목.출고지우기(r.id);
+      });
+      저.지우기(저.키.주문묶음, 묶음id);
+      u.토스트(이름 + ' 를 물렸습니다.');
       끝나면();
     });
   }
@@ -470,13 +516,11 @@ window.ZG = window.ZG || {};
         });
         칸.appendChild(저장);
 
-        if (g.출처 === '수동') {
-          var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
-          삭제.addEventListener('click', function () {
-            수동삭제(g, function () { ZG.주문.열기('목록'); });
-          });
-          칸.appendChild(삭제);
-        }
+        var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
+        삭제.addEventListener('click', function () {
+          건삭제(g, function () { ZG.주문.열기('목록'); });
+        });
+        칸.appendChild(삭제);
       }
     };
   }
@@ -496,13 +540,11 @@ window.ZG = window.ZG || {};
       닫기창(); ZG.주문.다시그리기();
     });
     var 오른것들 = [];
-    if (g.출처 === '수동') {
-      var 삭제 = 만들기('button', { class: 'btn sm warn', type: 'button', text: '삭제' });
-      삭제.addEventListener('click', function () {
-        수동삭제(g, function () { 닫기창(); ZG.주문.다시그리기(); });
-      });
-      오른것들.push(삭제);
-    }
+    var 삭제 = 만들기('button', { class: 'btn sm warn', type: 'button', text: '삭제' });
+    삭제.addEventListener('click', function () {
+      건삭제(g, function () { 닫기창(); ZG.주문.다시그리기(); });
+    });
+    오른것들.push(삭제);
     var 닫기 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     닫기.addEventListener('click', 닫기창);
     오른것들.push(저장, 닫기);
@@ -630,7 +672,7 @@ window.ZG = window.ZG || {};
 
   ZG.주문입력 = {
     수동뷰: 수동뷰, 출고뷰: 출고뷰, PC출고창: PC출고창,
-    수정뷰: 수정뷰, PC수정창: PC수정창, 수동삭제: 수동삭제,
+    수정뷰: 수정뷰, PC수정창: PC수정창, 건삭제: 건삭제, 회차삭제: 회차삭제,
     품목카드묶음: 품목카드묶음,   // 09b 수동 카드 · 08e 서비스 창이 같은 부품을 쓴다
     줄만들기: 줄만들기,           // 08e 서비스 품목이 같은 모양의 줄을 만든다 (설계 §2-1)
     닫기창: 닫기창

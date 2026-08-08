@@ -340,19 +340,15 @@ window.ZG = window.ZG || {};
     });
     칸.appendChild(상자);
 
-    // 올린 파일에서 온 건도 고칠 수 있다. 다만 지우는 것은 수동 건만 —
-    // 매입·주문 기록은 지우지 않는다(업무규칙 §8, 6단계 설계 §1-5)
+    // 올린 파일에서 온 건도 고치고 지울 수 있다 (우람님 지시 8/8).
+    // 배송완료된 줄이 섞였으면 눌렀을 때 08c 가 막는다 — 재고가 어긋난다
     var 수정 = 만들기('button', { class: 'btn', type: 'button', text: '수정' });
     수정.addEventListener('click', function () { 열기('수동수정', g.묶음키); });
-    var 버튼들 = [수정];
-    if (g.출처 === '수동') {
-      var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
-      삭제.addEventListener('click', function () {
-        ZG.주문입력.수동삭제(g, function () { 열기('목록'); });
-      });
-      버튼들.push(삭제);
-    }
-    칸.appendChild(만들기('div', { class: 'topbtns' }, 버튼들));
+    var 삭제 = 만들기('button', { class: 'btn warn', type: 'button', text: '삭제' });
+    삭제.addEventListener('click', function () {
+      ZG.주문입력.건삭제(g, function () { 열기('목록'); });
+    });
+    칸.appendChild(만들기('div', { class: 'topbtns' }, [수정, 삭제]));
   }
 
   /* ══ PC — 표 ══ */
@@ -440,6 +436,20 @@ window.ZG = window.ZG || {};
       b.addEventListener('click', function () { 상태.묶음id = c.묶음id; 상태.쪽 = 1; 다시그리기(); });
       칩판.appendChild(b);
     });
+
+    /* 잘못 올린 파일 무르기. 회차를 하나 고른 뒤에만 나온다 — 늘 떠 있으면 잘못 누른다 */
+    if (상태.묶음id) {
+      var 물리기 = 만들기('button', {
+        class: 'fchip', type: 'button', text: '🗑 이 회차 물리기',
+        style: 'color:var(--color-danger); border-color:var(--color-danger)'
+      });
+      물리기.addEventListener('click', function () {
+        ZG.주문입력.회차삭제(상태.묶음id, function () {
+          상태.묶음id = ''; 상태.쪽 = 1; 다시그리기();
+        });
+      });
+      칩판.appendChild(물리기);
+    }
 
     칩판.appendChild(만들기('span', { style: 'flex:1' }));
     var 찾기 = 찾는칸('이름 · 전화번호 · 주소 · 상품명', 목록만다시);
