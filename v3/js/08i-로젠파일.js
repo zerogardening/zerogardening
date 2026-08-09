@@ -192,11 +192,14 @@ window.ZG = window.ZG || {};
     return o;
   }
 
+  /* 🔴 추가 송장은 새 번호를 소비하지 않는다 — 원래 묶음 번호를 그대로 물려받는다.
+     번호를 새로 매기면 뒤 묶음이 전부 한 칸씩 밀려 이미 인쇄한 동봉카드와 어긋난다(8/9 검수).
+     「같은 번호, 다른 상자」다 — 구분은 E열의 「n번 송장」 표시가 한다 */
   function 표만들기(그룹들, 재구매) {
-    var 표 = [];
-    그룹들.forEach(function (g, gi) {
-      g.출력번호 = gi + 1;
-      if (g.추가) { 표.push(추가줄(g).map(문자)); return; }
+    var 표 = [], 순번 = 0;
+    그룹들.forEach(function (g) {
+      if (g.추가) { g.출력번호 = (g.원 && g.원.출력번호) || 순번 || 1; 표.push(추가줄(g).map(문자)); return; }
+      g.출력번호 = ++순번;
       var 회 = 회차값(g, 재구매);
       var 여럿 = g.것들.length > 1;
       var 통일 = 통일값(g);
@@ -280,6 +283,7 @@ window.ZG = window.ZG || {};
     var 저 = ZG.저장소, 목록 = 저.읽기(저.키.주문), 표 = {}, 바뀜 = false;
     목록.forEach(function (r) { if (r.id) 표[r.id] = r; });
     그룹들.forEach(function (g) {
+      if (g.추가) return;                                   // 원래 묶음과 같은 줄·같은 번호다. 두 번 쓸 일이 없다
       g.것들.forEach(function (것) {
         var r = 것.id && 표[것.id];
         if (!r || r.출력번호) return;
