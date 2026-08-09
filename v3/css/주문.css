@@ -695,3 +695,60 @@ tr.editing td{background:var(--color-accent-bg)}
   font-size:var(--font-xs); color:var(--color-danger); font-weight:var(--weight-medium); line-height:1.6;
 }
 .pcsheet.dlv .c24note{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+/* ── 📦 로젠에 나갈 묶음 줄 (10단계 설계 §5-2·§5-4) ──
+   🔴 상태를 말하는 것은 줄 색뿐이다 — 빨강(확인요망) · 초록(손댐). 배지·안내글을 쓰지 않는다 */
+.pcsheet.dlv .grp{
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  background:var(--color-surface); margin-bottom:var(--space-sm); overflow:hidden;
+}
+.pcsheet.dlv .grp:last-child{margin-bottom:0}
+.pcsheet.dlv .gline{display:flex; align-items:center; gap:var(--space-md); padding:var(--space-md) var(--space-lg); cursor:pointer}
+.pcsheet.dlv .gline .no{
+  width:26px; height:26px; flex:0 0 auto; border-radius:var(--radius-sm);
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  font-size:var(--font-xs); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums;
+  display:flex; align-items:center; justify-content:center;
+}
+.pcsheet.dlv .gline .who{width:132px; flex:0 0 auto; font-size:var(--font-md); font-weight:var(--weight-semibold); letter-spacing:-.01em}
+.pcsheet.dlv .gline .who .sub{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+.pcsheet.dlv .gline .items{flex:1; min-width:0; font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); line-height:1.5}
+.pcsheet.dlv .gline .val{
+  width:110px; flex:0 0 auto; text-align:right; font-size:var(--font-md);
+  font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+}
+.pcsheet.dlv .gline .val .cap2{display:block; font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); letter-spacing:0}
+.pcsheet.dlv .gline .chev{width:16px; text-align:center; color:var(--color-text-faint); font-weight:var(--weight-bold)}
+.pcsheet.dlv .grp.ng{border-color:var(--color-danger-border); box-shadow:inset var(--bar-width) 0 0 var(--color-danger)}
+.pcsheet.dlv .grp.ng .gline{background:var(--color-danger-bg)}
+.pcsheet.dlv .grp.ng .val{color:var(--color-danger)}
+.pcsheet.dlv .grp.edited{border-color:var(--color-accent-border); box-shadow:inset var(--bar-width) 0 0 var(--color-accent)}
+.pcsheet.dlv .grp.edited .gline{background:var(--color-accent-bg)}
+.pcsheet.dlv .grp.plus .gline{padding-left:var(--space-4xl)}
+
+/* 그 자리에서 펼쳐지는 손보기 칸 — 창을 새로 띄우지 않는다 */
+.pcsheet.dlv .gedit{
+  border-top:var(--border-width) solid var(--color-border-faint); background:var(--color-bg);
+  padding:var(--space-lg) var(--space-lg) var(--space-lg) var(--space-2xl);
+  display:flex; flex-direction:column; gap:var(--space-lg);
+}
+.pcsheet.dlv .erow{display:flex; align-items:center; gap:var(--space-md); flex-wrap:wrap}
+.pcsheet.dlv .erow > .lb{width:82px; flex:0 0 auto; font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-sub)}
+.pcsheet.dlv .erow .hint2{font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-semibold); line-height:1.5}
+.pcsheet.dlv .erow .sumline{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+.pcsheet.dlv .seg.tight button{padding:var(--pad-btn-sm); font-size:var(--font-xs); min-height:var(--h-btn-sm)}
+.pcsheet.dlv .wonbox{display:flex; align-items:center; gap:var(--space-2xs)}
+.pcsheet.dlv .wonbox .inp{width:104px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:right; padding:0 10px}
+.pcsheet.dlv .wonbox .won{font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+.pcsheet.dlv .qty{display:flex; align-items:center; gap:var(--space-sm)}
+.pcsheet.dlv .qty button{
+  width:30px; height:30px; border-radius:var(--radius-sm); border:var(--border-width) solid var(--color-border);
+  background:var(--color-btn-bg); font-size:var(--font-xl); font-weight:var(--weight-bold);
+  color:var(--color-text-sub); line-height:1; box-shadow:var(--shadow-btn);
+}
+.pcsheet.dlv .qty .n{width:40px; text-align:center; font-size:var(--font-xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.pcsheet.dlv .ebar{
+  display:flex; align-items:center; gap:var(--space-sm);
+  border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-lg);
+}
+.pcsheet.dlv .ebar .spacer{flex:1}
