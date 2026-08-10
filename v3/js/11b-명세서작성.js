@@ -65,8 +65,9 @@ window.ZG = window.ZG || {};
 
   /* ── 공급받는자 자동완성 — 업체표에서 고른다. 판매처를 앞에 둔다 ── */
   function 받는곳자동완성(입력, 담을곳, 고름) {
-    var 상자 = null;
-    function 닫기() { if (상자 && 상자.parentNode) 상자.remove(); 상자 = null; }
+    var 상자 = null, 감시 = null;
+    /* 🔴 예약된 타자 타이머를 같이 끊는다 — 안 끊으면 고른 뒤 뒤늦게 터져 목록이 또 뜬다 (8/10) */
+    function 닫기() { if (감시) 감시.취소(); if (상자 && 상자.parentNode) 상자.remove(); 상자 = null; }
     function 열기(글) {
       닫기();
       var q = String(글 || '').trim().toLowerCase();
@@ -74,9 +75,16 @@ window.ZG = window.ZG || {};
         var x = a.구분 === '판매처' ? 0 : 1, y = b.구분 === '판매처' ? 0 : 1;
         return x !== y ? x - y : (a.이름 || '').localeCompare(b.이름 || '', 'ko');
       });
-      if (q) 것들 = 것들.filter(function (c) {
-        return [c.이름, c.대표, c.담당자].some(function (s) { return String(s || '').toLowerCase().indexOf(q) >= 0; });
-      });
+      if (q) {
+        것들 = 것들.filter(function (c) {
+          return [c.이름, c.대표, c.담당자].some(function (s) { return String(s || '').toLowerCase().indexOf(q) >= 0; });
+        });
+        /* 한 글자만 쳐도 뜨므로 순서가 중요하다 — 이름 첫 글자부터 맞은 곳을 앞에 세운다 (8/10) */
+        것들.sort(function (a, b) {
+          function 자리(c) { var i = String(c.이름 || '').toLowerCase().indexOf(q); return i < 0 ? 50 : i; }
+          return 자리(a) - 자리(b);
+        });
+      }
       것들 = 것들.slice(0, 8);
       if (!것들.length) return;
       상자 = 만들기('div', { class: 'ac', role: 'listbox' });
@@ -92,7 +100,7 @@ window.ZG = window.ZG || {};
       });
       담을곳.appendChild(상자);
     }
-    u.조합안전입력(입력, function (값) { 상태.받는곳.이름 = 값; 열기(값); }, 200);
+    감시 = u.조합안전입력(입력, function (값) { 상태.받는곳.이름 = 값; 열기(값); }, 200);
     입력.addEventListener('focus', function () { 열기(입력.value); });
     입력.addEventListener('blur', function () { setTimeout(닫기, 150); });
     입력.setAttribute('autocomplete', 'off');

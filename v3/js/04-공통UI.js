@@ -321,10 +321,15 @@ window.ZG = window.ZG || {};
 
     var 묶음 = {};
     품목.forEach(function (p) {
-      var 밭 = (p.유통명 + p.학명 + p.품목코드).toLowerCase().replace(/\s/g, '');
+      var 이름 = String(p.유통명).toLowerCase().replace(/\s/g, '');
+      var 밭 = 이름 + String(p.학명).toLowerCase().replace(/\s/g, '') + String(p.품목코드).toLowerCase();
       if (밭.indexOf(열쇠) < 0) return;
-      var g = 묶음[p.접두] || (묶음[p.접두] = { 접두: p.접두, 품목들: [], 입고건수: 0, 최근입고일: '', 최근규격: '', 최근단가: 0 });
+      var g = 묶음[p.접두] || (묶음[p.접두] = { 접두: p.접두, 품목들: [], 입고건수: 0, 최근입고일: '', 최근규격: '', 최근단가: 0, 자리: 99 });
       g.품목들.push(p);
+      /* 유사순 — 이름의 몇 번째 글자에서 걸렸나. 0 이면 「버들마편초」처럼 첫 글자부터 맞은 것이다.
+         이름에 없고 학명·코드에만 있으면 50 으로 뒤로 보낸다 (우람님 지시 8/10) */
+      var 자리 = 이름.indexOf(열쇠);
+      g.자리 = Math.min(g.자리, 자리 < 0 ? 50 : 자리);
     });
 
     Object.keys(묶음).forEach(function (접두) {
@@ -342,15 +347,18 @@ window.ZG = window.ZG || {};
     });
 
     return Object.keys(묶음).map(function (k) { return 묶음[k]; })
-      .sort(function (a, b) { return b.입고건수 - a.입고건수; })
-      .slice(0, 6);
+      .sort(function (a, b) { return a.자리 !== b.자리 ? a.자리 - b.자리 : b.입고건수 - a.입고건수; })
+      .slice(0, 8);
   }
 
   function 자동완성(설정) {
     var 입력 = 설정.입력, 담을곳 = 설정.담을곳;
-    var 목록 = [], 고른칸 = -1, 상자 = null;
+    var 목록 = [], 고른칸 = -1, 상자 = null, 감시 = null;
 
     function 닫기() {
+      /* 🔴 예약된 타자 타이머를 같이 끊는다. 안 끊으면 목록에서 고른 150ms 뒤에 타이머가 뒤늦게
+         터져 방금 고른 그 한 건이 다시 뜬다 — 두 번 고르는 것처럼 보인다 (우람님 지시 8/10) */
+      if (감시) 감시.취소();
       if (상자 && 상자.parentNode) 상자.parentNode.removeChild(상자);
       상자 = null; 고른칸 = -1;   // 목록은 지우지 않는다 — 그리기()가 닫기()를 먼저 부른다
       입력.setAttribute('aria-expanded', 'false');
@@ -413,7 +421,7 @@ window.ZG = window.ZG || {};
     입력.setAttribute('aria-expanded', 'false');
     입력.setAttribute('autocomplete', 'off');
 
-    조합안전입력(입력, function (값) {
+    감시 = 조합안전입력(입력, function (값) {
       var 글 = String(값).trim();
       if (글.length < 1) { 목록 = []; 닫기(); return; }
       목록 = 후보찾기(글); 고른칸 = -1; 그리기();

@@ -301,6 +301,40 @@ window.ZG = window.ZG || {};
     u.탈출걸기(닫기);
   }
 
+  /* ══ 엑셀 없이 — 이미 저장된 주문줄로 바로 로젠 파일 (우람님 지시 8/10) ══
+     자동수집 줄에는 카페24 27칸이 `원본` 으로 같이 저장돼 있다(edge-주문수집). 그걸 그대로 08i 에 넘긴다.
+     🔴 저장은 한 글자도 하지 않는다 — 전부 `이미` 로 두어 저장하기()가 아예 안 불린다.
+     🔴 옛 주문·심폴·수동주문에는 `원본` 이 없다. 그 줄은 조용히 빼고 몇 줄을 뺐는지 알린다
+        (지어내면 로젠 파일에 엉뚱한 주소가 나간다). */
+  function 로젠만들기(줄들) {
+    if (창) return;
+    var 전부 = 줄들 || [];
+    var 항목들 = 전부.filter(function (r) { return r && r.원본 && r.원본.length; })
+      .map(function (r) { return { 원본: r.원본, 줄: r, id: r.id || '', 갈래: '이미' }; });
+    var 빠짐 = 전부.length - 항목들.length;
+    if (!항목들.length) {
+      u.토스트('카페24 원본이 있는 주문이 없습니다 — 엑셀 파일로 올려 주세요');
+      return;
+    }
+    if (빠짐) u.토스트(빠짐 + '줄은 카페24 원본이 없어 뺐습니다 (옛 주문 · 심폴 · 수동주문)');
+    /* 🔴 운임 손질은 회차 하나에 붙는다(10단계 §3-1). 여러 회차를 한꺼번에 고르면 손질이
+       첫 회차에만 붙어 돈이 어긋난다 — 조용히 넘기지 않고 알린다 */
+    var 회차들 = {};
+    항목들.forEach(function (것) { var b = 것.줄.묶음id; if (b) 회차들[b] = 1; });
+    if (Object.keys(회차들).length > 1) {
+      u.토스트('회차 ' + Object.keys(회차들).length + '개가 섞였습니다 — 배송비 손질은 첫 회차에만 붙습니다');
+    }
+    상태 = {
+      단계: '완료', 파일: null, 파일명: '고른 주문 ' + 항목들.length + '줄', 머리: null,
+      항목들: 항목들, 무시: 0, 묶음: null
+    };
+    막 = 만들기('div', { class: 'pcscrim' });
+    막.addEventListener('click', 닫기);
+    document.body.appendChild(막);
+    그리기();
+    u.탈출걸기(닫기);
+  }
+
   function 껍데기(옵션) {
     var x = 단추('✕', 닫기, '');
     x.className = 'x'; x.setAttribute('aria-label', '닫기');
@@ -487,7 +521,7 @@ window.ZG = window.ZG || {};
       var r = 것.줄;
       return 만들기('tr', {}, [
         만들기('td', { class: 'code', text: r.주문번호 }),
-        만들기('td', {}, [만들기('div', { text: r.수령인 || '(이름 없음)' }),
+        만들기('td', {}, [만들기('div', { class: 'nm', text: r.수령인 || '(이름 없음)' }),
           만들기('div', { class: 'sub', text: r.수령인주소 || '' })]),
         만들기('td', { class: 'code', text: r.품목코드 || '—' }),
         만들기('td', { text: r.유통명 || '' }),
@@ -507,7 +541,7 @@ window.ZG = window.ZG || {};
     var 줄들 = 것들.slice(0, 8).map(function (것) {
       return 만들기('tr', {}, [
         만들기('td', { class: 'code', text: 것.줄.주문번호 }),
-        만들기('td', { text: 것.줄.수령인 || '(이름 없음)' }),
+        만들기('td', { class: 'nm', text: 것.줄.수령인 || '(이름 없음)' }),
         만들기('td', {}, [만들기('div', { text: 것.상품명 }),
           만들기('div', { class: 'sub', text: 것.줄.원본코드 ? '적혀 온 코드 「' + 것.줄.원본코드 + '」와 맞는 품목이 없습니다' : 'v3 품목코드와 맞는 것이 없습니다' })]),
         만들기('td', { class: 'r', text: String(ZG.주문자료.수량(것.줄)) }),
@@ -530,7 +564,7 @@ window.ZG = window.ZG || {};
     var 줄들 = 것들.slice(0, 8).map(function (것) {
       return 만들기('tr', {}, [
         만들기('td', { class: 'code', text: 것.줄.주문번호 }),
-        만들기('td', { text: 것.줄.수령인 || '(이름 없음)' }),
+        만들기('td', { class: 'nm', text: 것.줄.수령인 || '(이름 없음)' }),
         만들기('td', {}, [만들기('div', { text: 것.줄.유통명 || 것.상품명 }),
           만들기('div', { class: 'sub', text: '이미 v3 에 있는 주문입니다' })]),
         만들기('td', { class: 'r', text: String(ZG.주문자료.수량(것.줄)) }),
@@ -553,7 +587,7 @@ window.ZG = window.ZG || {};
     var 줄들 = 것들.slice(0, 8).map(function (것) {
       return 만들기('tr', {}, [
         만들기('td', { class: 'code', text: 것.줄.주문번호 }),
-        만들기('td', { text: 것.줄.수령인 || '(이름 없음)' }),
+        만들기('td', { class: 'nm', text: 것.줄.수령인 || '(이름 없음)' }),
         만들기('td', {}, [만들기('div', { text: 것.원날짜 || '(빈칸)' }),
           만들기('div', { class: 'sub', text: '발주일을 읽지 못했습니다' })]),
         만들기('td', { class: 'r', style: 톤표.노랑글, text: '저장하지 않음 · 로젠 파일에는 들어감' })
@@ -673,7 +707,7 @@ window.ZG = window.ZG || {};
   }
 
   ZG.주문올리기 = {
-    열기: 열기, 닫기: 닫기,
+    열기: 열기, 닫기: 닫기, 로젠만들기: 로젠만들기,
     머리읽기: 머리읽기, 읽기결과: 읽기결과, 코드정규화: 코드정규화,
     칸이름들: function () { return 칸이름.slice(); },   // 08j 가 27칸 자리표를 세울 때 쓴다
     옵션입수: 옵션입수, 우편정규화: 우편정규화, 날짜만들기: 날짜만들기, 중복키: 중복키

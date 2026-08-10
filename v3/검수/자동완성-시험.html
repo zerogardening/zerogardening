@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8"><title>자동완성 시험</title>
+<body style="font:14px/1.7 ui-monospace,monospace;padding:24px;white-space:pre-wrap">
+<div id=담을곳></div><input id=칸 style="position:absolute;left:-9999px">
+<!-- 자동완성 두 가지를 확인한다 (우람님 지시 8/10)
+     ① 한 글자만 쳐도 뜨고, 이름 앞쪽에서 맞은 것이 위로 온다
+     ② 목록에서 고르면 예약된 타자 타이머가 끊겨 목록이 다시 뜨지 않는다
+     🔴 01b-서버.js 를 싣지 않는다 — 로그인 화면으로 튕긴다 -->
+<script>window.ZG={저장소:{
+  키:{입고:'입고'},
+  품목들:function(){return [
+    {유통명:'버들마편초',학명:'Verbena bonariensis',품목코드:'VER01-15',접두:'VER01',규격cm:15,규격:'15cm',매입단가:1000,과세구분:'면세'},
+    {유통명:'무늬버들',   학명:'Salix integra',     품목코드:'SAL01-15',접두:'SAL01',규격cm:15,규격:'15cm',매입단가:2000,과세구분:'면세'},
+    {유통명:'수국잎 버들',학명:'Hydrangea',         품목코드:'HYD01-15',접두:'HYD01',규격cm:15,규격:'15cm',매입단가:3000,과세구분:'면세'},
+    {유통명:'노루오줌',   학명:'Astilbe verbena',   품목코드:'AST01-15',접두:'AST01',규격cm:15,규격:'15cm',매입단가:4000,과세구분:'면세'}
+  ]},
+  읽기:function(){return [
+    {품목코드:'HYD01-15',입고일:'2026-08-01',규격:'15cm',매입단가:3000},
+    {품목코드:'HYD01-15',입고일:'2026-08-02',규격:'15cm',매입단가:3000},
+    {품목코드:'HYD01-15',입고일:'2026-08-03',규격:'15cm',매입단가:3000}]}
+}};</script>
+<script src="../js/04-공통UI.js"></script>
+<script>
+var 말=[], 튕김=0;
+function 봐(이름,참){ if(!참)튕김++; 말.push((참?'OK  ':'🔴 FAIL ')+이름); }
+function 쓰기(){ document.body.textContent = 말.join('\n') + '\n\n' + (튕김? '🔴 '+튕김+'건 실패' : '✅ 전부 통과'); }
+
+var r = ZG.ui.후보찾기('버').map(function(g){return g.대표.유통명});
+봐('「버」 한 글자로 3건 (한글 이름에 든 것만)', r.length===3);
+/* 수국잎 버들은 입고 3건으로 가장 많지만, 이름 앞쪽에서 맞은 무늬버들보다 뒤여야 한다 */
+봐('유사순 — '+r.join(' > '), r[0]==='버들마편초' && r[1]==='무늬버들' && r[2]==='수국잎 버들');
+
+var 칸=document.getElementById('칸'), 곳=document.getElementById('담을곳'), 고른수=0;
+ZG.ui.자동완성({입력:칸, 담을곳:곳, 고름:function(){고른수++;}});
+칸.value='버'; 칸.dispatchEvent(new Event('input'));
+setTimeout(function(){
+  봐('타자 뒤 목록이 뜬다', 곳.querySelectorAll('.ac').length===1);
+  칸.value='버들'; 칸.dispatchEvent(new Event('input'));   // 타이머를 예약해 둔 채로 고른다
+  곳.querySelector('.ac .it').click();
+  봐('고른 직후엔 닫혀 있다', 곳.querySelectorAll('.ac').length===0);
+  봐('고름은 한 번만', 고른수===1);
+  setTimeout(function(){
+    봐('300ms 지나도 다시 안 뜬다', 곳.querySelectorAll('.ac').length===0);
+    쓰기();
+  }, 300);
+}, 250);
+</script>

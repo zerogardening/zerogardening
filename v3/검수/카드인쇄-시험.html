@@ -1,0 +1,69 @@
+<!doctype html><meta charset="utf-8"><title>동봉카드 인쇄 시험</title>
+<link rel="stylesheet" href="../css/공통.css"><link rel="stylesheet" href="../css/주문.css">
+<body><div id=뿌리></div><pre id=말 style="font:13px/1.7 ui-monospace,monospace;padding:24px"></pre>
+<!-- ⬆ 주문 올리기를 체크한 주문으로 눌렀을 때, 엑셀 없이 로젠 파일 화면이 뜨는지 (우람님 지시 8/10)
+     🔴 01b-서버.js 는 싣지 않는다 — 로그인 화면으로 튕긴다. ZG.서버 를 여기서 흉내낸다 -->
+<script>
+window.ZG={};
+localStorage.clear();
+localStorage.setItem('zg.v3.품목', JSON.stringify([
+ {품목코드:'VER01-15',접두:'VER01',유통명:'버들마편초',학명:'Verbena bonariensis',규격:'15cm',규격cm:15,매입단가:1500,과세구분:'면세'},
+ {품목코드:'SAL01-15',접두:'SAL01',유통명:'무늬버들',  학명:'Salix integra',      규격:'15cm',규격cm:15,매입단가:2000,과세구분:'면세'}
+]));
+/* 원본 27칸 — edge-주문수집이 자동수집 줄에 같이 저장하는 그 배열이다 */
+function 원본(주문번호,상품명,코드,수량,이름,우편,주소,전화){
+ return ['카페24','',주문번호,'2026-08-10',상품명,'','',코드,'무통장','','',9900,수량,이름,우편,주소,전화,전화,전화,'',이름,'','','','',0,''];
+}
+var 줄들=[
+ {id:'od_1',묶음id:'260810-01',주문번호:'20260810-0000001',주문일:'2026-08-10',판매처:'쿠팡',
+  품목코드:'VER01-15',원본코드:'VER01-15',유통명:'버들마편초',규격:'15cm',주문수량:2,옵션입수:1,단가:9900,
+  수령인:'홍길동',수령인전화:'010-1111-2222',수령인주소:'서울 강남구 1',우편번호:'06000',묶음키:'홍길동|010-1111-2222',
+  출처:'자동수집',카페24상태:'배송준비중',원본:원본('20260810-0000001','버들마편초','VER01-15',2,'홍길동','06000','서울 강남구 1','010-1111-2222')},
+ {id:'od_2',묶음id:'260810-01',주문번호:'20260810-0000002',주문일:'2026-08-10',판매처:'쿠팡',
+  품목코드:'SAL01-15',원본코드:'SAL01-15',유통명:'무늬버들',규격:'15cm',주문수량:1,옵션입수:1,단가:9900,
+  수령인:'김철수',수령인전화:'010-3333-4444',수령인주소:'부산 해운대 2',우편번호:'48000',묶음키:'김철수|010-3333-4444',
+  출처:'자동수집',카페24상태:'배송준비중',원본:원본('20260810-0000002','무늬버들','SAL01-15',1,'김철수','48000','부산 해운대 2','010-3333-4444')},
+ /* 원본이 없는 옛 주문 — 조용히 빠져야 한다 */
+ {id:'od_3',묶음id:'260810-01',주문번호:'20260810-0000003',주문일:'2026-08-10',판매처:'심폴',
+  품목코드:'VER01-15',유통명:'버들마편초',규격:'15cm',주문수량:1,옵션입수:1,단가:9900,
+  수령인:'박영희',수령인전화:'010-5555-6666',수령인주소:'대구 중구 3',우편번호:'41900',묶음키:'박영희|010-5555-6666',출처:'심폴'}
+];
+localStorage.setItem('zg.v3.주문', JSON.stringify(줄들));
+localStorage.setItem('zg.v3.주문묶음', JSON.stringify([{id:'260810-01',올린날:'2026-08-10',회차:1,줄수:3,출처:'자동수집'}]));
+</script>
+<script src="../js/00-시드.js"></script>
+<script src="../js/01-저장소.js"></script>
+<script src="../js/01c-보내기.js"></script>
+<script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script>
+<script src="../js/04-공통UI.js"></script>
+<script src="../js/04b-특성.js"></script>
+<script src="../js/08a-주문자료.js"></script>
+<script src="../js/08b-주문목록.js"></script>
+<script src="../js/08c-주문입력.js"></script>
+<script src="../js/08d-주문파일.js"></script>
+<script src="../js/08e-서비스품목.js"></script>
+<script src="../js/08f-배송완료.js"></script>
+<script src="../js/08g-배송완료창.js"></script>
+<script src="../js/08h-주문올리기.js"></script>
+<script src="../js/08i-로젠파일.js"></script>
+<script src="../js/08j-심폴.js"></script>
+<script src="../js/08k-심폴짝창.js"></script>
+<script src="../js/08l-카페24발송.js"></script>
+<script src="../js/08m-카페24발송창.js"></script>
+<script src="../js/08n-수동배송완료.js"></script>
+<script src="../js/08o-운임손질.js"></script>
+<script src="../js/08p-운임손질창.js"></script>
+<script src="../js/09-동봉카드.js"></script>
+<script src="../js/09b-카드설정.js"></script>
+<script src="../js/15a-견적자료.js"></script>
+<script src="../js/15b-견적PC.js"></script>
+<script src="../js/15c-견적폰.js"></script>
+<script src="../js/15d-견적탭.js"></script>
+<script>
+ZG.서버 = { 로그인됨:false, 클라이언트:null, 받아오기:null };
+var 건들 = ZG.주문자료.건으로묶기(줄들.slice(0,2));
+ZG.동봉카드.열기(건들);
+document.body.classList.add('인쇄중');
+document.getElementById('말').textContent = '카드 ' + document.querySelectorAll('.encardframe').length + '장';
+</script>

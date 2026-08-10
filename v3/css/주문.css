@@ -442,10 +442,15 @@ table.mini th{padding:var(--space-xs)}
   .encardframe{--s:.40}
 }
 
-/* 인쇄 — 카드 한 장이 A4 한 쪽이다. 기본 여백(약 12.7mm)을 감안해 배율을 잡는다.
-   794px×.86 = 181mm 로, 여백을 넉넉히 잡은 프린터에서도 잘리지 않는다 */
+/* 인쇄 — 카드 한 장이 A4 한 쪽이다. 여백을 0으로 두어도 배율은 .86 그대로 둔다
+   (794px×.86 = 181mm — 여백을 넉넉히 잡은 프린터에서도 잘리지 않는다) */
 @media print{
-  body.인쇄중 .pcsheet .bd{padding:0}
+  /* 🔴 위쪽 출력시간·아래쪽 도메인·쪽번호는 우리가 찍는 게 아니라 크롬이 여백에 찍는 것이다.
+     여백이 0이면 찍을 자리가 없어 사라진다 (우람님 지시 8/10) */
+  @page{margin:0}
+  /* 여백을 없앴으니 종이 끝에 글자가 붙는다 — 카드가 아닌 창(출고리스트)은 스스로 여백을 갖는다 */
+  body.인쇄중 .pcsheet:has(.encard) .bd{padding:0}
+  body.인쇄중 .pcsheet:not(:has(.encard)) .bd{padding:12mm}
   body.인쇄중 .encardframe{
     --s:.86; box-shadow:none; margin:0 auto;
     break-inside:avoid; break-after:page; page-break-after:always;
@@ -644,6 +649,8 @@ tr.editing td{background:var(--color-accent-bg)}
 .pcsheet.dlv .needbox > h4 .why{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); text-align:right}
 .pcsheet.dlv .needbox .inner{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
 .pcsheet.dlv .rowbtns{display:flex; gap:var(--space-2xs); justify-content:flex-end; flex-wrap:wrap}
+/* 받는 분 이름은 표에서 가장 먼저 읽는 글자다 — 진하고 굵게 (우람님 지시 8/10) */
+.pcsheet.dlv td.nm, .pcsheet.dlv td .nm{color:var(--color-text); font-weight:var(--weight-bold)}
 .pcsheet.dlv td.gone{color:var(--color-text-muted)}
 .pcsheet.dlv td.went{color:var(--color-accent-dark); font-weight:var(--weight-semibold)}
 /* 재고를 못 깎은 줄 — 「이미 처리됨」과 눈으로 갈라 보이게 한다 */

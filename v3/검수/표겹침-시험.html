@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>주문번호·받는 분 겹침 시험</title>
+<link rel="stylesheet" href="../css/공통.css"><link rel="stylesheet" href="../css/주문.css">
+<body style="padding:20px;background:#fff">
+<!-- 주문올리기 미리보기 표(6칸·880px)에서 긴 주문번호가 옆 칸으로 넘치는지 (우람님 지시 8/10) -->
+<div class="pcsheet dlv" style="position:static;transform:none;width:880px">
+ <div class="bd">
+  <table id=표>
+   <thead><tr><th>주문번호</th><th>받는 분</th><th>품목코드</th><th>품목</th><th>규격</th><th class=r>수량</th></tr></thead>
+   <tbody>
+    <tr><td class=code>20260810-0000001234</td><td class=nm>홍길동</td><td class=code>VER01-15</td><td>버들마편초</td><td>15cm</td><td class=r>2</td></tr>
+    <tr><td class=code>2026081000012345678</td><td class=nm>김철수</td><td class=code>SAL01-15</td><td>무늬버들</td><td>15cm</td><td class=r>1</td></tr>
+   </tbody>
+  </table>
+ </div>
+</div>
+<pre id=말 style="font:13px/1.7 ui-monospace,monospace"></pre>
+<script>
+var 말=[], 튕김=0;
+function 봐(이름,참){ if(!참)튕김++; 말.push((참?'OK  ':'🔴 FAIL ')+이름); }
+function 넘침(){
+  return [].slice.call(document.querySelectorAll('#표 td.code'))
+    .filter(function(td){ return td.scrollWidth > td.clientWidth + 1; }).length;
+}
+/* 고치기 전 모양을 되살려 정말 넘쳤는지 먼저 확인한다 — 안 그러면 시험이 늘 통과한다 */
+var 되살림 = document.createElement('style');
+되살림.textContent = '#표 td.code{white-space:nowrap; overflow-wrap:normal}';
+document.head.appendChild(되살림);
+봐('옛 모양(nowrap)에서는 주문번호가 칸을 넘친다 — 넘친 칸 '+넘침()+'개', 넘침() > 0);
+되살림.remove();
+봐('고친 뒤에는 넘치는 칸이 없다 — 넘친 칸 '+넘침()+'개', 넘침() === 0);
+
+var 이름칸 = document.querySelector('#표 td.nm');
+var 굵기 = getComputedStyle(이름칸).fontWeight, 색 = getComputedStyle(이름칸).color;
+봐('받는 분 이름이 굵다 ('+굵기+')', Number(굵기) >= 700);
+봐('받는 분 이름이 진하다 ('+색+')', 색 === 'rgb(29, 29, 31)');
+
+document.getElementById('말').textContent = 말.join('\n')+'\n\n'+(튕김?'🔴 '+튕김+'건 실패':'✅ 전부 통과');
+</script>
