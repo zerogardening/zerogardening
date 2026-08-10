@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>v3 주문 js 문법 검사</title>
+<body><pre id="말">검사중…</pre>
+<script>
+/* 주문.html 이 싣는 js 를 하나씩 읽어 문법만 본다 — 화면을 띄우지 않으므로 로그인·라우팅과 무관하다.
+   file:// 에서 fetch 를 쓰려면 --allow-file-access-from-files 로 크롬을 띄운다 */
+var 파일들 = ['00-확대금지','00-시드','01-저장소','01b-서버','01c-보내기','02-품목코드','03-계산',
+  '04-공통UI','04b-특성','08a-주문자료','08b-주문목록','08c-주문입력','08d-주문파일','08e-서비스품목',
+  '08f-배송완료','08g-배송완료창','08h-주문올리기','08i-로젠파일','08j-심폴','08k-심폴짝창',
+  '08l-카페24발송','08m-카페24발송창','08n-수동배송완료','08o-운임손질','08p-운임손질창',
+  '09-동봉카드','09b-카드설정'];
+var 결과 = [], 나쁨 = 0;
+Promise.all(파일들.map(function (f) {
+  return fetch('../js/' + f + '.js').then(function (r) { return r.text(); })
+    .then(function (t) {
+      try { new Function(t); 결과.push('OK   ' + f); }
+      catch (e) { 나쁨++; 결과.push('🔴 ' + f + ' — ' + e.message); }
+    })
+    .catch(function (e) { 나쁨++; 결과.push('?? ' + f + ' 못 읽음 ' + e); });
+})).then(function () {
+  결과.sort();
+  document.getElementById('말').textContent =
+    결과.join('\n') + '\n\n' + (나쁨 ? ('🔴 ' + 나쁨 + '개 문제') : '✅ ' + 파일들.length + '개 전부 문법 정상');
+});
+</script>

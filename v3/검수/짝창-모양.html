@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>짝짓기 상자 모양</title>
+<link rel="stylesheet" href="../css/공통.css"><link rel="stylesheet" href="../css/주문.css">
+<body class="pc" style="background:var(--color-bg); padding:20px; max-width:900px; margin:0 auto">
+<div id="칸"></div>
+<script>
+localStorage.clear();
+localStorage.setItem('zg.v3.품목', JSON.stringify([
+  { 품목코드:'ALP02-15', 접두:'ALP02', 학명3:'ALP', 일련번호:'02', 규격cm:15, 규격:'15cm 포트',
+    유통명:'알프스민들레', 학명:'Alpina alpina', 학명키:'alpina alpina', 매입단가:1000, 과세구분:'면세', 상태:'판매중' }
+]));
+localStorage.setItem('zg.v3.심폴짝', JSON.stringify([
+  { id:'HEU01', 붙인품목코드:'ALP02-15', 심폴상품명:'휴케라 라임', 만든때:1, 고친때:1 }
+]));
+</script>
+<script src="../js/01-저장소.js"></script><script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script><script src="../js/04-공통UI.js"></script>
+<script src="../js/04b-특성.js"></script><script src="../js/08a-주문자료.js"></script>
+<script src="../js/08c-주문입력.js"></script><script src="../js/08j-심폴.js"></script>
+<script src="../js/08k-심폴짝창.js"></script>
+<script>
+window.addEventListener('load', function () {
+  function 것(코드, 이름, 품목코드) {
+    return { 줄:{ id:'x'+코드, 판매처:'카페24', 원본코드:코드, 품목코드:품목코드||'', 유통명:'' }, 상품명:이름 };
+  }
+  var 상자 = ZG.짝창.상자([
+    것('POL01', '추명국 휠윈드핑크 15cm'),
+    것('HEU01', '휴케라 라임 15cm', 'ALP02-15')
+  ], { 바뀌면: function () {} });
+  document.getElementById('칸').appendChild(상자);
+  // 접이칸을 펴서 새 품목 등록 폼까지 한눈에 본다
+  var f = document.querySelectorAll('.fold');
+  for (var i = 0; i < f.length; i++) f[i].click();
+});
+</script>

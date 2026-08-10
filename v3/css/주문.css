@@ -761,3 +761,11 @@ tr.editing td{background:var(--color-accent-bg)}
   border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-lg);
 }
 .pcsheet.dlv .ebar .spacer{flex:1}
+
+/* 짝짓기 상자의 「새 품목 등록」이 04b 특성 위젯을 쓴다 (2026-08-10).
+   이 규칙들은 상품.css 에만 있었고 주문.html 은 상품.css 를 안 싣는다 — 여기 복사해 둔다 */
+.stack{display:flex; flex-direction:column; gap:var(--gap-ph-body)}
+.특성표{display:grid; grid-template-columns:repeat(2, 1fr); gap:var(--space-lg); padding:var(--space-2xl) 0 0}
+.특성표 .넓게{grid-column:1 / -1}
+@media (max-width:899px){ .특성표{grid-template-columns:1fr} }
+.inp.multi{height:auto; min-height:76px; line-height:1.6; padding:9px 11px; resize:vertical; font-size:var(--font-md)}
