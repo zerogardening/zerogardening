@@ -1,0 +1,90 @@
+<!doctype html><meta charset="utf-8"><title>동봉카드 사무실 인쇄 — 시험</title>
+<body><pre id="말">검사중…</pre>
+<script>
+/* 09-동봉카드 의 「폰이면 사무실로, PC 면 그 자리서」 갈림길만 본다.
+   서버·주문화면을 가짜로 심어 09 하나만 진짜로 돌린다 — 로그인·Realtime 과 무관하다. */
+var 폰이다 = false, 부른것 = [];
+window.print = function () { 부른것.push('print'); };
+
+window.ZG = {
+  ui: {
+    만들기: function (태그, 속성, 자식들) {
+      var e = document.createElement(태그);
+      Object.keys(속성 || {}).forEach(function (k) {
+        if (k === 'text') e.textContent = 속성[k];
+        else if (k === 'class') e.className = 속성[k];
+        else e.setAttribute(k, 속성[k]);
+      });
+      (자식들 || []).forEach(function (c) { if (c) e.appendChild(c); });
+      return e;
+    },
+    토스트: function (글) { 부른것.push('토스트:' + 글); },
+    폰인가: function () { return 폰이다; },
+    탈출걸기: function () {}
+  },
+  저장소: { 동봉카드설정읽기: function () { return {}; }, 품목들: function () { return []; } },
+  보내기: { 설정: function (k, v) { 부른것.push('보냄:' + k + ':' + (v.건들 || []).length + '건'); } },
+  서버: { 켜짐: true },
+  주문입력: { 닫기창: function () { document.querySelectorAll('.pcsheet,.pcscrim').forEach(function (n) { n.remove(); }); } }
+};
+</script>
+<script src="../js/09-동봉카드.js"></script>
+<script>
+var 건들 = [{ 줄들: [{ 품목코드: 'FEE01-10', 유통명: '페스투카 엘리야블루', 주문수량: 2 }] }];
+var 결과 = [], 나쁨 = 0;
+function 본다(이름, 됐나, 실제) {
+  if (!됐나) 나쁨++;
+  결과.push((됐나 ? 'OK   ' : '🔴 ') + 이름 + (됐나 ? '' : '  ← 실제: ' + JSON.stringify(실제)));
+}
+function 인쇄단추누르기() {
+  var b = [].slice.call(document.querySelectorAll('.pcsheet .hd button'))
+            .filter(function (x) { return x.textContent.indexOf('인쇄') >= 0; })[0];
+  if (b) b.click();
+  return !!b;
+}
+
+/* ① PC — 단추 문구가 그대로 「🖨 인쇄」인가 (우람님 8/11: 바꾸지 말 것) */
+폰이다 = false; 부른것 = [];
+ZG.동봉카드.열기(건들);
+var 단추글 = ([].slice.call(document.querySelectorAll('.pcsheet .hd button'))
+  .filter(function (x) { return x.textContent.indexOf('인쇄') >= 0; })[0] || {}).textContent;
+본다('단추 문구가 「🖨 인쇄」 그대로다', 단추글 === '🖨 인쇄', 단추글);
+
+/* ② PC 에서 누르면 그 자리서 뽑는다 — 서버로 안 보낸다 */
+인쇄단추누르기();
+본다('PC: window.print 를 부른다', 부른것.indexOf('print') >= 0, 부른것);
+본다('PC: 서버로 안 보낸다', !부른것.some(function (x) { return x.indexOf('보냄:') === 0; }), 부른것);
+ZG.주문입력.닫기창();
+
+/* ③ 폰에서 누르면 사무실로 간다 — 폰에선 print 를 부르지 않는다 */
+폰이다 = true; 부른것 = [];
+ZG.동봉카드.열기(건들);
+인쇄단추누르기();
+본다('폰: 인쇄대기열로 보낸다', 부른것.indexOf('보냄:zg.v3.인쇄대기열:1건') >= 0, 부른것);
+본다('폰: window.print 를 안 부른다', 부른것.indexOf('print') < 0, 부른것);
+ZG.주문입력.닫기창();
+
+/* ④ 폰은 남의 인쇄 요청을 받아도 뽑지 않는다 (폰끼리 서로 뽑으면 안 된다) */
+폰이다 = true; 부른것 = [];
+ZG.동봉카드.사무실인쇄({ 건들: 건들 });
+본다('폰: 받은 요청을 뽑지 않는다', 부른것.length === 0, 부른것);
+
+/* ⑤ PC 는 받으면 뽑고, 🔴 뽑기 전에 대기열을 먼저 비운다 (새로고침 시 두 번 나가지 않게) */
+폰이다 = false; 부른것 = [];
+ZG.동봉카드.사무실인쇄({ 건들: 건들 });
+var 비움 = 부른것.indexOf('보냄:zg.v3.인쇄대기열:0건');
+본다('PC: 대기열을 비운다', 비움 >= 0, 부른것);
+setTimeout(function () {
+  본다('PC: 비운 뒤에 뽑는다', 비움 >= 0 && 부른것.indexOf('print') > 비움, 부른것);
+
+  /* ⑥ 빈 요청·부서진 요청에 손대지 않는다 */
+  부른것 = [];
+  ZG.동봉카드.사무실인쇄(null);
+  ZG.동봉카드.사무실인쇄({ 건들: [] });
+  본다('빈 요청은 아무 일도 안 한다', 부른것.length === 0, 부른것);
+
+  결과.push('');
+  결과.push(나쁨 ? ('🔴 ' + 나쁨 + '개 문제') : '✅ ' + 결과.length + '개 전부 통과');
+  document.getElementById('말').textContent = 결과.join('\n');
+}, 500);
+</script>

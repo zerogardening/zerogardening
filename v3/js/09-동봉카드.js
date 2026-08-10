@@ -202,9 +202,9 @@ window.ZG = window.ZG || {};
   var 마지막건들 = null;   // 설정을 고치고 돌아왔을 때 보던 카드를 그대로 다시 그리려고 들고 있는다
 
   function 열기(건들) {
-    if (!건들 || !건들.length) { u.토스트('카드를 만들 주문이 없습니다.'); return; }
+    if (!건들 || !건들.length) { u.토스트('카드를 만들 주문이 없습니다.'); return false; }
     var 판들 = 판들만들기(건들);
-    if (!판들.length) { u.토스트('카드에 넣을 품목이 없습니다.'); return; }
+    if (!판들.length) { u.토스트('카드에 넣을 품목이 없습니다.'); return false; }
     마지막건들 = 건들;
 
     ZG.주문입력.닫기창();
@@ -212,7 +212,10 @@ window.ZG = window.ZG || {};
     막.addEventListener('click', 닫기);
 
     var 인쇄 = 만들기('button', { class: 'btn sm main', type: 'button', text: '🖨 인쇄' });
-    인쇄.addEventListener('click', function () { window.print(); });
+    /* 🔴 문구는 폰·PC 같다(우람님 8/11) — 폰엔 프린터가 없으니 누르면 사무실 PC 로 간다 */
+    인쇄.addEventListener('click', function () {
+      if (u.폰인가()) 사무실로(건들); else window.print();
+    });
     var 수동 = 만들기('button', { class: 'btn sm', type: 'button', text: '✎ 수동 카드', title: '주문 없이 품목만 골라 카드 만들기' });
     수동.addEventListener('click', function () { ZG.카드설정.수동창(); });
     var 설정 = 만들기('button', { class: 'btn sm', type: 'button', text: '⚙', 'aria-label': '동봉카드 설정' });
@@ -234,6 +237,35 @@ window.ZG = window.ZG || {};
     document.body.classList.add('인쇄중');
     u.탈출걸기(닫기);
     setTimeout(function () { 닫기버튼.focus(); }, 20);
+    return true;
+  }
+
+  /* ── 사무실 프린터로 보내기 ── 폰엔 프린터가 없다. 서버에 한 줄 남기면
+     사무실 PC 크롬(같은 화면이 열려 있는 탭)이 Realtime 으로 받아 제 프린터로 뽑는다.
+     탭이 닫혀 있었으면 줄이 그대로 남아 있다가 다음에 열 때 나온다(01b 내려받기). */
+  var 대기열키 = 'zg.v3.인쇄대기열';
+
+  function 사무실로(건들) {
+    if (!ZG.보내기 || !ZG.서버 || !ZG.서버.켜짐) {
+      u.토스트('서버에 연결돼 있지 않아 보낼 수 없습니다.'); return;
+    }
+    ZG.보내기.설정(대기열키, { 건들: 건들, 보낸때: new Date().toISOString() });
+    u.토스트('사무실 프린터로 보냈습니다.');
+    닫기();
+  }
+
+  /* PC 쪽에서만 돈다. 🔴 뽑기 전에 대기열을 먼저 비운다 —
+     비우기 전에 새로고침하면 같은 카드가 또 나온다. */
+  function 사무실인쇄(요청) {
+    if (u.폰인가()) return;                       // 폰끼리는 서로 안 뽑는다
+    if (!요청 || !요청.건들 || !요청.건들.length) return;
+    if (!열기(요청.건들)) { 비우기(); return; }    // 못 그렸으면 줄만 치운다
+    비우기();
+    setTimeout(function () { window.print(); 닫기(); }, 300);
+  }
+
+  function 비우기() {
+    if (ZG.보내기) ZG.보내기.설정(대기열키, { 건들: [] });
   }
 
   /* 수동으로 고른 품목을 「건」 모양으로 맞춰 같은 길로 태운다 (08c 품목카드묶음의 읽기() 결과) */
@@ -254,5 +286,6 @@ window.ZG = window.ZG || {};
     return false;
   }
 
-  ZG.동봉카드 = { 열기: 열기, 수동열기: 수동열기, 다시열기: 다시열기, 기본설정: 기본설정, 설정읽기: 설정읽기 };
+  ZG.동봉카드 = { 열기: 열기, 수동열기: 수동열기, 다시열기: 다시열기,
+                 사무실인쇄: 사무실인쇄, 기본설정: 기본설정, 설정읽기: 설정읽기 };
 })(window.ZG);
