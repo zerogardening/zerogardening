@@ -216,6 +216,26 @@ const 오늘문자 = () =>
 const 새id = () =>
   "od_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
 
+/* 🔴 PostgREST 는 한 번에 1,000줄까지만 준다 (Supabase 기본 max-rows).
+   2026-08-11 중복 사고의 뿌리 — 주문이 1,300건을 넘으면서 **최근 주문이 잘려 나갔고**,
+   함수가 그걸 「처음 보는 주문」으로 착각해 다시 넣었다. 누를 때마다 한 벌씩 쌓였다.
+   끝까지 읽는다. 마지막 덩이가 1,000줄보다 짧으면 다 온 것이다.
+   🔴 품목·주문묶음도 같이 고친다 — 품목이 1,000개를 넘으면 마스터가 빠져 매칭이 조용히 실패한다. */
+async function 전부읽기(표: string, 칸: string): Promise<any[]> {
+  const 덩이 = 1000;
+  const 나온것: any[] = [];
+  for (let 시작 = 0; ; 시작 += 덩이) {
+    const { data, error } = await db.from(표).select(칸)
+      .not("삭제됨", "is", true)
+      .range(시작, 시작 + 덩이 - 1);
+    /* 🔴 읽기가 깨지면 던진다. 빈 배열로 넘기면 「기존 주문이 하나도 없다」가 되어
+       그 회차에 받은 주문을 통째로 다시 넣는다 — 조용한 실패가 곧 중복이다 */
+    if (error) throw new Error(`${표} 읽기 실패: ${error.message}`);
+    나온것.push(...(data ?? []));
+    if (!data || data.length < 덩이) return 나온것;
+  }
+}
+
 async function 수집(일수: number, 시험: boolean) {
   const token = await 출입증();
   const 끝 = 오늘문자();
@@ -231,10 +251,10 @@ async function 수집(일수: number, 시험: boolean) {
     token,
   );
 
-  const [{ data: 품목들 }, { data: 기존줄 }, { data: 묶음들 }] = await Promise.all([
-    db.from("v3_품목").select("내용").not("삭제됨", "is", true),
-    db.from("v3_주문").select("id,내용").not("삭제됨", "is", true),   // 🔴 id 를 빼면 상태 갱신이 조용히 안 먹는다
-    db.from("v3_주문묶음").select("id,내용").not("삭제됨", "is", true),
+  const [품목들, 기존줄, 묶음들] = await Promise.all([
+    전부읽기("v3_품목", "내용"),
+    전부읽기("v3_주문", "id,내용"),   // 🔴 id 를 빼면 상태 갱신이 조용히 안 먹는다
+    전부읽기("v3_주문묶음", "id,내용"),
   ]);
 
   const 마스터: Record<string, any> = {};
@@ -304,6 +324,7 @@ async function 수집(일수: number, 시험: boolean) {
 
   if (!새줄들.length || 시험) {
     return { 시험, 새것: 새줄들.length, 이미, 날짜오류, 안받음, 상태고침: 고칠들.length, 고침실패,
+      읽은기존줄: (기존줄 ?? []).length,   // 🔴 1,000 에서 딱 멈춰 있으면 또 잘린 것이다
              묶음id: null, 받은주문: (받음.orders ?? []).length, 미리보기: 미리 };
   }
 
