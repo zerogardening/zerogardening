@@ -1,2 +1,2 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# bat 은 윈도우가 CRLF 를 기대한다. LF 로 바뀌면 여러 줄 if 블록이 깨진다
+*.bat -text
