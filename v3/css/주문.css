@@ -710,6 +710,8 @@ tr.editing td{background:var(--color-accent-bg)}
   font-size:var(--font-xs); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums;
   display:flex; align-items:center; justify-content:center;
 }
+/* `1-2` 처럼 세 글자가 되면 26px 정사각을 넘는다 — 이 줄만 가로로 늘린다 */
+.pcsheet.dlv .gline .no.split{width:auto; min-width:26px; padding:0 5px; font-size:var(--font-2xs)}
 .pcsheet.dlv .gline .who{width:132px; flex:0 0 auto; font-size:var(--font-md); font-weight:var(--weight-semibold); letter-spacing:-.01em}
 .pcsheet.dlv .gline .who .sub{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
 .pcsheet.dlv .gline .items{flex:1; min-width:0; font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); line-height:1.5}

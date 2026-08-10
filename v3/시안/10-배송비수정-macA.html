@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 배송비·박스수량·단가 손보기 (macOS A안 · 브랜드 초록)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+/* ══ 07-주문올리기-macA 의 부품(.modal · .needbox · .sums · .done · .allrow)을 그대로 가져다 쓴다.
+     새로 만든 것은 「묶음 한 줄(.grp)」과 「그 자리에서 펼쳐지는 손보기 칸(.gedit)」뿐이다 ══ */
+
+.headbtns{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
+.mall{
+  display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap;
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border);
+}
+
+.modalwrap{position:relative; width:1120px}
+.scrim{position:absolute; inset:0; background:rgba(0,0,0,.36); border-radius:var(--radius-win); z-index:5}
+.modal{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:6;
+  background:var(--color-bg); border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:0 26px 60px rgba(0,0,0,.34), 0 0 0 1px rgba(0,0,0,.09);
+}
+.modal .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+}
+.modal .hd h3{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.modal .hd .hint{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.modal .hd .x{margin-left:auto; font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1}
+.modal .bd{padding:var(--space-3xl) var(--space-3xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-2xl)}
+.modal .ft{padding:var(--space-lg) var(--space-3xl) var(--space-3xl); display:flex; align-items:center; gap:var(--space-sm)}
+.modal .ft .spacer{flex:1}
+.modal .ft .fname{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+.sums{display:flex; gap:var(--space-lg)}
+.sum{flex:1; background:var(--color-surface); border-radius:var(--radius-lg); padding:var(--pad-stat); border:var(--border-width) solid var(--color-border)}
+.sum .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.sum .v{font-size:30px; font-weight:var(--weight-bold); letter-spacing:-.03em; font-variant-numeric:tabular-nums; margin-top:var(--space-3xs)}
+.sum .v small{font-size:var(--font-lg); font-weight:var(--weight-semibold); margin-left:2px}
+.sum .s{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:var(--space-2xs); line-height:1.5}
+.sum.ok{background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+.sum.ok .k, .sum.ok .v{color:var(--color-accent-dark)}
+.sum.ng{background:var(--color-danger-bg); border-color:var(--color-danger-border)}
+.sum.ng .k, .sum.ng .v{color:var(--color-danger)}
+
+.needbox{background:var(--color-surface); border:var(--border-width) solid var(--color-danger-border); border-radius:var(--radius-lg); overflow:hidden}
+.needbox > h4{
+  display:flex; align-items:center; gap:var(--space-xs); background:var(--color-danger-bg);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-danger-border);
+  font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-danger); letter-spacing:-.02em;
+}
+.needbox > h4 > span:first-child{white-space:nowrap}
+.needbox > h4 .why{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); text-align:right}
+.needbox .inner{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
+.needbox td .sub{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px; line-height:1.4}
+.needbox.gray{border-color:var(--color-border)}
+.needbox.gray > h4{background:var(--color-seg-bg); color:var(--color-text-sub); border-bottom-color:var(--color-border)}
+.needbox.green{border-color:var(--color-accent-border)}
+.needbox.green > h4{background:var(--color-accent-bg); color:var(--color-accent-dark); border-bottom-color:var(--color-accent-border)}
+
+.allrow{
+  display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap;
+  margin-top:var(--space-lg); padding-top:var(--space-lg);
+  border-top:var(--border-width) solid var(--color-border-faint);
+}
+.allrow .l{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.allrow .note{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.allrow .note b{color:var(--color-text-sub)}
+
+.done{
+  display:flex; align-items:center; gap:var(--space-md);
+  font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium);
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint);
+  border-radius:var(--radius-md); padding:var(--space-md) var(--space-2xl); line-height:1.6;
+}
+.done > span{flex:1}
+.done b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+.done .q{color:var(--color-danger); font-weight:var(--weight-bold)}
+
+/* ── 여기부터가 이 화면에서 새로 만든 것 ── */
+
+/* 묶음 한 줄 — 로젠 파일에 나갈 「송장 한 장」이 곧 한 줄이다 */
+.grp{
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  background:var(--color-surface); margin-bottom:var(--space-sm); overflow:hidden;
+}
+.grp:last-child{margin-bottom:0}
+.gline{display:flex; align-items:center; gap:var(--space-md); padding:var(--space-md) var(--space-lg)}
+.gline .no{
+  width:26px; height:26px; flex:0 0 auto; border-radius:var(--radius-sm);
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  font-size:var(--font-xs); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums;
+  display:flex; align-items:center; justify-content:center;
+}
+.gline .who{width:132px; flex:0 0 auto; font-size:var(--font-md); font-weight:var(--weight-semibold); letter-spacing:-.01em}
+.gline .who .sub{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+.gline .items{flex:1; min-width:0; font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); line-height:1.5}
+.gline .items .pt{color:var(--color-text); font-weight:var(--weight-semibold)}
+.gline .val{
+  width:96px; flex:0 0 auto; text-align:right; font-size:var(--font-md);
+  font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+}
+.gline .val .cap2{display:block; font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); letter-spacing:0}
+.gline .val.box{width:62px}
+.gline .chev{width:16px; text-align:center; color:var(--color-text-faint); font-weight:var(--weight-bold)}
+
+/* 확인요망 — 빨간 왼쪽 띠 + 빨간 바탕. 숫자로 세지 않고 줄 자체가 빨갛다 */
+.grp.ng{border-color:var(--color-danger-border); box-shadow:inset var(--bar-width) 0 0 var(--color-danger)}
+.grp.ng .gline{background:var(--color-danger-bg)}
+.grp.ng .val.fee{color:var(--color-danger)}
+/* 손댄 묶음 — 초록 왼쪽 띠 */
+.grp.edited{border-color:var(--color-accent-border); box-shadow:inset var(--bar-width) 0 0 var(--color-accent)}
+.grp.edited .gline{background:var(--color-accent-bg)}
+.grp.open{box-shadow:inset var(--bar-width) 0 0 var(--color-danger), var(--shadow-card)}
+
+/* 배지 */
+.bdg{
+  display:inline-flex; align-items:center; gap:3px; font-size:var(--font-3xs); font-weight:var(--weight-bold);
+  padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; letter-spacing:0;
+}
+.bdg.hand{background:var(--color-accent); color:var(--color-on-accent)}
+.bdg.split{background:#FFF8E6; color:#9A6400; border:var(--border-width) solid #F2DFA8}
+.bdg.auto{background:var(--color-seg-bg); color:var(--color-text-muted)}
+.was{font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); text-decoration:line-through}
+
+/* 그 자리에서 펼쳐지는 손보기 칸 — 창을 새로 띄우지 않는다 */
+.gedit{
+  border-top:var(--border-width) solid var(--color-border-faint);
+  background:var(--color-bg); padding:var(--space-lg) var(--space-lg) var(--space-lg) var(--space-2xl);
+  display:flex; flex-direction:column; gap:var(--space-lg);
+}
+.erow{display:flex; align-items:center; gap:var(--space-md)}
+.erow > .lb{
+  width:82px; flex:0 0 auto; font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-sub);
+}
+.erow .hint2{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); line-height:1.5}
+.erow .hint2 b{color:var(--color-text-sub)}
+.erow .hint2 .q{color:var(--color-danger); font-weight:var(--weight-bold)}
+.seg.tight button{padding:var(--pad-btn-sm); font-size:var(--font-xs); min-height:var(--h-btn-sm)}
+.wonbox{display:flex; align-items:center; gap:var(--space-2xs)}
+.wonbox .inp{width:104px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:right; padding:0 10px}
+.wonbox .won{font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+.qty{display:flex; align-items:center; gap:var(--space-sm)}
+.qty button{
+  width:30px; height:30px; border-radius:var(--radius-sm); border:var(--border-width) solid var(--color-border);
+  background:var(--color-btn-bg); font-size:var(--font-xl); font-weight:var(--weight-bold);
+  color:var(--color-text-sub); line-height:1; box-shadow:var(--shadow-btn);
+}
+.qty .n{width:40px; text-align:center; font-size:var(--font-xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.ebar{
+  display:flex; align-items:center; gap:var(--space-sm);
+  border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-lg);
+}
+.ebar .spacer{flex:1}
+.ebar .msg{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.ebar .msg b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+
+/* 쪼갠 자식 줄 */
+.grp.child .gline{padding-left:var(--space-4xl)}
+.grp.child .gline .no{background:var(--color-accent-bg); color:var(--color-accent-dark)}
+
+td.mark{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+tr.hit td{background:var(--color-accent-bg)}
+tr.bad td{background:var(--color-danger-bg)}
+td.bad{color:var(--color-danger); font-weight:var(--weight-bold)}
+
+.memo{
+  width:1120px; font-size:var(--font-xs); color:#45474D; font-weight:var(--weight-medium); line-height:1.8;
+  background:var(--overlay-strong); border-radius:var(--radius-md); padding:var(--space-2xl) var(--space-3xl);
+  box-shadow:0 0 0 1px rgba(0,0,0,.06);
+}
+.memo b{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+.memo .q{color:var(--color-danger); font-weight:var(--weight-bold)}
+.memo h5{font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-text); margin:var(--space-lg) 0 var(--space-2xs); letter-spacing:-.02em}
+.memo h5:first-child{margin-top:0}
+
+/* 폰 */
+.ph-alert{
+  background:var(--color-danger-bg); border:var(--border-width) solid var(--color-danger-border);
+  border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg);
+  font-size:var(--font-sm); color:var(--color-danger); font-weight:var(--weight-bold); line-height:1.5;
+}
+.ph-alert .s{font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); margin-top:2px}
+.ph-grp{
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg);
+}
+.ph-grp.ng{border-color:var(--color-danger-border); box-shadow:inset var(--bar-width) 0 0 var(--color-danger); background:#FFFAFA}
+.ph-grp.edited{border-color:var(--color-accent-border); box-shadow:inset var(--bar-width) 0 0 var(--color-accent); background:#FBFEFB}
+.ph-grp .r1{display:flex; align-items:center; gap:var(--space-xs)}
+.ph-grp .nm{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.ph-grp .fee{margin-left:auto; font-size:var(--font-lg); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.ph-grp .fee.ng{color:var(--color-danger)}
+.ph-grp .r2{font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); margin-top:var(--space-3xs); line-height:1.5}
+.ph-grp .r3{display:flex; align-items:center; gap:var(--space-xs); margin-top:var(--space-sm)}
+.ph-edit{
+  border-top:var(--border-width) solid var(--color-border-faint); margin-top:var(--space-md); padding-top:var(--space-md);
+  display:flex; flex-direction:column; gap:var(--space-md);
+}
+.ph-edit .lb{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-sub); margin-bottom:var(--space-3xs)}
+.ph-edit .seg button{flex:1}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════ ① 폰 ══════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 밭에서 <b>확인요망만</b> 손봅니다 <span class="tag">엑셀 내려받기는 폰에 두지 않습니다</span></div>
+  <div class="phone">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+    </div>
+    <div class="ph-top">
+      <h1>배송비 확인</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>2026-08-08 (1회차)</span>
+      <span>묶음 <b>9</b> · 확인요망 <b>2</b></span>
+    </div>
+    <div class="ph-body">
+
+      <div class="ph-alert">
+        확인요망 2묶음
+        <div class="s">자동으로 못 정한 운임입니다. 여기서 정해두면 사무실에서 그대로 나갑니다.</div>
+      </div>
+
+      <!-- 확인요망 — 펼친 상태 -->
+      <div class="ph-grp ng">
+        <div class="r1">
+          <span class="nm">최영주</span>
+          <span class="fee ng">확인요망</span>
+        </div>
+        <div class="r2"><b>3번</b> · 수크령'레드헤드'(15cm) 10개 / 청사초(10cm) 4개 · 점수 24</div>
+
+        <div class="ph-edit">
+          <div>
+            <div class="lb">택배 단가</div>
+            <div class="seg">
+              <button>2,750</button>
+              <button>3,300</button>
+              <button class="on">직접</button>
+            </div>
+          </div>
+          <div class="pair">
+            <div class="field">
+              <label>단가</label>
+              <input class="inp num" value="4,400">
+            </div>
+            <div class="field">
+              <label>박스 수량</label>
+              <input class="inp num" value="2">
+            </div>
+          </div>
+          <div class="r2">박스가 2개면 <b>송장도 2장</b>입니다 — 사무실 PC에서 「같은 이름으로 한 건 더」로 나눌 수 있습니다.</div>
+          <button class="ph-save">이 묶음 정해두기</button>
+        </div>
+      </div>
+
+      <!-- 이미 손댄 것 -->
+      <div class="ph-grp edited">
+        <div class="r1">
+          <span class="nm">한지수</span>
+          <span class="fee">3,300</span>
+        </div>
+        <div class="r2"><b>5번</b> · 층꽃'스털링실버'(18cm) 6개 · 점수 18</div>
+        <div class="r3"><span class="bdg hand">✎ 손댐</span><span class="was">확인요망</span><span class="bdg auto">1박스</span></div>
+      </div>
+
+      <!-- 자동 그대로 -->
+      <div class="ph-grp">
+        <div class="r1">
+          <span class="nm">임도현</span>
+          <span class="fee">2,750</span>
+        </div>
+        <div class="r2"><b>1번</b> · 휴케라'팜므파탈'(15cm) 3개 · 점수 6</div>
+        <div class="r3"><span class="bdg auto">자동</span><span class="bdg auto">1박스</span></div>
+      </div>
+
+      <div class="ph-sec"><span>자동으로 정해진 나머지</span><span class="r">6묶음 ›</span></div>
+
+    </div>
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div class="on"><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ② PC — 저장 뒤 로젠 창. 묶음이 줄로 보인다 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 「주문 올리기」 마지막 창 <b>그 안</b>입니다. <b>새 페이지를 만들지 않았습니다</b> <span class="tag">macOS A안</span> <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:1250px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div><h2>주문 관리</h2><div class="path">주문 › 주문 조회</div></div>
+            <div class="headbtns">
+              <button class="btn sm main">⬆ 주문 올리기</button>
+              <button class="btn sm">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm">💌 동봉카드</button>
+            </div>
+          </div>
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 조회 <span class="hint">2026-08-08 · 주문 15건 · 품목 20줄</span></h3>
+            <table>
+              <colgroup><col style="width:200px"><col style="width:96px"><col style="width:88px"><col><col style="width:86px"><col style="width:74px"></colgroup>
+              <tr><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th></tr>
+              <tr><td>최영주</td><td><span class="mall">카페24</span></td><td class="code">PER03-15</td><td>수크령 '레드헤드'</td><td class="dim">15cm 포트</td><td class="r">10</td></tr>
+              <tr><td>한지수</td><td><span class="mall">카페24</span></td><td class="code">CAS01-18</td><td>층꽃 '스털링실버'</td><td class="dim">18cm 포트</td><td class="r">6</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <div class="modal" style="width:980px">
+      <div class="hd">
+        <h3>저장했습니다 — 이제 로젠 파일</h3>
+        <span class="hint">cafe24_order_20260808.csv · 2026-08-08 (1회차)</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+
+        <div class="sums">
+          <div class="sum ok">
+            <div class="k">저장된 줄</div><div class="v">12<small>건</small></div>
+            <div class="s">합포장 9묶음 = 송장 9장</div>
+          </div>
+          <div class="sum">
+            <div class="k">자동으로 정해진 운임</div><div class="v">7<small>묶음</small></div>
+            <div class="s">2,750원 4묶음 · 3,300원 3묶음</div>
+          </div>
+          <div class="sum ng">
+            <div class="k">확인요망</div><div class="v">2<small>묶음</small></div>
+            <div class="s">점수 12 이상 — 1박스를 넘을 수 있습니다</div>
+          </div>
+        </div>
+
+        <div class="done">
+          <span>
+            아래 <span class="q">빨간 줄 2개</span>가 <b>확인요망</b>입니다. 줄을 누르면 <b>그 자리에서</b> 택배 단가·박스 수량을 고칩니다.
+            고치지 않고 내려받으면 J열에 <b>「확인요망」 글자 그대로</b> 나갑니다.
+          </span>
+          <button class="btn sm">확인요망만 보기</button>
+        </div>
+
+        <div class="needbox gray">
+          <h4><span>📦 로젠에 나갈 9묶음</span><span class="why">포장하는 순서 그대로입니다 — 동봉카드 번호와 같습니다</span></h4>
+          <div class="inner">
+
+            <div class="grp">
+              <div class="gline">
+                <span class="no">1</span>
+                <div class="who">임도현<div class="sub">전북 완주군 · 55321</div></div>
+                <div class="items"><span class="pt">휴케라 '팜므파탈'</span>(15cm) 3개 <span style="color:var(--color-text-muted)">· 점수 6</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">2,750<span class="cap2">자동</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp">
+              <div class="gline">
+                <span class="no">2</span>
+                <div class="who">오세라<div class="sub">충북 청주시 · 28161</div></div>
+                <div class="items"><span class="pt">추명국 '휠윈드핑크'</span>(21cm) 3개 <span style="color:var(--color-text-muted)">· 점수 9</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">3,300<span class="cap2">자동</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp ng">
+              <div class="gline">
+                <span class="no">3</span>
+                <div class="who">최영주<div class="sub">경기 광주시 · 12432</div></div>
+                <div class="items"><span class="pt">수크령 '레드헤드'</span>(15cm) 10개 / <span class="pt">청사초</span>(10cm) 4개 <span style="color:var(--color-text-muted)">· 점수 24</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">확인요망<span class="cap2">못 정함</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp">
+              <div class="gline">
+                <span class="no">4</span>
+                <div class="who">서민경<div class="sub">경남 김해시 · 50925</div></div>
+                <div class="items"><span class="pt">여름 초화 모둠세트 A</span> 1개 <span style="color:#9A6400">· 품목코드 없음(점수 2)</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">2,750<span class="cap2">자동</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp ng">
+              <div class="gline">
+                <span class="no">5</span>
+                <div class="who">한지수<div class="sub">서울 강동구 · 05408</div></div>
+                <div class="items"><span class="pt">층꽃 '스털링실버'</span>(18cm) 6개 <span style="color:var(--color-text-muted)">· 점수 18</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">확인요망<span class="cap2">못 정함</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp">
+              <div class="gline">
+                <span class="no">6</span>
+                <div class="who">강태우<div class="sub">대전 유성구 · 34126</div></div>
+                <div class="items"><span class="pt">사사조릿대</span>(10cm) 8개 <span style="color:var(--color-text-muted)">· 점수 8</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">2,750<span class="cap2">자동</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="allrow">
+              <span class="l">나머지 3묶음 —</span>
+              <button class="btn sm">더 보기</button>
+              <span style="flex:1"></span>
+              <span class="note">고치지 않은 묶음은 <b>지금까지 하던 자동 계산 그대로</b> 나갑니다</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="ft">
+        <span class="fname">내려받을 파일 — 20260808-01.xlsx · 12줄 / 9묶음</span>
+        <span class="spacer"></span>
+        <button class="btn">닫기</button>
+        <button class="btn main">⬇ 로젠 대량등록 파일 내려받기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ③ PC — 줄을 눌러 그 자리에서 고친다 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">빨간 줄을 눌렀을 때 — <b>창을 새로 띄우지 않고</b> 그 줄이 아래로 펼쳐집니다 <span class="tag">고칠 것 셋이 한 자리에</span></div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:1180px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div><h2>주문 관리</h2><div class="path">주문 › 주문 조회</div></div>
+            <div class="headbtns">
+              <button class="btn sm main">⬆ 주문 올리기</button>
+              <button class="btn sm">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm">💌 동봉카드</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <div class="modal" style="width:980px">
+      <div class="hd">
+        <h3>저장했습니다 — 이제 로젠 파일</h3>
+        <span class="hint">3번 묶음 손보는 중 · 최영주</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+
+        <div class="needbox">
+          <h4><span>🔴 확인요망 2묶음</span><span class="why">자동 계산이 「1박스를 넘을 수 있다」고 본 묶음입니다 — 여기서 정해 주세요</span></h4>
+          <div class="inner">
+
+            <!-- 펼쳐진 확인요망 묶음 -->
+            <div class="grp ng open">
+              <div class="gline">
+                <span class="no">3</span>
+                <div class="who">최영주<div class="sub">경기 광주시 · 12432</div></div>
+                <div class="items"><span class="pt">수크령 '레드헤드'</span>(15cm) 10개 / <span class="pt">청사초</span>(10cm) 4개 <span style="color:var(--color-text-muted)">· 점수 24 (15cm 2점×10 + 10cm 1점×4)</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">확인요망<span class="cap2">못 정함</span></div>
+                <span class="chev">⌄</span>
+              </div>
+
+              <div class="gedit">
+                <div class="erow">
+                  <span class="lb">택배 단가</span>
+                  <div class="seg tight">
+                    <button>2,750</button>
+                    <button>3,300</button>
+                    <button class="on">직접 넣기</button>
+                  </div>
+                  <div class="wonbox"><input class="inp num" value="4,400"><span class="won">원</span></div>
+                  <span class="hint2">자동값은 <b>확인요망</b>이었습니다 · 이 값이 로젠 <b>J열</b>에 그대로 들어갑니다</span>
+                </div>
+
+                <div class="erow">
+                  <span class="lb">박스 수량</span>
+                  <div class="qty">
+                    <button>−</button><span class="n">2</span><button>＋</button>
+                  </div>
+                  <span class="hint2">
+                    <span class="q">박스가 2개면 송장도 2장이어야 합니다.</span>
+                    지금은 최영주님 앞으로 <b>1장</b>만 만들어져 있습니다.
+                  </span>
+                </div>
+
+                <div class="erow">
+                  <span class="lb">송장 장수</span>
+                  <button class="btn sm main">＋ 같은 이름으로 한 건 더 만들기</button>
+                  <button class="btn sm">품목을 나눠 담기</button>
+                  <span class="hint2">
+                    새 줄은 <b>최영주 · 같은 주소·전화</b>로 만들어지고 바로 아래에 붙습니다.
+                    「나눠 담기」를 고르면 <b>어느 품목을 2번 박스에 넣을지</b> 여기서 고르실 수 있습니다.
+                  </span>
+                </div>
+
+                <div class="ebar">
+                  <span class="msg">고치면 <b>✎ 손댐</b> 표가 붙고, 아래 미리보기 표에 <b>바로</b> 반영됩니다</span>
+                  <span class="spacer"></span>
+                  <button class="btn sm">자동값으로 되돌리기</button>
+                  <button class="btn sm main">이 묶음 정하기</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="grp ng">
+              <div class="gline">
+                <span class="no">5</span>
+                <div class="who">한지수<div class="sub">서울 강동구 · 05408</div></div>
+                <div class="items"><span class="pt">층꽃 '스털링실버'</span>(18cm) 6개 <span style="color:var(--color-text-muted)">· 점수 18</span></div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">확인요망<span class="cap2">못 정함</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="allrow">
+              <span class="l">둘 다 같게 하려면 —</span>
+              <button class="btn sm">두 묶음 모두 3,300원</button>
+              <button class="btn sm">두 묶음 모두 그대로 두기</button>
+              <span style="flex:1"></span>
+              <span class="note">그대로 두면 J열에 <b>「확인요망」</b> 글자가 나갑니다 (지금까지와 같습니다)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="done">
+          <span>
+            여기서 고친 값은 <b>이 회차에만</b> 붙습니다 — 자동 계산 규칙은 바뀌지 않습니다.
+            같은 주문을 다시 내려받아도 <b>고친 값 그대로</b> 나갑니다.
+          </span>
+        </div>
+
+      </div>
+      <div class="ft">
+        <span class="fname">확인요망 2묶음 중 1묶음 손보는 중</span>
+        <span class="spacer"></span>
+        <button class="btn">닫기</button>
+        <button class="btn main" style="opacity:.45">⬇ 로젠 대량등록 파일 내려받기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ④ PC — 고친 뒤. 흔적이 남고 표에 그대로 실린다 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">고친 뒤 — <b>✎ 손댐</b> 표가 남고, 내려받을 파일 미리보기에 <b>고친 값이 그대로</b> 보입니다</div>
+
+  <div class="modalwrap">
+    <div class="pc" style="min-height:1320px">
+      <div class="titlebar">
+        <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+        <span class="wtitle">제로가드닝 통합관리 — 주문</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-side">
+          <div class="logo">제로가드닝</div>
+          <div class="slogan">GARDENING FROM ZERO</div>
+          <a><span class="ic">🌿</span>상품</a>
+          <a class="on"><span class="ic">🛒</span>주문 관리</a>
+          <a><span class="ic">🏢</span>업체 관리</a>
+          <a><span class="ic">🌱</span>상품소싱</a>
+        </div>
+        <div class="pc-main">
+          <div class="pc-head">
+            <div><h2>주문 관리</h2><div class="path">주문 › 주문 조회</div></div>
+            <div class="headbtns">
+              <button class="btn sm main">⬆ 주문 올리기</button>
+              <button class="btn sm">🚚 배송완료</button>
+              <button class="btn sm">📋 출고리스트</button>
+              <button class="btn sm">💌 동봉카드</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrim"></div>
+
+    <div class="modal" style="width:980px">
+      <div class="hd">
+        <h3>저장했습니다 — 이제 로젠 파일</h3>
+        <span class="hint">확인요망 0묶음 · 손댄 묶음 2 · 송장 10장</span>
+        <span class="x">✕</span>
+      </div>
+      <div class="bd">
+
+        <div class="sums">
+          <div class="sum">
+            <div class="k">송장(묶음)</div><div class="v">10<small>장</small></div>
+            <div class="s">9장 + 최영주님 2번 박스 1장</div>
+          </div>
+          <div class="sum ok">
+            <div class="k">손댄 묶음</div><div class="v">2<small>묶음</small></div>
+            <div class="s">단가 2 · 박스 수량 1 · 새 송장 1</div>
+          </div>
+          <div class="sum ok">
+            <div class="k">확인요망</div><div class="v">0<small>묶음</small></div>
+            <div class="s">전부 값이 정해졌습니다</div>
+          </div>
+        </div>
+
+        <div class="needbox green">
+          <h4><span>✎ 손댄 묶음 2</span><span class="why">자동값과 다른 것만 모아둔 자리입니다 — 나중에 되짚어 보실 수 있습니다</span></h4>
+          <div class="inner">
+
+            <div class="grp edited">
+              <div class="gline">
+                <span class="no">3</span>
+                <div class="who">최영주<div class="sub">경기 광주시 · 12432</div></div>
+                <div class="items">
+                  <span class="pt">수크령 '레드헤드'</span>(15cm) 10개 ·
+                  <span class="bdg hand">✎ 손댐</span> <span class="was">확인요망</span> <span class="bdg split">1/2 박스</span>
+                </div>
+                <div class="val box">2<span class="cap2">박스</span></div>
+                <div class="val fee">4,400<span class="cap2">손으로</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp edited child">
+              <div class="gline">
+                <span class="no">4</span>
+                <div class="who">최영주<div class="sub">같은 주소 · 새로 만든 송장</div></div>
+                <div class="items">
+                  <span class="pt">청사초</span>(10cm) 4개 ·
+                  <span class="bdg hand">✎ 새로 만듦</span> <span class="bdg split">2/2 박스</span>
+                </div>
+                <div class="val box">–<span class="cap2">2번 박스</span></div>
+                <div class="val fee">0<span class="cap2">합포장</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="grp edited">
+              <div class="gline">
+                <span class="no">6</span>
+                <div class="who">한지수<div class="sub">서울 강동구 · 05408</div></div>
+                <div class="items">
+                  <span class="pt">층꽃 '스털링실버'</span>(18cm) 6개 ·
+                  <span class="bdg hand">✎ 손댐</span> <span class="was">확인요망</span>
+                </div>
+                <div class="val box">1<span class="cap2">박스</span></div>
+                <div class="val fee">3,300<span class="cap2">손으로</span></div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+
+            <div class="allrow">
+              <span class="l">되돌리려면 —</span>
+              <button class="btn sm">손댄 것 전부 자동값으로</button>
+              <span style="flex:1"></span>
+              <span class="note">손댄 표시는 <b>주문 화면에도</b> 남습니다 — 나중에 「내가 손댔던 묶음」으로 찾으실 수 있습니다</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="needbox gray">
+          <h4><span>⬇ 내려받을 파일에 실제로 들어갈 값</span><span class="why">고친 값이 그대로 실립니다 — 초록 줄이 손댄 줄입니다</span></h4>
+          <div class="inner">
+            <table>
+              <colgroup><col style="width:52px"><col style="width:96px"><col><col style="width:96px"><col style="width:68px"><col style="width:150px"></colgroup>
+              <tr><th>번호</th><th>받는 분</th><th>E열 · 상품명</th><th class="r">J열 · 박스운임</th><th class="r">박스</th><th class="r">어떻게 정해졌나</th></tr>
+              <tr>
+                <td class="code">1</td><td>임도현</td>
+                <td>(1) 휴케라 '팜므파탈'(15cm) 3개</td>
+                <td class="r">2,750</td><td class="r">1</td><td class="r dim">자동 (점수 6)</td>
+              </tr>
+              <tr>
+                <td class="code">2</td><td>오세라</td>
+                <td>(2) 추명국 '휠윈드핑크'(21cm) 3개</td>
+                <td class="r">3,300</td><td class="r">1</td><td class="r dim">자동 (점수 9)</td>
+              </tr>
+              <tr class="hit">
+                <td class="code">3</td><td>최영주</td>
+                <td>(3) 수크령 '레드헤드'(15cm) 10개</td>
+                <td class="r mark">4,400</td><td class="r mark">2</td><td class="r mark">✎ 손댐 (확인요망→)</td>
+              </tr>
+              <tr class="hit">
+                <td class="code">4</td><td>최영주</td>
+                <td>(4) 청사초(10cm) 4개</td>
+                <td class="r mark">0</td><td class="r mark">–</td><td class="r mark">✎ 새로 만든 송장</td>
+              </tr>
+              <tr>
+                <td class="code">5</td><td>서민경</td>
+                <td>여름 초화 모둠세트 A (랜덤 5종)<div class="sub">품목코드가 없어 카페24 상품명 그대로</div></td>
+                <td class="r">2,750</td><td class="r">1</td><td class="r dim">자동 (코드없음=2점)</td>
+              </tr>
+              <tr class="hit">
+                <td class="code">6</td><td>한지수</td>
+                <td>(6/★2) 층꽃 '스털링실버'(18cm) 6개</td>
+                <td class="r mark">3,300</td><td class="r mark">1</td><td class="r mark">✎ 손댐 (확인요망→)</td>
+              </tr>
+            </table>
+            <div class="allrow">
+              <span class="l">파일 이름 —</span>
+              <span class="note"><b>20260808-01.xlsx</b></span>
+              <span style="flex:1"></span>
+              <span class="note">나머지 4묶음도 <b>자동값 그대로</b> 들어갑니다</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="ft">
+        <span class="fname">내려받을 파일 — 20260808-01.xlsx · 13줄 / 송장 10장</span>
+        <span class="spacer"></span>
+        <button class="btn">닫기</button>
+        <button class="btn main">⬇ 로젠 대량등록 파일 내려받기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="memo">
+    <h5>왜 이렇게 그렸나 — 정한 것과 그 근거</h5>
+    <b>① 새 페이지를 만들지 않았습니다.</b> 「주문 올리기」 마지막 창(로젠 파일 만드는 자리) <b>안</b>에 넣었습니다.
+    배송비를 고치는 순간은 언제나 <span class="q">파일을 내려받기 직전</span>이라, 다른 자리에 두면 그 자리를 다시 찾아가야 합니다.<br>
+    <b>② 확인요망은 숫자로 세지 않고 줄 자체를 빨갛게 했습니다.</b> 지금은 「2묶음이 확인요망」이라는 글만 나옵니다 —
+    <span class="q">어느 묶음인지 화면에서 알 수 없습니다.</span> 왼쪽 빨간 띠 + 빨간 바탕으로 목록에서 바로 눈에 걸리게 했습니다.<br>
+    <b>③ 줄을 누르면 그 자리에서 펼쳐집니다.</b> 창을 또 띄우면 뒤의 목록이 가려져 「다음 확인요망」으로 넘어가기 어렵습니다.<br>
+    <b>④ 「박스 수량」과 「한 건 더 만들기」를 나란히 붙였습니다.</b> 박스가 2개가 되는 순간 송장도 2장이 필요해지므로,
+    두 조작이 실제 업무에서 늘 붙어 다닙니다. 박스 수량을 2로 올리면 그 아래 버튼이 곧바로 눈에 들어오게 두었습니다.<br>
+    <b>⑤ 손댄 흔적은 세 겹으로 남깁니다.</b> 초록 왼쪽 띠 · <b>✎ 손댐</b> 배지 · <span class="was">확인요망</span> 취소선(자동값이 얼마였는지).
+    「손댄 묶음」만 모은 상자도 따로 두어 나중에 되짚기 쉽게 했습니다.<br>
+    <b>⑥ 마지막에 「파일에 실제로 들어갈 값」 표를 붙였습니다.</b> 고친 값이 J열에 실린다는 걸 <b>내려받기 전에</b> 눈으로 확인하시라고요.<br>
+
+    <h5>제가 임의로 정한 것 — 아니면 말씀해 주십시오</h5>
+    <b>ⓐ 고친 값은 「이 회차에만」 붙는 것으로 했습니다.</b> 자동 계산 규칙(점수표)은 건드리지 않습니다.
+    같은 회차를 다시 내려받아도 고친 값이 그대로 나옵니다.<br>
+    <b>ⓑ 새로 만든 2번째 송장의 운임은 0원으로 두었습니다.</b> 합포장 두 번째 박스라 운임을 한 번만 물면 된다고 봤습니다.
+    <span class="q">두 박스에 각각 운임을 매기신다면 알려 주십시오.</span><br>
+    <b>ⓒ 폰에서는 「정해두기」까지만 됩니다.</b> 엑셀 내려받기는 폰에서 못 쓰므로 뺐습니다.
+    밭에서 확인요망을 미리 정해두면 사무실 PC에서 그대로 나갑니다.<br>
+    <b>ⓓ 「품목을 나눠 담기」</b>는 한 묶음의 품목 중 어느 것을 2번 박스로 보낼지 고르는 버튼입니다.
+    누르면 같은 자리에서 품목마다 <b>1번/2번</b>을 고르는 줄이 나옵니다(이번 시안에는 버튼까지만 그렸습니다).
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 처음 보는 심폴 상품코드 짝짓기 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ── 이 화면에서만 새로 만든 부품 ── */
+
+  /* 한글 이름이 낱글자로 쪼개지지 않게 */
+  .sname, .ac .it .nm, .fixed .nm, .src .sname{word-break:keep-all; overflow-wrap:anywhere}
+  .scode{word-break:break-all}
+
+  /* 단계 표시 — 주문 올리기 흐름 어디쯤인지 */
+  .steps{display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap}
+  .steps .st{
+    display:flex; align-items:center; gap:var(--space-xs);
+    padding:var(--space-xs) var(--space-lg); border-radius:var(--radius-pill);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
+    white-space:nowrap;
+  }
+  .steps .st .n{
+    width:17px; height:17px; border-radius:50%; background:var(--color-seg-bg);
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-bold);
+  }
+  .steps .st.done{color:var(--color-accent-dark); border-color:var(--color-accent-border); background:var(--color-accent-bg)}
+  .steps .st.done .n{background:var(--color-accent); color:var(--color-on-accent)}
+  .steps .st.on{
+    color:var(--color-on-accent); background:var(--color-accent);
+    border-color:var(--color-accent-dark); box-shadow:var(--shadow-btn-main);
+  }
+  .steps .st.on .n{background:var(--overlay-strong); color:var(--color-accent-dark)}
+  .steps .sep{color:var(--color-text-faint); font-size:var(--font-xs); font-weight:var(--weight-bold)}
+  .steps .st.skip{opacity:.55; border-style:dashed}
+
+  /* 짝짓기 한 줄 (PC) */
+  .mrow{
+    display:flex; gap:var(--space-2xl); align-items:flex-start;
+    padding:var(--space-2xl) 0; border-bottom:var(--border-width) solid var(--color-border-faint);
+  }
+  .mrow:last-child{border-bottom:none}
+  .mrow.done{background:var(--color-accent-bg); margin:0 calc(var(--space-lg) * -1); padding-left:var(--space-lg); padding-right:var(--space-lg); border-radius:var(--radius-md); border-bottom-color:transparent}
+  .mrow.skip{opacity:.72}
+
+  .src{width:318px; flex-shrink:0}
+  .src .sname{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; line-height:1.45}
+  .src .scode{
+    font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-sub); margin-top:var(--space-xs); letter-spacing:-.2px;
+  }
+  .src .smeta{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:var(--space-3xs)}
+  .src .lbl{
+    display:inline-block; font-size:var(--font-3xs); font-weight:var(--weight-bold); letter-spacing:.06em;
+    color:var(--color-text-hint); margin-bottom:var(--space-2xs);
+  }
+
+  .mrow .to{
+    flex-shrink:0; align-self:center; color:var(--color-text-faint);
+    font-size:var(--font-3xl); font-weight:var(--weight-bold); line-height:1;
+  }
+  .mrow .side{flex:1; min-width:0}
+
+  /* 후보 목록 안의 「고르기」 버튼과 비슷함 표시 */
+  .ac .it .why{
+    margin-left:auto; display:flex; align-items:center; gap:var(--space-md); flex-shrink:0;
+  }
+  .ac .it .sim{
+    font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark);
+    background:var(--color-accent-bg); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-pill); padding:var(--pad-tag); white-space:nowrap;
+  }
+  .ac .it .sim.mid{color:var(--color-text-muted); background:var(--color-seg-bg); border-color:var(--color-border)}
+  .ac .it .txt{min-width:0; flex:1}
+  .ac .it .txt .nm{display:block}
+  .ac .it .rg2{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+  .ac .foot{
+    display:flex; align-items:center; gap:var(--space-sm); padding:var(--space-md) var(--space-lg);
+    background:#FAFAFC; border-top:var(--border-width) solid var(--color-border-faint);
+  }
+  .ac .foot .sp{flex:1}
+  .ac .foot .note2{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+  /* 확정된 짝 */
+  .fixed{
+    display:flex; align-items:center; gap:var(--space-lg);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-accent-border);
+    border-radius:var(--radius-md); padding:var(--space-lg) var(--space-2xl);
+  }
+  .fixed .ck{
+    width:22px; height:22px; border-radius:50%; background:var(--color-accent); color:var(--color-on-accent);
+    display:inline-flex; align-items:center; justify-content:center; font-size:var(--font-xs);
+    font-weight:var(--weight-bold); flex-shrink:0;
+  }
+  .fixed .cd{
+    font-family:var(--font-mono); font-size:var(--font-sm); font-weight:var(--weight-bold);
+    color:var(--color-accent-dark); flex-shrink:0;
+  }
+  .fixed .nm{font-size:var(--font-md); font-weight:var(--weight-semibold)}
+  .fixed .rg{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); white-space:nowrap; margin-left:auto}
+  .fixed .txt{flex:1; min-width:0}
+  .fixed .btn{margin-left:auto}
+
+  /* 나중에 지정 */
+  .later{
+    display:flex; align-items:center; gap:var(--space-lg);
+    background:var(--color-bg); border:var(--border-width) dashed var(--color-border);
+    border-radius:var(--radius-md); padding:var(--space-lg) var(--space-2xl);
+  }
+  .later .t{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+  .later .s{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+  .later .btn{margin-left:auto}
+
+  /* 검색칸이 열린 상태 */
+  .srch{display:flex; gap:var(--space-sm); margin-bottom:var(--space-sm)}
+  .srch .inp{flex:1}
+
+  /* 아래 고정 줄 */
+  .footbar{
+    display:flex; align-items:center; gap:var(--space-lg);
+    padding-top:var(--space-2xl); margin-top:var(--space-sm);
+    border-top:var(--border-width) solid var(--color-border);
+  }
+  .footbar .sp{flex:1}
+  .footbar .cnt{font-size:var(--font-sm); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+  .footbar .cnt b{color:var(--color-accent-dark); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+  .footbar .cnt i{font-style:normal; color:var(--color-text-muted); font-weight:var(--weight-medium)}
+
+  /* ── 폰 ── */
+  .mcard{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); padding:var(--space-xl) var(--space-lg) var(--space-lg);
+    box-shadow:var(--shadow-card);
+  }
+  .mcard.done{background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+  .mcard.skip{background:var(--color-bg); border-style:dashed}
+  .mcard .sname{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; line-height:1.4}
+  .mcard .scode{
+    font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-sub); margin-top:var(--space-xs); letter-spacing:-.3px;
+  }
+  .mcard .smeta{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+  .mcard .ac{margin-top:var(--space-lg); box-shadow:none}
+  .mcard .mact{display:flex; gap:var(--space-sm); margin-top:var(--space-md)}
+  .mcard .mact .btn{flex:1}
+  .phone .ac .it{gap:var(--space-md); padding:var(--space-lg) var(--space-lg)}
+  .phone .ac .it .cd{width:auto}
+  .phone .ac .it .why{gap:var(--space-sm)}
+  .phone .fixed, .phone .later{padding:var(--space-md) var(--space-lg); gap:var(--space-md)}
+  .ph-tally{
+    display:flex; gap:var(--space-sm); padding:0 var(--space-lg) var(--space-md);
+  }
+  .ph-tally > div{
+    flex:1; background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md); padding:var(--space-sm) var(--space-md); text-align:center;
+  }
+  .ph-tally .k{font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .ph-tally .v{font-size:var(--font-4xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+  .ph-tally .v.acc{color:var(--color-accent-dark)}
+  .ph-foot{
+    border-top:var(--border-width) solid var(--color-border);
+    background:var(--color-ios-bar); padding:var(--space-lg) var(--space-lg) var(--space-md);
+    display:flex; flex-direction:column; gap:var(--space-sm);
+  }
+  .ph-foot .lat{
+    text-align:center; font-size:var(--font-sm); font-weight:var(--weight-semibold);
+    color:var(--color-text-sub); padding:var(--space-xs) 0;
+  }
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════ 폰 ══════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 밭에서도 짝을 짓습니다 <span class="tag">08 · 처음 보는 심폴 상품코드 짝짓기</span></div>
+  <div class="phone" style="height:1180px">
+    <div class="ios-status">
+      <span>9:41</span>
+      <span class="right">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="bat"><i></i></span>
+      </span>
+    </div>
+    <div class="ph-top">
+      <h1>심폴 상품 짝짓기</h1>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub">
+      <span>2단계 / 4단계 · 심폴 주문 260806</span>
+      <span>처음 보는 상품 <b>6</b>개</span>
+    </div>
+
+    <div class="ph-tally">
+      <div><div class="k">짝지었음</div><div class="v acc">2</div></div>
+      <div><div class="k">남음</div><div class="v">3</div></div>
+      <div><div class="k">나중에</div><div class="v">1</div></div>
+    </div>
+
+    <div class="ph-body" style="gap:var(--space-lg); padding-top:0">
+
+      <!-- 지금 볼 것 -->
+      <div class="mcard">
+        <div class="sname">가늘고 긴 은빛 잎이 시원한 운치를 주는 김의털 '엘리야블루' 10cm 포트</div>
+        <div class="scode">005001000000267430</div>
+        <div class="smeta">이번 파일에 주문 3건 · 6주</div>
+        <div class="ac">
+          <div class="hd">비슷한 v3 품목 — 눌러서 정합니다</div>
+          <div class="it">
+            <span class="cd">FEE01-10</span>
+            <span class="txt">
+              <span class="nm">김의털 '엘리야블루'</span>
+              <span class="rg2">10cm 포트 · 재고 240</span>
+            </span>
+            <span class="why"><span class="sim">이름 같음</span></span>
+          </div>
+          <div class="it">
+            <span class="cd">FEE01-15</span>
+            <span class="txt">
+              <span class="nm">김의털 '엘리야블루'</span>
+              <span class="rg2">15cm 포트 · 재고 60</span>
+            </span>
+            <span class="why"><span class="sim mid">규격 다름</span></span>
+          </div>
+          <div class="it">
+            <span class="cd">FES02-10</span>
+            <span class="txt">
+              <span class="nm">김의털</span>
+              <span class="rg2">10cm 포트 · 재고 0</span>
+            </span>
+            <span class="why"><span class="sim mid">비슷</span></span>
+          </div>
+        </div>
+        <div class="mact">
+          <button class="btn sm">🔍 직접 찾기</button>
+          <button class="btn sm">나중에 지정</button>
+        </div>
+      </div>
+
+      <!-- 방금 확정한 것 -->
+      <div class="mcard done">
+        <div class="sname">가을을 붉게 물들이는 억새 '그라질리무스' 15cm 포트</div>
+        <div class="scode">005001000000198772</div>
+        <div class="fixed" style="margin-top:var(--space-lg)">
+          <span class="ck">✓</span>
+          <span>
+            <span class="cd">MIG01-15</span>
+            <div class="nm">억새 '그라질리무스'</div>
+            <div class="rg">15cm 포트</div>
+          </span>
+          <button class="btn sm">바꾸기</button>
+        </div>
+      </div>
+
+      <!-- 건너뛴 것 -->
+      <div class="mcard skip">
+        <div class="sname">모아심기 모듬세트 (구성 랜덤)</div>
+        <div class="scode">005001000000301155</div>
+        <div class="later" style="margin-top:var(--space-lg)">
+          <span>
+            <div class="t">나중에 지정</div>
+            <div class="s">품목코드 없이 저장됩니다</div>
+          </span>
+          <button class="btn sm">지금 정하기</button>
+        </div>
+      </div>
+
+      <div class="ph-sec">아직 안 본 것 <span class="r">2개</span></div>
+    </div>
+
+    <div class="ph-foot">
+      <button class="ph-save" style="margin:0">다음 — 미리보기</button>
+      <div class="lat">남은 3개는 나중에 지정하고 넘어가기</div>
+    </div>
+
+    <div class="ph-nav">
+      <div><span class="ic">🌿</span>입고</div>
+      <div><span class="ic">📦</span>재고</div>
+      <div class="on"><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 사무실에서 씁니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문 관리</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>주문 올리기</h2>
+          <div class="path">주문 관리 › 주문 올리기 › 심폴</div>
+        </div>
+
+        <div class="steps">
+          <span class="st done"><span class="n">✓</span>파일 고르기</span>
+          <span class="sep">›</span>
+          <span class="st on"><span class="n">2</span>처음 보는 심폴 상품 짝짓기</span>
+          <span class="sep">›</span>
+          <span class="st"><span class="n">3</span>미리보기</span>
+          <span class="sep">›</span>
+          <span class="st"><span class="n">4</span>저장 · 로젠 내보내기</span>
+        </div>
+
+        <div class="stat">
+          <div><div class="k">올린 주문</div><div class="v">128<small>건</small></div></div>
+          <div><div class="k">처음 보는 심폴 상품</div><div class="v alert">6<small>개</small></div></div>
+          <div><div class="k">짝지었음</div><div class="v">2<small>개</small></div></div>
+          <div><div class="k">나중에 지정</div><div class="v">1<small>개</small></div></div>
+        </div>
+
+        <div class="alert">
+          <h4>심폴 주문에는 자체 품목코드 칸이 없습니다 <span class="help">?</span>
+            <span class="right">한 번만 정하면 됩니다</span></h4>
+          <p>대신 상품마다 바뀌지 않는 <b>심폴 상품코드</b>가 붙어 있습니다. 이 코드와 v3 품목을 한 번 짝지어 두면
+            <b>다음부터 그 상품은 다시 묻지 않습니다.</b> 아래 목록은 <b>아직 한 번도 짝짓지 않은 6개</b>뿐입니다.<br>
+            이름이 똑같은 품목이 여러 개 있어 <b>자동으로 확정하지 않습니다</b> — 비슷한 것을 골라 놓았을 뿐이니 눈으로 보고 정해 주세요.</p>
+        </div>
+
+        <div class="card">
+          <h3>처음 보는 심폴 상품 <span class="hint">6개 · 위에서부터 정하시면 됩니다</span>
+            <button class="btn sm right">전체 나중에 지정</button></h3>
+
+          <!-- ① 후보 제안이 열려 있는 줄 -->
+          <div class="mrow">
+            <div class="src">
+              <span class="lbl">심폴 상품</span>
+              <div class="sname">가늘고 긴 은빛 잎이 시원한 운치를 주는 김의털 '엘리야블루' 10cm 포트</div>
+              <div class="scode">005001000000267430</div>
+              <div class="smeta">이번 파일에 주문 3건 · 6주</div>
+            </div>
+            <div class="to">›</div>
+            <div class="side">
+              <div class="ac">
+                <div class="hd">비슷한 v3 품목 — 눌러서 정합니다</div>
+                <div class="it">
+                  <span class="cd">FEE01-10</span>
+                  <span class="txt">
+                    <span class="nm">김의털 '엘리야블루'</span>
+                    <div class="sci">Festuca glauca 'Elijah Blue'</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">10cm 포트<br>재고 240</span>
+                    <span class="sim">이름 같음</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="it">
+                  <span class="cd">FEE01-15</span>
+                  <span class="txt">
+                    <span class="nm">김의털 '엘리야블루'</span>
+                    <div class="sci">Festuca glauca 'Elijah Blue'</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">15cm 포트<br>재고 60</span>
+                    <span class="sim mid">규격 다름</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="it">
+                  <span class="cd">FES02-10</span>
+                  <span class="txt">
+                    <span class="nm">김의털</span>
+                    <div class="sci">Festuca glauca</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">10cm 포트<br>재고 0</span>
+                    <span class="sim mid">비슷</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="foot">
+                  <span class="note2">맞는 것이 없으면 —</span>
+                  <button class="btn sm">🔍 직접 찾기</button>
+                  <span class="sp"></span>
+                  <button class="btn sm">나중에 지정</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ② 직접 찾기를 연 줄 -->
+          <div class="mrow">
+            <div class="src">
+              <span class="lbl">심폴 상품</span>
+              <div class="sname">봄 화단을 노랗게 밝히는 꽃창포 모듬 (색상 랜덤) 15cm</div>
+              <div class="scode">005001000000284091</div>
+              <div class="smeta">이번 파일에 주문 1건 · 2주</div>
+            </div>
+            <div class="to">›</div>
+            <div class="side">
+              <div class="srch">
+                <input class="inp" value="꽃창포">
+                <button class="btn">찾기</button>
+              </div>
+              <div class="ac">
+                <div class="hd">직접 찾기 — 「꽃창포」 3건</div>
+                <div class="it on">
+                  <span class="cd">IRE01-15</span>
+                  <span class="txt">
+                    <span class="nm">꽃창포 '엔젤워터폴'</span>
+                    <div class="sci">Iris ensata 'Angel Waterfall'</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">15cm 포트<br>재고 120</span>
+                    <button class="btn sm main">이걸로</button>
+                  </span>
+                </div>
+                <div class="it">
+                  <span class="cd">IRE02-15</span>
+                  <span class="txt">
+                    <span class="nm">꽃창포 '대취'</span>
+                    <div class="sci">Iris ensata 'Daichi'</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">15cm 포트<br>재고 45</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="it">
+                  <span class="cd">IRP01-15</span>
+                  <span class="txt">
+                    <span class="nm">노랑꽃창포</span>
+                    <div class="sci">Iris pseudacorus</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">15cm 포트<br>재고 0</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="foot">
+                  <span class="note2">품목명 · 학명 · 품목코드로 찾습니다</span>
+                  <span class="sp"></span>
+                  <button class="btn sm">나중에 지정</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ③ 확정된 줄 -->
+          <div class="mrow done">
+            <div class="src">
+              <span class="lbl">심폴 상품</span>
+              <div class="sname">가을을 붉게 물들이는 억새 '그라질리무스' 15cm 포트</div>
+              <div class="scode">005001000000198772</div>
+              <div class="smeta">이번 파일에 주문 5건 · 11주</div>
+            </div>
+            <div class="to">›</div>
+            <div class="side">
+              <div class="fixed">
+                <span class="ck">✓</span>
+                <span class="cd">MIG01-15</span>
+                <span class="txt">
+                  <div class="nm">억새 '그라질리무스'</div>
+                  <div class="sci">Miscanthus sinensis 'Gracillimus'</div>
+                </span>
+                <span class="rg">15cm 포트 · 재고 88</span>
+                <button class="btn sm">바꾸기</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ④ 확정된 줄 -->
+          <div class="mrow done">
+            <div class="src">
+              <span class="lbl">심폴 상품</span>
+              <div class="sname">청사초 10cm 포트 (그늘에 강한 사철 상록)</div>
+              <div class="scode">005001000000212004</div>
+              <div class="smeta">이번 파일에 주문 2건 · 4주</div>
+            </div>
+            <div class="to">›</div>
+            <div class="side">
+              <div class="fixed">
+                <span class="ck">✓</span>
+                <span class="cd">CAR01-10</span>
+                <span class="txt">
+                  <div class="nm">청사초</div>
+                  <div class="sci">Carex breviculmis</div>
+                </span>
+                <span class="rg">10cm 포트 · 재고 88</span>
+                <button class="btn sm">바꾸기</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑤ 나중에 지정 -->
+          <div class="mrow skip">
+            <div class="src">
+              <span class="lbl">심폴 상품</span>
+              <div class="sname">모아심기 모듬세트 (구성 랜덤)</div>
+              <div class="scode">005001000000301155</div>
+              <div class="smeta">이번 파일에 주문 1건 · 1주</div>
+            </div>
+            <div class="to">›</div>
+            <div class="side">
+              <div class="later">
+                <span>
+                  <div class="t">나중에 지정</div>
+                  <div class="s">이 주문은 품목코드 없이 저장됩니다 — 주문 목록에서 나중에 채울 수 있습니다</div>
+                </span>
+                <button class="btn sm">지금 정하기</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⑥ 아직 안 본 것 -->
+          <div class="mrow">
+            <div class="src">
+              <span class="lbl">심폴 상품</span>
+              <div class="sname">그늘진 화단에 잘 어울리는 호스타 '준' 18cm 포트</div>
+              <div class="scode">005001000000276318</div>
+              <div class="smeta">이번 파일에 주문 1건 · 3주</div>
+            </div>
+            <div class="to">›</div>
+            <div class="side">
+              <div class="ac">
+                <div class="hd">비슷한 v3 품목 — 눌러서 정합니다</div>
+                <div class="it">
+                  <span class="cd">HOJ01-18</span>
+                  <span class="txt">
+                    <span class="nm">호스타 '준'</span>
+                    <div class="sci">Hosta 'June'</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">18cm 포트<br>재고 34</span>
+                    <span class="sim">이름 같음</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="it">
+                  <span class="cd">HOJ01-21</span>
+                  <span class="txt">
+                    <span class="nm">호스타 '준'</span>
+                    <div class="sci">Hosta 'June'</div>
+                  </span>
+                  <span class="why">
+                    <span class="rg">21cm 포트<br>재고 12</span>
+                    <span class="sim mid">규격 다름</span>
+                    <button class="btn sm">이걸로</button>
+                  </span>
+                </div>
+                <div class="foot">
+                  <span class="note2">맞는 것이 없으면 —</span>
+                  <button class="btn sm">🔍 직접 찾기</button>
+                  <span class="sp"></span>
+                  <button class="btn sm">나중에 지정</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footbar">
+            <span class="cnt">짝지었음 <b>2</b> · 나중에 지정 <b>1</b> · <i>남음 3</i></span>
+            <span class="sp"></span>
+            <button class="btn">파일 다시 고르기</button>
+            <button class="btn">남은 3개는 나중에 지정</button>
+            <button class="btn main wide">다음 — 미리보기</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 설명 ══════════ -->
+<div class="parts">
+  <h2>왜 이렇게 짰나</h2>
+  <div class="lead">08 · 처음 보는 심폴 상품코드 짝짓기 — 주문 올리기 흐름에 한 단계만 끼웁니다. macOS A안 · 브랜드 초록</div>
+  <div class="pgrid">
+
+    <div style="flex:1">
+      <h4>어디에 끼는가</h4>
+      <div class="steps" style="margin-bottom:var(--space-lg)">
+        <span class="st done"><span class="n">1</span>고르기</span>
+        <span class="sep">›</span>
+        <span class="st on"><span class="n">2</span>짝짓기</span>
+        <span class="sep">›</span>
+        <span class="st"><span class="n">3</span>미리보기</span>
+        <span class="sep">›</span>
+        <span class="st"><span class="n">4</span>저장</span>
+      </div>
+      <p class="note" style="margin-top:0">
+        <b class="accent">「고르기」와 「미리보기」 사이</b>에 넣었습니다.<br>
+        미리보기는 <b>새것 / 이미있음 / 무시</b> 건수를 보여주는 자리인데,<br>
+        품목코드가 정해져야 그 건수가 맞게 나옵니다. 짝을 뒤에 지으면<br>
+        미리보기를 <b>두 번</b> 봐야 합니다.<br><br>
+        <b class="accent">처음 보는 코드가 없으면 이 화면은 아예 뜨지 않고</b><br>
+        곧바로 미리보기로 넘어갑니다 — 두 번째 파일부터는<br>
+        지금 카페24와 손놀림이 똑같습니다.<br>
+        카페24 쪽 화면은 <b>하나도 건드리지 않았습니다.</b>
+      </p>
+    </div>
+
+    <div style="flex:1.1">
+      <h4>손놀림 — 흔한 경우 한 번</h4>
+      <p class="note" style="margin-top:0">
+        후보를 <b class="accent">미리 골라 펼쳐 둡니다.</b> 눌러서 여는 단계가 없습니다 —<br>
+        맞으면 <b class="accent">「이걸로」 한 번</b>이면 그 줄이 끝납니다.<br><br>
+        <b>자동으로 확정하지 않습니다.</b> 이름이 완전히 같은 품목이 9개,<br>
+        한 이름이 다른 이름에 통째로 들어 있는 쌍이 7쌍입니다.<br>
+        자동으로 정하면 <b>틀린 짝이 조용히 저장</b>됩니다 — 되돌리기 어렵습니다.<br>
+        그래서 <b class="accent">규격·재고를 후보마다 같이 보여</b> 눈으로 갈리게 했습니다.<br>
+        「이름 같음 / 규격 다름」 꼬리표가 <b>왜 이걸 올렸는지</b>를 말해 줍니다.
+      </p>
+    </div>
+
+    <div style="flex:.95">
+      <h4>빠져나가는 길</h4>
+      <div class="later" style="margin-bottom:var(--space-lg)">
+        <span>
+          <div class="t">나중에 지정</div>
+          <div class="s">품목코드 없이 저장됩니다</div>
+        </span>
+        <button class="btn sm">지금 정하기</button>
+      </div>
+      <p class="note" style="margin-top:0">
+        <b class="accent">「나중에 지정」이 줄마다</b> 있고, 아래에 <b class="accent">「남은 3개는 나중에 지정」</b>이<br>
+        한 번에 넘기는 길로 또 있습니다. 이 화면에 <b>갇히지 않습니다.</b><br><br>
+        건너뛴 줄은 <b>점선 테두리</b>로 남아 「안 한 것」임이 보입니다 —<br>
+        지금 카페24에서 품목코드 없이 저장되는 주문과 같은 처리입니다.<br><br>
+        한 번 지은 짝은 <b class="accent">그 심폴 상품코드에 붙어</b> 다음부터 안 물어봅니다.<br>
+        틀리게 지었으면 확정된 줄의 <b>「바꾸기」</b>로 그 자리에서 고칩니다.
+      </p>
+    </div>
+
+    <div style="flex:.85">
+      <h4>폰에서는</h4>
+      <p class="note" style="margin-top:0">
+        밭에서 주문 파일을 올리는 일이 잦지는 않지만,<br>
+        <b class="accent">막히면 그 자리에서 풀 수 있어야</b> 업무가 안 멈춥니다.<br><br>
+        한 상품이 <b class="accent">카드 한 장</b>입니다 — 상품명이 길어도 잘리지 않고<br>
+        접힙니다. 후보는 카드 안에 세로로 쌓아 <b>장갑 낀 손</b>으로도<br>
+        줄 전체를 누를 수 있게 했습니다.<br><br>
+        위의 <b class="accent">짝지었음 / 남음 / 나중에</b> 세 칸으로 얼마나 남았는지<br>
+        한눈에 보이고, 아래 <b>「다음 — 미리보기」</b> 밑에<br>
+        <b class="accent">「나중에 지정하고 넘어가기」</b>가 항상 붙어 있습니다.<br><br>
+        인쇄·엑셀 내려받기는 폰에서 뺐고, 필요하면 오른쪽 위<br>
+        <b class="accent">🖥 PC화면으로</b>가 탈출구입니다.
+      </p>
+    </div>
+
+  </div>
+
+  <h4 style="margin-top:var(--space-4xl); padding-top:var(--space-lg); border-top:var(--border-width) solid var(--color-border)">새로 만든 부품 <span style="font-weight:var(--weight-medium); color:var(--color-text-muted); text-transform:none; letter-spacing:0">— 나머지는 전부 _공통-macA.css 그대로입니다</span></h4>
+  <div style="display:flex; gap:var(--gap-parts-col); align-items:flex-start; margin-top:var(--space-lg)">
+    <div style="flex:1">
+      <div class="steps">
+        <span class="st done"><span class="n">✓</span>지난 단계</span>
+        <span class="sep">›</span>
+        <span class="st on"><span class="n">2</span>지금 단계</span>
+        <span class="sep">›</span>
+        <span class="st"><span class="n">3</span>다음 단계</span>
+      </div>
+      <p class="note"><b class="accent">.steps</b> — 여러 단계짜리 화면에서 어디쯤인지 보여줍니다.<br>주문 올리기·배송완료 변환에서 같이 씁니다.</p>
+    </div>
+    <div style="flex:1">
+      <div class="fixed">
+        <span class="ck">✓</span>
+        <span class="cd">MIG01-15</span>
+        <span class="txt"><div class="nm">억새 '그라질리무스'</div></span>
+        <button class="btn sm">바꾸기</button>
+      </div>
+      <p class="note"><b class="accent">.fixed</b> — 짝이 정해진 것. 초록 동그라미 체크 하나로<br>「이 줄은 끝났다」를 말합니다.</p>
+    </div>
+    <div style="flex:1">
+      <div class="later">
+        <span><div class="t">나중에 지정</div><div class="s">품목코드 없이 저장</div></span>
+        <button class="btn sm">지금 정하기</button>
+      </div>
+      <p class="note"><b class="accent">.later</b> — 점선 테두리. <b>안 끝난 것</b>이라는 뜻을<br>색이 아니라 테두리 모양으로 냅니다.</p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

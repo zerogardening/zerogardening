@@ -83,7 +83,13 @@ window.ZG = window.ZG || {};
         value: 값.단가 ? 돈(값.단가) : '', maxlength: '9'
       });
       /* 볼 때는 콤마, 칠 때는 숫자만 — 치는 도중 값을 갈아 끼우면 커서가 튄다 */
-      단가칸.addEventListener('focus', function () { 단가칸.value = 값.단가; });
+      /* 🔴 들어가면 기존 값을 통째로 고른다 — 돈이 걸린 칸이라 「3300」 뒤에 이어 쳐서
+         「33002750」이 되면 안 된다. focus 직후 브라우저가 커서를 다시 잡는 일이 있어 한 박자 늦춘다 */
+      단가칸.addEventListener('focus', function () {
+        단가칸.value = 값.단가;
+        단가칸.select();
+        setTimeout(function () { if (document.activeElement === 단가칸) 단가칸.select(); }, 0);
+      });
       단가칸.addEventListener('blur', function () { 단가칸.value = 값.단가 ? 돈(값.단가) : ''; });
       var 박스칸 = 만들기('span', { class: 'n', text: String(값.박스수) });
 
@@ -227,7 +233,11 @@ window.ZG = window.ZG || {};
           ]);
 
       var 줄머리 = 만들기('div', { class: 'gline' }, [
-        만들기('span', { class: 'no', text: String(g.출력번호) }),
+        /* 한 손님 상자가 여럿이면 1-1·1-2 (08i.번호글과 같은 규칙). 저장값은 정수 그대로다 */
+        만들기('span', {
+          class: 'no' + (g.분번 ? ' split' : ''),
+          text: g.분번 ? g.출력번호 + '-' + g.분번 : String(g.출력번호)
+        }),
         누구,
         만들기('div', { class: 'items', text: g.추가 ? '별도 송장' : 품목글(g) }),
         값칸,
