@@ -1,0 +1,71 @@
+<!doctype html><meta charset="utf-8"><title>손으로 넘긴 배송완료가 탭에 반영되나</title>
+<link rel="stylesheet" href="../css/공통.css"><link rel="stylesheet" href="../css/주문.css">
+<body style="background:#fff">
+<!-- 우람님 8/10 신고 — 「윤혜숙 토마토를 손으로 배송완료 처리했는데 배송준비중에 계속 있다」.
+     08n 은 출고만 만들고 카페24상태는 안 건드린다. 08b 의 탭 판정이 그 출고를 보는지 시험한다. -->
+<pre id=말 style="font:13px/1.7 ui-monospace,monospace;padding:16px"></pre>
+<div id=앱 style="display:none"></div>
+<script>
+/* 실제 화면과 똑같이 localStorage 를 씨앗으로 깐다 — 판정 함수만 따로 흉내내지 않는다 */
+var 오늘 = new Date(), 날 = oj(오늘);
+function oj(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function 줄(id, 이름, 옵) {
+  var r = { id:id, 수령인:이름, 주문일:날, 등록일시:1, 판매처:'카페24', 주문번호:'N'+id,
+            품목코드:'TOM01-15', 품목명:'토마토', 규격:'15cm', 수량:1, 단가:1000, 묶음키:'묶음-'+이름 };
+  for (var k in (옵||{})) r[k] = 옵[k];
+  return r;
+}
+localStorage.setItem('zg.v3.주문', JSON.stringify([
+  줄('a1','김준비',{ 카페24상태:'배송준비중' }),                       // ① 아직 안 나갔다
+  줄('b1','윤혜숙',{ 카페24상태:'배송준비중' }),                       // ② 🔴 손으로 배송완료 (출고 있음)
+  줄('c1','박직접',{ 카페24상태:'배송완료' }),                          // ③ 카페24에서 직접 처리
+  줄('d1','최사은',{ 카페24상태:'배송준비중' }),                       // ④ 상품줄 — 아직 안 나갔다
+  줄('d2','최사은',{ 카페24상태:'배송준비중', 서비스:true, 품목코드:'GIF01' }), // ④ 서비스줄 (출고가 미리 있다)
+  줄('e1','심폴손',{ 판매처:'심폴', 카페24상태:'' })                    // ⑤ 심폴 — 출고 있음
+]));
+localStorage.setItem('zg.v3.출고', JSON.stringify([
+  { id:'sh1', 주문id:'b1', 출처:'주문', 품목코드:'TOM01-15', 수량:1, 출고일:날, 수동:true },
+  { id:'sh2', 주문id:'d2', 출처:'서비스', 품목코드:'GIF01', 수량:1, 출고일:날 },
+  { id:'sh3', 주문id:'e1', 출처:'주문', 품목코드:'TOM01-15', 수량:1, 출고일:날 }
+]));
+</script>
+<!-- 00-시드.js 는 안 싣는다 — 예시 주문으로 씨앗을 덮어쓴다 -->
+<script src="../js/01-저장소.js"></script>
+<script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script>
+<script src="../js/04-공통UI.js"></script>
+<script src="../js/08a-주문자료.js"></script>
+<script src="../js/08f-배송완료.js"></script>
+<script src="../js/08n-수동배송완료.js"></script>
+<script src="../js/08b-주문목록.js"></script>
+<script>
+window.addEventListener('load', function () {
+  var 말 = [], 튕김 = 0;
+  function 봐(이름, 참) { if (!참) 튕김++; 말.push((참 ? 'OK  ' : '🔴 FAIL ') + 이름); }
+
+  var 상 = ZG.주문.상태;
+  말.push('진단 — 폰인가:' + ZG.ui.폰인가() + ' · 저장소 주문 ' + ZG.저장소.읽기(ZG.저장소.키.주문).length +
+          '줄 · 출고 ' + ZG.저장소.읽기(ZG.저장소.키.출고).length + '줄 · 오늘 ' + ZG.ui.오늘문자());
+  봐('PC 로 본다 (폰이면 하루치만 읽어 시험이 안 된다)', ZG.ui.폰인가() === false);
+  상.부터 = '2020-01-01'; 상.까지 = '2099-12-31'; 상.글 = ''; 상.묶음id = '';
+
+  function 이름들(칩) {
+    상.상태칩 = 칩;
+    ZG.주문.다시그리기();                 // 출고캐시를 버리게 한다 — 실제 화면과 같은 길
+    return ZG.주문.줄들().map(function (r) { return r.수령인 + (r.서비스 ? '(서비스)' : ''); });
+  }
+  var 준비 = 이름들('준비중'), 나감 = 이름들('나감');
+  말.push('배송준비중 → ' + 준비.join(', '));
+  말.push('배송완료   → ' + 나감.join(', ') + '\n');
+
+  봐('① 안 나간 건은 배송준비중에 있다', 준비.indexOf('김준비') >= 0 && 나감.indexOf('김준비') < 0);
+  봐('🔴 ② 손으로 넘긴 윤혜숙이 배송준비중에서 빠졌다', 준비.indexOf('윤혜숙') < 0);
+  봐('🔴 ② 손으로 넘긴 윤혜숙이 배송완료에 뜬다', 나감.indexOf('윤혜숙') >= 0);
+  봐('③ 카페24에서 직접 처리한 건은 그대로 배송완료다', 나감.indexOf('박직접') >= 0 && 준비.indexOf('박직접') < 0);
+  봐('④ 서비스 출고만 있는 건은 배송준비중에 남는다 (8/8 회귀)',
+     준비.indexOf('최사은') >= 0 && 준비.indexOf('최사은(서비스)') >= 0 && 나감.indexOf('최사은') < 0);
+  봐('⑤ 심폴은 여태처럼 출고로 판정한다 (8/8 회귀)', 나감.indexOf('심폴손') >= 0 && 준비.indexOf('심폴손') < 0);
+
+  document.getElementById('말').textContent = 말.join('\n') + '\n\n' + (튕김 ? '🔴 ' + 튕김 + '건 실패' : '✅ 전부 통과');
+});
+</script>
