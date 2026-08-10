@@ -13,6 +13,12 @@ window.ZG = window.ZG || {};
 
   function 값(v) { return String(v == null ? '' : v).trim(); }
 
+  /* 🔴 카페24가 「이미 발송처리된 주문입니다 (…)」로 돌려준 줄은 **실패가 아니다** —
+     우람님이 카페24 관리자에서 직접 발송처리하신 건이다(도구/edge-배송등록/index.ts:94~100).
+     카페24가 진실이므로(08b:17~19) 통합관리 주문줄도 배송완료로 맞춘다.
+     안 맞추면 그 건이 「배송준비중」 탭에 영영 남아 또 보내시게 된다 (우람님 8/10) */
+  function 이미나갔나(사유) { return /^이미 발송처리된 주문입니다/.test(값(사유)); }
+
   /* 로젠 결과 줄들 → 카페24로 보낼 짝 목록.
      🔴 `출처==='자동수집'`으로 좁히지 않는다 — 손업로드 건도 원천은 카페24 주문서다.
         없는 주문번호면 shipment-push 가 「카페24에 없는 주문번호입니다」로 돌려주고 아무 것도 만들지 않는다 */
@@ -84,11 +90,14 @@ window.ZG = window.ZG || {};
       return 부르기(이번, 진짜).then(function (d) {
         이번.forEach(function (p, i) {
           var r = (d.결과 || [])[i] || {};
-          끝.push({ 짝: p, 됨: r.됨 === true, 사유: 값(r.사유), 시험: r.시험 === true, 품목수: Number(r.품목수) || 0 });
+          끝.push({
+            짝: p, 됨: r.됨 === true, 사유: 값(r.사유), 시험: r.시험 === true,
+            품목수: Number(r.품목수) || 0, 이미: r.됨 !== true && 이미나갔나(r.사유)
+          });
         });
       }).catch(function (e) {
         var 말 = '서버 오류 — ' + String((e && e.message) || e).slice(0, 140);
-        이번.forEach(function (p) { 끝.push({ 짝: p, 됨: false, 사유: 말, 시험: false, 품목수: 0 }); });
+        이번.forEach(function (p) { 끝.push({ 짝: p, 됨: false, 사유: 말, 시험: false, 품목수: 0, 이미: false }); });
       }).then(function () {
         if (진행) 진행(끝.length, 전체.length);
         return 다음();
@@ -115,5 +124,5 @@ window.ZG = window.ZG || {};
     return 센수;
   }
 
-  ZG.카페24발송 = { 대상뽑기: 대상뽑기, 보내기: 보내기, 상태되쓰기: 상태되쓰기 };
+  ZG.카페24발송 = { 대상뽑기: 대상뽑기, 보내기: 보내기, 상태되쓰기: 상태되쓰기, 이미나갔나: 이미나갔나 };
 })(window.ZG);
