@@ -1,0 +1,74 @@
+<!doctype html><meta charset="utf-8"><title>주문 목록에서 짝짓기 단추가 뜨나</title>
+<link rel="stylesheet" href="../css/공통.css"><link rel="stylesheet" href="../css/주문.css">
+<body style="background:#fff">
+<!-- 우람님 8/11 지적 — 「배송준비중에 매칭 안된 상품이 있는데 매칭하라고 안 뜬다」.
+     짝짓기 상자가 08h(주문 올리기) 미리보기에만 있어서 자동수집 건은 손댈 데가 없었다. -->
+<pre id=말 style="font:13px/1.7 ui-monospace,monospace;padding:16px"></pre>
+<div id=앱></div>
+<script>
+localStorage.clear();
+localStorage.setItem('zg.v3.품목', JSON.stringify([
+  { 품목코드:'ALS01-15', 접두:'ALS01', 학명3:'ALS', 일련번호:'01', 규격cm:15, 규격:'15cm 포트',
+    유통명:'알리움 썸머뷰티', 학명:'Allium summer', 학명키:'allium summer', 매입단가:5000,
+    과세구분:'면세', 상태:'판매중', 특성:{ 최대높이:'60' } }
+]));
+localStorage.setItem('zg.v3.심폴짝', JSON.stringify([]));
+localStorage.setItem('zg.v3.주문', JSON.stringify([
+  // 못 붙은 줄 — 카페24가 ALS01 로 보냈는데 v3 코드는 ALS01-15 다 (실제 8/10 자동수집 사례)
+  { id:'o1', 판매처:'카페24', 주문번호:'20260810-61', 원본코드:'ALS01', 품목코드:'', 유통명:'알리움 썸머뷰티 15cm화분',
+    수령인:'김진수', 주문수량:3, 단가:11000, 주문일:'2026-08-10', 등록일시:1, 묶음키:'김진수', 카페24상태:'배송준비중' },
+  // 잘 붙은 줄 — 짝짓기 대상이 아니다
+  { id:'o2', 판매처:'카페24', 주문번호:'20260810-51', 원본코드:'ALS01-15', 품목코드:'ALS01-15', 유통명:'알리움 썸머뷰티',
+    수령인:'이정주', 주문수량:2, 단가:11500, 주문일:'2026-08-10', 등록일시:1, 묶음키:'이정주', 카페24상태:'배송준비중' }
+]));
+</script>
+<script src="../js/01-저장소.js"></script><script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script><script src="../js/04-공통UI.js"></script>
+<script src="../js/04b-특성.js"></script><script src="../js/08a-주문자료.js"></script>
+<script src="../js/08c-주문입력.js"></script><script src="../js/08e-서비스품목.js"></script>
+<script src="../js/08f-배송완료.js"></script><script src="../js/08j-심폴.js"></script>
+<script src="../js/08k-심폴짝창.js"></script><script src="../js/08b-주문목록.js"></script>
+<script>
+window.addEventListener('load', function () {
+  var 말 = [], 튕김 = 0;
+  function 봐(이름, 참) { if (!참) 튕김++; 말.push((참 ? 'OK   ' : '🔴 FAIL ') + 이름); }
+  function 단추찾기() {
+    var b = document.querySelectorAll('button');
+    for (var i = 0; i < b.length; i++) if (b[i].textContent.indexOf('품목 짝짓기') >= 0) return b[i];
+    return null;
+  }
+
+  var 상 = ZG.주문.상태;
+  상.부터 = '2020-01-01'; 상.까지 = '2099-12-31'; 상.글 = ''; 상.묶음id = ''; 상.상태칩 = '준비중';
+  ZG.주문.다시그리기();
+
+  var 단 = 단추찾기();
+  봐('① 배송준비중 화면에 「품목 짝짓기」 단추가 뜬다', !!단);
+  봐('①  못 붙은 상품 1종이라 「1」로 센다 (' + (단 ? 단.textContent : '없음') + ')',
+     !!단 && /1$/.test(단.textContent.trim()));
+
+  단 && 단.click();
+  var 창 = document.querySelector('.pcsheet');
+  봐('② 누르면 짝짓기 창이 뜬다', !!창);
+  봐('②  못 지은 상품으로 ALS01 이 뜬다', !!창 && 창.textContent.indexOf('ALS01') >= 0);
+  봐('②  「새로 등록」 길도 같이 있다', !!창 && 창.textContent.indexOf('여기서 새로 등록') >= 0);
+  봐('②  잘 붙은 줄(o2)은 짝짓기 대상이 아니다', !!창 && 창.textContent.indexOf('이정주') < 0);
+
+  /* ③ 짝을 지으면 이미 저장된 줄에 바로 붙는다 */
+  ZG.짝.짝쓰기('ALS01', 'ALS01-15', '알리움 썸머뷰티 15cm화분');
+  ZG.짝.저장된줄되붙이기();
+  var 주문 = ZG.저장소.읽기(ZG.저장소.키.주문);
+  function 찾(id) { return 주문.filter(function (r) { return r.id === id; })[0] || {}; }
+  봐('③ 짝을 지으니 o1 에 품목이 붙었다', 찾('o1').품목코드 === 'ALS01-15');
+  봐('③  유통명도 v3 것으로 바뀐다 → 동봉카드가 산다', 찾('o1').유통명 === '알리움 썸머뷰티');
+
+  /* ④ 다 붙으면 단추가 사라진다 */
+  ZG.주문입력.닫기창();
+  ZG.주문.다시그리기();
+  봐('④ 다 붙으면 단추를 아예 안 그린다', 단추찾기() === null);
+
+  말.push('');
+  말.push(튕김 ? ('🔴 ' + 튕김 + '개 실패') : '✅ 전부 통과 (' + (말.length - 1) + '항목)');
+  document.getElementById('말').textContent = 말.join('\n');
+});
+</script>

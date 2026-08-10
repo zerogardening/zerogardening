@@ -268,6 +268,68 @@ window.ZG = window.ZG || {};
       });
   }
 
+  /* ══ 품목 짝짓기 — 이미 들어와 있는 주문 중 품목이 안 붙은 것 (2026-08-11 우람님 지적) ══
+     🔴 08h(주문 올리기) 미리보기의 짝짓기 상자를 그대로 띄운다. 자동수집으로 들어온 주문은
+        그 미리보기를 안 거쳐서 여태 손댈 데가 없었다.
+     🔴 기간·탭을 안 본다. 짝은 「상품」 단위라 한 번 지으면 옛 주문까지 다 붙는데,
+        기간에 걸어 두면 화면에 안 보이는 줄을 영영 못 고치신다 (8/9 배송준비중 탭과 같은 이치) */
+  function 짝거리들() {
+    return ZG.저장소.읽기(ZG.저장소.키.주문).map(function (r) {
+      return { 줄: r, 상품명: r.유통명 || r.원본코드 || '' };
+    });
+  }
+
+  function 짝못붙은수() {
+    var 표 = {};
+    ZG.저장소.읽기(ZG.저장소.키.주문).forEach(function (r) {
+      if (r && !r.품목코드 && r.원본코드) 표[r.원본코드] = 1;
+    });
+    return Object.keys(표).length;      // 줄 수가 아니라 「상품 종 수」 — 지으실 짝의 개수다
+  }
+
+  function 짝짓기창() {
+    ZG.주문입력.닫기창();
+    var 막 = 만들기('div', { class: 'pcscrim' });
+    막.addEventListener('click', ZG.주문입력.닫기창);
+    var 속 = 만들기('div', { class: 'bd' });
+
+    function 채우기() {
+      /* 🔴 짝을 짓자마자 이미 저장된 줄에 반영한다 — 안 하면 창을 닫고 나서도 목록이 그대로다 */
+      var 붙 = (ZG.짝 && ZG.짝.저장된줄되붙이기) ? ZG.짝.저장된줄되붙이기() : 0;
+      u.비우기(속);
+      var 상자 = ZG.짝창.상자(짝거리들(), { 바뀌면: 채우기 });
+      속.appendChild(상자 || 만들기('div', { class: 'ph-card', style: 'text-align:center; padding:24px',
+        text: '품목이 안 붙은 주문이 없습니다.' }));
+      if (붙) 다시그리기();
+    }
+
+    var 닫기 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
+    닫기.addEventListener('click', ZG.주문입력.닫기창);
+    var 창 = 만들기('div', { class: 'pcsheet', role: 'dialog', 'aria-modal': 'true' }, [
+      만들기('div', { class: 'hd' }, [
+        만들기('h3', { text: '🔗 품목 짝짓기' }),
+        만들기('span', { class: 'hint', text: '한 번 지어 두시면 다음부터 저절로 붙습니다' }),
+        만들기('span', { class: 'right' }, [닫기])
+      ]),
+      속
+    ]);
+    document.body.appendChild(막);
+    document.body.appendChild(창);
+    u.탈출걸기(ZG.주문입력.닫기창);
+    채우기();
+    setTimeout(function () { 닫기.focus(); }, 20);
+  }
+
+  /* 못 붙은 게 하나도 없으면 단추를 아예 안 만든다 — 평소 화면에 군더더기를 안 늘린다 */
+  function 짝단추(반) {
+    var n = 짝못붙은수();
+    if (!n) return null;
+    var b = 만들기('button', { class: 'btn' + (반 ? ' ' + 반 : ''), type: 'button',
+      text: '🔗 품목 짝짓기 ' + n, title: '품목이 안 붙은 상품 ' + n + '종 — 짝을 지어 두시면 다음부터 저절로 붙습니다' });
+    b.addEventListener('click', 짝짓기창);
+    return b;
+  }
+
   function PC머리버튼() {
     function 단추(글, 눌림, 주) {
       var b = 만들기('button', { class: 'btn sm' + (주 ? ' main' : ''), type: 'button', text: 글 });
@@ -277,6 +339,7 @@ window.ZG = window.ZG || {};
     var 수집단추 = 단추('📥 주문수집', function () { 주문수집하기(수집단추); }, true);
     return 만들기('div', { class: 'headbtns' }, [
       수집단추,
+      짝단추('sm'),
       단추('⬆ 주문 올리기', 주문올리기누름),
       단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
       단추('📋 출고리스트', function () { ZG.주문입력.PC출고창(상태, 고른줄들()); }, true),
@@ -297,7 +360,7 @@ window.ZG = window.ZG || {};
     카드.addEventListener('click', function () { 카드열기(포장순(자.건으로묶기(줄들()))); });
     var 수집 = 만들기('button', { class: 'btn', type: 'button', text: '📥 주문수집' });
     수집.addEventListener('click', function () { 주문수집하기(수집); });
-    칸.appendChild(만들기('div', { class: 'topbtns' }, [수집, 수동, 출고, 카드]));
+    칸.appendChild(만들기('div', { class: 'topbtns' }, [수집, 짝단추(), 수동, 출고, 카드]));
 
     var 목록 = 만들기('div', { class: 'ph-list' });
     function 채우기() {
