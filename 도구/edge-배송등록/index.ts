@@ -105,7 +105,7 @@ async function 올리기(짝들: any[], 진짜: boolean) {
         request: {
           tracking_no: 운송장,
           shipping_company_code: 로젠,
-          status: "shipped",
+          status: "shipping",   // 🔴 "shipped"(배송완료)는 422 — N20 품목은 배송중으로만 넘길 수 있다 (8/11 실패 5건)
           order_item_code: 올릴,
         },
       };
