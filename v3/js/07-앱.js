@@ -98,7 +98,8 @@ window.ZG = window.ZG || {};
     본문 = 만들기('div', { class: 'ph-body' });
 
     var 바 = 만들기('nav', { class: 'ph-nav' });
-    탭들.forEach(function (t) {
+    /* 「이미지」는 폰에 안 낸다 — PC 편집기 창을 얹는 자리라 폰에서는 못 쓴다 (8/13 우람님) */
+    탭들.filter(function (t) { return t.이름 !== '이미지'; }).forEach(function (t) {
       var b = 만들기('button', {
         type: 'button', class: t.이름 === 지금 ? 'on' : '',
         html: '<span class="ic">' + t.아이콘 + '</span>' + t.이름
@@ -117,6 +118,7 @@ window.ZG = window.ZG || {};
   }
 
   function 다시그리기() {
+    if (u.폰인가() && 지금 === '이미지') 지금 = '입고';   // 폰엔 그 탭이 없다
     u.비우기(뿌리);
     if (u.폰인가()) 폰뼈대(); else PC뼈대();
     현재모듈().그리기(본문);
