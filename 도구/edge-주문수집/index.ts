@@ -151,9 +151,17 @@ function 옵션입수(옵션원문: unknown, 꼬리: number): number {
   return 꼬리 > 0 ? 꼬리 : 1;
 }
 
-function 판매처(쇼핑몰: unknown): string {
-  const s = 다듬기(쇼핑몰);
-  return (!s || s === "한국어 쇼핑몰") ? "카페24" : s;
+/* 🔴 카페24는 허브다 — 쿠팡·스마트스토어·11번가·G마켓 주문이 다 여기로 들어온다.
+   `쇼핑몰` 칸은 마켓 주문에도 늘 「한국어 쇼핑몰」이라 어디서 온 주문인지 안 나온다(실물 CSV 확인).
+   주문의 `order_place_id` 가 진짜 유입처다. 모르는 값이면 카페24가 준 이름을 그대로 쓴다. */
+const 유입처: Record<string, string> = {
+  cafe24: "카페24", mobile: "카페24", mobile_d: "카페24", NCHECKOUT: "네이버페이",
+  coupang: "쿠팡", shopn: "스마트스토어", sk11st: "11번가", gmarket: "G마켓",
+  auction: "옥션", inpark: "인터파크",
+};
+function 판매처(주문: any): string {
+  const id = 다듬기(주문.order_place_id);
+  return 유입처[id] || 다듬기(주문.order_place_name) || "카페24";
 }
 
 /* 08a.날짜정규화 — `YYYY-MM-DD` 만 받는다. 못 읽으면 '' 이고 그 줄은 저장하지 않는다 */
@@ -179,7 +187,7 @@ const 묶음키 = (줄: any) =>
 const 중복키 = (줄: any) =>
   `${글(줄.주문번호)}|${줄.원본코드 || (글(줄.유통명) + "§" + 글(줄.옵션원문))}|${다듬기(줄.수령인)}`;
 
-function 줄만들기(o: string[], 마스터: Record<string, any>) {
+function 줄만들기(o: string[], 마스터: Record<string, any>, 판매처글: string) {
   const 주문번호 = 다듬기(o[자리["주문번호"]]);
   if (!주문번호) return null;
 
@@ -191,7 +199,7 @@ function 줄만들기(o: string[], 마스터: Record<string, any>) {
 
   const 줄: any = {
     묶음id: "", 주문번호, 주문일: 날짜만들기(o[자리["발주일"]]),
-    판매처: 판매처(o[자리["쇼핑몰"]]),
+    판매처: 판매처글 || "카페24",
     /* 못 찾아도 막지 않는다 — 원본코드를 남겨 두고 주문 화면에서 나중에 지정하신다 */
     품목코드: 품목 ? 품목.품목코드 : "", 원본코드,
     유통명: 품목 ? 품목.유통명 : 상품명, 학명: 품목 ? 품목.학명 : "", 규격: 품목 ? 품목.규격 : "",
@@ -269,18 +277,21 @@ async function 수집(일수: number, 시험: boolean) {
   });
 
   const 센수: Record<string, number> = {};
+  const 유입처센: Record<string, number> = {};   // 🔴 `시험:true` 로 어디서 온 주문인지 눈으로 본다
   const 새줄들: any[] = [];
   const 고칠들: any[] = [];
   const 지금 = new Date().toISOString();
   let 이미 = 0, 날짜오류 = 0, 안받음 = 0;
 
   for (const 주문 of (받음.orders ?? [])) {
+    const 곳 = 판매처(주문);
+    유입처센[곳] = (유입처센[곳] ?? 0) + 1;
     const 수령인들 = 주문.receivers ?? [{}];
     const 주문자 = 주문.buyer ?? {};
     for (const 품목 of (주문.items ?? [])) {
       // 품목마다 배송지가 다를 수 있다(복수배송). shipping_code 로 짝을 찾는다
       const 수령인 = 수령인들.find((r: any) => r.shipping_code === 품목.shipping_code) ?? 수령인들[0];
-      const 줄 = 줄만들기(원본27(주문, 품목, 수령인, 주문자), 마스터);
+      const 줄 = 줄만들기(원본27(주문, 품목, 수령인, 주문자), 마스터, 판매처(주문));
       if (!줄) continue;
       const 상태 = 글(품목.status_text) || 글(품목.order_status);
       줄.카페24상태 = 상태;
@@ -294,8 +305,14 @@ async function 수집(일수: number, 시험: boolean) {
         이미++;
         /* 🔴 상태만 갈아끼운다. 나머지 칸은 손대지 않는다 —
            우람님이 주문화면에서 품목코드를 지정하셨을 수 있고, 그걸 덮으면 그 손질이 사라진다 */
-        if (있던.내용?.카페24상태 !== 상태) {
-          고칠들.push({ id: 있던.id, 내용: { ...있던.내용, 카페24상태: 상태, 상태확인: 지금 } });
+        /* 🔴 판매처는 「카페24」·빈칸일 때만 덮는다 — 심폴이나 손으로 고치신 값을 지우면 안 된다 */
+        const 옛곳 = 다듬기(있던.내용?.판매처);
+        const 곳고침 = (!옛곳 || 옛곳 === "카페24") && 줄.판매처 !== 옛곳;
+        if (있던.내용?.카페24상태 !== 상태 || 곳고침) {
+          고칠들.push({ id: 있던.id, 내용: {
+            ...있던.내용, 카페24상태: 상태, 상태확인: 지금,
+            ...(곳고침 ? { 판매처: 줄.판매처 } : {}),
+          } });
         }
         continue;
       }
@@ -319,11 +336,11 @@ async function 수집(일수: number, 시험: boolean) {
 
   const 미리 = 새줄들.map((r) => ({
     주문번호: r.주문번호, 주문일: r.주문일, 수령인: r.수령인, 품목코드: r.품목코드 || `(못찾음:${r.원본코드})`,
-    유통명: r.유통명, 수량: r.주문수량 * r.옵션입수, 단가: r.단가,
+    판매처: r.판매처, 유통명: r.유통명, 수량: r.주문수량 * r.옵션입수, 단가: r.단가,
   }));
 
   if (!새줄들.length || 시험) {
-    return { 시험, 새것: 새줄들.length, 이미, 날짜오류, 안받음, 상태고침: 고칠들.length, 고침실패,
+    return { 시험, 새것: 새줄들.length, 이미, 날짜오류, 안받음, 상태고침: 고칠들.length, 고침실패, 유입처센,
       읽은기존줄: (기존줄 ?? []).length,   // 🔴 1,000 에서 딱 멈춰 있으면 또 잘린 것이다
              묶음id: null, 받은주문: (받음.orders ?? []).length, 미리보기: 미리 };
   }
@@ -358,7 +375,7 @@ async function 수집(일수: number, 시험: boolean) {
     .insert(새줄들.map((r) => ({ id: r.id, 내용: r })));
   if (e2) throw new Error("주문 저장 실패: " + e2.message);
 
-  return { 새것: 새줄들.length, 이미, 날짜오류, 안받음, 상태고침: 고칠들.length, 고침실패, 묶음id,
+  return { 새것: 새줄들.length, 이미, 날짜오류, 안받음, 상태고침: 고칠들.length, 고침실패, 유입처센, 묶음id,
            받은주문: (받음.orders ?? []).length, 미리보기: 미리 };
 }
 
