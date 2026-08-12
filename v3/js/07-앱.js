@@ -6,7 +6,8 @@ window.ZG = window.ZG || {};
   var u = ZG.ui, 만들기 = u.만들기;
   var 탭들 = [
     { 이름: '입고', 아이콘: '🌿', 모듈: function () { return ZG.입고; } },
-    { 이름: '재고', 아이콘: '📦', 모듈: function () { return ZG.재고; } }
+    { 이름: '재고', 아이콘: '📦', 모듈: function () { return ZG.재고; } },
+    { 이름: '이미지', 아이콘: '🖼', 모듈: function () { return ZG.상품이미지; } }
   ];
   // 「명세서 발행」은 업체 관리 안 세 번째 탭이 됐다 — 왼쪽 메뉴는 4개다 (3단계 설계)
   var 지금 = '입고';
@@ -14,10 +15,13 @@ window.ZG = window.ZG || {};
 
   function 해시읽기() {
     var h = decodeURIComponent(location.hash.replace('#', ''));
-    return (h === '재고' || h === '입고') ? h : null;
+    return 탭들.some(function (t) { return t.이름 === h; }) ? h : null;
   }
 
-  function 현재모듈() { return 지금 === '재고' ? ZG.재고 : ZG.입고; }
+  function 현재모듈() {
+    var 것 = 탭들.filter(function (t) { return t.이름 === 지금; })[0] || 탭들[0];
+    return 것.모듈();
+  }
 
   function 머리정보() {
     var m = 현재모듈();
@@ -41,9 +45,6 @@ window.ZG = window.ZG || {};
     var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
     소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
     옆.appendChild(소싱메뉴);
-    var 이미지메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🖼</span>상품 이미지' });
-    이미지메뉴.addEventListener('click', function () { location.href = '이미지.html'; });
-    옆.appendChild(이미지메뉴);
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '상품' }),
