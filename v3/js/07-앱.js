@@ -41,6 +41,9 @@ window.ZG = window.ZG || {};
     var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
     소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
     옆.appendChild(소싱메뉴);
+    var 이미지메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🖼</span>상품 이미지' });
+    이미지메뉴.addEventListener('click', function () { location.href = '이미지.html'; });
+    옆.appendChild(이미지메뉴);
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '상품' }),
