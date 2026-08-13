@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>시험대</title>
+<link rel="stylesheet" href="../css/공통.css">
+<link rel="stylesheet" href="../css/주문.css">
+</head>
+<body>
+<div id="싸개"><div id="앱"></div></div>
+<div id="토스트칸" aria-live="polite"></div>
+<pre id="결과"></pre>
+
+<script>
+/* 시험용 데이터를 먼저 심는다 — 실데이터·실계정은 건드리지 않는다 (개발지침 §3) */
+localStorage.clear();
+function 줄(이름, 우편, 전화, 날, 코드, 수, 단가, 처) {
+  return {
+    id: 'od_' + Math.random().toString(36).slice(2, 9), 묶음id: '', 주문번호: '',
+    주문일: 날, 판매처: 처 || '카페24', 품목코드: 코드, 원본코드: 코드,
+    유통명: 코드, 학명: '', 규격: '15cm', 주문수량: 수, 옵션입수: 1, 옵션원문: '',
+    단가: 단가, 수령인: 이름, 수령인전화: 전화, 수령인주소: 이름 + ' 주소',
+    우편번호: 우편, 배송메모: '', 묶음키: '', 출처: '업로드', 등록일시: Date.now()
+  };
+}
+localStorage.setItem('zg.v3.주문', JSON.stringify([
+  줄('김철수', '12345', '010-1111-2222', '2026-05-01', 'COY01-15', 2, 5000, '쿠팡'),
+  줄('김철수', '12345', '010-1111-2222', '2026-05-01', 'ECH01-10', 1, 8000, '쿠팡'),
+  줄('김철수', '12345', '010-1111-2222', '2026-06-10', 'GAU01-10', 3, 4000, '스마트스토어'),
+  줄('박영희', '54321', '050-1234-5678', '2026-07-01', 'COL01-21', 1, 9000, '쿠팡'),
+  줄('이민수', '',      '010-9999-8888', '2026-07-05', 'ECH02-10', 2, 6000, '전화주문')
+]));
+localStorage.setItem('zg.v3.고객', JSON.stringify([
+  { id: '최지영|99999', 이름: '최지영', 전화: '010-7777-6666', 주소: '광주', 우편번호: '99999',
+    메모들: [{ 날: '2026-08-01', 글: '가을에 그라스류 문의' }], 등록일시: 1, 수정일시: 1 },
+  { id: '이민수|T01099998888', 이름: '이민수', 전화: '010-9999-8888', 주소: '이민수 주소', 우편번호: '',
+    메모들: [{ 날: '2026-07-06', 글: '오전 배송 원하심' }], 등록일시: 1, 수정일시: 1 }
+]));
+localStorage.setItem('zg.v3.문자', JSON.stringify([
+  { id: 'ms_1', 보낸날: '2026-06-09', 내용: '여름 신상 입고했습니다\n둘째줄',
+    받은이: ['김철수|12345', '박영희|54321'], 등록일시: 1 }
+]));
+</script>
+
+<script src="../js/01-저장소.js"></script>
+<script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script>
+<script src="../js/04-공통UI.js"></script>
+<script src="../js/08a-주문자료.js"></script>
+<script src="../js/15a-견적자료.js"></script>
+<script src="../js/16a-고객자료.js"></script>
+<script src="../js/16b-고객PC.js"></script>
+<script src="../js/16c-고객폰.js"></script>
+<script src="../js/15b-견적PC.js"></script>
+<script src="../js/15c-견적폰.js"></script>
+<script src="../js/16d-문자창.js"></script>
+<script src="../js/08c-주문입력.js"></script>
+<script src="../js/15d-견적탭.js"></script>
+
+<script>
+var 적기 = [], 실패 = 0;
+function 봄(이름, 실제, 바람) {
+  var 맞나 = JSON.stringify(실제) === JSON.stringify(바람);
+  if (!맞나) 실패++;
+  적기.push((맞나 ? 'PASS ' : 'FAIL ') + 이름 + '  =' + JSON.stringify(실제) +
+            (맞나 ? '' : ' (바란 것 ' + JSON.stringify(바람) + ')'));
+}
+try {
+  var 자 = ZG.고객자료;
+
+  /* ① 사람키 — 구 customerHistory 와 같은 모양이어야 539명 대조가 성립한다 */
+  봄('사람키(우편번호 있음)', 자.사람키('김철수', '12345', '010-1111-2222'), '김철수|12345');
+  봄('사람키(우편번호 없음→전화)', 자.사람키('이민수', '', '010-9999-8888'), '이민수|T01099998888');
+  봄('안심번호 판정', 자.안심번호인가('050-1234-5678'), true);
+  봄('안심번호 아님', 자.안심번호인가('010-1111-2222'), false);
+
+  /* ② 묶기 — 주문 5줄 → 사람 3명 + 손등록 1명 = 4명 */
+  var 전부 = 자.목록({});
+  봄('고객 수(손등록 포함)', 전부.length, 4);
+
+  var 김 = 자.하나('김철수|12345');
+  봄('김철수 주문수(같은 날은 1건)', 김.주문수, 2);
+  봄('김철수 줄수', 김.줄수, 3);
+  봄('김철수 합계', 김.합계, 2 * 5000 + 1 * 8000 + 3 * 4000);
+  봄('김철수 판매처들', 김.판매처들, ['쿠팡', '스마트스토어']);
+  봄('김철수 첫주문', 김.첫주문, '2026-05-01');
+  봄('김철수 최근주문', 김.최근주문, '2026-06-10');
+  봄('김철수 손등록 아님', 김.손등록, false);
+
+  var 박 = 자.하나('박영희|54321');
+  봄('박영희 안심번호', 박.안심, true);
+
+  /* ③ 손등록 붙이기 — 이민수는 보조키로 주문에 붙고, 최지영은 주문 0건으로 새로 선다 */
+  var 이 = 자.하나('이민수|T01099998888');
+  봄('이민수 주문수', 이.주문수, 1);
+  봄('이민수 손등록 아님(주문 있다)', 이.손등록, false);
+  봄('이민수 메모 붙음', 이.메모들.length, 1);
+  var 최 = 자.하나('최지영|99999');
+  봄('최지영 주문 0건', 최.주문수, 0);
+  봄('최지영 손등록', 최.손등록, true);
+
+  /* ④ 문자 — 발송 한 줄이 두 사람에게 붙는다 */
+  봄('김철수 문자수', 김.문자수, 1);
+  봄('박영희 문자수', 박.문자수, 1);
+  봄('이민수 문자수(안 보냄)', 이.문자수, 0);
+
+  /* ⑤ 반응수 — 06-09 발송 + 14일 = 06-23. 김철수만 06-10 주문 → 1명 */
+  봄('반응수(보낸 뒤 14일)', 자.반응수(자.문자전부()[0]), 1);
+
+  /* ⑥ 필터 */
+  봄('최소주문 2회 이상', 자.목록({ 최소주문: 2 }).length, 1);
+  봄('최소문자 1회 이상', 자.목록({ 최소문자: 1 }).length, 2);
+  봄('손등록만', 자.목록({ 손등록만: true }).length, 1);
+  봄('판매처 쿠팡', 자.목록({ 판매처: '쿠팡' }).length, 2);
+  봄('기간 06-01~06-30', 자.목록({ 부터: '2026-06-01', 까지: '2026-06-30' }).length, 1);
+  봄('이름 검색', 자.목록({ 글: '김철' }).length, 1);
+  봄('전화 검색(숫자만)', 자.목록({ 글: '8888' }).length, 1);
+  // 검색은 우편번호도 본다(세부설계 §1-5) — '9999' 는 최지영 우편번호 99999 에도 걸려 2명이 맞다
+  봄('검색은 우편번호도 본다', 자.목록({ 글: '9999' }).length, 2);
+  봄('기간은 집계를 안 좁힌다', 자.목록({ 부터: '2026-06-01', 까지: '2026-06-30' })[0].합계, 김.합계);
+
+  /* ⑦ 메모 — 오늘 날짜 카드가 맨 아래에 붙는다 */
+  자.메모추가(김, '첫 메모');
+  자.메모추가(자.하나('김철수|12345'), '둘째 메모');
+  var 김2 = 자.하나('김철수|12345');
+  봄('메모 2장', 김2.메모들.length, 2);
+  봄('새 것이 맨 아래', 김2.메모들[1].글, '둘째 메모');
+  봄('날짜가 저절로 붙음', 김2.메모들[0].날, ZG.ui.오늘문자());
+  자.메모삭제(김2, 0);
+  var 김3 = 자.하나('김철수|12345');
+  봄('메모 삭제', [김3.메모들.length, 김3.메모들[0].글], [1, '둘째 메모']);
+
+  /* ⑧ 손등록 추가 — 같은 사람은 두 번 안 들어간다 */
+  봄('손등록 추가', !!자.손등록추가({ 이름: '한가람', 전화: '010-2222-3333', 우편번호: '11111' }), true);
+  봄('같은 사람 또 추가하면 null', 자.손등록추가({ 이름: '한가람', 전화: '010-2222-3333', 우편번호: '11111' }), null);
+
+  /* ⑨ 판매처 목록은 데이터에서 뽑는다 */
+  봄('판매처 목록(가나다)', 자.판매처목록(), ['스마트스토어', '전화주문', '쿠팡']);
+
+  /* ⑩ 화면 모듈이 15d 가 부르는 계약을 갖췄나 */
+  봄('고객PC 계약', [typeof ZG.고객PC.그리기, typeof ZG.고객PC.상태.뷰], ['function', 'string']);
+  봄('고객폰 계약', ['그리기', '제목', '요약', '목록으로'].map(function (k) { return typeof ZG.고객폰[k]; }),
+     ['function', 'function', 'function', 'function']);
+  봄('문자창 계약', typeof ZG.문자창.열기, 'function');
+  봄('폰 제목/요약이 도나', [typeof ZG.고객폰.제목(), typeof ZG.고객폰.요약().왼], ['string', 'string']);
+
+  /* ⑪ PC 표를 실제로 그려 본다 (DOM 예외가 없어야 한다) */
+  ZG.주문 = ZG.주문 || { 다시그리기: function () {}, 상태: {}, 열기: function () {} };
+  var 판 = document.getElementById('앱');
+  ZG.고객PC.그리기(판);
+  // 앞 ⑧에서 「한가람」을 넣었으므로 이제 5명이다
+  봄('PC 목록 줄 수(머리+5명)', 판.querySelectorAll('table tr').length, 6);
+  봄('안심번호 배지', 판.querySelectorAll('.safe').length >= 1, true);
+  봄('손등록 배지', 판.querySelectorAll('.hand').length >= 1, true);
+
+  판.innerHTML = '';
+  ZG.고객PC.상태.뷰 = '상세'; ZG.고객PC.상태.키 = '김철수|12345';
+  ZG.고객PC.그리기(판);
+  봄('PC 상세 주문줄(머리+3줄+합계)', 판.querySelectorAll('table tr').length, 5);
+
+  판.innerHTML = '';
+  ZG.고객폰.상태.뷰 = '목록';
+  ZG.고객폰.그리기(판);
+  봄('폰 목록 카드 5장', 판.querySelectorAll('.ccard').length, 5);
+
+  판.innerHTML = '';
+  ZG.고객폰.상태.뷰 = '상세'; ZG.고객폰.상태.키 = '김철수|12345';
+  ZG.고객폰.그리기(판);
+  봄('폰 상세 주문 2건만 보이고 더보기', 판.querySelectorAll('.orow.more').length, 1);
+
+  판.innerHTML = '';
+  ZG.고객폰.상태.뷰 = '등록';
+  ZG.고객폰.그리기(판);
+  봄('폰 등록 입력칸', 판.querySelectorAll('input').length >= 4, true);
+
+  /* ⑫ 🔴 탭줄을 3칸으로 고친 뒤 주문 조회·견적 요청이 멀쩡한가 (확정 설계 §11-11) */
+  판.innerHTML = '';
+  봄('첫 탭은 주문 조회', ZG.견적탭.지금탭(), '주문');
+  // 주문 조회일 때는 가로채지 않는다 — 08b 가 제 화면을 그린다
+  봄('주문 탭은 가로채지 않는다', ZG.견적탭.가로채기(판, '목록'), false);
+  // 폰은 본문 안 .subtabs, PC 는 본문 밖 .pc-tabs 다 (15d 가로채기)
+  var 폰인가 = ZG.ui.폰인가();
+  var 탭들 = 판.parentNode.querySelectorAll(폰인가 ? '.subtabs button' : '.pc-tabs button');
+  봄('탭줄 3칸', 탭들.length, 3);
+  봄('탭 이름 셋', Array.prototype.map.call(탭들, function (b) { return b.textContent; }),
+     ['주문 조회', '견적 요청', '고객']);
+
+  판.innerHTML = ''; ZG.견적탭.탭으로('견적');
+  봄('견적 탭으로', ZG.견적탭.지금탭(), '견적');
+  봄('견적은 가로챈다', ZG.견적탭.가로채기(판, '목록'), true);
+  봄('견적 화면이 그려진다', 판.querySelectorAll(폰인가 ? '.ph-list' : '.card').length >= 1, true);
+
+  판.innerHTML = ''; ZG.견적탭.탭으로('고객');
+  봄('고객 탭으로', ZG.견적탭.지금탭(), '고객');
+  봄('고객은 가로챈다', ZG.견적탭.가로채기(판, '목록'), true);
+  봄('고객 화면이 그려진다', 판.querySelectorAll(폰인가 ? '.ccard' : 'table').length >= 1, true);
+
+  // 수동주문·상세 같은 다른 뷰에서는 탭줄이 없다
+  판.innerHTML = '';
+  봄('목록 아닌 뷰는 가로채지 않는다', ZG.견적탭.가로채기(판, '수동'), false);
+
+  /* 눈으로 볼 화면 — 고객 목록을 남겨 둔다 */
+  판.innerHTML = ''; ZG.견적탭.탭으로('고객');
+  if (폰인가) {
+    // 🔴 08b:181 과 같은 껍데기를 만든다 — .ph-shell 이 overflow-x·여백을 쥐고 있다
+    var 몸 = ZG.ui.만들기('div', { class: 'ph-body', style: 'gap:var(--space-md)' });
+    판.appendChild(ZG.ui.만들기('div', { class: 'ph-shell' }, [
+      ZG.ui.만들기('div', { class: 'ph-top' }, [ZG.ui.만들기('h1', { text: '고객' })]),
+      ZG.ui.만들기('div', { class: 'ph-sub' }, [ZG.ui.만들기('span', {}), ZG.ui.만들기('span', {})]),
+      몸
+    ]));
+    ZG.고객폰.상태.뷰 = '목록';
+    ZG.고객폰.그리기(몸);
+    봄('폰 카드가 화면 밖으로 안 넘친다',
+       Array.prototype.every.call(몸.querySelectorAll('.ccard'), function (c) {
+         return c.getBoundingClientRect().right <= window.innerWidth + 1;
+       }), true);
+  } else { ZG.고객PC.상태.뷰 = '목록'; ZG.고객PC.그리기(판); }
+  if (location.search.indexOf('shot') >= 0) document.getElementById('결과').style.display = 'none';
+} catch (e) {
+  실패++;
+  적기.push('EXCEPTION ' + (e && e.stack ? e.stack : e));
+}
+  /* ⑬ 수동주문 연동 — 실서비스 화면이다 (확정 설계 §7 · 세부설계 §5-3) */
+  판.innerHTML = '';
+  var 주문상태 = { 날짜: ZG.ui.오늘문자(), 뷰: '수동' };
+  ZG.주문 = { 다시그리기: function () {}, 상태: 주문상태, 열기: function () {} };
+  주문상태.채울값 = { 수령인: '김철수', 전화: '010-1111-2222', 주소: '김철수 주소', 우편번호: '12345' };
+  ZG.주문입력.수동뷰(주문상태).그리기(판);
+  var 값들 = Array.prototype.map.call(판.querySelectorAll('.itemstack input'), function (i) { return i.value; });
+  봄('수동주문에 이름·전화·주소·우편번호가 채워진다', 값들.slice(0, 4),
+     ['김철수', '010-1111-2222', '12345', '김철수 주소']);
+  봄('채울값은 한 번 쓰고 버린다', 주문상태.채울값, null);
+  // 첫 .itemstack 이 사람칸이다 — 뒤엣것은 품목 카드라 수량칸(.inp.num)이 또 있다
+  봄('사람칸에 우편번호 칸이 하나 생겼다',
+     판.querySelectorAll('.itemstack')[0].querySelectorAll('.inp.num').length, 1);
+
+  판.innerHTML = '';
+  ZG.주문입력.수동뷰(주문상태).그리기(판);
+  var 값들2 = Array.prototype.map.call(판.querySelectorAll('.itemstack input'), function (i) { return i.value; });
+  봄('두 번째로 열면 빈칸이다(남의 이름이 안 남는다)', 값들2.slice(0, 4), ['', '', '', '']);
+
+if (location.search.indexOf('diag') >= 0) {
+  var 잰다 = ['body', '#싸개', '#앱', '.ph-shell', '.ph-body', '.ph-list', '.ccard', '.ccard .cbody',
+              '.ccard .r1', '.ccard .foot', '.sbar', '.sbar .inp'];
+  적기 = ['창 ' + window.innerWidth + 'px'];
+  잰다.forEach(function (셀) {
+    var e = document.querySelector(셀);
+    if (!e) { 적기.push(셀 + ' : 없음'); return; }
+    var r = e.getBoundingClientRect();
+    적기.push(셀 + ' : 폭 ' + Math.round(r.width) + ' / 스크롤폭 ' + e.scrollWidth +
+              ' / 왼 ' + Math.round(r.left) + ' 오 ' + Math.round(r.right));
+  });
+}
+document.getElementById('결과').textContent =
+  적기.join('\n') + '\n\n== 실패 ' + 실패 + '건 / 모두 ' + 적기.length + '건 ==';
+document.title = 실패 ? ('FAIL-' + 실패) : 'ALLPASS';
+</script>
+</body>
+</html>

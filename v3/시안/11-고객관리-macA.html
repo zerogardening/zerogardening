@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 주문 관리 › 고객 · macOS A안</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ── 이 화면에서만 쓰는 것 (뼈대 부품에 없는 것만) ── */
+
+  /* 드롭다운 — 견적 요청 · 업체 관리 시안과 같은 것 */
+  select.inp{
+    appearance:none; -webkit-appearance:none; padding-right:30px; cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7' viewBox='0 0 10 7'><path d='M1 1.5l4 4 4-4' stroke='%2386868B' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat; background-position:right 11px center;
+  }
+  select.inp.sm{height:34px; font-size:var(--font-md)}
+  .inp.ta{height:auto; padding:10px 12px; line-height:1.6; font-size:var(--font-md); resize:none}
+
+  /* 검색·필터줄 */
+  .sbar{display:flex; gap:var(--space-sm); align-items:center; flex-wrap:wrap}
+  .sbar .grow{flex:1; min-width:180px}
+  .sbar .sep{color:var(--color-text-hint); font-size:var(--font-sm); font-weight:var(--weight-semibold)}
+  .sbar .lb{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .sbar .push{margin-left:auto}
+
+  /* 표 글자 결 */
+  td.tel{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-sub); white-space:normal}
+  td.day{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-sub)}
+  td.addr{font-size:var(--font-sm); color:var(--color-text-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  td.won{text-align:right; font-variant-numeric:tabular-nums; font-weight:var(--weight-semibold)}
+  td.cnt{text-align:right; font-variant-numeric:tabular-nums; font-weight:var(--weight-bold)}
+  td.cnt.none{color:var(--color-text-hint); font-weight:var(--weight-medium)}
+  td .dash{color:var(--color-text-faint)}
+  tr.picked td{background:var(--color-accent-bg)}
+
+  /* 050 안심번호 — 문자가 안 가는 번호. 조용한 호박색으로 「주의」만 알립니다 */
+  .safe{
+    display:inline-block; margin-top:var(--space-4xs);
+    padding:var(--pad-tag); border-radius:var(--radius-badge);
+    background:#FFF7E0; color:#8A6100; border:var(--border-width) solid #F0DFAE;
+    font-family:var(--font-family); font-size:var(--font-3xs); font-weight:var(--weight-bold); white-space:nowrap;
+  }
+  /* 손등록 — 주문이 아직 없는 사람 */
+  .hand{
+    display:inline-block; padding:var(--pad-tag); border-radius:var(--radius-badge);
+    background:var(--color-bg); color:var(--color-text-muted); border:var(--border-width) dashed var(--color-border);
+    font-size:var(--font-3xs); font-weight:var(--weight-bold); white-space:nowrap;
+  }
+  /* 판매처 — 무채색 태그. 정상 상태는 조용해야 합니다 */
+  .mk{
+    display:inline-block; padding:var(--pad-tag); border-radius:var(--radius-badge);
+    background:var(--color-bg); color:var(--color-text-sub); border:var(--border-width) solid var(--color-border);
+    font-size:var(--font-3xs); font-weight:var(--weight-bold); white-space:nowrap;
+  }
+  .mk.plus{background:transparent; border-color:transparent; color:var(--color-text-hint)}
+
+  /* 상세 — 왼쪽 사람 정보 / 오른쪽 주문 내역 */
+  .dgrid{display:grid; grid-template-columns:300px 1fr; gap:var(--space-lg); align-items:start}
+  .kv{display:flex; gap:var(--space-md); font-size:var(--font-sm); padding:var(--space-sm) 0; border-bottom:var(--border-width) solid var(--color-border-faint)}
+  .kv:last-of-type{border-bottom:none}
+  .kv .k{width:62px; color:var(--color-text-muted); font-weight:var(--weight-semibold); flex:0 0 auto}
+  .kv .v{color:var(--color-text); font-weight:var(--weight-semibold); line-height:1.5}
+  .kv .v.mono{font-family:var(--font-mono); font-size:var(--font-xs)}
+  .actrow{display:flex; gap:var(--space-sm); margin-top:var(--space-lg)}
+  .actrow .btn{flex:1}
+  .formfoot{display:flex; gap:var(--space-sm); justify-content:flex-end; margin-top:var(--space-3xl)}
+  .fgrid{display:grid; grid-template-columns:200px 200px 130px 1fr; gap:var(--space-xl)}
+  .fgrid .s4{grid-column:1 / -1}
+
+  /* ── 폰 ── */
+  .phrow{display:flex; gap:var(--space-3xl); flex-wrap:wrap; justify-content:center; align-items:flex-start}
+  .phrow .phone{height:844px}
+  .phone .ph-body.tight{gap:var(--space-md)}
+  .phone .sbar .inp{height:38px; font-size:var(--font-md)}
+  .phone .ph-list{overflow:hidden}
+  .phone .ccard .r1{align-items:center}
+  .phone .ccard .day{margin-left:auto; font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .phone .ccard .addr{font-size:var(--font-sm); color:var(--color-text-sub); margin-top:var(--space-3xs); line-height:1.45}
+  .phone .ccard .foot{
+    display:flex; align-items:center; gap:var(--space-sm); margin-top:var(--space-md);
+    padding-top:var(--space-md); border-top:var(--border-width) solid var(--color-border-faint);
+  }
+  .phone .ccard .foot .tel{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .phone .ccard .foot .amt{margin-left:auto; font-size:var(--font-xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+  .phone .ccard .foot .amt .n{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-right:var(--space-xs)}
+  .phone .orow{
+    display:flex; gap:var(--space-sm); align-items:baseline; padding:var(--space-md) 0;
+    border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md);
+  }
+  .phone .orow:last-child{border-bottom:none}
+  .phone .orow.more{
+    display:block; text-align:center; color:var(--color-accent-dark);
+    font-size:var(--font-sm); font-weight:var(--weight-semibold); padding:var(--space-md) 0 var(--space-xs);
+  }
+  .phone .orow .d{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-muted); flex:0 0 46px}
+  .phone .orow .nm{flex:1; font-weight:var(--weight-semibold); line-height:1.4}
+  .phone .orow .nm .cd{
+    display:block; font-family:var(--font-mono); font-size:var(--font-3xs);
+    color:var(--color-accent-dark); font-weight:var(--weight-bold); margin-top:1px;
+  }
+  .phone .orow .q{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .phone .orow .w{font-variant-numeric:tabular-nums; font-weight:var(--weight-bold); flex:0 0 62px; text-align:right}
+  .phone .box{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint);
+    border-radius:var(--radius-lg); padding:var(--space-md) var(--space-lg);
+  }
+  .phone .noteline{
+    font-size:var(--font-xs); color:var(--color-text-muted); background:var(--color-bg);
+    border:var(--border-width) dashed var(--color-border); border-radius:var(--radius-md);
+    padding:var(--space-md) var(--space-lg); line-height:1.6;
+  }
+  .phone .addbtn{
+    height:44px; border-radius:var(--radius-md); background:var(--color-surface);
+    border:var(--border-width) dashed var(--color-border); color:var(--color-accent-dark);
+    font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-semibold); cursor:pointer;
+  }
+  .phone .twobtn{display:flex; gap:var(--space-sm)}
+  .phone .twobtn .btn{flex:1; justify-content:center; text-align:center}
+  /* 설명 상자 — 주의가 아니라 안내라서 조용한 쪽으로 씁니다 */
+  .alert.quiet > h4{color:var(--color-text)}
+  .alert.quiet p b{color:var(--color-accent-dark)}
+
+  .subtabs{
+    display:inline-flex; gap:var(--space-3xs); background:var(--color-seg-bg);
+    padding:var(--space-4xs); border-radius:var(--radius-md); align-self:flex-start;
+  }
+  .subtabs span{
+    padding:var(--space-2xs) var(--space-md); border-radius:var(--radius-sm);
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); cursor:pointer;
+  }
+  .subtabs span.on{background:var(--color-surface); color:var(--color-accent-dark); box-shadow:var(--shadow-seg)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════════ 폰 ══════════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 주문 관리 · 고객 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+  <div class="phrow">
+
+    <!-- ① 고객 목록 -->
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top">
+        <div>
+          <div class="ph-back">‹ 주문</div>
+          <h1>고객</h1>
+        </div>
+        <span class="pcbtn">🖥 PC화면으로</span>
+      </div>
+      <div class="ph-sub"><span>전체 <b>539</b>명</span><span>주문 <b>1,287</b>건</span></div>
+      <div class="ph-body tight">
+        <div class="subtabs" style="align-self:stretch">
+          <span style="flex:1; text-align:center">주문 조회</span>
+          <span style="flex:1; text-align:center">견적 요청</span>
+          <span class="on" style="flex:1; text-align:center">고객</span>
+        </div>
+        <div class="sbar">
+          <input class="inp" style="flex:1; min-width:140px" placeholder="🔍 이름 · 전화 · 주소">
+          <select class="inp sm" style="width:118px"><option>전체 판매처</option><option>쿠팡</option><option>스마트스토어</option><option>11번가</option><option>G마켓</option><option>카페24</option><option>전화주문</option></select>
+        </div>
+        <div class="ph-list">
+          <div class="ph-card ccard">
+            <div class="r1"><span class="nm">김OO</span><span class="mk">쿠팡</span><span class="day">08-11</span><span class="chev">›</span></div>
+            <div class="addr">경기 화성시 동탄대로 1234</div>
+            <div class="foot"><span class="tel">0503-8821-4417</span><span class="safe">⚠ 안심번호</span>
+              <span class="amt"><span class="n">7건</span>341,200</span></div>
+          </div>
+          <div class="ph-card ccard">
+            <div class="r1"><span class="nm">정OO</span><span class="mk">전화주문</span><span class="day">08-08</span><span class="chev">›</span></div>
+            <div class="addr">경남 함안군 가야읍 함안대로 210</div>
+            <div class="foot"><span class="tel">010-3411-2174</span>
+              <span class="amt"><span class="n">12건</span>1,284,000</span></div>
+          </div>
+          <div class="ph-card ccard">
+            <div class="r1"><span class="nm">이OO</span><span class="mk">스마트스토어</span><span class="day">08-10</span><span class="chev">›</span></div>
+            <div class="addr">서울 강동구 상일로 88</div>
+            <div class="foot"><span class="tel">010-2841-7719</span>
+              <span class="amt"><span class="n">5건</span>218,400</span></div>
+          </div>
+          <div class="ph-card ccard">
+            <div class="r1"><span class="nm">윤OO</span><span class="hand">손등록</span><span class="day">—</span><span class="chev">›</span></div>
+            <div class="addr">광주 북구 첨단과기로 210</div>
+            <div class="foot"><span class="tel">010-2027-0384</span>
+              <span class="amt"><span class="n">0건</span><span class="dash">—</span></span></div>
+          </div>
+        </div>
+        <button class="addbtn">＋ 고객 등록</button>
+        <div class="noteline"><b>⚠ 안심번호</b>는 쿠팡이 가려준 번호라 <b>문자가 가지 않습니다.</b> 전화는 걸립니다.</div>
+      </div>
+      <div class="ph-nav">
+        <div><span class="ic">🌿</span>입고</div>
+        <div><span class="ic">📦</span>재고</div>
+        <div class="on"><span class="ic">🛒</span>주문</div>
+        <div><span class="ic">⋯</span>더보기</div>
+      </div>
+    </div>
+
+    <!-- ② 카드를 눌렀을 때 — 그 사람 주문 전부 -->
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top">
+        <div>
+          <div class="ph-back">‹ 고객</div>
+          <h1>김OO</h1>
+        </div>
+        <span class="pcbtn">🖥 PC화면으로</span>
+      </div>
+      <div class="ph-sub"><span>주문 <b>7</b>건</span><span>합계 <b>341,200</b>원</span></div>
+      <div class="ph-body tight">
+        <div class="box">
+          <div class="kv"><span class="k">연락처</span><span class="v mono">0503-8821-4417 <span class="safe">⚠ 안심번호</span></span></div>
+          <div class="kv"><span class="k">주소</span><span class="v">(18471) 경기 화성시 동탄대로 1234 한빛마을 105-1203</span></div>
+        </div>
+        <div class="ph-sec">주문 내역 <span class="r">7건 · 341,200원</span></div>
+        <div class="box">
+          <div class="orow"><span class="d">08-11</span><span class="nm">은쑥 '실버마운드'<span class="cd">COY01-15</span></span><span class="q">6</span><span class="w">52,800</span></div>
+          <div class="orow"><span class="d">07-29</span><span class="nm">에키네시아 '파우와우 화이트'<span class="cd">ECH01-10</span></span><span class="q">12</span><span class="w">74,400</span></div>
+          <div class="orow more">＋ 지난 주문 5건 더 보기</div>
+        </div>
+        <div class="field">
+          <label>메모</label>
+          <textarea class="inp ta" rows="2">여름 오전 배송 원하심. 경비실 맡기기 OK</textarea>
+        </div>
+        <div class="twobtn">
+          <button class="btn">📝 견적요청 만들기</button>
+          <button class="btn">🛒 수동주문 넣기</button>
+        </div>
+        <button class="ph-save">메모 저장</button>
+      </div>
+      <div class="ph-nav">
+        <div><span class="ic">🌿</span>입고</div>
+        <div><span class="ic">📦</span>재고</div>
+        <div class="on"><span class="ic">🛒</span>주문</div>
+        <div><span class="ic">⋯</span>더보기</div>
+      </div>
+    </div>
+
+    <!-- ③ 고객 등록 -->
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top">
+        <div>
+          <div class="ph-back">‹ 고객</div>
+          <h1>고객 등록</h1>
+        </div>
+        <span class="pcbtn">🖥 PC화면으로</span>
+      </div>
+      <div class="ph-sub"><span>* 표시는 꼭 채워주세요</span><span>손등록 <b>12</b>명</span></div>
+      <div class="ph-body tight">
+        <div class="field"><label>이름 <span class="req">*</span></label><input class="inp" placeholder="예: 김OO / OO조경" value="문OO"></div>
+        <div class="field"><label>연락처 <span class="req">*</span></label><input class="inp num" placeholder="010-0000-0000" value="010-3560-2575"></div>
+        <div class="pair">
+          <div class="field" style="flex:0 0 118px"><label>우편번호</label><input class="inp num" placeholder="00000" value="28174"></div>
+          <div class="field"><label>주소</label><input class="inp" placeholder="시·군·구까지만 적으셔도 됩니다" value="충북 청주시 흥덕구 강내면"></div>
+        </div>
+        <div class="field">
+          <label>메모</label>
+          <textarea class="inp ta" rows="3" placeholder="전화로 들으신 것을 그대로 적으시면 됩니다">함안 장에서 명함 받음. 가을에 그라스류 문의</textarea>
+        </div>
+        <button class="ph-save">등록</button>
+        <div class="noteline">이 사람이 나중에 <b>같은 이름·전화</b>로 주문하면 <b>한 줄로 합쳐집니다.</b> 우편번호까지 적으시면 더 정확합니다.</div>
+      </div>
+      <div class="ph-nav">
+        <div><span class="ic">🌿</span>입고</div>
+        <div><span class="ic">📦</span>재고</div>
+        <div class="on"><span class="ic">🛒</span>주문</div>
+        <div><span class="ic">⋯</span>더보기</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════ PC ① 고객 명부 ══════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 고객 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문 관리</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>주문 관리</h2>
+          <div class="path">주문 관리 › 고객</div>
+        </div>
+        <div class="pc-tabs">
+          <span>주문 조회</span>
+          <span>견적 요청</span>
+          <span class="on">고객</span>
+        </div>
+
+        <div class="stat">
+          <div><div class="k">고객</div><div class="v">539 <small>명</small></div></div>
+          <div><div class="k">주문</div><div class="v">1,287 <small>건</small></div></div>
+          <div><div class="k">합계 (원)</div><div class="v">42,180,300</div></div>
+          <div><div class="k">손등록 (주문 0건)</div><div class="v">12 <small>명</small></div></div>
+          <div><div class="k">⚠ 안심번호 (문자 안 감)</div><div class="v">213 <small>명</small></div></div>
+        </div>
+
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">고객 명부
+            <span class="hint">539명 · 주문 1,287건 · 합계 42,180,300원 — 주문에서 자동으로 뽑습니다</span>
+            <span class="right">
+              <button class="btn sm">⬇ 엑셀</button>
+              <button class="btn sm main">＋ 고객 등록</button>
+            </span>
+          </h3>
+          <div class="sbar" style="padding:0 var(--space-sm) var(--space-md)">
+            <input class="inp grow" placeholder="🔍 이름 · 전화 · 주소 검색…">
+            <input class="inp num" style="width:132px" value="2026-01-01">
+            <span class="sep">~</span>
+            <input class="inp num" style="width:132px" value="2026-08-13">
+            <select class="inp" style="width:140px"><option>최소 주문 1회</option><option>최소 주문 2회</option><option>최소 주문 3회</option><option>최소 주문 5회</option></select>
+            <select class="inp" style="width:140px"><option>전체 판매처</option><option>쿠팡</option><option>스마트스토어</option><option>11번가</option><option>G마켓</option><option>카페24</option><option>전화주문</option></select>
+            <span class="fchips"><span class="fchip">손등록만</span></span>
+            <button class="btn">↺ 초기화</button>
+          </div>
+          <table>
+            <colgroup>
+              <col style="width:112px"><col style="width:118px"><col>
+              <col style="width:50px"><col style="width:92px"><col style="width:92px">
+              <col style="width:112px"><col style="width:60px">
+            </colgroup>
+            <tr>
+              <th>이름</th><th>연락처</th><th>주소</th><th class="r">주문</th>
+              <th>최근주문</th><th class="r">합계</th><th>판매처</th><th></th>
+            </tr>
+            <tr class="picked">
+              <td><b>김OO</b></td>
+              <td class="tel">0503-8821-4417<br><span class="safe">⚠ 안심번호</span></td>
+              <td class="addr">경기 화성시 동탄대로 1234 한빛마을 105-1203</td>
+              <td class="cnt">7</td><td class="day">2026-08-11</td><td class="won">341,200</td>
+              <td><span class="mk">쿠팡</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>정OO</b></td>
+              <td class="tel">010-3411-2174</td>
+              <td class="addr">경남 함안군 가야읍 함안대로 210</td>
+              <td class="cnt">12</td><td class="day">2026-08-08</td><td class="won">1,284,000</td>
+              <td><span class="mk">전화주문</span> <span class="mk plus">외 1</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>이OO</b></td>
+              <td class="tel">010-2841-7719</td>
+              <td class="addr">서울 강동구 상일로 88 강일리버파크 3단지 302-701</td>
+              <td class="cnt">5</td><td class="day">2026-08-10</td><td class="won">218,400</td>
+              <td><span class="mk">스마트스토어</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>박OO</b></td>
+              <td class="tel">0503-9012-3388<br><span class="safe">⚠ 안심번호</span></td>
+              <td class="addr">부산 해운대구 좌동순환로 45 상가 2층</td>
+              <td class="cnt">4</td><td class="day">2026-08-09</td><td class="won">176,800</td>
+              <td><span class="mk">쿠팡</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>최OO</b></td>
+              <td class="tel">010-5520-1188</td>
+              <td class="addr">강원 횡성군 우천면 우천로 77</td>
+              <td class="cnt">3</td><td class="day">2026-08-05</td><td class="won">126,500</td>
+              <td><span class="mk">11번가</span> <span class="mk plus">외 1</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>강OO</b></td>
+              <td class="tel">0503-4471-9002<br><span class="safe">⚠ 안심번호</span></td>
+              <td class="addr">인천 서구 청라대로 300 청라호수마을 802-1104</td>
+              <td class="cnt">2</td><td class="day">2026-07-28</td><td class="won">64,900</td>
+              <td><span class="mk">쿠팡</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>조OO</b></td>
+              <td class="tel">010-7742-0165</td>
+              <td class="addr">대전 유성구 봉명로 12 그린빌라 201</td>
+              <td class="cnt">4</td><td class="day">2026-07-22</td><td class="won">187,300</td>
+              <td><span class="mk">카페24</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>한OO</b></td>
+              <td class="tel">010-6401-2806</td>
+              <td class="addr">경기 남양주시 진접읍 해밀예당1로 9</td>
+              <td class="cnt">2</td><td class="day">2026-07-15</td><td class="won">78,000</td>
+              <td><span class="mk">G마켓</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>서OO</b></td>
+              <td class="tel">0503-2210-7745<br><span class="safe">⚠ 안심번호</span></td>
+              <td class="addr">전북 완주군 봉동읍 은하로 55</td>
+              <td class="cnt">1</td><td class="day">2026-06-30</td><td class="won">39,800</td>
+              <td><span class="mk">쿠팡</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>윤OO</b><br><span class="hand">손등록</span></td>
+              <td class="tel">010-2027-0384</td>
+              <td class="addr">광주 북구 첨단과기로 210</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>문OO</b><br><span class="hand">손등록</span></td>
+              <td class="tel">010-3560-2575</td>
+              <td class="addr">충북 청주시 흥덕구 강내면</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td>
+              <td><button class="btn sm">상세</button></td>
+            </tr>
+          </table>
+          <div class="pager"><i>‹</i><b>1</b><i>2</i><i>3</i><i>4</i><span class="gap"></span><i>›</i></div>
+        </div>
+
+        <div class="alert quiet">
+          <h4>이 명부는 어디서 나오나</h4>
+          <p>고객 표를 따로 만들지 않습니다 — <b>주문 1,287건이 그대로 명부</b>입니다. 쿠팡·스마트스토어 주문이 들어오는 순간 여기 뜹니다.<br>
+          같은 사람인지는 <b>이름 + 우편번호</b>로 가립니다. 050 안심번호는 사람마다 바뀌는 번호라 기준으로 쓰지 않습니다.<br>
+          <b>⬇ 엑셀</b>은 지금 화면에 걸린 필터 그대로 내려받습니다. 문자는 쓰시던 문자 서비스에 이 파일을 올려 보내시면 됩니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PC ② 고객 상세 ══════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 고객 › 상세 <span style="opacity:.65">(「상세」를 누르면 그 사람 주문이 전부 나옵니다)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문 관리</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>김OO</h2>
+          <div class="path">주문 관리 › 고객 › 김OO</div>
+        </div>
+        <div class="pc-tabs">
+          <span>주문 조회</span>
+          <span>견적 요청</span>
+          <span class="on">고객</span>
+        </div>
+
+        <div class="stat">
+          <div><div class="k">주문</div><div class="v">7 <small>건</small></div></div>
+          <div><div class="k">합계</div><div class="v">341,200 <small>원</small></div></div>
+          <div><div class="k">첫 주문</div><div class="v" style="font-size:var(--font-4xl)">2026-04-19</div></div>
+          <div><div class="k">최근 주문</div><div class="v" style="font-size:var(--font-4xl)">2026-08-11</div></div>
+        </div>
+
+        <div class="dgrid">
+          <div style="display:flex; flex-direction:column; gap:var(--space-lg)">
+            <div class="card">
+              <h3>고객 정보 <span class="right"><button class="btn sm">‹ 목록</button></span></h3>
+              <div class="kv"><span class="k">이름</span><span class="v">김OO</span></div>
+              <div class="kv"><span class="k">연락처</span><span class="v mono">0503-8821-4417<br><span class="safe">⚠ 안심번호 — 문자 안 감</span></span></div>
+              <div class="kv"><span class="k">우편번호</span><span class="v mono">18471</span></div>
+              <div class="kv"><span class="k">주소</span><span class="v">경기 화성시 동탄대로 1234<br>한빛마을 105-1203</span></div>
+              <div class="kv"><span class="k">판매처</span><span class="v"><span class="mk">쿠팡</span></span></div>
+              <div class="actrow">
+                <button class="btn">📝 견적요청 만들기</button>
+                <button class="btn">🛒 수동주문 넣기</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>메모 <span class="hint">손으로 적습니다</span></h3>
+              <textarea class="inp ta" rows="5">여름 오전 배송 원하심. 아파트 경비실 맡기기 OK
+작년에 에키네시아 잘 받으셨다고 하심 — 가을에 그라스류 권해보기</textarea>
+              <div class="formfoot" style="margin-top:var(--space-lg)">
+                <button class="btn main wide">💾 메모 저장</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card table-card">
+            <h3 style="padding:0 var(--space-sm)">주문 내역 <span class="hint">전체 7건 · 최근순</span>
+              <span class="right"><button class="btn sm">⬇ 엑셀</button></span></h3>
+            <table>
+              <colgroup>
+                <col style="width:96px"><col style="width:88px"><col>
+                <col style="width:52px"><col style="width:88px"><col style="width:112px">
+              </colgroup>
+              <tr>
+                <th>날짜</th><th>품목코드</th><th>품목</th><th class="r">수량</th><th class="r">금액</th><th>판매처</th>
+              </tr>
+              <tr>
+                <td class="day">2026-08-11</td><td class="code">COY01-15</td><td>은쑥 '실버마운드'</td>
+                <td class="cnt">6</td><td class="won">52,800</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td class="day">2026-07-29</td><td class="code">ECH01-10</td><td>에키네시아 '파우와우 화이트'</td>
+                <td class="cnt">12</td><td class="won">74,400</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td class="day">2026-07-02</td><td class="code">GAU01-10</td><td>가우라 '휘를링 버터플라이'</td>
+                <td class="cnt">8</td><td class="won">41,600</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td class="day">2026-06-18</td><td class="code">COL01-21</td><td>애기범부채</td>
+                <td class="cnt">4</td><td class="won">39,200</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td class="day">2026-05-27</td><td class="code">ECH02-10</td><td>에키네시아 '치어풀 채리'</td>
+                <td class="cnt">10</td><td class="won">62,000</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td class="day">2026-05-06</td><td class="code">COY01-15</td><td>은쑥 '실버마운드'</td>
+                <td class="cnt">5</td><td class="won">44,000</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td class="day">2026-04-19</td><td class="code">ECH01-10</td><td>에키네시아 '파우와우 화이트'</td>
+                <td class="cnt">4</td><td class="won">27,200</td><td><span class="mk">쿠팡</span></td>
+              </tr>
+              <tr>
+                <td colspan="3" style="text-align:right; font-weight:var(--weight-bold); color:var(--color-text-muted)">합계</td>
+                <td class="cnt">49</td><td class="won" style="color:var(--color-accent-dark); font-size:var(--font-lg)">341,200</td><td></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="alert quiet">
+          <h4>두 버튼은 어디로 이어지나</h4>
+          <p><b>견적요청 만들기</b>를 누르면 이름·연락처가 채워진 채로 <b>견적 요청 탭</b>에 한 줄이 생깁니다.<br>
+          <b>수동주문 넣기</b>는 주문 입력 화면을 이름·전화·주소가 채워진 상태로 엽니다 — 여기서 주문을 또 만들지 않습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PC ③ 고객 등록 시트 ══════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 고객 › 등록 <span style="opacity:.65">(「＋ 고객 등록」을 누르면 오른쪽에서 나옵니다)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 주문 관리</span>
+    </div>
+    <div class="pc-body editwrap">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>주문 관리</h2>
+          <div class="path">주문 관리 › 고객 › 등록</div>
+        </div>
+        <div class="pc-tabs">
+          <span>주문 조회</span>
+          <span>견적 요청</span>
+          <span class="on">고객</span>
+        </div>
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">고객 명부 <span class="hint">손등록만 보는 중 · 12명</span>
+            <span class="right"><button class="btn sm">⬇ 엑셀</button>
+            <button class="btn sm main">＋ 고객 등록</button></span></h3>
+          <div class="sbar" style="padding:0 var(--space-sm) var(--space-md)">
+            <input class="inp grow" placeholder="🔍 이름 · 전화 · 주소 검색…">
+            <span class="fchips"><span class="fchip on">손등록만 <span class="n">12</span></span></span>
+            <button class="btn">↺ 초기화</button>
+          </div>
+          <table>
+            <colgroup>
+              <col style="width:112px"><col style="width:118px"><col>
+              <col style="width:50px"><col style="width:92px"><col style="width:92px">
+              <col style="width:112px"><col style="width:60px">
+            </colgroup>
+            <tr>
+              <th>이름</th><th>연락처</th><th>주소</th><th class="r">주문</th>
+              <th>최근주문</th><th class="r">합계</th><th>판매처</th><th></th>
+            </tr>
+            <tr>
+              <td><b>윤OO</b><br><span class="hand">손등록</span></td><td class="tel">010-2027-0384</td>
+              <td class="addr">광주 북구 첨단과기로 210</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>문OO</b><br><span class="hand">손등록</span></td><td class="tel">010-3560-2575</td>
+              <td class="addr">충북 청주시 흥덕구 강내면</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>임OO</b><br><span class="hand">손등록</span></td><td class="tel">010-9490-0482</td>
+              <td class="addr">경남 창원시 의창구 사림로 33</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>배OO</b><br><span class="hand">손등록</span></td><td class="tel">010-6822-3140</td>
+              <td class="addr">전남 순천시 해룡면 신대로 12</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>노OO</b><br><span class="hand">손등록</span></td><td class="tel">010-4417-2085</td>
+              <td class="addr">경북 경주시 안강읍 안강로 220</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>구OO</b><br><span class="hand">손등록</span></td><td class="tel">010-3092-7761</td>
+              <td class="addr">제주 제주시 애월읍 하가로 8</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+            <tr>
+              <td><b>차OO</b><br><span class="hand">손등록</span></td><td class="tel">010-5518-6402</td>
+              <td class="addr">충남 아산시 배방읍 배방로 91</td>
+              <td class="cnt none">0</td><td class="day"><span class="dash">—</span></td><td class="won"><span class="dash">—</span></td>
+              <td><span class="mk plus">—</span></td><td><button class="btn sm">상세</button></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <div class="editscrim"></div>
+      <div class="editpanel">
+        <div>
+          <h3>고객 등록</h3>
+          <div class="sub">주문이 아직 없는 분만 손으로 넣습니다 · * 표시는 꼭 채워주세요</div>
+        </div>
+        <div class="field"><label>이름 <span class="req">*</span></label><input class="inp" placeholder="예: 김OO / OO조경" value="문OO"></div>
+        <div class="field"><label>연락처 <span class="req">*</span></label><input class="inp num" placeholder="010-0000-0000" value="010-3560-2575"></div>
+        <div class="field"><label>우편번호</label><input class="inp num" style="width:120px" placeholder="00000" value="28174"></div>
+        <div class="field"><label>주소</label><input class="inp" placeholder="시·군·구까지만 적으셔도 됩니다" value="충북 청주시 흥덕구 강내면"></div>
+        <div class="field"><label>메모</label>
+          <textarea class="inp ta" rows="4" placeholder="전화로 들으신 것을 그대로 적으시면 됩니다">함안 장에서 명함 받음. 가을에 그라스류 문의</textarea>
+        </div>
+        <div class="noteline" style="font-size:var(--font-xs); color:var(--color-text-muted); background:var(--color-surface); border:var(--border-width) dashed var(--color-border); border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg); line-height:1.6">
+          나중에 <b>같은 이름·전화</b>로 주문이 들어오면 <b>한 줄로 합쳐집니다.</b><br>
+          우편번호까지 적으시면 더 정확히 합쳐집니다.
+        </div>
+        <div class="btnrow">
+          <button class="btn">취소</button>
+          <button class="btn main">＋ 등록</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
