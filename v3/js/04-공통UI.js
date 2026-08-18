@@ -205,6 +205,66 @@ window.ZG = window.ZG || {};
     });
   }
 
+  /* ── 폰 아래 탭바 · PC 왼쪽 메뉴 ──
+     화면마다 제 것을 만들면 탭 하나 늘 때 여덟 곳을 고쳐야 한다.
+     다섯 화면(상품·주문·업체·소싱·메모)이 이 둘을 같이 쓴다 (12단계 설계 §1)
+     🔴 「명세서 발행」은 옆칸에 없다 — 업체 관리 안 세 번째 탭이다 (3단계 설계) */
+  var 탭칸 = [
+    { 이름: '입고', 아이콘: '🌿', 주소: 'index.html#입고' },
+    { 이름: '재고', 아이콘: '📦', 주소: 'index.html#재고' },
+    { 이름: '주문', 아이콘: '🛒', 주소: '주문.html' },
+    { 이름: '메모', 아이콘: '📝', 주소: '메모.html' }
+  ];
+  var 옆칸 = [
+    { 이름: '상품',      아이콘: '🌿', 주소: 'index.html' },
+    { 이름: '주문 관리', 아이콘: '🛒', 주소: '주문.html' },
+    { 이름: '업체 관리', 아이콘: '🏢', 주소: '업체.html' },
+    { 이름: '상품소싱',  아이콘: '🌱', 주소: '소싱.html' },
+    { 이름: '메모',      아이콘: '📝', 주소: '메모.html' }
+  ];
+
+  /* 지금: 탭칸 이름 하나. 넷에 없는 값('업체'·'소싱')이면 「더보기」가 켜지고 그 값이 시트로 넘어간다.
+     눌림(이름): true 를 돌려주면 그 화면이 제자리에서 처리한 것으로 보고 주소로 안 옮긴다.
+     🔴 <nav> 를 돌려주기만 한다. 붙이는 것도, 높이를 재는 것도 부르는 쪽 몫이다(08b 가 잰다). */
+  function 탭바(지금, 눌림) {
+    var 바 = 만들기('nav', { class: 'ph-nav' });
+    var 안에있나 = 탭칸.some(function (t) { return t.이름 === 지금; });
+    탭칸.forEach(function (t) {
+      var b = 만들기('button', {
+        type: 'button', class: t.이름 === 지금 ? 'on' : '',
+        html: '<span class="ic">' + t.아이콘 + '</span>' + t.이름
+      });
+      b.addEventListener('click', function () {
+        if (눌림 && 눌림(t.이름) === true) return;
+        if (t.이름 === 지금) return;   // 제 화면을 다시 부르면 쓰던 것이 날아간다
+        location.href = t.주소;
+      });
+      바.appendChild(b);
+    });
+    var 더보기 = 만들기('button', {
+      type: 'button', class: 안에있나 ? '' : 'on', html: '<span class="ic">⋯</span>더보기'
+    });
+    더보기.addEventListener('click', function () { 더보기시트(안에있나 ? '' : 지금); });
+    바.appendChild(더보기);
+    return 바;
+  }
+
+  function 옆메뉴(지금) {
+    var 옆 = 만들기('aside', { class: 'pc-side' }, [
+      만들기('div', { class: 'logo', text: '제로가드닝' }),
+      만들기('div', { class: 'slogan', text: 'GARDENING FROM ZERO' })
+    ]);
+    옆칸.forEach(function (m) {
+      var b = 만들기('button', {
+        type: 'button', class: m.이름 === 지금 ? 'on' : '',
+        html: '<span class="ic">' + m.아이콘 + '</span>' + m.이름
+      });
+      if (m.이름 !== 지금) b.addEventListener('click', function () { location.href = m.주소; });
+      옆.appendChild(b);
+    });
+    return 옆;
+  }
+
   /* ── 창 Esc 는 주인이 하나다 ──
      창(.pcsheet)은 한 번에 하나만 뜬다. 그런데 모듈마다 document 에 제 리스너를 걸어 두면
      앞 창 것이 안 떨어진 채로 남아, 확인 상자 위에서 Esc 를 눌렀을 때 그 창까지 같이 닫혔다.
@@ -447,7 +507,7 @@ window.ZG = window.ZG || {};
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
     콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자,
     폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔,
-    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
+    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
     조합안전입력: 조합안전입력

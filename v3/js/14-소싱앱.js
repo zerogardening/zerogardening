@@ -24,19 +24,9 @@ window.ZG = window.ZG || {};
     return '상품소싱 › ' + 탭이름[탭] + 뒤;
   }
 
-  /* ── PC ── 왼쪽 메뉴는 4개다. 「명세서 발행」은 업체 관리 안 탭이 됐다 */
+  /* ── PC ── */
   function PC뼈대() {
-    var 옆 = 만들기('aside', { class: 'pc-side' }, [
-      만들기('div', { class: 'logo', text: '제로가드닝' }),
-      만들기('div', { class: 'slogan', text: 'GARDENING FROM ZERO' })
-    ]);
-    [['🌿', '상품', 'index.html'], ['🛒', '주문 관리', '주문.html'], ['🏢', '업체 관리', '업체.html']]
-      .forEach(function (셋) {
-        var b = 만들기('button', { type: 'button', html: '<span class="ic">' + 셋[0] + '</span>' + 셋[1] });
-        b.addEventListener('click', function () { location.href = 셋[2]; });
-        옆.appendChild(b);
-      });
-    옆.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🌱</span>상품소싱' }));
+    var 옆 = u.옆메뉴('상품소싱');
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '상품소싱' }), 만들기('div', { class: 'path', text: 길() })
@@ -56,7 +46,7 @@ window.ZG = window.ZG || {};
     뿌리.appendChild(만들기('div', { class: 'shell' }, [옆, 만들기('div', { class: 'pc-main' }, [머리, 탭줄, 본문])]));
   }
 
-  /* ── 폰 ── 아래 탭바는 늘리지 않는다. 소싱은 「더보기」 안이다 (시안 결정) */
+  /* ── 폰 ── 소싱은 「더보기」 안이다 */
   function 폰뼈대() {
     var 정보 = 지금모듈().요약 ? 지금모듈().요약() : { 왼: '', 오: '' };
     var 폴더안 = 탭 === '분류' && 연폴더값 != null;
@@ -95,16 +85,7 @@ window.ZG = window.ZG || {};
       본문.appendChild(탭줄);
     }
 
-    var 바 = 만들기('nav', { class: 'ph-nav' });
-    [['🌿', '상품', 'index.html#입고'], ['📦', '재고', 'index.html#재고'], ['🛒', '주문', '주문.html']]
-      .forEach(function (셋) {
-        var b = 만들기('button', { type: 'button', html: '<span class="ic">' + 셋[0] + '</span>' + 셋[1] });
-        b.addEventListener('click', function () { location.href = 셋[2]; });
-        바.appendChild(b);
-      });
-    var 더보기 = 만들기('button', { type: 'button', class: 'on', html: '<span class="ic">⋯</span>더보기' });
-    더보기.addEventListener('click', function () { u.더보기시트('소싱'); });
-    바.appendChild(더보기);
+    var 바 = u.탭바('소싱');
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, [위, 아래, 본문, 바]));
   }

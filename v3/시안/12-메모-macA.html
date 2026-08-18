@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 메모 · 영농일지 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ── 이 화면에서만 새로 쓰는 부품 (색·글씨·버튼은 _공통-macA.css 그대로) ── */
+
+  /* 폰 여러 대를 나란히 */
+  .phrow{display:flex; gap:26px; align-items:flex-start; flex-wrap:wrap; justify-content:center}
+  .plab{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#45474D; margin-bottom:var(--space-xs); text-align:center}
+
+  /* 검색 줄 */
+  .srow{display:flex; gap:var(--space-sm); align-items:center}
+  .srow .inp.q{flex:1}
+  .mnav{
+    display:inline-flex; align-items:center; gap:var(--space-3xs); flex-shrink:0;
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md); box-shadow:var(--shadow-btn); padding:0 var(--space-3xs); height:var(--h-input);
+  }
+  .mnav b{font-size:var(--font-md); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; padding:0 var(--space-3xs)}
+  .mnav button{
+    font-family:inherit; cursor:pointer; background:none; border:none; width:24px; height:26px;
+    border-radius:var(--radius-sm); font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text-sub);
+  }
+
+  /* 메모 카드 */
+  .mlist{display:flex; flex-direction:column; gap:var(--space-sm)}
+  .mcard{
+    background:var(--color-surface); border-radius:var(--radius-lg); padding:var(--space-lg) var(--space-2xl);
+    box-shadow:var(--shadow-card); display:flex; gap:var(--space-lg); align-items:flex-start; cursor:pointer;
+  }
+  .mcard.on{box-shadow:0 0 0 2px var(--color-accent), var(--shadow-card)}
+  .mcard .body{flex:1; min-width:0}
+  .mcard .mt{
+    font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; line-height:1.3;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .mcard .mp{
+    font-size:var(--font-sm); color:var(--color-text-sub); line-height:1.5; margin-top:var(--space-4xs);
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .mcard .mm{display:flex; align-items:center; gap:var(--space-xs); margin-top:var(--space-sm); flex-wrap:wrap}
+  .mcard .tm{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+
+  /* 폴더 꼬리표 — 조용한 무채색 */
+  .ftag{
+    display:inline-flex; align-items:center; gap:var(--space-4xs);
+    font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-tag);
+    border-radius:var(--radius-pill); background:var(--color-bg); color:var(--color-text-sub);
+    border:var(--border-width) solid var(--color-border); white-space:nowrap;
+  }
+
+  /* 진행상황 배지 — 끝난 것은 조용하게, 아직 안 한 것만 눈에 띈다 */
+  .chip.wait{background:#FFF6E6; color:#9A5B00; border-color:#F0DCB2}
+  .chip.wait::before{background:#C87A0A}
+  .chip.done{opacity:.72}
+
+  /* 사진 미리보기 */
+  .thumb{
+    width:56px; height:56px; border-radius:var(--radius-md); flex-shrink:0;
+    background:linear-gradient(150deg,#8FBF7A,#4E8B4A 60%,#2F6B3A);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    display:flex; align-items:center; justify-content:center; font-size:var(--font-4xl);
+  }
+  .thumb.n2{background:linear-gradient(150deg,#C9B99A,#8E7B5E 60%,#5F5340)}
+
+  /* 편집기 도구줄 — 볼드 · 글자크기 · 글씨색 · 하이라이트 + 사진 */
+  .tbar{
+    display:flex; align-items:center; gap:var(--space-3xs);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md) var(--radius-md) 0 0; padding:var(--space-xs) var(--space-sm);
+    box-shadow:var(--shadow-btn);
+  }
+  .tbar button{
+    font-family:inherit; cursor:pointer; background:transparent; border:none; border-radius:var(--radius-sm);
+    min-width:38px; height:34px; padding:0 var(--space-sm); color:var(--color-text);
+    font-size:var(--font-lg); font-weight:var(--weight-semibold); line-height:1;
+    display:inline-flex; align-items:center; justify-content:center; gap:var(--space-4xs);
+  }
+  .tbar button.on{background:var(--color-seg-bg)}
+  .tbar button .sz{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .tbar .bar{width:14px; height:3px; border-radius:2px; display:block; margin-top:2px}
+  .tbar .col{display:flex; flex-direction:column; align-items:center; line-height:1}
+  /* 하이라이트 — 칠해진 모양 그대로 보인다. 글씨색(가+색줄)과 한눈에 갈린다 */
+  .tbar .hl{border-radius:3px; padding:1px 5px; background:#FFE44D; color:#3A2E00}
+  .tbar .sep{width:1px; height:20px; background:var(--color-border-faint); margin:0 var(--space-3xs)}
+  .tbar .right{margin-left:auto}
+
+  /* 본문 칸 (contenteditable 자리) */
+  .edit{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-top:none;
+    border-radius:0 0 var(--radius-md) var(--radius-md); padding:var(--space-2xl);
+    font-size:var(--font-lg); line-height:1.65; color:var(--color-text); box-shadow:var(--shadow-btn);
+  }
+  .edit .l1{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.02em; margin-bottom:var(--space-sm)}
+  .edit p{margin-bottom:var(--space-sm)}
+  .edit .hi{background:#FFF3A8; border-radius:3px; padding:0 2px}
+  .edit .red{color:var(--color-danger); font-weight:var(--weight-bold)}
+  .edit .big{font-size:var(--font-3xl); font-weight:var(--weight-bold)}
+  .edit .caret{display:inline-block; width:2px; height:18px; background:var(--color-accent); vertical-align:-3px; margin-left:1px}
+  .edit .ph{color:var(--color-text-hint)}
+  .shot{
+    width:100%; height:150px; border-radius:var(--radius-md); margin:var(--space-md) 0;
+    background:linear-gradient(150deg,#9CCB84,#4E8B4A 55%,#2A5F35);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+    display:flex; align-items:flex-end; justify-content:space-between; padding:var(--space-sm) var(--space-lg);
+    font-size:var(--font-2xs); color:#fff; font-weight:var(--weight-semibold);
+  }
+  .shot .x{
+    background:rgba(0,0,0,.42); border-radius:var(--radius-pill); padding:2px 8px;
+  }
+
+  /* 달력 */
+  .calhd{display:flex; align-items:center; justify-content:center; gap:var(--space-3xl); margin-bottom:var(--space-lg)}
+  .calhd .m{font-size:var(--font-3xl); font-weight:var(--weight-bold); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+  .calhd button{
+    font-family:inherit; cursor:pointer; width:34px; height:34px; border-radius:50%;
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border); box-shadow:var(--shadow-btn);
+    font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text-sub);
+  }
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:var(--space-3xs)}
+  .cal .wd{
+    text-align:center; font-size:var(--font-2xs); font-weight:var(--weight-bold);
+    color:var(--color-text-muted); padding-bottom:var(--space-3xs);
+  }
+  .cal .wd.sun{color:var(--color-danger)}
+  .cal .d{
+    aspect-ratio:1/1; border-radius:var(--radius-md); background:var(--color-surface);
+    box-shadow:0 0 0 1px rgba(0,0,0,.05); cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-4xs);
+    font-size:var(--font-lg); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums;
+  }
+  .cal .d.off{background:transparent; box-shadow:none; color:var(--color-text-faint)}
+  .cal .d.sun{color:var(--color-danger)}
+  .cal .d .dot{width:5px; height:5px; border-radius:50%; background:var(--color-accent)}
+  .cal .d .dot.none{background:transparent}
+  .cal .d.on{background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-btn-main)}
+  .cal .d.on .dot{background:var(--overlay-strong)}
+  .cal .d.today{box-shadow:0 0 0 2px var(--color-accent)}
+
+  /* 폰 본문 스크롤 영역 */
+  .ph-body.tight{gap:var(--space-md)}
+  .ph-fab{
+    position:absolute; right:16px; bottom:78px; width:56px; height:56px; border-radius:50%;
+    background:var(--color-accent); color:var(--color-on-accent); border:none;
+    font-size:28px; font-weight:var(--weight-bold); line-height:1; cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,.24); display:flex; align-items:center; justify-content:center;
+  }
+  .phone{position:relative}
+
+  /* PC 두 칸 */
+  .cols{display:flex; gap:var(--space-2xl); align-items:flex-start}
+  .cols .left{width:380px; flex-shrink:0; display:flex; flex-direction:column; gap:var(--space-md)}
+  .cols .right{flex:1; min-width:0}
+  .cols .cal-col{flex:1.05; min-width:0}
+  .parts .pgrid{flex-wrap:wrap}
+  .parts .pgrid > div{flex:1 1 420px !important; min-width:0}
+  .parts .navsample{height:auto; width:320px; box-shadow:var(--shadow-card); border-radius:var(--radius-md)}
+  .weatherrow{display:flex; gap:var(--space-xs)}
+  .sisan{
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-md); padding:var(--space-lg) var(--space-2xl);
+    font-size:var(--font-md); color:var(--color-text); line-height:1.6; box-shadow:var(--shadow-btn); min-height:74px;
+  }
+  .sisan.empty{color:var(--color-text-hint)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════ 폰 ══════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 밭에서 그 자리에서 적습니다 <span class="tag">메모 · 영농일지 · macOS A안</span></div>
+
+  <div class="phrow">
+
+    <!-- ① 메모 목록 -->
+    <div>
+      <div class="plab">① 메모 목록 — 날짜 머리글 아래로 쌓임</div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top">
+          <h1>메모</h1>
+          <span class="pcbtn">🖥 PC화면으로</span>
+        </div>
+        <div class="ph-sub">
+          <span>2026년 8월</span>
+          <span>메모 <b>18</b>건</span>
+        </div>
+        <div class="ph-body tight">
+          <div class="toggle">
+            <button class="on" style="flex:1; padding:0">메모</button>
+            <button style="flex:1; padding:0">영농일지</button>
+          </div>
+          <div class="srow">
+            <input class="inp q" placeholder="메모 검색">
+            <div class="mnav"><button>‹</button><b>2026.08</b><button>›</button></div>
+          </div>
+          <div class="fchips">
+            <button class="fchip on">전체<span class="n">18</span></button>
+            <button class="fchip">밭일<span class="n">7</span></button>
+            <button class="fchip">거래처<span class="n">5</span></button>
+            <button class="fchip">자재<span class="n">4</span></button>
+          </div>
+          <div class="fchips">
+            <button class="fchip">할일<span class="n">4</span></button>
+            <button class="fchip">하는중<span class="n">3</span></button>
+            <button class="fchip">끝<span class="n">11</span></button>
+          </div>
+
+          <div class="ph-sec">8월 18일 (화)<span class="r">3건</span></div>
+          <div class="mlist">
+            <div class="mcard">
+              <div class="body">
+                <div class="mt">한아름농원 수크령 재입고 확인</div>
+                <div class="mp">레드헤드 15cm 200주 · 다음주 화요일 들어온다고 함. 단가 2,800 그대로 간다고 했으니 입고 등록할 때 확인.</div>
+                <div class="mm">
+                  <span class="tm">14:20</span>
+                  <span class="ftag">📁 거래처</span>
+                  <span class="chip wait">할일</span>
+                </div>
+              </div>
+            </div>
+            <div class="mcard">
+              <div class="body">
+                <div class="mt">3동 하우스 관수 노즐 막힘</div>
+                <div class="mp">가운데 줄 5개 정도 물이 안 나옴. 사진 찍어둠 — 자재상에 같은 규격 있는지 물어볼 것.</div>
+                <div class="mm">
+                  <span class="tm">11:05</span>
+                  <span class="ftag">📁 자재</span>
+                  <span class="chip wait">할일</span>
+                </div>
+              </div>
+              <div class="thumb">🌿</div>
+            </div>
+            <div class="mcard">
+              <div class="body">
+                <div class="mt">추명국 포트 갈이 절반 끝</div>
+                <div class="mp">21cm로 80주 옮김. 나머지 60주는 내일 아침에. 상토 한 포대 남음.</div>
+                <div class="mm">
+                  <span class="tm">08:40</span>
+                  <span class="ftag">📁 밭일</span>
+                  <span class="chip">하는중</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <button class="ph-fab">＋</button>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 메모 쓰기 -->
+    <div>
+      <div class="plab">② 메모 쓰기 — 본문 첫 줄이 곧 제목</div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top" style="align-items:center">
+          <div>
+            <div class="ph-back">‹ 메모</div>
+            <h1 style="font-size:var(--font-4xl)">새 메모</h1>
+          </div>
+          <button class="btn main sm">저장</button>
+        </div>
+        <div class="ph-sub">
+          <span>2026-08-18 (화) 14:20</span>
+          <span></span>
+        </div>
+        <div class="ph-body tight">
+          <div class="field">
+            <label>폴더</label>
+            <input class="inp" list="folders-ph" value="거래처">
+            <datalist id="folders-ph">
+              <option value="밭일"><option value="거래처"><option value="자재"><option value="개인">
+            </datalist>
+          </div>
+          <div class="field">
+            <label>진행상황</label>
+            <div class="fchips">
+              <button class="fchip on">할일</button>
+              <button class="fchip">하는중</button>
+              <button class="fchip">끝</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="tbar">
+              <button class="on"><b>B</b></button>
+              <button><span class="col">가<span class="sz">크기</span></span></button>
+              <button><span class="col">가<span class="bar" style="background:var(--color-danger)"></span></span></button>
+              <button><span class="hl">가</span></button>
+              <span class="sep"></span>
+              <button>📷</button>
+            </div>
+            <div class="edit" style="min-height:196px">
+              <div class="l1">한아름농원 수크령 재입고 확인</div>
+              <p>레드헤드 15cm <span class="hi">200주</span> · 다음주 <span class="red">화요일</span> 들어온다고 함.</p>
+              <div class="shot"><span>IMG_2481 · 하우스 3동</span><span class="x">✕</span></div>
+              <p>단가 2,800 그대로 간다고 했음<span class="caret"></span></p>
+            </div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 영농일지 달력 -->
+    <div>
+      <div class="plab">③ 영농일지 — 달력에서 날을 고릅니다</div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top">
+          <h1>영농일지</h1>
+          <span class="pcbtn">🖥 PC화면으로</span>
+        </div>
+        <div class="ph-sub">
+          <span>2026년 8월</span>
+          <span></span>
+        </div>
+        <div class="ph-body tight">
+          <div class="toggle">
+            <button style="flex:1; padding:0">메모</button>
+            <button class="on" style="flex:1; padding:0">영농일지</button>
+          </div>
+          <div class="calhd">
+            <button>‹</button>
+            <div class="m">2026년 8월</div>
+            <button>›</button>
+          </div>
+          <div class="cal">
+            <div class="wd sun">일</div><div class="wd">월</div><div class="wd">화</div><div class="wd">수</div><div class="wd">목</div><div class="wd">금</div><div class="wd">토</div>
+            <div class="d off">26</div><div class="d off">27</div><div class="d off">28</div><div class="d off">29</div><div class="d off">30</div><div class="d off">31</div><div class="d sun" style="grid-column:1">1<span class="dot none"></span></div>
+            <div class="d sun">2<span class="dot"></span></div><div class="d">3<span class="dot"></span></div><div class="d">4<span class="dot none"></span></div><div class="d">5<span class="dot"></span></div><div class="d">6<span class="dot"></span></div><div class="d">7<span class="dot none"></span></div><div class="d">8<span class="dot"></span></div>
+            <div class="d sun">9<span class="dot none"></span></div><div class="d">10<span class="dot"></span></div><div class="d">11<span class="dot"></span></div><div class="d">12<span class="dot none"></span></div><div class="d">13<span class="dot"></span></div><div class="d">14<span class="dot"></span></div><div class="d">15<span class="dot none"></span></div>
+            <div class="d sun">16<span class="dot none"></span></div><div class="d">17<span class="dot"></span></div><div class="d on">18<span class="dot"></span></div><div class="d">19<span class="dot none"></span></div><div class="d">20<span class="dot none"></span></div><div class="d">21<span class="dot none"></span></div><div class="d">22<span class="dot none"></span></div>
+            <div class="d sun">23<span class="dot none"></span></div><div class="d">24<span class="dot none"></span></div><div class="d">25<span class="dot none"></span></div><div class="d">26<span class="dot none"></span></div><div class="d">27<span class="dot none"></span></div><div class="d">28<span class="dot none"></span></div><div class="d">29<span class="dot none"></span></div>
+            <div class="d sun">30<span class="dot none"></span></div><div class="d">31<span class="dot none"></span></div>
+          </div>
+          <div class="ph-sec">8월 18일 (화)</div>
+          <div class="mlist">
+            <div class="mcard">
+              <div class="body">
+                <div class="mt">☀️ 맑음 · 32℃</div>
+                <div class="mp">추명국 포트 갈이 80주. 3동 관수 노즐 5개 막혀 청소. 오후에 수크령 눈 상태 확인.</div>
+                <div class="mm"><span class="tm">고친때 18:02</span></div>
+              </div>
+              <div class="thumb">🌿</div>
+            </div>
+          </div>
+        </div>
+        <button class="ph-fab">＋</button>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 영농일지 쓰기 -->
+    <div>
+      <div class="plab">④ 영농일지 쓰기 — 편집기는 메모와 같은 것</div>
+      <div class="phone">
+        <div class="ios-status">
+          <span>9:41</span>
+          <span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span>
+        </div>
+        <div class="ph-top" style="align-items:center">
+          <div>
+            <div class="ph-back">‹ 영농일지</div>
+            <h1 style="font-size:var(--font-4xl)">8월 18일 (화)</h1>
+          </div>
+          <button class="btn main sm">저장</button>
+        </div>
+        <div class="ph-body tight">
+          <div class="field">
+            <label>날씨</label>
+            <div class="fchips">
+              <button class="fchip on">☀️ 맑음</button>
+              <button class="fchip">☁️ 흐림</button>
+              <button class="fchip">🌧 비</button>
+              <button class="fchip">❄️ 눈</button>
+              <button class="fchip">💨 바람</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>작업내용</label>
+            <div class="tbar">
+              <button><b>B</b></button>
+              <button><span class="col">가<span class="sz">크기</span></span></button>
+              <button><span class="col">가<span class="bar" style="background:var(--color-danger)"></span></span></button>
+              <button class="on"><span class="hl">가</span></button>
+              <span class="sep"></span>
+              <button>📷</button>
+            </div>
+            <div class="edit" style="min-height:168px">
+              <div class="l1">추명국 포트 갈이</div>
+              <p>21cm로 <span class="hi">80주</span> 옮김. 나머지 60주는 내일 아침.</p>
+              <div class="shot"><span>IMG_2486 · 포트 갈이</span><span class="x">✕</span></div>
+              <p>3동 관수 노즐 5개 청소<span class="caret"></span></p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>특이사항</label>
+            <div class="sisan">오후 3시경 소나기 20분. 3동 배수 확인함 — 이상 없음.</div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ PC — 메모 탭 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 메모 탭 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 메모</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+        <a class="on"><span class="ic">📝</span>메모</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>메모</h2>
+          <div class="path">메모 › 메모</div>
+        </div>
+        <div class="pc-tabs">
+          <span class="on">메모</span>
+          <span>영농일지</span>
+        </div>
+
+        <div class="cols">
+          <!-- 왼쪽: 목록 -->
+          <div class="left">
+            <div class="srow">
+              <input class="inp q" placeholder="메모 검색">
+              <div class="mnav"><button>‹</button><b>2026.08</b><button>›</button></div>
+            </div>
+            <div class="fchips">
+              <button class="fchip on">전체<span class="n">18</span></button>
+              <button class="fchip">밭일<span class="n">7</span></button>
+              <button class="fchip">거래처<span class="n">5</span></button>
+              <button class="fchip">자재<span class="n">4</span></button>
+              <button class="fchip">개인<span class="n">2</span></button>
+            </div>
+            <div class="fchips">
+              <button class="fchip">할일<span class="n">4</span></button>
+              <button class="fchip">하는중<span class="n">3</span></button>
+              <button class="fchip">끝<span class="n">11</span></button>
+              <button class="btn sm" style="margin-left:auto">＋ 새 메모</button>
+            </div>
+
+            <div class="ph-sec">8월 18일 (화)<span class="r">3건</span></div>
+            <div class="mlist">
+              <div class="mcard on">
+                <div class="body">
+                  <div class="mt">한아름농원 수크령 재입고 확인</div>
+                  <div class="mp">레드헤드 15cm 200주 · 다음주 화요일 들어온다고 함. 단가 2,800 그대로.</div>
+                  <div class="mm"><span class="tm">14:20</span><span class="ftag">📁 거래처</span><span class="chip wait">할일</span></div>
+                </div>
+              </div>
+              <div class="mcard">
+                <div class="body">
+                  <div class="mt">3동 하우스 관수 노즐 막힘</div>
+                  <div class="mp">가운데 줄 5개 정도 물이 안 나옴. 자재상에 같은 규격 있는지 물어볼 것.</div>
+                  <div class="mm"><span class="tm">11:05</span><span class="ftag">📁 자재</span><span class="chip wait">할일</span></div>
+                </div>
+                <div class="thumb">🌿</div>
+              </div>
+              <div class="mcard">
+                <div class="body">
+                  <div class="mt">추명국 포트 갈이 절반 끝</div>
+                  <div class="mp">21cm로 80주 옮김. 나머지 60주는 내일 아침에. 상토 한 포대 남음.</div>
+                  <div class="mm"><span class="tm">08:40</span><span class="ftag">📁 밭일</span><span class="chip">하는중</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ph-sec">8월 17일 (월)<span class="r">2건</span></div>
+            <div class="mlist">
+              <div class="mcard">
+                <div class="body">
+                  <div class="mt">택배 박스 3호 주문 완료</div>
+                  <div class="mp">200장, 목요일 도착 예정. 세금계산서 받아둘 것.</div>
+                  <div class="mm"><span class="tm">17:52</span><span class="ftag">📁 자재</span><span class="chip done">끝</span></div>
+                </div>
+                <div class="thumb n2">📦</div>
+              </div>
+              <div class="mcard">
+                <div class="body">
+                  <div class="mt">청사초 출고량 이상함</div>
+                  <div class="mp">월 100주씩 나가는데 이번 달만 30주. 주문 화면에서 다시 볼 것.</div>
+                  <div class="mm"><span class="tm">09:15</span><span class="ftag">📁 밭일</span><span class="chip">하는중</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="pager"><i>‹</i><b>1</b><i>2</i><i>3</i><i>›</i></div>
+          </div>
+
+          <!-- 오른쪽: 편집기 -->
+          <div class="right">
+            <div class="card">
+              <h3>메모 쓰기 <span class="hint">2026-08-18 (화) 14:20</span>
+                <span class="right" style="display:flex; gap:var(--space-sm)">
+                  <button class="btn sm">삭제</button>
+                  <button class="btn main sm">저장</button>
+                </span></h3>
+
+              <div class="row bottom">
+                <div class="field" style="width:200px">
+                  <label>폴더</label>
+                  <input class="inp" list="folders-pc" value="거래처">
+                  <datalist id="folders-pc">
+                    <option value="밭일"><option value="거래처"><option value="자재"><option value="개인">
+                  </datalist>
+                </div>
+                <div class="field">
+                  <label>진행상황</label>
+                  <div class="fchips">
+                    <button class="fchip on">할일</button>
+                    <button class="fchip">하는중</button>
+                    <button class="fchip">끝</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tbar">
+                <button class="on"><b>B</b></button>
+                <button><span class="col">가<span class="sz">크기</span></span></button>
+                <button><span class="col">가<span class="bar" style="background:var(--color-danger)"></span></span></button>
+                <button><span class="hl">가</span></button>
+                <span class="sep"></span>
+                <button>📷 사진</button>
+              </div>
+              <div class="edit" style="min-height:300px">
+                <div class="l1">한아름농원 수크령 재입고 확인</div>
+                <p>레드헤드 15cm <span class="hi">200주</span> · 다음주 <span class="red">화요일</span> 들어온다고 함.</p>
+                <div class="shot" style="width:300px; height:170px"><span>IMG_2481 · 하우스 3동</span><span class="x">✕</span></div>
+                <p>단가 2,800 그대로 간다고 했음. 입고 등록할 때 다시 확인할 것<span class="caret"></span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ PC — 영농일지 탭 ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 영농일지 탭 <span style="opacity:.65">(폴더는 안 띄웁니다 — 축이 날짜라서)</span></div>
+  <div class="pc">
+    <div class="titlebar">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="wtitle">제로가드닝 통합관리 — 메모</span>
+    </div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div>
+        <div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>상품소싱</a>
+        <a class="on"><span class="ic">📝</span>메모</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head">
+          <h2>메모</h2>
+          <div class="path">메모 › 영농일지</div>
+        </div>
+        <div class="pc-tabs">
+          <span>메모</span>
+          <span class="on">영농일지</span>
+        </div>
+
+        <div class="cols">
+          <!-- 왼쪽: 달력 -->
+          <div class="cal-col">
+            <div class="card">
+              <div class="calhd">
+                <button>‹</button>
+                <div class="m">2026년 8월</div>
+                <button>›</button>
+              </div>
+              <div class="cal">
+                <div class="wd sun">일</div><div class="wd">월</div><div class="wd">화</div><div class="wd">수</div><div class="wd">목</div><div class="wd">금</div><div class="wd">토</div>
+                <div class="d off">26</div><div class="d off">27</div><div class="d off">28</div><div class="d off">29</div><div class="d off">30</div><div class="d off">31</div><div class="d sun" style="grid-column:1">1<span class="dot none"></span></div>
+                <div class="d sun">2<span class="dot"></span></div><div class="d">3<span class="dot"></span></div><div class="d">4<span class="dot none"></span></div><div class="d">5<span class="dot"></span></div><div class="d">6<span class="dot"></span></div><div class="d">7<span class="dot none"></span></div><div class="d">8<span class="dot"></span></div>
+                <div class="d sun">9<span class="dot none"></span></div><div class="d">10<span class="dot"></span></div><div class="d">11<span class="dot"></span></div><div class="d">12<span class="dot none"></span></div><div class="d">13<span class="dot"></span></div><div class="d">14<span class="dot"></span></div><div class="d">15<span class="dot none"></span></div>
+                <div class="d sun">16<span class="dot none"></span></div><div class="d">17<span class="dot"></span></div><div class="d on">18<span class="dot"></span></div><div class="d">19<span class="dot none"></span></div><div class="d">20<span class="dot none"></span></div><div class="d">21<span class="dot none"></span></div><div class="d">22<span class="dot none"></span></div>
+                <div class="d sun">23<span class="dot none"></span></div><div class="d">24<span class="dot none"></span></div><div class="d">25<span class="dot none"></span></div><div class="d">26<span class="dot none"></span></div><div class="d">27<span class="dot none"></span></div><div class="d">28<span class="dot none"></span></div><div class="d">29<span class="dot none"></span></div>
+                <div class="d sun">30<span class="dot none"></span></div><div class="d">31<span class="dot none"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 오른쪽: 그날 일지 -->
+          <div class="right">
+            <div class="card">
+              <h3>8월 18일 (화) 일지 <span class="hint">고친때 18:02</span>
+                <span class="right" style="display:flex; gap:var(--space-sm)">
+                  <button class="btn sm">삭제</button>
+                  <button class="btn main sm">저장</button>
+                </span></h3>
+
+              <div class="row bottom">
+                <div class="field" style="flex:1">
+                  <label>날씨</label>
+                  <div class="weatherrow">
+                    <button class="fchip on">☀️ 맑음</button>
+                    <button class="fchip">☁️ 흐림</button>
+                    <button class="fchip">🌧 비</button>
+                    <button class="fchip">❄️ 눈</button>
+                    <button class="fchip">💨 바람</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field" style="margin-bottom:var(--space-xl)">
+                <label>작업내용</label>
+                <div class="tbar">
+                  <button><b>B</b></button>
+                  <button><span class="col">가<span class="sz">크기</span></span></button>
+                  <button><span class="col">가<span class="bar" style="background:var(--color-danger)"></span></span></button>
+                  <button class="on"><span class="hl">가</span></button>
+                  <span class="sep"></span>
+                  <button>📷 사진</button>
+                </div>
+                <div class="edit" style="min-height:230px">
+                  <div class="l1">추명국 포트 갈이</div>
+                  <p>21cm로 <span class="hi">80주</span> 옮김. 나머지 60주는 내일 아침에.</p>
+                  <div class="shot" style="width:280px; height:150px"><span>IMG_2486 · 포트 갈이</span><span class="x">✕</span></div>
+                  <p>3동 관수 노즐 5개 막혀 청소<span class="caret"></span></p>
+                </div>
+              </div>
+
+              <div class="field">
+                <label>특이사항</label>
+                <div class="sisan">오후 3시경 소나기 20분. 3동 배수 확인함 — 이상 없음.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 정한 것 ══════════ -->
+<div class="parts">
+  <h2>이 화면에서 정한 것</h2>
+  <div class="lead">색·글씨·버튼·표·칩은 <b>_공통-macA.css</b> 그대로입니다. 아래 다섯만 이 화면에서 새로 정했습니다.</div>
+  <div class="pgrid">
+
+    <div style="flex:1">
+      <h4>제목 칸이 없다</h4>
+      <div class="tbar" style="border-radius:var(--radius-md)">
+        <button class="on"><b>B</b></button>
+        <button><span class="col">가<span class="sz">크기</span></span></button>
+        <button><span class="col">가<span class="bar" style="background:var(--color-danger)"></span></span></button>
+        <button><span class="hl">가</span></button>
+        <span class="sep"></span>
+        <button>📷</button>
+      </div>
+      <p class="note">
+        아이폰 메모와 같습니다 — <b class="accent">본문 첫 줄이 곧 제목</b>이라 밭에서 칸을 두 번 누를 일이 없습니다.<br>
+        도구줄은 <b class="accent">볼드 · 글자크기 · 글씨색 · 하이라이트</b> 넷 + 사진 하나뿐입니다.<br>
+        <b class="accent">하이라이트</b>는 칠해진 모양 그대로, <b class="accent">글씨색</b>은 「가」 아래 색줄로 지금 색을 보여줍니다.<br>
+        메모와 영농일지가 <b class="accent">같은 편집기 한 벌</b>을 씁니다.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>화면에 설명 문구를 안 씁니다</h4>
+      <div class="srow" style="max-width:330px">
+        <input class="inp q" placeholder="메모 검색">
+        <div class="mnav"><button>‹</button><b>2026.08</b><button>›</button></div>
+      </div>
+      <p class="note">
+        칸 이름과 버튼 글자만 둡니다 — <b>안내·힌트·자동저장 알림·「N일째」 같은 숫자 자랑은 넣지 않습니다.</b><br>
+        달 고르개는 <b class="accent">‹ ›</b> 화살표입니다. <code>input type=month</code> 는
+        <b>맥 사파리·파이어폭스에서 그냥 글자칸으로 떨어집니다.</b>
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>진행상황 배지</h4>
+      <div style="display:flex; gap:var(--space-sm); align-items:center">
+        <span class="chip wait">할일</span>
+        <span class="chip">하는중</span>
+        <span class="chip done">끝</span>
+      </div>
+      <p class="note">
+        「끝」은 <b>가장 조용합니다</b> — 다 한 일이 눈에 띄면 안 됩니다.<br>
+        아직 손 안 댄 <b class="accent">「할일」만 살구색</b>으로 뜹니다.<br>
+        <b>빨강은 안 씁니다</b> — 재고의 「재입고 필요」와 급한 정도가 다릅니다.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>폴더는 칸 하나뿐</h4>
+      <div style="display:flex; gap:var(--space-xs); align-items:center; flex-wrap:wrap">
+        <span class="ftag">📁 밭일</span><span class="ftag">📁 거래처</span><span class="ftag">📁 자재</span><span class="ftag">📁 개인</span>
+      </div>
+      <p class="note">
+        폴더 관리 화면은 <b>만들지 않았습니다.</b> 메모마다 <b class="accent">글자 한 칸</b>이고,<br>
+        쓰던 이름이 자동으로 뜹니다(datalist). 새 이름을 치면 그게 새 폴더입니다.<br>
+        거를 때는 목록 위 <b class="accent">칩 줄</b>로 누릅니다.<br>
+        영농일지에는 <b>폴더를 안 띄웁니다</b> — 축이 날짜라 겹칩니다.
+      </p>
+    </div>
+
+    <div style="flex:1">
+      <h4>폰 아래 탭 5칸</h4>
+      <div class="phone navsample">
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div class="on"><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+      <p class="note">
+        4칸 → <b class="accent">5칸</b>. 한 칸이 78px이라 장갑 낀 손으로도 눌립니다<br>
+        (애플 기준 44px). 글씨는 <b>한 급도 줄이지 않았습니다.</b><br>
+        PC 왼쪽 메뉴에는 <b class="accent">📝 메모</b> 한 줄이 맨 아래에 붙습니다.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

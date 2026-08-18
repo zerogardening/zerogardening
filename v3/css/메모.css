@@ -1,0 +1,149 @@
+/* 메모.css — 메모 · 영농일지 화면 전용 부품만 (12단계 설계 §8 · 세부설계 §5)
+   .toggle · .pc-tabs · .card · .field · .btn · .chip · .fchip · .ph-* 는 공통.css 것을 그대로 쓴다.
+   시안 12-메모-macA.html <style> 에서 이 화면 것만 옮겼다. */
+
+/* 검색 줄 · 달 고르개 — input type=month 는 맥 사파리·파이어폭스가 안 받는다 (설계 §0-3) */
+.srow{display:flex; gap:var(--space-sm); align-items:center}
+.srow .inp.q{flex:1; min-width:0}
+.mnav{
+  display:inline-flex; align-items:center; gap:var(--space-3xs); flex-shrink:0;
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-md); box-shadow:var(--shadow-btn); padding:0 var(--space-3xs); height:var(--h-input);
+}
+.mnav b{font-size:var(--font-md); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; padding:0 var(--space-3xs)}
+.mnav button{
+  font-family:inherit; cursor:pointer; background:none; border:none; width:24px; height:26px;
+  border-radius:var(--radius-sm); font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text-sub);
+}
+
+/* 메모 카드 */
+.mlist{display:flex; flex-direction:column; gap:var(--space-sm)}
+.mcard{
+  background:var(--color-surface); border-radius:var(--radius-lg); padding:var(--space-lg) var(--space-2xl);
+  box-shadow:var(--shadow-card); display:flex; gap:var(--space-lg); align-items:flex-start; cursor:pointer;
+}
+.mcard.on{box-shadow:0 0 0 2px var(--color-accent), var(--shadow-card)}
+.mcard .body{flex:1; min-width:0}
+.mcard .mt{
+  font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; line-height:1.3;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.mcard .mp{
+  font-size:var(--font-sm); color:var(--color-text-sub); line-height:1.5; margin-top:var(--space-4xs);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.mcard .mm{display:flex; align-items:center; gap:var(--space-xs); margin-top:var(--space-sm); flex-wrap:wrap}
+.mcard .tm{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+
+/* 폴더 꼬리표 — 조용한 무채색 */
+.ftag{
+  display:inline-flex; align-items:center; gap:var(--space-4xs);
+  font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-tag);
+  border-radius:var(--radius-pill); background:var(--color-bg); color:var(--color-text-sub);
+  border:var(--border-width) solid var(--color-border); white-space:nowrap;
+}
+
+/* 진행상황 배지 — 끝난 것은 조용하게, 아직 안 한 것만 눈에 띈다 (빨강은 안 쓴다) */
+.chip.wait{background:#FFF6E6; color:#9A5B00; border-color:#F0DCB2}
+.chip.wait::before{background:#C87A0A}
+.chip.done{opacity:.72}
+
+/* 사진 미리보기 */
+.thumb{
+  width:56px; height:56px; border-radius:var(--radius-md); flex-shrink:0;
+  object-fit:cover; background:var(--color-bg);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+}
+
+/* 편집기 도구줄 — 볼드 · 글자크기 · 글씨색 · 하이라이트 + 사진 */
+.tbar{
+  display:flex; align-items:center; gap:var(--space-3xs);
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-md) var(--radius-md) 0 0; padding:var(--space-xs) var(--space-sm);
+  box-shadow:var(--shadow-btn);
+}
+.tbar button{
+  font-family:inherit; cursor:pointer; background:transparent; border:none; border-radius:var(--radius-sm);
+  min-width:38px; height:34px; padding:0 var(--space-sm); color:var(--color-text);
+  font-size:var(--font-lg); font-weight:var(--weight-semibold); line-height:1;
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--space-4xs);
+}
+.tbar button.on{background:var(--color-seg-bg)}
+.tbar button .sz{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.tbar .bar{width:14px; height:3px; border-radius:2px; display:block; margin-top:2px}
+.tbar .col{display:flex; flex-direction:column; align-items:center; line-height:1}
+/* 하이라이트 — 칠해진 모양 그대로 보인다. 글씨색(가+색줄)과 한눈에 갈린다 (설계 §0-1) */
+.tbar .hl{border-radius:3px; padding:1px 5px; background:#FFE44D; color:#3A2E00}
+.tbar .sep{width:1px; height:20px; background:var(--color-border-faint); margin:0 var(--space-3xs)}
+.tbar .right{margin-left:auto}
+
+/* 본문 칸 (contenteditable) */
+.edit{
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-top:none;
+  border-radius:0 0 var(--radius-md) var(--radius-md); padding:var(--space-2xl);
+  font-size:var(--font-lg); line-height:1.65; color:var(--color-text); box-shadow:var(--shadow-btn);
+  outline:none; overflow-wrap:break-word; min-height:220px;
+}
+.ph-shell .edit{min-height:196px}
+.cols .right .edit{min-height:300px}
+.edit:focus{border-color:var(--color-accent); box-shadow:0 0 0 3px var(--color-accent-bg)}
+.edit .l1{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.02em; margin-bottom:var(--space-sm)}
+.edit div{margin-bottom:var(--space-3xs)}
+.edit p{margin-bottom:var(--space-sm)}
+.edit img{max-width:100%; border-radius:var(--radius-md); margin:var(--space-md) 0; display:block}
+.edit img.빈{min-height:60px; background:var(--color-bg)}
+
+/* 달력 */
+.calhd{display:flex; align-items:center; justify-content:center; gap:var(--space-3xl); margin-bottom:var(--space-lg)}
+.calhd .m{font-size:var(--font-3xl); font-weight:var(--weight-bold); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.calhd button{
+  font-family:inherit; cursor:pointer; width:34px; height:34px; border-radius:50%;
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border); box-shadow:var(--shadow-btn);
+  font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text-sub);
+}
+.cal{display:grid; grid-template-columns:repeat(7,1fr); gap:var(--space-3xs)}
+.cal .wd{
+  text-align:center; font-size:var(--font-2xs); font-weight:var(--weight-bold);
+  color:var(--color-text-muted); padding-bottom:var(--space-3xs);
+}
+.cal .wd.sun{color:var(--color-danger)}
+.cal .d{
+  aspect-ratio:1/1; border-radius:var(--radius-md); background:var(--color-surface);
+  box-shadow:0 0 0 1px rgba(0,0,0,.05); cursor:pointer; border:none; font-family:inherit;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-4xs);
+  font-size:var(--font-lg); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums;
+  color:var(--color-text);
+}
+.cal .d.off{background:transparent; box-shadow:none; color:var(--color-text-faint); cursor:default}
+.cal .d.sun{color:var(--color-danger)}
+.cal .d .dot{width:5px; height:5px; border-radius:50%; background:var(--color-accent)}
+.cal .d .dot.none{background:transparent}
+.cal .d.on{background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-btn-main)}
+.cal .d.on .dot{background:var(--overlay-strong)}
+.cal .d.on .dot.none{background:transparent}   /* 고른 날이라고 없는 기록에 점을 찍지 않는다 */
+.cal .d.today{box-shadow:0 0 0 2px var(--color-accent)}
+
+/* 폰 — 목록 위 ＋. 실화면엔 시안의 액자가 없어 fixed 다 (세부설계 §3-4) */
+.ph-body.tight{gap:var(--space-md)}
+.ph-fab{
+  position:fixed; right:16px; bottom:calc(80px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%;
+  background:var(--color-accent); color:var(--color-on-accent); border:none;
+  font-size:28px; font-weight:var(--weight-bold); line-height:1; cursor:pointer; z-index:40;
+  box-shadow:0 6px 18px rgba(0,0,0,.24); display:flex; align-items:center; justify-content:center;
+}
+
+/* PC 두 칸 */
+.cols{display:flex; gap:var(--space-2xl); align-items:flex-start}
+.cols .left{width:380px; flex-shrink:0; display:flex; flex-direction:column; gap:var(--space-md)}
+.cols .right{flex:1; min-width:0}
+.cols .cal-col{flex:1.05; min-width:0}
+.weatherrow{display:flex; gap:var(--space-xs); flex-wrap:wrap}
+
+/* 특이사항 — 서식도 사진도 없는 평문 한 칸 */
+.sisan{
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-md); padding:var(--space-lg) var(--space-2xl);
+  font-size:var(--font-md); color:var(--color-text); line-height:1.6; box-shadow:var(--shadow-btn);
+  min-height:74px; width:100%; font-family:inherit; resize:vertical;
+}
+.sisan:focus{outline:none; border-color:var(--color-accent); box-shadow:0 0 0 3px var(--color-accent-bg)}

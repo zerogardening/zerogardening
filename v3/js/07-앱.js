@@ -32,19 +32,7 @@ window.ZG = window.ZG || {};
 
   /* ── PC 뼈대 ── */
   function PC뼈대() {
-    var 옆 = 만들기('aside', { class: 'pc-side' });
-    옆.appendChild(만들기('div', { class: 'logo', text: '제로가드닝' }));
-    옆.appendChild(만들기('div', { class: 'slogan', text: 'GARDENING FROM ZERO' }));
-    옆.appendChild(만들기('button', { class: 'on', type: 'button', html: '<span class="ic">🌿</span>상품' }));
-    var 주문메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🛒</span>주문 관리' });
-    주문메뉴.addEventListener('click', function () { location.href = '주문.html'; });
-    옆.appendChild(주문메뉴);
-    var 업체메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🏢</span>업체 관리' });
-    업체메뉴.addEventListener('click', function () { location.href = '업체.html'; });
-    옆.appendChild(업체메뉴);
-    var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
-    소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
-    옆.appendChild(소싱메뉴);
+    var 옆 = u.옆메뉴('상품');
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '상품' }),
@@ -97,22 +85,13 @@ window.ZG = window.ZG || {};
 
     본문 = 만들기('div', { class: 'ph-body' });
 
-    var 바 = 만들기('nav', { class: 'ph-nav' });
-    /* 「이미지」는 폰에 안 낸다 — PC 편집기 창을 얹는 자리라 폰에서는 못 쓴다 (8/13 우람님) */
-    탭들.filter(function (t) { return t.이름 !== '이미지'; }).forEach(function (t) {
-      var b = 만들기('button', {
-        type: 'button', class: t.이름 === 지금 ? 'on' : '',
-        html: '<span class="ic">' + t.아이콘 + '</span>' + t.이름
-      });
-      b.addEventListener('click', function () { 탭으로(t.이름); });
-      바.appendChild(b);
+    /* 「이미지」는 폰에 안 낸다 — PC 편집기 창을 얹는 자리라 폰에서는 못 쓴다 (8/13 우람님).
+       입고·재고만 같은 페이지 안 탭 전환이라 되부름을 하나 넘긴다 (12단계 세부설계 §2) */
+    var 바 = u.탭바(지금, function (이름) {
+      if (이름 !== '입고' && 이름 !== '재고') return false;
+      탭으로(이름);
+      return true;
     });
-    var 주문탭 = 만들기('button', { type: 'button', html: '<span class="ic">🛒</span>주문' });
-    주문탭.addEventListener('click', function () { location.href = '주문.html'; });
-    바.appendChild(주문탭);
-    var 더보기 = 만들기('button', { type: 'button', html: '<span class="ic">⋯</span>더보기' });
-    더보기.addEventListener('click', function () { u.더보기시트(''); });
-    바.appendChild(더보기);
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, [위, 아래, 본문, 바]));
   }

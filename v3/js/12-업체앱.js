@@ -24,19 +24,7 @@ window.ZG = window.ZG || {};
 
   /* ── PC ── */
   function PC뼈대() {
-    var 옆 = 만들기('aside', { class: 'pc-side' }, [
-      만들기('div', { class: 'logo', text: '제로가드닝' }),
-      만들기('div', { class: 'slogan', text: 'GARDENING FROM ZERO' })
-    ]);
-    [['🌿', '상품', 'index.html'], ['🛒', '주문 관리', '주문.html']].forEach(function (셋) {
-      var b = 만들기('button', { type: 'button', html: '<span class="ic">' + 셋[0] + '</span>' + 셋[1] });
-      b.addEventListener('click', function () { location.href = 셋[2]; });
-      옆.appendChild(b);
-    });
-    옆.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🏢</span>업체 관리' }));
-    var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
-    소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
-    옆.appendChild(소싱메뉴);
+    var 옆 = u.옆메뉴('업체 관리');
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '업체 관리' }), 만들기('div', { class: 'path', text: 길() })
@@ -72,7 +60,7 @@ window.ZG = window.ZG || {};
     return 줄;
   }
 
-  /* ── 폰 ── 아래 탭바는 늘리지 않는다. 업체는 「더보기」 안이다 (시안 결정) */
+  /* ── 폰 ── 업체는 「더보기」 안이다 */
   function 폰뼈대() {
     var 정보 = 지금모듈().요약 ? 지금모듈().요약() : { 왼: '', 오: '' };
     var 제목 = 탭 === '명세서' ? '명세서' : (탭 === '등록' ? '업체 등록' : '업체');
@@ -101,15 +89,7 @@ window.ZG = window.ZG || {};
     본문.appendChild(탭줄);
     if (탭 === '명세서') 본문.appendChild(서브탭());
 
-    var 바 = 만들기('nav', { class: 'ph-nav' });
-    [['🌿', '입고', 'index.html#입고'], ['📦', '재고', 'index.html#재고'], ['🛒', '주문', '주문.html']].forEach(function (셋) {
-      var b = 만들기('button', { type: 'button', html: '<span class="ic">' + 셋[0] + '</span>' + 셋[1] });
-      b.addEventListener('click', function () { location.href = 셋[2]; });
-      바.appendChild(b);
-    });
-    var 더보기 = 만들기('button', { type: 'button', class: 'on', html: '<span class="ic">⋯</span>더보기' });
-    더보기.addEventListener('click', function () { u.더보기시트('업체'); });
-    바.appendChild(더보기);
+    var 바 = u.탭바('업체');
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, [위, 아래, 본문, 바]));
   }

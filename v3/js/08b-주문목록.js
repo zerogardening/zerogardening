@@ -166,16 +166,7 @@ window.ZG = window.ZG || {};
     var 바닥 = 뷰.바닥 ? 뷰.바닥() : null;
     if (바닥) 조각.push(바닥);
 
-    var 바 = 만들기('nav', { class: 'ph-nav' });
-    [['🌿', '입고'], ['📦', '재고']].forEach(function (쌍) {
-      var b = 만들기('button', { type: 'button', html: '<span class="ic">' + 쌍[0] + '</span>' + 쌍[1] });
-      b.addEventListener('click', function () { location.href = 'index.html#' + 쌍[1]; });
-      바.appendChild(b);
-    });
-    바.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🛒</span>주문' }));
-    var 더보기 = 만들기('button', { type: 'button', html: '<span class="ic">⋯</span>더보기' });
-    더보기.addEventListener('click', function () { u.더보기시트(''); });
-    바.appendChild(더보기);
+    var 바 = u.탭바('주문');
     조각.push(바);
 
     뿌리.appendChild(만들기('div', { class: 'ph-shell' }, 조각));
@@ -189,21 +180,7 @@ window.ZG = window.ZG || {};
   }
 
   function PC뼈대() {
-    var 옆 = 만들기('aside', { class: 'pc-side' }, [
-      만들기('div', { class: 'logo', text: '제로가드닝' }),
-      만들기('div', { class: 'slogan', text: 'GARDENING FROM ZERO' })
-    ]);
-    var 상품 = 만들기('button', { type: 'button', html: '<span class="ic">🌿</span>상품' });
-    상품.addEventListener('click', function () { location.href = 'index.html'; });
-    옆.appendChild(상품);
-    옆.appendChild(만들기('button', { type: 'button', class: 'on', html: '<span class="ic">🛒</span>주문 관리' }));
-    // 「명세서 발행」은 업체 관리 안 세 번째 탭이 됐다 — 왼쪽 메뉴는 4개다 (3단계 설계)
-    var 업체메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🏢</span>업체 관리' });
-    업체메뉴.addEventListener('click', function () { location.href = '업체.html'; });
-    옆.appendChild(업체메뉴);
-    var 소싱메뉴 = 만들기('button', { type: 'button', html: '<span class="ic">🌱</span>상품소싱' });
-    소싱메뉴.addEventListener('click', function () { location.href = '소싱.html'; });
-    옆.appendChild(소싱메뉴);
+    var 옆 = u.옆메뉴('주문 관리');
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('div', {}, [만들기('h2', { text: '주문 관리' }), 만들기('div', { class: 'path', text: '주문 › 주문 조회' })]),
