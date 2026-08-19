@@ -89,19 +89,18 @@ window.ZG = window.ZG || {};
     표.appendChild(만들기('div', { class: 'field 넓게' }, [만들기('label', { text: '관리 특이사항' }), 메모]));
 
     var 몸 = 만들기('div', { class: 'foldbody' }, [표]);
-    var 머리 = 만들기('button', {
-      class: 'fold', type: 'button', 'aria-expanded': 'false',
-      html: '＋ 식물 특성 <span class="s">선택 · 나중에 채워도 됩니다</span>' +
-        '<span class="r">' + u.안전(요약글) + '</span>'
-    });
-    머리.addEventListener('click', function () {
-      var 열림 = 몸.classList.toggle('open');
+    var 머리 = 만들기('button', { class: 'fold', type: 'button' });
+    /* 접힘 여부에 따라 ＋/－ 를 다시 쓴다. 세 자리(처음·누를 때·펼쳐서 열 때)가 같은 글을 써야 한다 */
+    function 머리글(열림) {
       머리.setAttribute('aria-expanded', 열림 ? 'true' : 'false');
       머리.innerHTML = (열림 ? '－' : '＋') + ' 식물 특성 <span class="s">선택 · 나중에 채워도 됩니다</span>' +
         '<span class="r">' + u.안전(요약글) + '</span>';
-    });
+    }
+    머리글(false);
+    머리.addEventListener('click', function () { 머리글(몸.classList.toggle('open')); });
 
-    if (!옵션.접어두기 && !비었나(처음값)) { 몸.classList.add('open'); 머리.setAttribute('aria-expanded', 'true'); }
+    /* 옵션.펼치기 — 값이 비었어도 펼친 채로 연다. 동봉카드 손질창처럼 「지금 채우시라」는 자리다 */
+    if (옵션.펼치기 || (!옵션.접어두기 && !비었나(처음값))) { 몸.classList.add('open'); 머리글(true); }
 
     function 읽기() {
       var 값 = {};

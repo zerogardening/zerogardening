@@ -201,7 +201,9 @@ window.ZG = window.ZG || {};
 
   var 마지막건들 = null;   // 설정을 고치고 돌아왔을 때 보던 카드를 그대로 다시 그리려고 들고 있는다
 
-  function 열기(건들) {
+  /* 🔴 손질을 안 거치고 카드만 그린다. 사무실인쇄·설정 후 다시열기가 이 문으로 들어온다 —
+     사람이 안 보고 있는 자리라 손질창이 뜨면 인쇄가 멈춘다 */
+  function 그리기(건들) {
     if (!건들 || !건들.length) { u.토스트('카드를 만들 주문이 없습니다.'); return false; }
     var 판들 = 판들만들기(건들);
     if (!판들.length) { u.토스트('카드에 넣을 품목이 없습니다.'); return false; }
@@ -259,7 +261,7 @@ window.ZG = window.ZG || {};
   function 사무실인쇄(요청) {
     if (u.폰인가()) return;                       // 폰끼리는 서로 안 뽑는다
     if (!요청 || !요청.건들 || !요청.건들.length) return;
-    if (!열기(요청.건들)) { 비우기(); return; }    // 못 그렸으면 줄만 치운다
+    if (!그리기(요청.건들)) { 비우기(); return; }   // 못 그렸으면 줄만 치운다
     비우기();
     setTimeout(function () { window.print(); 닫기(); }, 300);
   }
@@ -282,10 +284,156 @@ window.ZG = window.ZG || {};
 
   /* 설정 창에서 저장한 뒤 보던 카드로 돌아온다 */
   function 다시열기() {
-    if (마지막건들 && 마지막건들.length) { 열기(마지막건들); return true; }
+    if (마지막건들 && 마지막건들.length) { 그리기(마지막건들); return true; }
     return false;
   }
 
-  ZG.동봉카드 = { 열기: 열기, 수동열기: 수동열기, 다시열기: 다시열기,
-                 사무실인쇄: 사무실인쇄, 기본설정: 기본설정, 설정읽기: 설정읽기 };
+  /* ══ 손질 — 빈칸으로 나갈 것을 카드 만들기 전에 고친다 (2026-08-19 우람님 지시) ══
+     새 부품을 만들지 않는다. 짝짓기는 08k 짝창을, 특성 칸은 04b 특성칸을 그대로 빌린다.
+     🔴 여기서 짝을 지으면 08j 가 이미 저장된 줄까지 붙여 준다 — 다음부터는 저절로 붙는다. */
+
+  function 줄들모으기(건들) {
+    var 것들 = [];
+    (건들 || []).forEach(function (g) {
+      (g.줄들 || []).forEach(function (r) {
+        것들.push({ 줄: r, 상품명: r.유통명 || r.원본코드 || '' });
+      });
+    });
+    return 것들;
+  }
+
+  /* 카드가 실제로 그리는 7칸 중 비는 칸의 「보일 이름」. 특성찾개와 같은 눈으로 본다 —
+     곁 규격에서 빌려 오는 값이 있으면 카드는 안 비므로 여기서도 안 센다 */
+  function 빈칸들(특성) {
+    var 특 = 특성 || {};
+    return 라벨들.filter(function (쌍) {
+      return !String(특[쌍[0]] == null ? '' : 특[쌍[0]]).trim();
+    }).map(function (쌍) { return 쌍[2]; });
+  }
+
+  function 손질거리(건들) {
+    var 항목들 = 줄들모으기(건들);
+    var 찾 = 특성찾개(), 마 = {};
+    ZG.저장소.품목들().forEach(function (p) { 마[p.품목코드] = p; });
+    var 짝필요 = {}, 빈품목 = [], 본것 = {}, 열쇠없음 = [];
+    항목들.forEach(function (것) {
+      var r = 것.줄;
+      if (!r.품목코드) {
+        /* 원본 상품코드가 있어야 짝을 기억한다. 없는 줄은 여기서 못 짓는다(8/10 우람님 확정) */
+        if (r.원본코드) 짝필요[r.원본코드] = 1;
+        else 열쇠없음.push(것.상품명 || '(이름 없음)');
+        return;
+      }
+      if (본것[r.품목코드]) return;
+      본것[r.품목코드] = 1;
+      var 빈 = 빈칸들(찾(r.품목코드));
+      if (!빈.length) return;
+      var p = 마[r.품목코드];
+      빈품목.push({ 코드: r.품목코드, 품목: p || null,
+        유통명: (p && p.유통명) || r.유통명 || r.품목코드, 빈칸: 빈 });
+    });
+    var 짝수 = Object.keys(짝필요).length;
+    return { 항목들: 항목들, 짝수: 짝수, 빈품목: 빈품목, 열쇠없음: 열쇠없음,
+             할것: !!(짝수 || 빈품목.length || 열쇠없음.length) };
+  }
+
+  /* 08h·08k 와 같은 노랑 상자 톤. 새 CSS 규칙을 만들지 않으려고 여기서 입힌다 */
+  function 손질상자(제목, 왜, 속) {
+    return 만들기('div', { class: 'needbox', style: 'border-color:#F2DFA8' }, [
+      만들기('h4', { style: 'background:#FFF8E6; color:#9A6400; border-bottom-color:#F2DFA8' }, [
+        만들기('span', { text: 제목 }),
+        만들기('span', { class: 'why', text: 왜 || '' })
+      ]),
+      만들기('div', { class: 'inner' }, 속)
+    ]);
+  }
+
+  function 특성블록(것, 바뀌면) {
+    var 묶 = ZG.특성.접기((것.품목 && 것.품목.특성) || null, { 펼치기: true });
+    var 저장 = 만들기('button', { class: 'btn sm main', type: 'button', text: '특성 저장' });
+    저장.addEventListener('click', function () {
+      var 새 = 묶.읽기();
+      if (!새) { u.토스트('한 칸이라도 채운 뒤 저장해 주세요.'); return; }
+      var 저 = ZG.저장소;
+      /* 🔴 카드가 쓰는 품목 그 자체에 넣는다. 곁 규격에서 빌려 보이던 값이 있었더라도
+         이 규격에 실제로 값이 생겨야 다음부터 안 빈다 */
+      if (!저.바꾸기(저.키.품목, 것.코드, { 특성: 새, 수정일시: Date.now() })) {
+        u.토스트('v3에 ' + 것.코드 + ' 품목이 없습니다 — 재고 화면에서 먼저 만들어 주세요.'); return;
+      }
+      u.토스트(것.유통명 + ' 특성을 저장했습니다.');
+      바뀌면();
+    });
+    return 만들기('div', { style: 'padding:10px 0; border-top:1px solid var(--color-border)' }, [
+      만들기('div', { style: 'display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:6px' }, [
+        만들기('b', { text: 것.유통명 }),
+        만들기('span', { class: 'sub', text: 것.코드 }),
+        만들기('span', { class: 'sub', style: 'color:#9A6400', text: '빈 칸 — ' + 것.빈칸.join(' · ') })
+      ]),
+      묶.요소,
+      만들기('div', { style: 'margin-top:6px' }, [저장])
+    ]);
+  }
+
+  function 손질창(건들) {
+    ZG.주문입력.닫기창();
+    var 막 = 만들기('div', { class: 'pcscrim' });
+    막.addEventListener('click', 닫기);
+    var 속 = 만들기('div', { class: 'bd' });
+
+    function 채우기() {
+      /* 🔴 저장소는 부를 때마다 새 객체를 준다 — 저장된 줄과 손에 든 건들 양쪽에 붙여야
+         창을 닫지 않고도 목록과 카드가 같이 맞는다 */
+      var 거리 = 손질거리(건들);
+      if (ZG.짝) { ZG.짝.저장된줄되붙이기(); ZG.짝.되붙이기(거리.항목들); 거리 = 손질거리(건들); }
+      u.비우기(속);
+      var 짝상자 = ZG.짝창.상자(거리.항목들, { 바뀌면: 채우기 });
+      if (짝상자) 속.appendChild(짝상자);
+      if (거리.빈품목.length) {
+        속.appendChild(손질상자('🌱 특성이 빈 품목 ' + 거리.빈품목.length + '종',
+          '한 번 채워 두시면 이 품목은 다음 카드부터 늘 채워져 나옵니다',
+          거리.빈품목.map(function (것) { return 특성블록(것, 채우기); })));
+      }
+      if (거리.열쇠없음.length) {
+        속.appendChild(만들기('div', { class: 'ph-card', style: 'margin-top:8px' }, [
+          만들기('div', { text: '품목도 상품코드도 없는 줄 ' + 거리.열쇠없음.length + '개 — ' + 거리.열쇠없음.join(' · ') }),
+          만들기('div', { class: 'sub', text: '기억할 열쇠가 없어 여기서는 못 짓습니다 — 주문 화면에서 품목을 지정해 주세요' })
+        ]));
+      }
+      if (!짝상자 && !거리.빈품목.length && !거리.열쇠없음.length) {
+        속.appendChild(만들기('div', { class: 'ph-card', style: 'text-align:center; padding:24px',
+          text: '다 채웠습니다 — 「💌 카드 만들기」를 눌러 주세요.' }));
+      }
+    }
+
+    var 만들단추 = 만들기('button', { class: 'btn sm main', type: 'button', text: '💌 카드 만들기' });
+    만들단추.addEventListener('click', function () { ZG.주문입력.닫기창(); 그리기(건들); });
+    var 닫기버튼 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
+    닫기버튼.addEventListener('click', 닫기);
+
+    /* 🔴 'dlv' — needbox(노랑 상자) CSS 가 `.pcsheet.dlv` 아래에만 있다. 빼면 상자가 민짜로 나온다 */
+    var 창 = 만들기('div', { class: 'pcsheet dlv', role: 'dialog', 'aria-modal': 'true' }, [
+      만들기('div', { class: 'hd' }, [
+        만들기('h3', { text: '💌 카드 만들기 전 손질' }),
+        만들기('span', { class: 'hint', text: '빈칸으로 나갈 것만 모았습니다 — 그냥 만드셔도 됩니다' }),
+        만들기('span', { class: 'right' }, [만들단추, 닫기버튼])
+      ]),
+      속
+    ]);
+    채우기();
+    document.body.appendChild(막);
+    document.body.appendChild(창);
+    u.탈출걸기(닫기);
+    return true;
+  }
+
+  /* 사람이 누르는 문 — 손질할 게 있으면 손질창이 먼저 뜬다.
+     🔴 짝창·특성칸이 안 실린 자리(시험용 낱장 화면)에서는 손질을 건너뛴다 */
+  function 열기(건들) {
+    if (!건들 || !건들.length || !ZG.짝창 || !ZG.특성 || !ZG.주문입력) return 그리기(건들);
+    return 손질거리(건들).할것 ? 손질창(건들) : 그리기(건들);
+  }
+
+  ZG.동봉카드 = { 열기: 열기, 그리기: 그리기, 수동열기: 수동열기, 다시열기: 다시열기,
+                 사무실인쇄: 사무실인쇄, 기본설정: 기본설정, 설정읽기: 설정읽기,
+                 손질거리: 손질거리 };
 })(window.ZG);

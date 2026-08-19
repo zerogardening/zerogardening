@@ -282,7 +282,8 @@ window.ZG = window.ZG || {};
 
     var 닫기 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     닫기.addEventListener('click', ZG.주문입력.닫기창);
-    var 창 = 만들기('div', { class: 'pcsheet', role: 'dialog', 'aria-modal': 'true' }, [
+    /* 🔴 'dlv' — 짝짓기 상자(needbox) CSS 가 `.pcsheet.dlv` 아래에만 있다 (2026-08-19에 빠진 걸 봤다) */
+    var 창 = 만들기('div', { class: 'pcsheet dlv', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
         만들기('h3', { text: '🔗 품목 짝짓기' }),
         만들기('span', { class: 'hint', text: '한 번 지어 두시면 다음부터 저절로 붙습니다' }),

@@ -63,7 +63,7 @@ localStorage.setItem('zg.v3.주문묶음', JSON.stringify([{id:'260810-01',올�
 <script>
 ZG.서버 = { 로그인됨:false, 클라이언트:null, 받아오기:null };
 var 건들 = ZG.주문자료.건으로묶기(줄들.slice(0,2));
-ZG.동봉카드.열기(건들);
+ZG.동봉카드.그리기(건들);   /* 이 시험은 인쇄 판만 본다 — 손질창을 안 거치는 문으로 들어간다 */
 document.body.classList.add('인쇄중');
 document.getElementById('말').textContent = '카드 ' + document.querySelectorAll('.encardframe').length + '장';
 </script>
