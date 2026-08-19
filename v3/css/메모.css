@@ -94,7 +94,7 @@
 
 /* 사진 껍데기 — contenteditable="false" 라 캐럿이 안 들어간다(17b 껍데기입히기).
    저장할 때는 벗겨져서 본문에는 <img> 만 남는다 */
-.edit .shot{position:relative; display:inline-block; max-width:100%; margin:var(--space-md) 0; line-height:0}
+.edit .shot{position:relative; display:block; width:fit-content; max-width:100%; margin:var(--space-md) 0; line-height:0}
 .edit .shot img{margin:0}
 .edit .shot .x{
   position:absolute; top:8px; right:8px;
