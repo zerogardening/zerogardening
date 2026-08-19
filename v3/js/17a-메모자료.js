@@ -194,7 +194,8 @@ window.ZG = window.ZG || {};
 
   /* 본문에는 경로만 박혀 있다. 그릴 때 서명 URL(1시간)을 한 번에 묶어 받아 src 에 꽂는다 */
   function 서명걸기(뿌리) {
-    var 것들 = [].slice.call(뿌리.querySelectorAll('img[data-경로]')).filter(function (g) { return !g.src; });
+    // 서명은 1시간짜리다 — 이미 src 가 있어도 다시 받는다(캐시하면 어제 사진이 빈 칸이 된다)
+    var 것들 = [].slice.call(뿌리.querySelectorAll('img[data-경로]'));
     if (!것들.length) return;
     var 통 = 저장통();
     if (!통) return;

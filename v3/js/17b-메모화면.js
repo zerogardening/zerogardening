@@ -103,7 +103,12 @@ window.ZG = window.ZG || {};
 
     return {
       뿌리: 뿌리,
-      읽기: function () { return 뿌리.innerHTML; },
+      // 🔴 저장에는 경로만 남긴다 — 서명 URL(1시간)이 본문에 박히면 다음 날 사진이 깨진다
+      읽기: function () {
+        var 복 = 뿌리.cloneNode(true);
+        [].slice.call(복.querySelectorAll('img[data-경로]')).forEach(function (g) { g.removeAttribute('src'); });
+        return 복.innerHTML;
+      },
       쓰기: function (html) { 뿌리.innerHTML = html || ''; 서명걸기(뿌리); },
       사진넣기: 사진넣기,
       사진들: function () {
