@@ -44,6 +44,9 @@ def 키():
 
 def 부르기(길, 방법='GET', 몸=None):
     k = 키()
+    # 🔴 칸 이름도 한글이다(내용·삭제됨). 표 이름만 감싸면 질의 쪽이 날것으로 남아
+    #    http.client 가 ascii 로 못 바꾸고 넘어진다 — 주소 전체를 한 번 더 감싼다
+    길 = urllib.parse.quote(길, safe='/?=&,.*()%')
     req = urllib.request.Request(
         주소 + 길, method=방법,
         data=json.dumps(몸, ensure_ascii=False).encode() if 몸 is not None else None,
