@@ -91,7 +91,17 @@
 .edit div{margin-bottom:var(--space-3xs)}
 .edit p{margin-bottom:var(--space-sm)}
 .edit img{max-width:100%; border-radius:var(--radius-md); margin:var(--space-md) 0; display:block}
-.edit img.빈{min-height:60px; background:var(--color-bg)}
+
+/* 사진 껍데기 — contenteditable="false" 라 캐럿이 안 들어간다(17b 껍데기입히기).
+   저장할 때는 벗겨져서 본문에는 <img> 만 남는다 */
+.edit .shot{position:relative; display:inline-block; max-width:100%; margin:var(--space-md) 0; line-height:0}
+.edit .shot img{margin:0}
+.edit .shot .x{
+  position:absolute; top:8px; right:8px;
+  background:rgba(0,0,0,.42); color:#fff; border:none; font-family:inherit; cursor:pointer;
+  font-size:var(--font-sm); font-weight:var(--weight-semibold); line-height:1.4;
+  border-radius:var(--radius-pill); padding:3px 10px;
+}
 
 /* 달력 */
 .calhd{display:flex; align-items:center; justify-content:center; gap:var(--space-3xl); margin-bottom:var(--space-lg)}

@@ -9,7 +9,12 @@
 (function () {
   'use strict';
 
-  function 확대허용() { return !!document.querySelector('.pcsheet.카드'); }
+  /* 폰에서 「PC화면으로」 넘어가면 PC 배치가 폰 화면에 통째로 들어가 글씨가 작다 —
+     그때는 확대를 막으면 못 읽는다. 04-공통UI 와 같은 열쇠를 본다(한쪽만 고치면 어긋난다) */
+  function PC보기() {
+    try { return localStorage.getItem('zg.v3.PC보기') === '1'; } catch (e) { return false; }
+  }
+  function 확대허용() { return PC보기() || !!document.querySelector('.pcsheet.카드'); }
 
   ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) {
     document.addEventListener(t, function (e) {

@@ -56,6 +56,28 @@ window.ZG = window.ZG || {};
     return false;
   }
 
+  /* 사진 ✕ — 껍데기(.shot)는 contenteditable="false" 다.
+     캐럿이 그 안으로 못 들어가서 ✕ 가 글 쓰는 것을 방해하지 않는다.
+     🔴 껍데기는 화면에서만 입힌다. 저장 직전 벗겨서 <img> 만 남긴다 —
+        안 벗기면 카드 미리보기(textContent)에 '✕' 가 섞여 나온다 */
+  function 껍데기입히기(뿌리) {
+    [].slice.call(뿌리.querySelectorAll('img[data-경로]')).forEach(function (g) {
+      var 부 = g.parentNode;
+      if (!부 || (부.classList && 부.classList.contains('shot'))) return;
+      var 통 = 만들기('span', { class: 'shot', contenteditable: 'false' });
+      부.insertBefore(통, g);
+      통.appendChild(g);
+      통.appendChild(만들기('button', { type: 'button', class: 'x', text: '✕', 'aria-label': '사진 빼기' }));
+    });
+  }
+  function 껍데기벗기기(뿌리) {
+    [].slice.call(뿌리.querySelectorAll('span.shot')).forEach(function (통) {
+      var g = 통.querySelector('img');
+      if (g) 통.parentNode.insertBefore(g, 통);
+      통.parentNode.removeChild(통);
+    });
+  }
+
   function 편집기만들기(초기HTML, 바뀜) {
     var 뿌리 = 만들기('div', {
       class: 'edit', contenteditable: 'true', role: 'textbox',
@@ -72,17 +94,23 @@ window.ZG = window.ZG || {};
     });
     뿌리.addEventListener('input', function () { if (바뀜) 바뀜(); });
 
-    /* 사진 빼기 — 본문에서만 뺀다. Storage 파일은 그대로 둔다(되돌릴 길을 남긴다) */
+    /* 사진 빼기 — 본문에서만 뺀다. Storage 파일은 그대로 둔다(되돌릴 길을 남긴다).
+       🔴 mousedown 을 막아야 ✕ 를 누를 때 본문 캐럿과 선택이 안 흔들린다 */
+    뿌리.addEventListener('mousedown', function (e) {
+      if (e.target && e.target.matches && e.target.matches('.shot > .x')) e.preventDefault();
+    });
     뿌리.addEventListener('click', function (e) {
-      var g = e.target;
-      if (!g || g.tagName !== 'IMG') return;
+      var x = e.target;
+      if (!x || !x.matches || !x.matches('.shot > .x')) return;
+      var 통 = x.parentNode;
       u.확인({ 제목: '이 사진을 뺄까요?', 확인글: '빼기', 위험: true }, function (예) {
         if (!예) return;
-        if (g.parentNode) g.parentNode.removeChild(g);
+        if (통 && 통.parentNode) 통.parentNode.removeChild(통);
         if (바뀜) 바뀜();
       });
     });
 
+    껍데기입히기(뿌리);
     서명걸기(뿌리);
 
     function 사진넣기(파일, 메모id) {
@@ -91,6 +119,7 @@ window.ZG = window.ZG || {};
       return 올리기(파일, 메모id).then(function (경로) {
         뿌리.focus();
         서식('html', '<img data-경로="' + u.안전(경로) + '" alt="">');
+        껍데기입히기(뿌리);
         서명걸기(뿌리);
         if (바뀜) 바뀜();
         return 경로;
@@ -106,10 +135,11 @@ window.ZG = window.ZG || {};
       // 🔴 저장에는 경로만 남긴다 — 서명 URL(1시간)이 본문에 박히면 다음 날 사진이 깨진다
       읽기: function () {
         var 복 = 뿌리.cloneNode(true);
+        껍데기벗기기(복);
         [].slice.call(복.querySelectorAll('img[data-경로]')).forEach(function (g) { g.removeAttribute('src'); });
         return 복.innerHTML;
       },
-      쓰기: function (html) { 뿌리.innerHTML = html || ''; 서명걸기(뿌리); },
+      쓰기: function (html) { 뿌리.innerHTML = html || ''; 껍데기입히기(뿌리); 서명걸기(뿌리); },
       사진넣기: 사진넣기,
       사진들: function () {
         return [].slice.call(뿌리.querySelectorAll('img[data-경로]')).map(function (g) {
@@ -310,6 +340,11 @@ window.ZG = window.ZG || {};
 
   var 검색어 = '', 폴더거르개 = '', 상태거르개 = '';
 
+  /* 달이 바뀌면 폴더 거르개를 푼다 — 폴더 칩은 그 달에 있는 것만 그린다.
+     안 풀면 그 달에 없는 폴더가 걸린 채로 남아, 끄는 칩도 없이 목록이 빈 채로 멈춘다.
+     상태·검색은 칩과 칸이 늘 보여서 스스로 풀 수 있으므로 그대로 둔다 */
+  function 달바뀜() { 폴더거르개 = ''; }
+
   function 메모카드(r, 고름) {
     var 몸 = 만들기('div', { class: 'body' }, [
       만들기('div', { class: 'mt', text: r.제목 || 제목뽑기(r.본문) }),
@@ -504,7 +539,8 @@ window.ZG = window.ZG || {};
   function 폰머리메모() {
     var 연것 = ZG.메모앱.연것();
     if (!연것) return { 제목: '메모' };
-    return { 제목: 연것 === '새' ? '새 메모' : '메모', 저장: 저장누름 };
+    // 아직 저장 안 된 새 메모에는 지울 것이 없다
+    return { 제목: 연것 === '새' ? '새 메모' : '메모', 저장: 저장누름, 삭제: 연것 === '새' ? null : 삭제누름 };
   }
 
   /* ══════════ 영농일지 탭 ══════════ */
@@ -538,7 +574,11 @@ window.ZG = window.ZG || {};
     var 빈칸 = 첫날.getDay();
     var 점 = 일지날들(달), 오늘날 = 오늘(), 고른날 = ZG.메모앱.고른날();
 
-    for (var i = 0; i < 빈칸; i++) 격자.appendChild(만들기('div', { class: 'd off' }));
+    // 첫 줄 앞칸은 지난달 날짜로 회색 채움(시안) — 뒷칸은 시안에 없어 비운다
+    var 앞달날수 = new Date(해, 월 - 1, 0).getDate();
+    for (var i = 빈칸; i > 0; i--) {
+      격자.appendChild(만들기('div', { class: 'd off', text: String(앞달날수 - i + 1) }));
+    }
     for (var d = 1; d <= 날수; d++) {
       var 날짜 = 달 + '-' + 두자리(d);
       var 결 = 'd';
@@ -650,14 +690,15 @@ window.ZG = window.ZG || {};
   }
 
   function 폰머리일지() {
+    var 고른날 = ZG.메모앱.고른날();
     if (!ZG.메모앱.연것()) return { 제목: '영농일지' };
-    return { 제목: 날짜글(ZG.메모앱.고른날()), 저장: 저장누름 };
+    return { 제목: 날짜글(고른날), 저장: 저장누름, 삭제: 한장('일지-' + 고른날) ? 삭제누름 : null };
   }
 
   window.addEventListener('pagehide', function () { if (편집) 저장하기(true); });
 
   ZG.메모 = {
-    오늘: 오늘, 목록: 목록, 한장: 한장, 저장: 저장, 지우기: 지우기, 마무리: 마무리,
+    오늘: 오늘, 목록: 목록, 한장: 한장, 저장: 저장, 지우기: 지우기, 마무리: 마무리, 달바뀜: 달바뀜,
     메모탭: { 그리기: 그리기메모, 요약: 요약메모, 폰머리: 폰머리메모 },
     일지탭: { 그리기: 그리기일지, 요약: 요약일지, 폰머리: 폰머리일지 }
   };

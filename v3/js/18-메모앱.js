@@ -50,12 +50,18 @@ window.ZG = window.ZG || {};
     왼쪽.appendChild(뒤);
     왼쪽.appendChild(만들기('h1', { text: 머리.제목, style: 쓰는중 ? 'font-size:var(--font-4xl)' : null }));
 
-    var 위 = 만들기('div', { class: 'ph-top' }, [왼쪽]);
+    var 오른 = 만들기('span', { style: 'display:flex; gap:var(--space-sm); align-items:center' });
+    if (머리.삭제) {
+      var 삭제b = 만들기('button', { class: 'btn sm', type: 'button', text: '삭제' });
+      삭제b.addEventListener('click', 머리.삭제);   // 확인창은 17b 삭제누름 이 띄운다
+      오른.appendChild(삭제b);
+    }
     if (머리.저장) {
       var 저장b = 만들기('button', { class: 'btn main sm', type: 'button', text: '저장' });
       저장b.addEventListener('click', 머리.저장);
-      위.appendChild(저장b);
+      오른.appendChild(저장b);
     }
+    var 위 = 만들기('div', { class: 'ph-top' }, [왼쪽, 오른]);
 
     var 조각 = [위];
     if (정보.왼 || 정보.오) {
@@ -111,11 +117,21 @@ window.ZG = window.ZG || {};
     다시그리기();
   }
 
+  /* 🔴 달을 바꾸는 문은 이 하나다(메모 목록의 ‹ ›, 달력의 ‹ › 둘 다 여기로 온다).
+     달이 바뀌면 그 달에 매인 것이 둘 있다 —
+       ① 폴더 거르개: 그 달에 없는 폴더면 끄는 칩조차 안 보여 목록이 빈 채로 멈춘다 → 여기서 푼다
+       ② 고른 날: 고른날값 은 손대지 않는다. 달과 어긋나면 고른날() 이 그때만 1일로 답한다.
+          지워 버리면 메모 탭에서 달을 왕복한 것만으로 일지의 오늘이 1일로 밀린다 */
   function 달로(값) {
+    if (달 === 값) return;
     달 = 값;
-    if (고른날값.slice(0, 7) !== 달) 고른날값 = 달 + '-01';
     연것값 = null;
+    if (ZG.메모.달바뀜) ZG.메모.달바뀜();
     다시그리기();
+  }
+
+  function 고른날() {
+    return 고른날값.slice(0, 7) === 달 ? 고른날값 : 달 + '-01';
   }
 
   function 날고르기(날짜) {
@@ -143,7 +159,7 @@ window.ZG = window.ZG || {};
   ZG.메모앱 = {
     시작: 시작, 다시그리기: 다시그리기, 요약다시: 요약다시, 탭으로: 탭으로,
     달: function () { return 달; }, 달로: 달로,
-    고른날: function () { return 고른날값; }, 날고르기: 날고르기,
+    고른날: 고른날, 날고르기: 날고르기,
     연것: function () { return 연것값; }, 열기: 열기, 닫기: 닫기
   };
   document.addEventListener('DOMContentLoaded', 시작);

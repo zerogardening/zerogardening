@@ -9,6 +9,8 @@
    아이폰 사파리는 이것만으론 안 막혀서 js/00-확대금지.js 가 제스처를 직접 막는다. */
 html{ touch-action: pan-x pan-y; }        /* 확대만 막고 스크롤은 그대로 */
 html:has(.pcsheet.카드){ touch-action: auto; }
+/* 폰에서 「PC화면으로」 넘어가면 글씨가 작다 — 그때만 두 손가락 확대를 푼다 (04-공통UI 뷰포트맞추기) */
+html.pc보기{ touch-action: auto; }
 
 :root{
 

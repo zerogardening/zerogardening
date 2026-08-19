@@ -9,6 +9,32 @@ window.ZG = window.ZG || {};
   function 폰인가() { return 폰질의.matches; }
   function 움직임끔() { return 움직임끔질의.matches; }
 
+  /* ── 폰에서 PC 화면으로 탈출 ── (12단계)
+     폰 브라우저의 화면 폭(layout viewport)을 1280 으로 못박으면 폰질의(max-width:899px)가 꺼지고
+     다섯 화면이 저절로 PC 배치로 다시 그려진다(다들 폰질의 change 를 듣는다).
+     🔴 화면마다 제 스위치를 두면 다섯이 어긋난다 — 여기 한 곳만 둔다.
+     들고 나는 자리는 폰 「⋯ 더보기」와 PC 옆메뉴다. */
+  var PC보기키 = 'zg.v3.PC보기';
+  function PC보기인가() {
+    try { return localStorage.getItem(PC보기키) === '1'; } catch (e) { return false; }
+  }
+  function 뷰포트맞추기() {
+    var 켬 = PC보기인가();
+    document.documentElement.classList.toggle('pc보기', 켬);   // 확대 잠금을 푸는 열쇠 (공통.css · 00-확대금지)
+    var m = document.querySelector('meta[name="viewport"]');
+    if (!m) return;
+    m.setAttribute('content', 켬
+      ? 'width=1280, viewport-fit=cover'
+      : 'width=device-width, initial-scale=1, viewport-fit=cover');
+  }
+  function PC보기(켬) {
+    try { localStorage.setItem(PC보기키, 켬 ? '1' : '0'); } catch (e) { /* 사파리 비공개 모드 */ }
+    뷰포트맞추기();
+    // viewport 를 바꿔도 안 듣는 판이 있다 — 배치가 그대로면 한 번만 다시 읽는다
+    setTimeout(function () { if (PC보기인가() === 폰인가()) location.reload(); }, 80);
+  }
+  뷰포트맞추기();
+
   function 만들기(태그, 속성, 자식) {
     var e = document.createElement(태그);
     if (속성) Object.keys(속성).forEach(function (k) {
@@ -197,11 +223,13 @@ window.ZG = window.ZG || {};
       본문: '폰 아래 탭에 자리가 없어 여기 모았습니다.',
       항목: [
         { 값: '업체', 글: '🏢 업체 관리', 켬: 지금 === '업체' },
-        { 값: '소싱', 글: '🌱 상품소싱', 켬: 지금 === '소싱' }
+        { 값: '소싱', 글: '🌱 상품소싱', 켬: 지금 === '소싱' },
+        { 값: 'PC보기', 글: PC보기인가() ? '📱 폰화면으로' : '🖥 PC화면으로' }
       ]
     }, function (값) {
       if (값 === '업체') location.href = '업체.html';
       else if (값 === '소싱') location.href = '소싱.html';
+      else if (값 === 'PC보기') PC보기(!PC보기인가());
     });
   }
 
@@ -262,6 +290,12 @@ window.ZG = window.ZG || {};
       if (m.이름 !== 지금) b.addEventListener('click', function () { location.href = m.주소; });
       옆.appendChild(b);
     });
+    // 폰에서 넘어온 사람만 돌아갈 문을 본다 — 진짜 PC 에는 안 보인다
+    if (PC보기인가()) {
+      var 되돌리기 = 만들기('button', { type: 'button', html: '<span class="ic">📱</span>폰화면으로' });
+      되돌리기.addEventListener('click', function () { PC보기(false); });
+      옆.appendChild(되돌리기);
+    }
     return 옆;
   }
 
@@ -506,7 +540,7 @@ window.ZG = window.ZG || {};
   ZG.ui = {
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
     콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자,
-    폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔,
+    폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔, PC보기: PC보기, PC보기인가: PC보기인가,
     토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
