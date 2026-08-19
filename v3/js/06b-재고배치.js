@@ -27,7 +27,7 @@ window.ZG = window.ZG || {};
   function 폰목록속(걸러진) {
     var 줄 = 만들기('div', { class: 'ph-sec 고름줄' });
     줄.appendChild(만들기('span', {
-      html: (상태.선택모드 ? '지울 것을 고르세요' : '소진일 빠른 순') +
+      html: (상태.선택모드 ? '작업할 품목을 고르세요' : '소진일 빠른 순') +
         ' <span class="r">' + 걸러진.length + '종</span>'
     }));
     // 목록칸만 갈면 위쪽 재입고 칸이 그대로 남는다 — 화면을 통째로 다시 그린다
@@ -44,7 +44,7 @@ window.ZG = window.ZG || {};
       더.addEventListener('click', function () { 상태.폰보임 += 15; 목록다시(); });
       조각.push(더);
     }
-    if (상태.선택모드) 조각.push(목.폰삭제막대());
+    if (상태.선택모드) 조각.push(목.폰작업막대());
     return 조각;
   }
 

@@ -26,10 +26,8 @@ window.ZG = window.ZG || {};
       참조.선택바.classList.toggle('보임', 수 > 0);
       if (참조.선택수) 참조.선택수.textContent = 수 + '종 골랐습니다';
     }
-    if (참조.폰삭제) {
-      참조.폰삭제.classList.toggle('보임', 수 > 0);
-      참조.폰삭제.textContent = 수 ? 수 + '종 삭제' : '삭제';
-    }
+    if (참조.폰막대) 참조.폰막대.classList.toggle('보임', 수 > 0);
+    if (참조.폰삭제) 참조.폰삭제.textContent = 수 ? 수 + '종 삭제' : '삭제';
     if (참조.전체체크) {
       var 보이는 = 참조.보이는코드 || [];
       참조.전체체크.checked = 보이는.length > 0 && 보이는.every(function (c) { return 상태.선택[c]; });
@@ -189,6 +187,8 @@ window.ZG = window.ZG || {};
     if (!짧게) 속 += '<div class="sci">' + u.안전(p.학명) + '</div>';
     속 += '<div class="r2">' + u.안전(p.품목코드) + ' · <b>' + u.콤마(Math.max(0, 요.현재고)) + '</b>주 · 월 ' +
       u.콤마(요.월출고) + '주 나감</div>';
+    var 칩 = ZG.제작요청.칩들(ZG.제작요청.현황(), p.품목코드);
+    if (칩) 속 += '<div class="r2">' + 칩 + '</div>';
     칸.innerHTML = 속;
     칸.addEventListener('click', function () {
       if (!상태.선택모드) { ZG.재고수정.폰상세열기(p.품목코드); return; }
@@ -207,12 +207,20 @@ window.ZG = window.ZG || {};
     풀기.addEventListener('click', function () { 선택비우기(); ZG.재고.목록다시(); 선택바갱신(); });
     var 지움 = 만들기('button', { class: 'btn sm warn', type: 'button', text: '선택 삭제' });
     지움.addEventListener('click', function () { ZG.재고수정.선택삭제(); });
-    var 바 = 만들기('div', { class: '선택바' }, [수글, 만들기('div', { style: 'flex:1' }), 풀기, 지움]);
+    var 바 = 만들기('div', { class: '선택바' }, [수글, 만들기('div', { style: 'flex:1' }),
+      요청단추('상세페이지'), 요청단추('식물정보'), 풀기, 지움]);
     참조.선택바 = 바;
     return 바;
   }
 
-  /* ── 폰: 「선택」 단추와 아래 고정 삭제 막대 ── */
+  /* 고른 품목을 상품팀 일감으로 넘긴다 (13단계). PC 선택바와 폰 작업막대가 같이 쓴다 */
+  function 요청단추(종류, 폰) {
+    var b = 만들기('button', { class: 폰 ? '' : 'btn sm', type: 'button', text: 종류 });
+    b.addEventListener('click', function () { ZG.제작요청.요청하기(종류); });
+    return b;
+  }
+
+  /* ── 폰: 「선택」 단추와 아래 고정 작업 막대 ── */
   function 선택단추(다시) {
     var b = 만들기('button', { class: 'btn sm', type: 'button', text: 상태.선택모드 ? '취소' : '선택' });
     b.addEventListener('click', function () {
@@ -223,11 +231,15 @@ window.ZG = window.ZG || {};
     return b;
   }
 
-  function 폰삭제막대() {
-    var b = 만들기('button', { class: 'ph-삭제', type: 'button', text: '삭제' });
+  function 폰작업막대() {
+    var b = 만들기('button', { class: '삭제', type: 'button', text: '삭제' });
     b.addEventListener('click', function () { ZG.재고수정.선택삭제(); });
     참조.폰삭제 = b;
-    return b;
+    var 바 = 만들기('div', { class: 'ph-작업막대' }, [
+      요청단추('상세페이지', true), 요청단추('식물정보', true), b
+    ]);
+    참조.폰막대 = 바;
+    return 바;
   }
 
   /* ── PC 표 ── */
@@ -241,6 +253,7 @@ window.ZG = window.ZG || {};
       '<th class="r">현재고</th><th class="r">소진일</th><th class="r">매입단가</th><th>상태</th><th></th></tr></thead>';
 
     var 몸 = 만들기('tbody');
+    var 현 = ZG.제작요청.현황();
     var 처음 = (상태.쪽 - 1) * 쪽크기;
     var 쪽것 = 걸러진.slice(처음, 처음 + 쪽크기);
 
@@ -275,7 +288,7 @@ window.ZG = window.ZG || {};
           ? '<td class="r dim" style="font-weight:var(--weight-medium)">판정 안 함</td>'
           : '<td class="r"><span class="days ' + 요.등급 + '">' + u.안전(요.소진.표시) + '</span></td>') +
         '<td class="r">' + u.콤마(p.매입단가) + '</td>' +
-        '<td>' + 배지(요) + '</td><td></td>';
+        '<td>' + 배지(요) + ZG.제작요청.칩들(현, p.품목코드) + '</td><td></td>';
       var 체크 = 만들기('input', { type: 'checkbox', 'aria-label': p.유통명 + ' 고르기' });
       체크.checked = !!상태.선택[p.품목코드];
       줄.classList.toggle('골랐다', 체크.checked);
@@ -335,6 +348,6 @@ window.ZG = window.ZG || {};
     필터칩들: 필터칩들, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
     표그리기: 표그리기, 쪽번호: 쪽번호, 배지: 배지,
     고른것들: 고른것들, 선택비우기: 선택비우기, 선택바갱신: 선택바갱신,
-    선택바: 선택바, 선택단추: 선택단추, 폰삭제막대: 폰삭제막대
+    선택바: 선택바, 선택단추: 선택단추, 폰작업막대: 폰작업막대
   };
 })(window.ZG);

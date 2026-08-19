@@ -680,15 +680,27 @@ tr.골랐다{background:var(--color-accent-bg)}
   border-color:var(--color-accent); background:var(--color-accent);
   box-shadow:inset 0 0 0 3px var(--color-surface);
 }
-/* 아래 붙는 삭제 막대 — 탭바 위에 뜬다 */
-.ph-삭제{
+/* 아래 붙는 작업 막대 — 탭바 위에 뜬다. 고른 뒤 무엇을 할지 여기서 고른다
+   (13단계에서 삭제 말고 상세페이지 · 식물정보 요청이 늘어 한 줄이 됐다) */
+.ph-작업막대{
   display:none; position:fixed; left:var(--space-lg); right:var(--space-lg);
-  bottom:calc(76px + env(safe-area-inset-bottom)); z-index:31;
-  padding:var(--pad-ph-save); font-size:var(--font-xl); font-weight:var(--weight-bold);
-  background:var(--color-danger); color:#fff; border:none; border-radius:var(--radius-xl);
-  font-family:inherit; box-shadow:var(--shadow-btn-main); cursor:pointer;
+  bottom:calc(76px + env(safe-area-inset-bottom)); z-index:31; gap:var(--space-sm);
 }
-.ph-삭제.보임{display:block}
+.ph-작업막대.보임{display:flex}
+.ph-작업막대 > button{
+  flex:1; min-width:0; padding:var(--pad-ph-save) var(--space-xs);
+  font-size:var(--font-lg); font-weight:var(--weight-bold); font-family:inherit;
+  border-radius:var(--radius-xl); box-shadow:var(--shadow-btn-main); cursor:pointer;
+  background:var(--color-surface); color:var(--color-text);
+  border:var(--border-width) solid var(--color-border); white-space:nowrap;
+}
+.ph-작업막대 > button.삭제{background:var(--color-danger); color:#fff; border:none}
+
+/* 상품팀에 넘긴 품목 표시 (13단계) — 요청만 한 것과 맥이 받아 간 것을 가른다 */
+.chip.요청{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+.chip.요청::before{background:var(--color-accent)}
+.chip.요청.진행{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+.chip.요청.진행::before{background:#C88A00}
 .chev{margin-left:var(--space-xs); color:var(--color-text-faint); font-weight:var(--weight-bold); font-size:var(--font-lg)}
 
 /* PC 개별 수정 — 오른쪽에서 들어오는 시트 */
