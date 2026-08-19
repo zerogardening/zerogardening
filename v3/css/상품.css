@@ -9,6 +9,8 @@
 /* 입고 내역 검색줄 */
 .qbar{display:flex; align-items:flex-end; gap:var(--space-lg); flex-wrap:wrap}
 .qbar .dash{padding-bottom:var(--space-lg); color:var(--color-text-muted)}
+/* 폰에서는 두 줄로 접혀 「~」가 첫 줄 끝에 홀로 남는다 — 그때는 감춘다 */
+@media (max-width:700px){ .입고거르개 .dash{display:none} }
 
 /* 앞자리가 같은 다른 규격 — 품목코드 칸 왼쪽 초록 띠 */
 td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}

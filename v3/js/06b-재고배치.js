@@ -73,6 +73,7 @@ window.ZG = window.ZG || {};
     찾기.style.width = '264px'; 찾기.style.height = 'var(--h-btn)';
     칩줄.appendChild(찾기);
     조건.appendChild(칩줄);
+    조건.appendChild(목.입고거르개(전부, 다시));
     조건.appendChild(목.선택바());
     카드.appendChild(조건);
 
@@ -98,6 +99,7 @@ window.ZG = window.ZG || {};
 
     뿌리.appendChild(만들기('div', { class: 'field' }, [목.검색칸(목록다시)]));
     뿌리.appendChild(목.필터칩들(전부, 다시));
+    뿌리.appendChild(목.입고거르개(전부, 다시));
 
     참조.목록칸 = 만들기('div', { class: 'stack' });
     폰목록속(걸러진).forEach(function (c) { 참조.목록칸.appendChild(c); });
