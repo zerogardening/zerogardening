@@ -56,6 +56,17 @@ window.ZG = window.ZG || {};
     return null;
   }
 
+  /* 진행상황은 세 가지뿐이다 — 진행중 · 보류 · 완료 (2026-08-19 우람님).
+     옛 값(할일·하는중·끝)과 빈칸은 여기서 새 값으로 읽어 준다. 저장된 글자는 안 건드린다 —
+     고쳐 저장하면 그때 새 값으로 바뀌고, 안 고친 옛 줄도 화면에서는 제대로 자리를 잡는다 */
+  var 상태들 = ['진행중', '완료', '보류'];
+  var 상태순 = { 진행중: 0, 보류: 1, 완료: 2 };
+  function 상태정규화(값) {
+    if (상태순[값] != null) return 값;
+    if (값 === '끝') return '완료';
+    return '진행중';                       // 할일 · 하는중 · 빈칸
+  }
+
   /* 캐시를 두지 않는다 — 한 달치 수십 줄이라 그릴 때마다 돌아도 싸고, 캐시는 남이 고친 뒤 옛 값을 남긴다 */
   function 목록(조건) {
     var c = 조건 || {};
@@ -64,17 +75,29 @@ window.ZG = window.ZG || {};
       if (c.종류 && r.종류 !== c.종류) return false;
       if (c.달 && String(r.날짜 || '').slice(0, 7) !== c.달) return false;
       if (c.폴더 && (r.폴더 || '') !== c.폴더) return false;
-      if (c.상태 && (r.상태 || '') !== c.상태) return false;
       if (q) {
         var 밭 = ((r.제목 || '') + ' ' + 미리보기(r.본문) + ' ' + (r.폴더 || '') + ' ' + (r.특이사항 || '')).toLowerCase();
         if (밭.indexOf(q) < 0) return false;
       }
       return true;
     });
-    줄들.sort(function (a, b) {
+    function 날짜순(a, b) {
       if ((a.날짜 || '') !== (b.날짜 || '')) return (a.날짜 || '') < (b.날짜 || '') ? 1 : -1;
       return (b.만든때 || 0) - (a.만든때 || 0);
-    });
+    }
+    if (c.종류 === '메모') {
+      // 진행중 → 보류 → 완료. 같은 칸 안에서는 손으로 옮긴 순서가 먼저, 없으면 새것부터.
+      // 순서 없는 줄(-1)이 위로 오는 것은 일부러다 — 새 메모가 옛 순서 밑에 숨으면 못 찾으신다
+      줄들.sort(function (a, b) {
+        var ga = 상태순[상태정규화(a.상태)], gb = 상태순[상태정규화(b.상태)];
+        if (ga !== gb) return ga - gb;
+        var oa = a.순서 == null ? -1 : a.순서, ob = b.순서 == null ? -1 : b.순서;
+        if (oa !== ob) return oa - ob;
+        return 날짜순(a, b);
+      });
+      return 줄들;
+    }
+    줄들.sort(날짜순);
     return 줄들;
   }
 
@@ -97,14 +120,6 @@ window.ZG = window.ZG || {};
     });
     순서.sort();
     return 순서.map(function (이름) { return { 이름: 이름, 수: 셈[이름] }; });
-  }
-
-  function 상태세기(달) {
-    var 셈 = { 할일: 0, 하는중: 0, 끝: 0 };
-    목록({ 종류: '메모', 달: 달 }).forEach(function (r) {
-      if (셈[r.상태] != null) 셈[r.상태]++;
-    });
-    return 셈;
   }
 
   function 일지날들(년월) {
@@ -133,6 +148,35 @@ window.ZG = window.ZG || {};
   }
 
   function 지우기(id) { return 저.지우기(키, id); }
+
+  /* 카드 순서 바꾸기 · 상태 일괄 바꾸기 (수정모드).
+     🔴 순서는 「그 상태 칸 안에서만」 뜻이 있다. 옮길 때마다 그 칸 전체를 0..n-1 로 다시 매긴다 —
+     반쯤 매겨 두면 순서 있는 줄과 없는 줄이 섞여 다음 이동이 엉뚱한 데로 간다 */
+  function 순서되쓰기(줄들) {
+    줄들.forEach(function (r, i) {
+      if (r.순서 !== i) 저.바꾸기(키, r.id, { 순서: i, 고친때: Date.now() });
+    });
+  }
+
+  function 옮기기(id, 걸음) {
+    var 나 = 한장(id);
+    if (!나) return false;
+    var 칸 = 목록({ 종류: '메모' }).filter(function (r) {
+      return 상태정규화(r.상태) === 상태정규화(나.상태);
+    });
+    var 자리 = 칸.findIndex(function (r) { return r.id === id; });
+    var 갈곳 = 자리 + 걸음;
+    if (자리 < 0 || 갈곳 < 0 || 갈곳 >= 칸.length) return false;
+    칸.splice(갈곳, 0, 칸.splice(자리, 1)[0]);
+    순서되쓰기(칸);
+    return true;
+  }
+
+  function 상태바꾸기(ids, 상태) {
+    var 지금 = Date.now();
+    // 칸을 옮기면 옛 칸의 순서는 뜻이 없어진다 — 지워서 새 칸 맨 위로 보낸다
+    ids.forEach(function (id) { 저.바꾸기(키, id, { 상태: 상태, 순서: null, 고친때: 지금 }); });
+  }
 
   /* ══════════ 사진 ══════════ */
 
@@ -214,8 +258,9 @@ window.ZG = window.ZG || {};
     두자리: 두자리, 오늘: 오늘, 새id: 새id,
     제목뽑기: 제목뽑기, 미리보기: 미리보기, 카드미리: 카드미리,
     한장: 한장, 목록: 목록, 날짜묶기: 날짜묶기,
-    폴더세기: 폴더세기, 상태세기: 상태세기, 일지날들: 일지날들,
-    저장: 저장, 지우기: 지우기,
+    폴더세기: 폴더세기, 일지날들: 일지날들,
+    상태들: 상태들, 상태정규화: 상태정규화,
+    저장: 저장, 지우기: 지우기, 옮기기: 옮기기, 상태바꾸기: 상태바꾸기,
     저장통: 저장통, 올리기: 올리기, 서명걸기: 서명걸기
   };
 })(window.ZG);

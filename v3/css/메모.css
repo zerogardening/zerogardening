@@ -2,19 +2,14 @@
    .toggle · .pc-tabs · .card · .field · .btn · .chip · .fchip · .ph-* 는 공통.css 것을 그대로 쓴다.
    시안 12-메모-macA.html <style> 에서 이 화면 것만 옮겼다. */
 
-/* 검색 줄 · 달 고르개 — input type=month 는 맥 사파리·파이어폭스가 안 받는다 (설계 §0-3) */
+/* 검색 줄 */
 .srow{display:flex; gap:var(--space-sm); align-items:center}
 .srow .inp.q{flex:1; min-width:0}
-.mnav{
-  display:inline-flex; align-items:center; gap:var(--space-3xs); flex-shrink:0;
-  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
-  border-radius:var(--radius-md); box-shadow:var(--shadow-btn); padding:0 var(--space-3xs); height:var(--h-input);
-}
-.mnav b{font-size:var(--font-md); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; padding:0 var(--space-3xs)}
-.mnav button{
-  font-family:inherit; cursor:pointer; background:none; border:none; width:24px; height:26px;
-  border-radius:var(--radius-sm); font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text-sub);
-}
+
+/* 폴더 고르개 + 새 폴더 ＋ */
+.foldrow{display:flex; gap:var(--space-sm); align-items:center}
+.foldrow select{flex:1; min-width:0}
+.foldrow button{flex-shrink:0; min-width:44px}
 
 /* 메모 카드 */
 .mlist{display:flex; flex-direction:column; gap:var(--space-sm)}
@@ -43,10 +38,31 @@
   border:var(--border-width) solid var(--color-border); white-space:nowrap;
 }
 
-/* 진행상황 배지 — 끝난 것은 조용하게, 아직 안 한 것만 눈에 띈다 (빨강은 안 쓴다) */
-.chip.wait{background:#FFF6E6; color:#9A5B00; border-color:#F0DCB2}
-.chip.wait::before{background:#C87A0A}
-.chip.done{opacity:.72}
+/* 진행상황 — 진행중은 흰 바탕(맨 위) · 보류는 연한 초록 · 완료는 연한 빨강(맨 아래).
+   🔴 자리(정렬)는 17a 목록()이 정한다. 여기는 색만 입힌다 — 한쪽만 고치면 색과 차례가 어긋난다 */
+.mcard.hold{background:var(--color-accent-bg)}
+.mcard.done{background:var(--color-danger-bg)}
+.mcard.done .mt, .mcard.done .mp{opacity:.72}
+.chip.hold{background:#DCF0E1; color:#1B6B33; border-color:#BEE0C8}
+.chip.hold::before{background:#2F9E44}
+.chip.done{background:#FBE0DE; color:#9A2119; border-color:#F0C4C0}
+.chip.done::before{background:#D70015}
+
+/* 수정모드 — 꾹 눌러 켠다 (17b 꾹누르기붙이기) */
+.editbar{
+  display:flex; align-items:center; gap:var(--space-xs); flex-wrap:wrap;
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-md); box-shadow:var(--shadow-btn); padding:var(--space-sm) var(--space-md);
+}
+.editbar .n{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-sub); margin-right:auto}
+.mcard .pick{width:20px; height:20px; flex-shrink:0; margin-top:2px; accent-color:var(--color-accent); cursor:pointer}
+.movers{display:flex; flex-direction:column; gap:var(--space-4xs); flex-shrink:0}
+.movers button{
+  font-family:inherit; cursor:pointer; width:34px; height:28px; padding:0;
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-sm); box-shadow:var(--shadow-btn);
+  font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-text-sub);
+}
 
 /* 사진 미리보기 */
 .thumb{

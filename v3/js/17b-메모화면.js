@@ -8,9 +8,10 @@ window.ZG = window.ZG || {};
   var u = ZG.ui, 만들기 = u.만들기, 자 = ZG.메모자료;
   var 두자리 = 자.두자리, 오늘 = 자.오늘, 새id = 자.새id;
   var 제목뽑기 = 자.제목뽑기, 미리보기 = 자.미리보기, 카드미리 = 자.카드미리;
-  var 한장 = 자.한장, 목록 = 자.목록, 날짜묶기 = 자.날짜묶기;
-  var 폴더세기 = 자.폴더세기, 상태세기 = 자.상태세기, 일지날들 = 자.일지날들;
-  var 저장 = 자.저장, 지우기 = 자.지우기;
+  var 한장 = 자.한장, 목록 = 자.목록;
+  var 폴더세기 = 자.폴더세기, 일지날들 = 자.일지날들;
+  var 상태들 = 자.상태들, 상태정규화 = 자.상태정규화;
+  var 저장 = 자.저장, 지우기 = 자.지우기, 옮기기 = 자.옮기기, 상태바꾸기 = 자.상태바꾸기;
   var 저장통 = 자.저장통, 올리기 = 자.올리기, 서명걸기 = 자.서명걸기;
   var 요일 = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -278,7 +279,7 @@ window.ZG = window.ZG || {};
     var r = 레코드 || {};
     편집 = {
       id: r.id || null, 종류: 종류, 날짜: r.날짜 || 날짜 || 오늘(),
-      폴더: r.폴더 || '', 상태: r.상태 || '', 날씨: r.날씨 || '', 특이사항: r.특이사항 || '',
+      폴더: r.폴더 || '', 상태: 상태정규화(r.상태), 날씨: r.날씨 || '', 특이사항: r.특이사항 || '',
       편집기: null, 고친때: r.고친때 || 0
     };
     편집.편집기 = 편집기만들기(r.본문 || '', 바뀜);
@@ -317,18 +318,6 @@ window.ZG = window.ZG || {};
     return 해 + '-' + 두자리(월);
   }
 
-  function 달고르개(달) {
-    var 칸 = 만들기('div', { class: 'mnav' });
-    var 앞 = 만들기('button', { type: 'button', text: '‹', 'aria-label': '지난 달' });
-    앞.addEventListener('click', function () { ZG.메모앱.달로(달옮기기(달, -1)); });
-    var 뒤 = 만들기('button', { type: 'button', text: '›', 'aria-label': '다음 달' });
-    뒤.addEventListener('click', function () { ZG.메모앱.달로(달옮기기(달, 1)); });
-    칸.appendChild(앞);
-    칸.appendChild(만들기('b', { text: 달.replace('-', '.') }));
-    칸.appendChild(뒤);
-    return 칸;
-  }
-
   function 칩(글, 켬, 누름, 수) {
     var b = 만들기('button', { type: 'button', class: 'fchip' + (켬 ? ' on' : ''), text: 글 });
     if (수 != null) b.appendChild(만들기('span', { class: 'n', text: String(수) }));
@@ -338,50 +327,144 @@ window.ZG = window.ZG || {};
 
   /* ══════════ 메모 탭 ══════════ */
 
-  var 검색어 = '', 폴더거르개 = '', 상태거르개 = '';
+  var 검색어 = '', 폴더거르개 = '';
+  var 수정모드 = false, 고른것들 = {}, 꾹눌림 = false;
 
-  /* 달이 바뀌면 폴더 거르개를 푼다 — 폴더 칩은 그 달에 있는 것만 그린다.
-     안 풀면 그 달에 없는 폴더가 걸린 채로 남아, 끄는 칩도 없이 목록이 빈 채로 멈춘다.
-     상태·검색은 칩과 칸이 늘 보여서 스스로 풀 수 있으므로 그대로 둔다 */
-  function 달바뀜() { 폴더거르개 = ''; }
+  /* 메모 목록은 이제 달을 안 본다(2026-08-19 날짜 색인 삭제) — 폴더도 전체 달에서 센다.
+     일지만 달을 쓴다. 달이 바뀔 때 메모 쪽에서 풀 것은 없다 */
+  function 달바뀜() { }
+
+  function 고른수() { return Object.keys(고른것들).length; }
+
+  /* 진행중 = 흰 바탕(민짜) · 보류 = 연한 초록 · 완료 = 연한 빨강 (2026-08-19 우람님) */
+  var 상태결 = { 진행중: '', 보류: ' hold', 완료: ' done' };
 
   function 메모카드(r, 고름) {
+    var 상태 = 상태정규화(r.상태);
     var 몸 = 만들기('div', { class: 'body' }, [
       만들기('div', { class: 'mt', text: r.제목 || 제목뽑기(r.본문) }),
       만들기('div', { class: 'mp', text: 카드미리(r.본문) })
     ]);
-    var 끝줄 = 만들기('div', { class: 'mm' }, [만들기('span', { class: 'tm', text: 시각글(r.만든때) })]);
+    // 날짜 머리줄이 없어졌다 — 작성일은 카드가 직접 인다
+    var 끝줄 = 만들기('div', { class: 'mm' }, [만들기('span', { class: 'tm', text: 날짜글(r.날짜) })]);
     if (r.폴더) 끝줄.appendChild(만들기('span', { class: 'ftag', text: '📁 ' + r.폴더 }));
-    if (r.상태) {
-      var 결 = r.상태 === '할일' ? ' wait' : (r.상태 === '끝' ? ' done' : '');
-      끝줄.appendChild(만들기('span', { class: 'chip' + 결, text: r.상태 }));
-    }
+    끝줄.appendChild(만들기('span', { class: 'chip' + 상태결[상태], text: 상태 }));
     몸.appendChild(끝줄);
-    var 카드 = 만들기('div', { class: 'mcard' + (고름 ? ' on' : '') }, [몸, 썸네일(r)]);
-    카드.addEventListener('click', function () { ZG.메모앱.열기(r.id); });
+
+    var 조각 = [];
+    if (수정모드) {
+      var 체크 = 만들기('input', { type: 'checkbox', class: 'pick' });
+      체크.checked = !!고른것들[r.id];
+      체크.addEventListener('click', function (e) { e.stopPropagation(); 고르기(r.id, 체크.checked); });
+      조각.push(체크);
+    }
+    조각.push(몸);
+    var 사진 = 썸네일(r);
+    if (사진) 조각.push(사진);
+    if (수정모드) 조각.push(옮김단추(r.id));
+
+    var 카드 = 만들기('div', { class: 'mcard' + 상태결[상태] + (고름 && !수정모드 ? ' on' : '') }, 조각);
+    카드.addEventListener('click', function () {
+      if (꾹눌림) { 꾹눌림 = false; return; }   // 꾹 눌러 수정모드로 들어간 그 손가락이다
+      if (수정모드) { 고르기(r.id, !고른것들[r.id]); ZG.메모앱.다시그리기(); return; }
+      ZG.메모앱.열기(r.id);
+    });
     return 카드;
+  }
+
+  function 고르기(id, 켬) {
+    if (켬) 고른것들[id] = true; else delete 고른것들[id];
+  }
+
+  function 옮김단추(id) {
+    var 칸 = 만들기('div', { class: 'movers' });
+    [['↑', -1], ['↓', 1]].forEach(function (쌍) {
+      var b = 만들기('button', { type: 'button', text: 쌍[0], 'aria-label': 쌍[0] === '↑' ? '위로' : '아래로' });
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!옮기기(id, 쌍[1])) { u.토스트('더 옮길 곳이 없습니다'); return; }
+        ZG.메모앱.다시그리기();
+      });
+      칸.appendChild(b);
+    });
+    return 칸;
+  }
+
+  /* 꾹 누르기 → 수정모드. 손가락이 10px 넘게 움직이면 취소한다 — 안 그러면 목록을 못 굴리신다 */
+  function 꾹누르기붙이기(칸) {
+    var 타이머 = null, 시작 = null;
+    function 끄기() { clearTimeout(타이머); 타이머 = null; 시작 = null; }
+    칸.addEventListener('pointerdown', function (e) {
+      if (수정모드) return;
+      끄기();
+      시작 = { x: e.clientX, y: e.clientY };
+      타이머 = setTimeout(function () {
+        끄기();
+        꾹눌림 = true; 수정모드 = true; 고른것들 = {};
+        ZG.메모앱.다시그리기();
+      }, 600);
+    });
+    칸.addEventListener('pointermove', function (e) {
+      if (!시작) return;
+      if (Math.abs(e.clientX - 시작.x) > 10 || Math.abs(e.clientY - 시작.y) > 10) 끄기();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (t) {
+      칸.addEventListener(t, 끄기);
+    });
+  }
+
+  function 수정줄() {
+    var 줄 = 만들기('div', { class: 'editbar' });
+    줄.appendChild(만들기('span', { class: 'n', text: '고른 것 ' + 고른수() + '건' }));
+
+    function 단추(글, 결, 할일) {
+      var b = 만들기('button', { class: 'btn sm' + (결 ? ' ' + 결 : ''), type: 'button', text: 글 });
+      b.addEventListener('click', 할일);
+      줄.appendChild(b);
+      return b;
+    }
+
+    상태들.forEach(function (이름) {
+      단추(이름, '', function () {
+        var ids = Object.keys(고른것들);
+        if (!ids.length) { u.토스트('먼저 메모를 고르세요'); return; }
+        상태바꾸기(ids, 이름);
+        고른것들 = {};
+        u.토스트(ids.length + '건을 ' + 이름 + '으로 옮겼습니다');
+        ZG.메모앱.다시그리기();
+      });
+    });
+
+    단추('삭제', 'warn', function () {
+      var ids = Object.keys(고른것들);
+      if (!ids.length) { u.토스트('먼저 메모를 고르세요'); return; }
+      u.확인({ 제목: '고른 메모 ' + ids.length + '건을 지울까요?', 확인글: '지우기', 위험: true }, function (예) {
+        if (!예) return;
+        ids.forEach(지우기);
+        고른것들 = {};
+        u.토스트(ids.length + '건을 지웠습니다');
+        ZG.메모앱.다시그리기();
+      });
+    });
+
+    단추('끝내기', 'main', function () {
+      수정모드 = false; 고른것들 = {};
+      ZG.메모앱.다시그리기();
+    });
+    return 줄;
   }
 
   function 목록칸그리기(칸, 종류) {
     u.비우기(칸);
-    var 달 = ZG.메모앱.달();
-    var 줄들 = 목록({ 종류: 종류, 달: 달, 검색: 검색어, 폴더: 폴더거르개, 상태: 상태거르개 });
+    var 줄들 = 목록({ 종류: 종류, 검색: 검색어, 폴더: 폴더거르개 });
     var 고른것 = ZG.메모앱.연것();
-    날짜묶기(줄들).forEach(function (묶음) {
-      칸.appendChild(만들기('div', { class: 'ph-sec' }, [
-        만들기('span', { text: 날짜글(묶음.날짜) }),
-        만들기('span', { class: 'r', text: 묶음.줄들.length + '건' })
-      ]));
-      var 목 = 만들기('div', { class: 'mlist' });
-      묶음.줄들.forEach(function (r) { 목.appendChild(메모카드(r, r.id === 고른것)); });
-      칸.appendChild(목);
-    });
+    var 목 = 만들기('div', { class: 'mlist' });
+    줄들.forEach(function (r) { 목.appendChild(메모카드(r, r.id === 고른것)); });
+    칸.appendChild(목);
     서명걸기(칸);
   }
 
   function 메모목록판(자리) {
-    var 달 = ZG.메모앱.달();
-
     var 검색칸 = 만들기('input', { class: 'inp q', placeholder: '메모 검색', value: 검색어, type: 'search' });
     var 목록칸 = 만들기('div', { class: 'mlist-wrap', style: 'display:flex; flex-direction:column; gap:var(--space-md)' });
     // 🔴 한글이 들어가는 칸이다. 직접 oninput 으로 다시 그리면 조합이 끊긴다
@@ -389,57 +472,71 @@ window.ZG = window.ZG || {};
       검색어 = 값;
       목록칸그리기(목록칸, '메모');
     }, 220);
-    자리.appendChild(만들기('div', { class: 'srow' }, [검색칸, 달고르개(달)]));
+    자리.appendChild(만들기('div', { class: 'srow' }, [검색칸]));
 
-    var 폴더들 = 폴더세기(달);
+    var 폴더들 = 폴더세기('');          // 달을 안 본다 — 폴더는 전체에서 센다
     var 폴더줄 = 만들기('div', { class: 'fchips' });
     폴더줄.appendChild(칩('전체', !폴더거르개, function () {
       폴더거르개 = ''; ZG.메모앱.다시그리기();
-    }, 목록({ 종류: '메모', 달: 달 }).length));
+    }, 목록({ 종류: '메모' }).length));
     폴더들.forEach(function (f) {
       폴더줄.appendChild(칩(f.이름, 폴더거르개 === f.이름, function () {
         폴더거르개 = 폴더거르개 === f.이름 ? '' : f.이름;   // 한 번 더 누르면 꺼진다
         ZG.메모앱.다시그리기();
       }, f.수));
     });
-    자리.appendChild(폴더줄);
-
-    var 셈 = 상태세기(달);
-    var 상태줄 = 만들기('div', { class: 'fchips' });
-    ['할일', '하는중', '끝'].forEach(function (이름) {
-      상태줄.appendChild(칩(이름, 상태거르개 === 이름, function () {
-        상태거르개 = 상태거르개 === 이름 ? '' : 이름;
-        ZG.메모앱.다시그리기();
-      }, 셈[이름]));
-    });
     if (!u.폰인가()) {
       var 새것 = 만들기('button', { class: 'btn sm', type: 'button', text: '＋ 새 메모', style: 'margin-left:auto' });
       새것.addEventListener('click', function () { ZG.메모앱.열기('새'); });
-      상태줄.appendChild(새것);
+      폴더줄.appendChild(새것);
     }
-    자리.appendChild(상태줄);
+    자리.appendChild(폴더줄);
+
+    if (수정모드) 자리.appendChild(수정줄());
 
     목록칸그리기(목록칸, '메모');
+    꾹누르기붙이기(목록칸);
     자리.appendChild(목록칸);
   }
 
+  /* 폴더는 고르는 것이다 — 손으로 치면 「밭」·「밭 」·「밫」 이 서로 다른 폴더가 되어 흩어진다.
+     없는 폴더만 ＋ 로 새로 만든다 */
   function 폴더칸() {
-    var 목록id = 'zg-폴더목록';
-    var 칸 = 만들기('input', { class: 'inp', list: 목록id, value: 편집.폴더 });
-    var 데이터 = 만들기('datalist', { id: 목록id });
-    폴더세기('').forEach(function (f) { 데이터.appendChild(만들기('option', { value: f.이름 })); });
-    // 🔴 한글 칸이다 — 조합안전입력으로 받는다
-    u.조합안전입력(칸, function (값) { 편집.폴더 = 값; 바뀜(); }, 200);
-    칸.addEventListener('blur', function () { 편집.폴더 = 칸.value; 저장하기(true); });
-    return 만들기('div', { class: 'field', style: u.폰인가() ? null : 'width:200px' },
-      [만들기('label', { text: '폴더' }), 데이터, 칸]);
+    var 고름 = 만들기('select', { class: 'inp' });
+
+    function 채우기() {
+      u.비우기(고름);
+      고름.appendChild(만들기('option', { value: '', text: '(폴더 없음)' }));
+      var 이름들 = 폴더세기('').map(function (f) { return f.이름; });
+      // 아직 저장 안 된 새 폴더는 셈에 안 잡힌다 — 고른 것은 언제나 목록에 있어야 한다
+      if (편집.폴더 && 이름들.indexOf(편집.폴더) < 0) 이름들.push(편집.폴더);
+      이름들.forEach(function (이름) { 고름.appendChild(만들기('option', { value: 이름, text: 이름 })); });
+      고름.value = 편집.폴더 || '';
+    }
+    채우기();
+    고름.addEventListener('change', function () { 편집.폴더 = 고름.value; 저장하기(true); });
+
+    var 새것 = 만들기('button', { class: 'btn sm', type: 'button', text: '＋', 'aria-label': '새 폴더' });
+    새것.addEventListener('click', function () {
+      u.물음({ 제목: '새 폴더', 이름: '폴더 이름', 확인글: '만들기', 최대: 20 }, function (값) {
+        if (!값) return;
+        편집.폴더 = 값;
+        채우기();
+        저장하기(true);
+      });
+    });
+
+    return 만들기('div', { class: 'field', style: u.폰인가() ? null : 'width:260px' }, [
+      만들기('label', { text: '폴더' }),
+      만들기('div', { class: 'foldrow' }, [고름, 새것])
+    ]);
   }
 
   function 상태칸() {
     var 줄 = 만들기('div', { class: 'fchips' });
-    ['할일', '하는중', '끝'].forEach(function (이름) {
+    상태들.forEach(function (이름) {
       var b = 칩(이름, 편집.상태 === 이름, function () {
-        편집.상태 = 편집.상태 === 이름 ? '' : 이름;   // 한 번 더 누르면 꺼진다
+        편집.상태 = 이름;                              // 셋 중 하나는 늘 켜져 있다
         [].slice.call(줄.children).forEach(function (c) {
           c.classList.toggle('on', c.textContent === 편집.상태);
         });
@@ -512,7 +609,7 @@ window.ZG = window.ZG || {};
         자리.appendChild(만들기('div', {}, [편집도구줄(), 편집.편집기.뿌리]));
       } else {
         메모목록판(자리);
-        자리.appendChild(팹(function () { ZG.메모앱.열기('새'); }));
+        if (!수정모드) 자리.appendChild(팹(function () { ZG.메모앱.열기('새'); }));
       }
       return;
     }
@@ -532,8 +629,7 @@ window.ZG = window.ZG || {};
       var 때 = r && r.만든때 ? ' ' + 시각글(r.만든때) : '';
       return { 왼: 날 + ' (' + 요일[new Date(날 + 'T00:00:00').getDay()] + ')' + 때, 오: '' };
     }
-    var 달 = ZG.메모앱.달();
-    return { 왼: 달글(달), 오: '메모 <b>' + 목록({ 종류: '메모', 달: 달 }).length + '</b>건' };
+    return { 왼: 수정모드 ? '수정모드 — 꾹 눌러 켰습니다' : '', 오: '메모 <b>' + 목록({ 종류: '메모' }).length + '</b>건' };
   }
 
   function 폰머리메모() {
