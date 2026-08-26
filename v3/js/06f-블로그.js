@@ -64,9 +64,9 @@ window.ZG = window.ZG || {};
 
     var r = 지금줄();
     if (!r) { 틀.appendChild(안내('이 주차엔 원고가 없습니다.')); return; }
-    틀.appendChild(이미지줄(r));
     틀.appendChild(글칸(r));
     틀.appendChild(만들기('div', { class: '블-말', id: '블-말' }));
+    틀.appendChild(이미지줄(r));
   }
 
   function 안내(글) {
