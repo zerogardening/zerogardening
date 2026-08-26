@@ -193,7 +193,10 @@ window.ZG = window.ZG || {};
 
     var 목록 = 만들기('div', { class: 'picklist' });
     (옵션.항목 || []).forEach(function (it) {
-      var b = 만들기('button', { type: 'button', class: it.켬 ? 'on' : '', text: it.글 });
+      var b = it.그림
+        ? 만들기('button', { type: 'button', class: it.켬 ? 'on' : '',
+            html: '<span class="ic">' + 아이콘(it.그림) + '</span>' + it.글 })
+        : 만들기('button', { type: 'button', class: it.켬 ? 'on' : '', text: it.글 });
       b.addEventListener('click', function () { 닫기(it.값); });
       목록.appendChild(b);
     });
@@ -222,9 +225,9 @@ window.ZG = window.ZG || {};
       제목: '더보기',
       본문: '폰 아래 탭에 자리가 없어 여기 모았습니다.',
       항목: [
-        { 값: '업체', 글: '🏢 업체 관리', 켬: 지금 === '업체' },
-        { 값: '소싱', 글: '🌱 상품소싱', 켬: 지금 === '소싱' },
-        { 값: 'PC보기', 글: PC보기인가() ? '📱 폰화면으로' : '🖥 PC화면으로' }
+        { 값: '업체', 그림: '건물', 글: '업체 관리', 켬: 지금 === '업체' },
+        { 값: '소싱', 그림: '새싹', 글: '상품소싱', 켬: 지금 === '소싱' },
+        { 값: 'PC보기', 그림: PC보기인가() ? '폰' : '화면', 글: PC보기인가() ? '폰화면으로' : 'PC화면으로' }
       ]
     }, function (값) {
       if (값 === '업체') location.href = '업체.html';
@@ -233,22 +236,63 @@ window.ZG = window.ZG || {};
     });
   }
 
+  /* ── 탭·메뉴 아이콘 ──
+     이모지는 기기마다 그림이 다르고 색도 제멋대로다(아이폰·안드로이드·PC가 전부 다르게 그린다).
+     24×24 선 아이콘 하나로 통일한다. 색은 currentColor 라 켜짐/꺼짐이 글씨색을 저절로 따라간다. */
+  var 그림 = {
+    잎:   '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/>',
+    상자: '<path d="M21 8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+    수레: '<circle cx="8" cy="20.5" r="1.4"/><circle cx="18.5" cy="20.5" r="1.4"/><path d="M2.5 3h2.2l2.6 12a1.9 1.9 0 0 0 1.9 1.5h9a1.9 1.9 0 0 0 1.9-1.5L21.5 7.5H5.4"/>',
+    메모: '<path d="M12 3.5H5.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2V12"/><path d="M18.4 2.6a2.1 2.1 0 1 1 3 3L12 15l-4 1 1-4Z"/>',
+    점셋: '<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
+    건물: '<path d="M4 21V5.5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2V21"/><path d="M15 11h3a2 2 0 0 1 2 2v8"/><path d="M2.5 21h19"/><path d="M8 8h3M8 12h3M8 16h3"/>',
+    새싹: '<path d="M12 21v-6.6"/><path d="M12 14.4C7.6 14.4 5 11.7 4.5 7 9 7.6 11.6 10.1 12 14.4Z"/><path d="M12.4 13.2c.4-4.2 3-6.6 7.5-7.1-.5 4.6-3.1 7.1-7.5 7.1Z"/>',
+    폰:   '<rect x="5.5" y="2.5" width="13" height="19" rx="2.6"/><path d="M10.5 5.5h3"/><path d="M12 18.2h.01"/>',
+    화면: '<rect x="2.5" y="3.5" width="19" height="13" rx="2.2"/><path d="M8.5 20.5h7M12 16.5v4"/>'
+  };
+  function 아이콘(이름) {
+    return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85"' +
+           ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (그림[이름] || '') + '</svg>';
+  }
+
+  /* ── 눌렀을 때 아주 약한 진동 ──
+     🔴 아이폰 사파리엔 navigator.vibrate 가 아예 없다. 대신 iOS 17.4 부터
+     <input type=checkbox switch> 를 누르면 시스템이 약한 햅틱을 준다 —
+     안 보이는 것을 하나 만들어 두고 대신 눌러 준다. 안 되는 기기에선 그냥 조용하다. */
+  var 햅틱딱지;
+  function 햅틱() {
+    try {
+      if (navigator.vibrate) { navigator.vibrate(8); return; }
+      if (!햅틱딱지) {
+        햅틱딱지 = document.createElement('label');
+        햅틱딱지.setAttribute('aria-hidden', 'true');
+        햅틱딱지.style.display = 'none';
+        var 스위치 = document.createElement('input');
+        스위치.type = 'checkbox';
+        스위치.setAttribute('switch', '');
+        햅틱딱지.appendChild(스위치);
+        document.body.appendChild(햅틱딱지);
+      }
+      햅틱딱지.click();
+    } catch (e) { /* 못 하는 기기면 조용히 넘어간다 */ }
+  }
+
   /* ── 폰 아래 탭바 · PC 왼쪽 메뉴 ──
      화면마다 제 것을 만들면 탭 하나 늘 때 여덟 곳을 고쳐야 한다.
      다섯 화면(상품·주문·업체·소싱·메모)이 이 둘을 같이 쓴다 (12단계 설계 §1)
      🔴 「명세서 발행」은 옆칸에 없다 — 업체 관리 안 세 번째 탭이다 (3단계 설계) */
   var 탭칸 = [
-    { 이름: '입고', 아이콘: '🌿', 주소: 'index.html#입고' },
-    { 이름: '재고', 아이콘: '📦', 주소: 'index.html#재고' },
-    { 이름: '주문', 아이콘: '🛒', 주소: '주문.html' },
-    { 이름: '메모', 아이콘: '📝', 주소: '메모.html' }
+    { 이름: '입고', 아이콘: '잎',   주소: 'index.html#입고' },
+    { 이름: '재고', 아이콘: '상자', 주소: 'index.html#재고' },
+    { 이름: '주문', 아이콘: '수레', 주소: '주문.html' },
+    { 이름: '메모', 아이콘: '메모', 주소: '메모.html' }
   ];
   var 옆칸 = [
-    { 이름: '상품',      아이콘: '🌿', 주소: 'index.html' },
-    { 이름: '주문 관리', 아이콘: '🛒', 주소: '주문.html' },
-    { 이름: '업체 관리', 아이콘: '🏢', 주소: '업체.html' },
-    { 이름: '상품소싱',  아이콘: '🌱', 주소: '소싱.html' },
-    { 이름: '메모',      아이콘: '📝', 주소: '메모.html' }
+    { 이름: '상품',      아이콘: '잎',   주소: 'index.html' },
+    { 이름: '주문 관리', 아이콘: '수레', 주소: '주문.html' },
+    { 이름: '업체 관리', 아이콘: '건물', 주소: '업체.html' },
+    { 이름: '상품소싱',  아이콘: '새싹', 주소: '소싱.html' },
+    { 이름: '메모',      아이콘: '메모', 주소: '메모.html' }
   ];
 
   /* 지금: 탭칸 이름 하나. 넷에 없는 값('업체'·'소싱')이면 「더보기」가 켜지고 그 값이 시트로 넘어간다.
@@ -260,9 +304,10 @@ window.ZG = window.ZG || {};
     탭칸.forEach(function (t) {
       var b = 만들기('button', {
         type: 'button', class: t.이름 === 지금 ? 'on' : '',
-        html: '<span class="ic">' + t.아이콘 + '</span>' + t.이름
+        html: '<span class="ic">' + 아이콘(t.아이콘) + '</span>' + t.이름
       });
       b.addEventListener('click', function () {
+        햅틱();
         if (눌림 && 눌림(t.이름) === true) return;
         if (t.이름 === 지금) return;   // 제 화면을 다시 부르면 쓰던 것이 날아간다
         location.href = t.주소;
@@ -270,9 +315,10 @@ window.ZG = window.ZG || {};
       바.appendChild(b);
     });
     var 더보기 = 만들기('button', {
-      type: 'button', class: 안에있나 ? '' : 'on', html: '<span class="ic">⋯</span>더보기'
+      type: 'button', class: 안에있나 ? '' : 'on',
+      html: '<span class="ic">' + 아이콘('점셋') + '</span>더보기'
     });
-    더보기.addEventListener('click', function () { 더보기시트(안에있나 ? '' : 지금); });
+    더보기.addEventListener('click', function () { 햅틱(); 더보기시트(안에있나 ? '' : 지금); });
     바.appendChild(더보기);
     return 바;
   }
@@ -285,14 +331,14 @@ window.ZG = window.ZG || {};
     옆칸.forEach(function (m) {
       var b = 만들기('button', {
         type: 'button', class: m.이름 === 지금 ? 'on' : '',
-        html: '<span class="ic">' + m.아이콘 + '</span>' + m.이름
+        html: '<span class="ic">' + 아이콘(m.아이콘) + '</span>' + m.이름
       });
       if (m.이름 !== 지금) b.addEventListener('click', function () { location.href = m.주소; });
       옆.appendChild(b);
     });
     // 폰에서 넘어온 사람만 돌아갈 문을 본다 — 진짜 PC 에는 안 보인다
     if (PC보기인가()) {
-      var 되돌리기 = 만들기('button', { type: 'button', html: '<span class="ic">📱</span>폰화면으로' });
+      var 되돌리기 = 만들기('button', { type: 'button', html: '<span class="ic">' + 아이콘('폰') + '</span>폰화면으로' });
       되돌리기.addEventListener('click', function () { PC보기(false); });
       옆.appendChild(되돌리기);
     }
@@ -541,7 +587,7 @@ window.ZG = window.ZG || {};
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
     콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자,
     폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔, PC보기: PC보기, PC보기인가: PC보기인가,
-    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
+    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 아이콘: 아이콘, 햅틱: 햅틱, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
     조합안전입력: 조합안전입력

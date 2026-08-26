@@ -75,7 +75,7 @@ html.pc보기{ touch-action: auto; }
   --font-5xl: 26px;
   --font-title:28px;
   --font-table-sci: 12.5px;
-  --font-icon: 21px;
+  --font-icon: 24px;   /* 폰 탭바 아이콘 — 선 아이콘으로 바뀌며 21→24 */
 
   /* ── 글씨 굵기 ── */
   --weight-regular:  500;
@@ -306,7 +306,9 @@ td.zero{color:var(--color-danger); font-weight:var(--weight-bold)}
   transition:background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .pc-side a.on, .pc-side button.on{background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-btn-main)}
-.pc-side .ic{width:18px; text-align:center; font-size:var(--font-md)}
+.pc-side .ic{display:flex; width:20px; flex:0 0 20px; align-items:center; justify-content:center}
+.pc-side .ic .ico{width:20px; height:20px}
+.pc-side button.on .ic .ico{stroke-width:2.15}
 .pc-main{flex:1; min-width:0; padding:var(--pad-main); display:flex; flex-direction:column; gap:var(--space-2xl)}
 .pc-main > *{flex:0 0 auto}
 /* 본문 카드 사이 간격 — 상품.css 에만 있어 업체·소싱이 다 붙어 있었다. 네 화면 공용 */
@@ -388,9 +390,17 @@ td.zero{color:var(--color-danger); font-weight:var(--weight-bold)}
   flex:1; text-align:center; padding:var(--pad-nav-item); border:none; background:none; cursor:pointer;
   font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted);
   transition:color var(--dur-fast) var(--ease-out);
+  -webkit-tap-highlight-color:transparent;   /* 칸 전체가 회색으로 번쩍이던 것 (기본 동작) */
 }
 .ph-nav button.on{color:var(--color-accent-dark)}
-.ph-nav .ic{display:block; font-size:var(--font-icon); margin-bottom:var(--space-3xs); line-height:1}
+/* 눌린 표시는 아이콘에만 준다 — 살짝 줄었다 펴지고, 그동안만 옅어진다 */
+.ph-nav .ic{
+  display:block; margin-bottom:var(--space-3xs); line-height:0;
+  transition:transform var(--dur-tap) var(--ease-out), opacity var(--dur-tap) var(--ease-out);
+}
+.ph-nav .ic .ico{width:var(--font-icon); height:var(--font-icon); display:block; margin:0 auto}
+.ph-nav button:active .ic{transform:scale(.86); opacity:.55}
+.ph-nav button.on .ic .ico{stroke-width:2.15}
 
 /* 폰 안 글씨는 줄이지 않는다 (시안 .phone 규칙 그대로) */
 .ph-shell .field > label{font-size:var(--font-sm)}
@@ -752,6 +762,8 @@ tr.골랐다{background:var(--color-accent-bg)}
   background:var(--color-accent-bg); border-color:var(--color-accent-border); color:var(--color-accent-dark);
 }
 .askbox .picklist button:active{transform:scale(var(--scale-tap))}
+.askbox .picklist .ic{display:flex; flex:0 0 22px; align-items:center; justify-content:center}
+.askbox .picklist .ic .ico{width:22px; height:22px}
 .askbox.sheetup{
   top:auto; bottom:0; left:0; transform:none;
   width:100vw; max-width:none; max-height:88vh;
