@@ -14,8 +14,8 @@
 <link rel="apple-touch-icon" href="icons/icon-180.png?v=2">
 <meta http-equiv="Cache-Control" content="no-cache">
 
-<link rel="stylesheet" href="css/공통.css?v=63">
-<link rel="stylesheet" href="css/상품.css?v=63">
+<link rel="stylesheet" href="css/공통.css?v=65">
+<link rel="stylesheet" href="css/상품.css?v=65">
 <style>
   /* 상품 이미지 탭에서만 쓰는 모양새 */
   .img-틀{display:flex;flex-direction:column;height:calc(100vh - 142px);min-height:520px}
@@ -24,6 +24,44 @@
   .img-덧 b{font-weight:700}
   .img-창{flex:1;width:100%;border:1px solid #E2E2DE;border-radius:12px;background:#fff}
   .img-폰{margin:20px 16px}
+  /* 블로그 탭 (14단계) — 원고를 서버에서 읽어 그린다. iframe 이 아니다 */
+  .블-덧{background:#FFF6E5;border-radius:9px;padding:14px 16px;margin:4px 0 12px;
+        font-size:14px;color:#8A6A20;line-height:1.7}
+  .블-위{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+  .블-참{flex:1}
+  .블-주차{font-size:18px;font-weight:600;min-width:112px;text-align:center}
+  .블-단추{font:inherit;padding:9px 15px;border:1px solid #D5D5D0;background:#fff;
+          border-radius:9px;cursor:pointer;font-weight:600;color:#444}
+  .블-단추:hover:not(:disabled){border-color:#2a7;color:#2a7}
+  .블-단추:disabled{opacity:.3;cursor:not-allowed}
+  .블-단추.주{border-color:#2a7;color:#2a7}
+  .블-단추.작게{padding:5px 11px;font-size:13px}
+  .블-탭들{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+  .블-탭들 button{font:inherit;font-size:14px;padding:8px 13px;border:1px solid #E2E2DE;
+                 background:#fff;border-radius:8px;cursor:pointer;color:#666}
+  .블-탭들 button:hover{border-color:#2a7;color:#2a7}
+  .블-탭들 button.on{background:#2a7;border-color:#2a7;color:#fff;font-weight:600}
+  .블-사진들{flex:none;background:#fff;border:1px solid #E2E2DE;border-radius:12px;
+            padding:12px 14px;margin-bottom:12px}
+  .블-사진머리{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:14px}
+  .블-사진줄{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px}
+  .블-사진{flex:none;width:150px;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+  .블-사진 img{width:150px;height:104px;object-fit:cover;border-radius:8px;background:#F4F4F2}
+  .블-찍기{width:150px;height:104px;border-radius:8px;background:#FFF6E5;border:1px dashed #E0C68A;
+          display:flex;align-items:center;justify-content:center;font-size:30px}
+  .블-사진이름{font-size:13px;font-weight:600;color:#444}
+  .블-사진.없음 .블-사진이름{color:#B8860B}
+  .블-캡션{font-size:12px;color:#999;line-height:1.5}
+  .블-사진없음{font-size:14px;color:#999}
+  .블-틀{display:flex;flex-direction:column;height:calc(100vh - 142px);min-height:520px}
+  .블-글{width:100%;flex:1;min-height:220px;
+        font:15px/1.85 -apple-system,"Apple SD Gothic Neo",sans-serif;
+        padding:18px 24px;border:1px solid #E2E2DE;border-radius:12px;background:#fff;
+        resize:none;color:#333;box-sizing:border-box}
+  .블-글:focus{outline:2px solid #2a7;border-color:#2a7}
+  .블-말{font-size:13px;color:#999;min-height:20px;margin-top:6px}
+  .블-말.됐다{color:#2a7;font-weight:600}
+  .블-말.틀렸다{color:#C0392B;font-weight:600}
 </style>
 </head>
 <body>
@@ -33,27 +71,27 @@
 
 <!-- 번호 순서대로. 모듈 아니다 — file:// 로 열어도 돌아가야 한다 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/00-확대금지.js?v=63"></script>
-<script src="js/00-새판.js?v=63"></script>
-<script src="js/00-시드.js?v=63"></script>
-<script src="js/01-저장소.js?v=63"></script>
-<script src="js/01b-서버.js?v=63"></script>
-<script src="js/01c-보내기.js?v=63"></script>
-<script src="js/02-품목코드.js?v=63"></script>
-<script src="js/03-계산.js?v=63"></script>
-<script src="js/04-공통UI.js?v=63"></script>
-<script src="js/04b-특성.js?v=63"></script>
-<script src="js/05a-입고화면.js?v=63"></script>
-<script src="js/05b-입고배치.js?v=63"></script>
-<script src="js/05c-입고저장.js?v=63"></script>
-<script src="js/05d-입고내역.js?v=63"></script>
-<script src="js/05e-입고수정.js?v=63"></script>
-<script src="js/06a-재고목록.js?v=63"></script>
-<script src="js/06b-재고배치.js?v=63"></script>
-<script src="js/06c-재고수정.js?v=63"></script>
-<script src="js/06d-상품이미지.js?v=63"></script>
-<script src="js/06e-제작요청.js?v=63"></script>
-<script src="js/06f-블로그.js?v=63"></script>
-<script src="js/07-앱.js?v=63"></script>
+<script src="js/00-확대금지.js?v=65"></script>
+<script src="js/00-새판.js?v=65"></script>
+<script src="js/00-시드.js?v=65"></script>
+<script src="js/01-저장소.js?v=65"></script>
+<script src="js/01b-서버.js?v=65"></script>
+<script src="js/01c-보내기.js?v=65"></script>
+<script src="js/02-품목코드.js?v=65"></script>
+<script src="js/03-계산.js?v=65"></script>
+<script src="js/04-공통UI.js?v=65"></script>
+<script src="js/04b-특성.js?v=65"></script>
+<script src="js/05a-입고화면.js?v=65"></script>
+<script src="js/05b-입고배치.js?v=65"></script>
+<script src="js/05c-입고저장.js?v=65"></script>
+<script src="js/05d-입고내역.js?v=65"></script>
+<script src="js/05e-입고수정.js?v=65"></script>
+<script src="js/06a-재고목록.js?v=65"></script>
+<script src="js/06b-재고배치.js?v=65"></script>
+<script src="js/06c-재고수정.js?v=65"></script>
+<script src="js/06d-상품이미지.js?v=65"></script>
+<script src="js/06e-제작요청.js?v=65"></script>
+<script src="js/06f-블로그.js?v=65"></script>
+<script src="js/07-앱.js?v=65"></script>
 </body>
 </html>
