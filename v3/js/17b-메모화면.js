@@ -465,7 +465,7 @@ window.ZG = window.ZG || {};
   }
 
   function 메모목록판(자리) {
-    var 검색칸 = 만들기('input', { class: 'inp q', placeholder: '메모 검색', value: 검색어, type: 'search' });
+    var 검색칸 = u.손대야열림(만들기('input', { class: 'inp q', placeholder: '메모 검색', value: 검색어, type: 'search' }));
     var 목록칸 = 만들기('div', { class: 'mlist-wrap', style: 'display:flex; flex-direction:column; gap:var(--space-md)' });
     // 🔴 한글이 들어가는 칸이다. 직접 oninput 으로 다시 그리면 조합이 끊긴다
     u.조합안전입력(검색칸, function (값) {

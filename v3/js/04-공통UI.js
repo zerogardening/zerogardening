@@ -259,22 +259,42 @@ window.ZG = window.ZG || {};
      🔴 아이폰 사파리엔 navigator.vibrate 가 아예 없다. 대신 iOS 17.4 부터
      <input type=checkbox switch> 를 누르면 시스템이 약한 햅틱을 준다 —
      안 보이는 것을 하나 만들어 두고 대신 눌러 준다. 안 되는 기기에선 그냥 조용하다. */
-  var 햅틱딱지;
+  var 햅틱딱지, 햅틱스위치;
   function 햅틱() {
     try {
-      if (navigator.vibrate) { navigator.vibrate(8); return; }
+      if (navigator.vibrate) { navigator.vibrate(10); return; }
       if (!햅틱딱지) {
         햅틱딱지 = document.createElement('label');
         햅틱딱지.setAttribute('aria-hidden', 'true');
-        햅틱딱지.style.display = 'none';
-        var 스위치 = document.createElement('input');
-        스위치.type = 'checkbox';
-        스위치.setAttribute('switch', '');
-        햅틱딱지.appendChild(스위치);
+        /* 🔴 display:none 으로 숨기면 사파리가 아예 안 그려서 햅틱도 안 준다.
+           그려는 두되 눈에 안 보이고 손도 안 닿는 자리로 치운다 */
+        햅틱딱지.style.cssText =
+          'position:fixed; left:-9999px; top:0; width:1px; height:1px; opacity:0; pointer-events:none';
+        햅틱스위치 = document.createElement('input');
+        햅틱스위치.type = 'checkbox';
+        햅틱스위치.setAttribute('switch', '');
+        햅틱스위치.tabIndex = -1;
+        햅틱딱지.appendChild(햅틱스위치);
         document.body.appendChild(햅틱딱지);
       }
       햅틱딱지.click();
+      햅틱스위치.blur();   // 딱지를 누르면 커서가 이리 옮겨온다 — 바로 뗀다
     } catch (e) { /* 못 하는 기기면 조용히 넘어간다 */ }
+  }
+
+  /* ── 손이 닿기 전엔 키보드가 안 뜨게 ──
+     🔴 탭을 바꾸면 화면을 통째로 다시 그리는데, 아이폰은 사라진 칸에 있던 커서를
+     새로 생긴 첫 입력칸(대개 검색칸)으로 옮겨 붙인다. 그래서 입고에서 재고로 넘어가면
+     검색칸에 커서가 붙어 키보드가 저 혼자 올라왔다(8/6 에 blur 로 막아봤지만 늦어서 놓친다).
+     읽기전용 칸에는 키보드가 아예 안 뜬다 — 손이 닿는 그 순간에 푼다.
+     🔴 폰에서만 건다. PC 는 소프트 키보드가 없고, Tab 키로 들어오는 길을 막으면 안 된다. */
+  function 손대야열림(칸) {
+    if (!폰인가()) return 칸;
+    칸.readOnly = true;
+    var 풀기 = function () { 칸.readOnly = false; };
+    칸.addEventListener('touchstart', 풀기, { passive: true });
+    칸.addEventListener('mousedown', 풀기);
+    return 칸;
   }
 
   /* ── 폰 아래 탭바 · PC 왼쪽 메뉴 ──
@@ -587,7 +607,7 @@ window.ZG = window.ZG || {};
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
     콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자,
     폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔, PC보기: PC보기, PC보기인가: PC보기인가,
-    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 아이콘: 아이콘, 햅틱: 햅틱, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
+    토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 아이콘: 아이콘, 햅틱: 햅틱, 손대야열림: 손대야열림, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
     조합안전입력: 조합안전입력

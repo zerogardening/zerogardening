@@ -80,6 +80,32 @@ with sync_playwright() as p:
     본다('시트 항목 셋에 svg 아이콘이 붙었다',
          쪽.eval_on_selector_all('.askbox svg.ico', 'e=>e.length') == 3)
     쪽.close()
+
+    print('\n⑤ 재고 탭 — 들어가도 검색칸에 키보드가 안 뜬다 (손대야열림)')
+    쪽 = 새쪽(브, 390, 844)
+    쪽.goto((뿌리 / 'index.html').as_uri()); 쪽.wait_for_timeout(1400)
+    쪽.query_selector_all('.ph-nav button')[1].click(); 쪽.wait_for_timeout(900)
+    칸 = 쪽.query_selector('.ph-shell input[type=search]')
+    본다('재고 검색칸이 있다', bool(칸))
+    본다('손 닿기 전엔 읽기전용이다 — 커서가 붙어도 키보드가 안 뜬다',
+         bool(칸) and 쪽.evaluate('e=>e.readOnly', 칸))
+    본다('탭 누른 뒤 커서가 입력칸에 가 있지 않다',
+         쪽.evaluate("document.activeElement.tagName") != 'INPUT',
+         쪽.evaluate("document.activeElement.tagName"))
+    if 칸:
+        쪽.dispatch_event('.ph-shell input[type=search]', 'touchstart')
+        본다('손이 닿으면 바로 풀린다', not 쪽.evaluate('e=>e.readOnly', 칸))
+        칸.click(); 칸.type('장미')
+        본다('풀린 뒤 글씨가 쳐진다 — %s' % 쪽.evaluate('e=>e.value', 칸),
+             쪽.evaluate('e=>e.value', 칸) == '장미')
+    쪽.close()
+
+    print('\n⑥ PC 는 읽기전용을 걸지 않는다 (소프트 키보드가 없다)')
+    쪽 = 새쪽(브, 1440, 900)
+    쪽.goto((뿌리 / 'index.html').as_uri() + '#재고'); 쪽.wait_for_timeout(1400)
+    칸 = 쪽.query_selector('input[type=search]')
+    본다('PC 검색칸은 그냥 쓸 수 있다', bool(칸) and not 쪽.evaluate('e=>e.readOnly', 칸))
+    쪽.close()
     브.close()
 
 print('\n%d/%d 통과 · 샷 → %s' % (sum(결과), len(결과), 샷))

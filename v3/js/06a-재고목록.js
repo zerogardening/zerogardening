@@ -154,7 +154,8 @@ window.ZG = window.ZG || {};
   /* 이 칸은 목록을 다시 그려도 DOM 이 살아남아야 한다 — 06b 목록다시() 참고.
      칸이 갈아끼워지면 아이폰 한글 조합이 끊긴다. */
   function 검색칸(목록다시) {
-    var e = 만들기('input', { class: 'inp', type: 'search', placeholder: '🔍  유통명 · 학명 · 품목코드로 찾기' });
+    /* 🔴 손대야열림 — 탭을 바꿀 때 아이폰이 커서를 여기로 옮겨 붙여 키보드가 저 혼자 올라왔다 */
+    var e = u.손대야열림(만들기('input', { class: 'inp', type: 'search', placeholder: '🔍  유통명 · 학명 · 품목코드로 찾기' }));
     e.value = 상태.검색;
     u.조합안전입력(e, function (값) {
       if (값 === 상태.검색) return;

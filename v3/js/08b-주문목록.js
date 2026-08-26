@@ -409,7 +409,7 @@ window.ZG = window.ZG || {};
   /* 🔴 화면을 통째로 다시 그리면 이 입력칸 자체가 새것으로 바뀌고, 그 순간 아이폰의 한글 조합이 끊긴다
      (8/4 「휴케라」→「ㅎㅠㅋㅔㄹㅏ」 사고와 같은 원인). 그래서 목록만 갈아끼우고 입력칸은 손대지 않는다. */
   function 찾는칸(안내, 목록만다시) {
-    var 입력 = 만들기('input', { class: 'inp', type: 'search', placeholder: 안내, value: 상태.글 });
+    var 입력 = u.손대야열림(만들기('input', { class: 'inp', type: 'search', placeholder: 안내, value: 상태.글 }));
     u.조합안전입력(입력, function (값) {
       if (값 === 상태.글) return;
       상태.글 = 값; 상태.쪽 = 1;

@@ -117,7 +117,7 @@ window.ZG = window.ZG || {};
 
   function 검색줄(다시) {
     var 업체 = ZG.저장소.읽기(ZG.저장소.키.업체);
-    var 찾기 = 만들기('input', { class: 'inp', type: 'search', placeholder: '🔍  유통명 · 학명 · 품목코드 · 업체' });
+    var 찾기 = u.손대야열림(만들기('input', { class: 'inp', type: 'search', placeholder: '🔍  유통명 · 학명 · 품목코드 · 업체' }));
     찾기.value = 상태.검색 || '';
     // 내역다시() 는 참조.내역칸만 갈아끼우므로 이 입력칸은 살아남는다 — 조합만 지켜주면 된다
     u.조합안전입력(찾기, function (값) {
