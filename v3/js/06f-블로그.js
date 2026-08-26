@@ -32,7 +32,18 @@ window.ZG = window.ZG || {};
     return 줄들().filter(function (r) { return r.주차 === 지금.주차 && r.이름 === 지금.이름; })[0] || null;
   }
 
+  /* 「붙임」이 있으면 그것이 진짜다 — 글꼴·색·사진까지 든 판이라 네이버에 그대로 붙는다.
+     없는 글(옛 주차)은 예전처럼 글자만 낸다. */
+  function 꾸민것(r) { return r && r.붙임 ? (r.고친붙임 != null ? r.고친붙임 : r.붙임) : null; }
   function 글자(r) { return (r && (r.고친본문 != null ? r.고친본문 : r.본문)) || ''; }
+  function 고쳤나(r) { return r && (r.고친붙임 != null || r.고친본문 != null); }
+
+  /* 붙임은 「<style>…</style> + 몸」이다. 스타일은 고치는 칸 밖에 둔다 — 지워지지 않게 */
+  function 쪼개기(글) {
+    var 끝 = 글.indexOf('</style>');
+    return 끝 < 0 ? { css: '', 몸: 글 }
+                  : { css: 글.slice(0, 끝 + 8), 몸: 글.slice(끝 + 8) };
+  }
 
   function 머리() {
     var r = 지금줄();
@@ -97,7 +108,7 @@ window.ZG = window.ZG || {};
     var 원본 = 만들기('button', { class: '블-단추', type: 'button', text: '원본으로', id: '블-원본' });
     원본.addEventListener('click', 원본으로);
     var r = 지금줄();
-    원본.disabled = !(r && r.고친본문 != null);
+    원본.disabled = !고쳤나(r);
 
     return 만들기('div', { class: '블-위' }, [
       앞, 만들기('div', { class: '블-주차', text: 지금.주차 }), 뒤,
@@ -117,7 +128,7 @@ window.ZG = window.ZG || {};
     그것들.forEach(function (r) {
       var b = 만들기('button', {
         type: 'button',
-        text: (r.고친본문 != null ? '✏️ ' : '') + (r.제목 || r.이름),
+        text: (고쳤나(r) ? '✏️ ' : '') + (r.제목 || r.이름),
         class: r.이름 === 지금.이름 ? 'on' : ''
       });
       b.addEventListener('click', function () { 옮기기(null, r.이름); });
@@ -196,23 +207,75 @@ window.ZG = window.ZG || {};
 
   /* ── 글칸 ──────────────────────────────────────────────── */
   function 글칸(r) {
-    var 칸 = 만들기('textarea', { class: '블-글', id: '블-글', spellcheck: 'false' });
-    칸.value = 글자(r);
-    칸.addEventListener('input', function () {
-      지금.손댐 = true;
-      말하기('고치는 중 — 저장하지 않았습니다');
-    });
-    return 칸;
+    var 꾸민 = 꾸민것(r);
+    if (!꾸민) {
+      var 칸 = 만들기('textarea', { class: '블-글', id: '블-글', spellcheck: 'false' });
+      칸.value = 글자(r);
+      칸.addEventListener('input', 손댐);
+      return 칸;
+    }
+    var 조각 = 쪼개기(꾸민);
+    var 겉 = 만들기('div', { class: '블-원고틀' });
+    var 스타일 = 만들기('div', { id: '블-css' });
+    스타일.innerHTML = 조각.css;
+    var 글 = 만들기('div', { class: '블-원고', id: '블-글', contenteditable: 'true',
+                            spellcheck: 'false' });
+    글.innerHTML = 조각.몸;
+    글.addEventListener('input', 손댐);
+    겉.appendChild(스타일);
+    겉.appendChild(글);
+    return 겉;
+  }
+
+  function 손댐() {
+    지금.손댐 = true;
+    말하기('고치는 중 — 저장하지 않았습니다');
+  }
+
+  /* 지금 화면에 있는 것을 「저장할 꼴」로 되돌린다 */
+  function 지금값(r) {
+    var 칸 = document.getElementById('블-글');
+    if (!칸) return null;
+    if (!꾸민것(r)) return { 고친본문: 칸.value };
+    var 스타일 = document.getElementById('블-css');
+    return { 고친붙임: (스타일 ? 스타일.innerHTML : '') + 칸.innerHTML };
   }
 
   function 복사하기() {
     var 칸 = document.getElementById('블-글');
-    if (!칸 || !칸.value) { 말하기('복사할 것이 없습니다', '틀렸다'); return; }
+    if (!칸) return;
     var 됐다 = function () { 말하기('복사했습니다 — 네이버 글쓰기에 그대로 붙여넣으십시오', '됐다'); };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(칸.value).then(됐다, 예비);
-    } else { 예비(); }
-    function 예비() {
+
+    /* 글자칸(옛 주차)은 예전 그대로 */
+    if (칸.tagName === 'TEXTAREA') {
+      if (!칸.value) { 말하기('복사할 것이 없습니다', '틀렸다'); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(칸.value).then(됐다, 글자예비);
+      } else { 글자예비(); }
+      return;
+    }
+
+    /* 🔴 꾸민 판은 text/html 로 실어야 글꼴·색·사진이 같이 붙는다.
+       글자만 실으면 네이버에 민 글자로 들어간다. */
+    var html = (document.getElementById('블-css') || { innerHTML: '' }).innerHTML + 칸.innerHTML;
+    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+      navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([칸.innerText], { type: 'text/plain' })
+      })]).then(됐다, 서식예비);
+    } else { 서식예비(); }
+
+    /* 예비 — 글을 통째로 잡아 복사한다. 서식은 그대로 따라온다 */
+    function 서식예비() {
+      var 범위 = document.createRange();
+      범위.selectNodeContents(칸);
+      var 고른것 = window.getSelection();
+      고른것.removeAllRanges(); 고른것.addRange(범위);
+      document.execCommand('copy');
+      고른것.removeAllRanges();
+      됐다();
+    }
+    function 글자예비() {
       var 자리 = [칸.selectionStart, 칸.selectionEnd];
       칸.select(); document.execCommand('copy');
       칸.setSelectionRange(자리[0], 자리[1]);   // 잡힌 채로 두면 다음 글쇠에 다 날아간다
@@ -221,9 +284,9 @@ window.ZG = window.ZG || {};
   }
 
   function 저장하기() {
-    var r = 지금줄(), 칸 = document.getElementById('블-글');
-    if (!r || !칸) return;
-    ZG.저장소.바꾸기(ZG.저장소.키.블로그, r.id, { 고친본문: 칸.value });
+    var r = 지금줄(), 값 = 지금값(r);
+    if (!r || !값) return;
+    ZG.저장소.바꾸기(ZG.저장소.키.블로그, r.id, 값);
     지금.손댐 = false;
     ZG.앱.다시그리기();
     말하기('저장했습니다 — 다른 PC에서도 이대로 보입니다', '됐다');
@@ -231,9 +294,9 @@ window.ZG = window.ZG || {};
 
   function 원본으로() {
     var r = 지금줄();
-    if (!r || r.고친본문 == null) return;
+    if (!고쳤나(r)) return;
     if (!confirm('고치신 것을 버리고 원고 그대로 다시 볼까요?')) return;
-    ZG.저장소.바꾸기(ZG.저장소.키.블로그, r.id, { 고친본문: null });
+    ZG.저장소.바꾸기(ZG.저장소.키.블로그, r.id, { 고친본문: null, 고친붙임: null });
     지금.손댐 = false;
     ZG.앱.다시그리기();
     말하기('원고 그대로 되돌렸습니다', '됐다');
