@@ -255,26 +255,45 @@ window.ZG = window.ZG || {};
       return;
     }
 
-    /* 🔴 꾸민 판은 text/html 로 실어야 글꼴·색·사진이 같이 붙는다.
-       글자만 실으면 네이버에 민 글자로 들어간다. */
-    var html = (document.getElementById('블-css') || { innerHTML: '' }).innerHTML + 칸.innerHTML;
-    if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
-      navigator.clipboard.write([new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([칸.innerText], { type: 'text/plain' })
-      })]).then(됐다, 서식예비);
-    } else { 서식예비(); }
+    /* 🔴 여기가 서식이 사는 길이다 (블로그 창 실측 2026-07-29 —
+       「크기·색·굵기·이모지는 살고, 글꼴·표·이미지는 죽는다」).
+       그건 브라우저가 ⌘A⌘C 할 때 **글자마다 style= 을 박아** 실어주기 때문이다.
+       내가 <style> 덩어리를 통째로 실으면 네이버가 그걸 버려서 민 글자로 붙는다.
+       그래서 화면에 그려진 것을 그대로 잡아 브라우저에게 복사를 시킨다. */
+    var 범위 = document.createRange();
+    범위.selectNodeContents(칸);
+    var 고른것 = window.getSelection();
+    고른것.removeAllRanges(); 고른것.addRange(범위);
+    var 됐나 = false;
+    try { 됐나 = document.execCommand('copy'); } catch (e) { 됐나 = false; }
+    고른것.removeAllRanges();
+    if (됐나) { 됐다(); return; }
+    직접싣기();
 
-    /* 예비 — 글을 통째로 잡아 복사한다. 서식은 그대로 따라온다 */
-    function 서식예비() {
-      var 범위 = document.createRange();
-      범위.selectNodeContents(칸);
-      var 고른것 = window.getSelection();
-      고른것.removeAllRanges(); 고른것.addRange(범위);
-      document.execCommand('copy');
-      고른것.removeAllRanges();
-      됐다();
+    /* 브라우저가 복사를 거절하면 — 스타일을 손수 글자마다 박아 싣는다 */
+    function 직접싣기() {
+      if (!(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write)) {
+        말하기('이 브라우저에서는 복사가 막혔습니다 — 글을 직접 끌어 잡아 복사하십시오', '틀렸다');
+        return;
+      }
+      var 벤것 = 칸.cloneNode(true);
+      var 원본들 = 칸.querySelectorAll('*'), 벤것들 = 벤것.querySelectorAll('*');
+      var 볼것 = ['font-size', 'font-weight', 'color', 'background-color',
+                 'font-style', 'text-align', 'line-height', 'text-decoration-line'];
+      for (var i = 0; i < 원본들.length; i++) {
+        var s = getComputedStyle(원본들[i]), 글 = '';
+        볼것.forEach(function (k) { 글 += k + ':' + s.getPropertyValue(k) + ';'; });
+        벤것들[i].setAttribute('style', 글);
+        벤것들[i].removeAttribute('class');
+      }
+      navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([벤것.innerHTML], { type: 'text/html' }),
+        'text/plain': new Blob([칸.innerText], { type: 'text/plain' })
+      })]).then(됐다, function () {
+        말하기('복사가 막혔습니다 — 글을 끌어 잡고 ⌘C 하십시오', '틀렸다');
+      });
     }
+
     function 글자예비() {
       var 자리 = [칸.selectionStart, 칸.selectionEnd];
       칸.select(); document.execCommand('copy');
