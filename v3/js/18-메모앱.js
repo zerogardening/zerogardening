@@ -7,11 +7,12 @@ window.ZG = window.ZG || {};
 
   var u = ZG.ui, 만들기 = u.만들기;
   var 뿌리, 본문;
-  var 탭 = '메모';                      // '메모' | '일지'
-  var 탭이름 = { 메모: '메모', 일지: '영농일지' };
+  var 탭 = '체크';                      // '체크' | '메모' | '일지'
+  var 탭이름 = { 체크: '체크리스트', 메모: '메모', 일지: '영농일지' };
+  var 탭들 = ['체크', '메모', '일지'];
   var 달, 고른날값, 연것값 = null;
 
-  function 지금모듈() { return 탭 === '메모' ? ZG.메모.메모탭 : ZG.메모.일지탭; }
+  function 지금모듈() { return ZG.메모[탭 + '탭']; }
   function 길() { return '메모 › ' + 탭이름[탭]; }
 
   /* ── PC ── */
@@ -22,7 +23,7 @@ window.ZG = window.ZG || {};
     ]);
 
     var 탭줄 = 만들기('div', { class: 'pc-tabs', role: 'tablist' });
-    ['메모', '일지'].forEach(function (이름) {
+    탭들.forEach(function (이름) {
       var b = 만들기('button', {
         type: 'button', role: 'tab', text: 탭이름[이름],
         class: 탭 === 이름 ? 'on' : '', 'aria-selected': 탭 === 이름 ? 'true' : 'false'
@@ -73,7 +74,7 @@ window.ZG = window.ZG || {};
     본문 = 만들기('div', { class: 'ph-body tight' });
     if (!쓰는중) {
       var 탭줄 = 만들기('div', { class: 'toggle', style: 'height:36px' });
-      ['메모', '일지'].forEach(function (이름) {
+      탭들.forEach(function (이름) {
         var b = 만들기('button', {
           type: 'button', class: 탭 === 이름 ? 'on' : '', text: 탭이름[이름], style: 'flex:1; padding:0'
         });
