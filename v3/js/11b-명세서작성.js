@@ -180,7 +180,7 @@ window.ZG = window.ZG || {};
     u.비우기(표칸);
     var 표 = 만들기('table', { class: 'items' });
     var 묶 = 만들기('colgroup');
-    ['34px', '96px', '', '82px', '56px', '86px', '104px', '82px', '30px'].forEach(function (w) {
+    ['34px', '96px', '', '82px', '56px', '86px', '104px', '118px', '30px'].forEach(function (w) {
       묶.appendChild(만들기('col', { style: w ? 'width:' + w : null }));
     });
     표.appendChild(묶);
@@ -203,10 +203,18 @@ window.ZG = window.ZG || {};
       var 지움 = 만들기('button', { class: 'xbtn', type: 'button', text: '×', 'aria-label': '이 줄 지우기' });
       지움.addEventListener('click', function () { 상태.줄들.splice(i, 1); 표다시(); });
       var 공급칸 = 만들기('td', { class: 'r b' });
-      var 세액칸 = 만들기('td', { class: 'r dim' });
+      /* 면세로 잘못 넣었을 때 지우고 다시 넣지 않도록 이 자리에서 바로 바꾼다 */
+      var 과세셀 = 만들기('select', { class: 'taxsel', 'aria-label': '과세구분' });
+      ['면세', '과세'].forEach(function (값) {
+        과세셀.appendChild(만들기('option', { value: 값, text: 값 }));
+      });
+      과세셀.value = 줄.과세구분 === '과세' ? '과세' : '면세';
+      과세셀.addEventListener('change', function () { 줄.과세구분 = 과세셀.value; 셀바뀜(); });
+      var 세액값 = 만들기('span', { class: 'taxamt' });
+      var 세액칸 = 만들기('td', { class: 'r dim' }, [과세셀, 세액값]);
       function 금액다시() {
         공급칸.textContent = u.콤마((Number(줄.수량) || 0) * (Number(줄.단가) || 0));
-        세액칸.textContent = 줄.과세구분 === '과세' ? u.콤마(계.줄세액(줄)) : '면세';
+        세액값.textContent = 줄.과세구분 === '과세' ? u.콤마(계.줄세액(줄)) : '';
       }
       금액다시();
       function 셀바뀜() { 금액다시(); 합계채우기(); }

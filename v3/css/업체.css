@@ -158,6 +158,11 @@ table.items .cellinp{
   font-size:var(--font-sm); font-variant-numeric:tabular-nums; color:var(--color-text); padding:2px 0;
 }
 table.items .cellinp:focus{outline:none; border-bottom:var(--border-width) solid var(--color-accent)}
+table.items .taxsel{
+  border:none; background:transparent; font-family:inherit; font-size:var(--font-sm);
+  color:var(--color-text-faint); padding:0; cursor:pointer;
+}
+table.items .taxamt{font-variant-numeric:tabular-nums; margin-left:6px}
 table.items .xbtn{
   background:none; border:none; cursor:pointer; font-family:inherit;
   color:var(--color-text-faint); font-size:var(--font-lg); line-height:1; padding:0;
@@ -294,5 +299,6 @@ table.items .xbtn{
   body.명세서인쇄중 .doc .dmetarow{border-top:none}
   /* 종이에 달력 아이콘·textarea 손잡이가 찍히면 안 된다 */
   body.명세서인쇄중 .doc input::-webkit-calendar-picker-indicator{display:none}
+  body.명세서인쇄중 .doc .taxsel{appearance:none; -webkit-appearance:none; text-align:right}
   body.명세서인쇄중 .dmemo .v{resize:none; overflow:visible}
 }
