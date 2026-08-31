@@ -176,6 +176,18 @@ window.ZG = window.ZG || {};
     return 칸;
   }
 
+  /* 글자칸도 같은 까닭으로 표를 다시 그리지 않는다 — 합계에 안 걸리니 줄에만 적어 둔다 */
+  function 글자셀(줄, 밭, 칸클래스, 자리글) {
+    var 칸 = 만들기('td', { class: 칸클래스 });
+    var 입력 = 만들기('input', {
+      class: 'cellinp txt', type: 'text', value: 줄[밭] || '',
+      placeholder: 자리글 || '', 'aria-label': 밭
+    });
+    입력.addEventListener('input', function () { 줄[밭] = 입력.value; });
+    칸.appendChild(입력);
+    return 칸;
+  }
+
   function 표채우기() {
     u.비우기(표칸);
     var 표 = 만들기('table', { class: 'items' });
@@ -220,9 +232,9 @@ window.ZG = window.ZG || {};
       function 셀바뀜() { 금액다시(); 합계채우기(); }
       몸.appendChild(만들기('tr', {}, [
         만들기('td', { class: 'n', text: String(i + 1) }),
-        만들기('td', { class: 'cd', text: 줄.품목코드 || '-' }),
-        만들기('td', { class: 'nm', title: 줄.유통명 || '', text: 줄.유통명 || '' }),
-        만들기('td', { class: 'sp', text: 줄.규격 || '-' }),
+        글자셀(줄, '품목코드', 'cd', '-'),
+        글자셀(줄, '유통명', 'nm', '품목명'),
+        글자셀(줄, '규격', 'sp', '-'),
         숫자셀(줄, '수량', '46px', 셀바뀜),
         숫자셀(줄, '단가', '76px', 셀바뀜),
         공급칸, 세액칸,
@@ -236,6 +248,9 @@ window.ZG = window.ZG || {};
   /* ── 저장 · 출력 ── */
   function 저장() {
     if (!상태.줄들.length) { u.토스트('품목이 없어 저장할 수 없습니다'); return; }
+    if (상태.줄들.some(function (줄) { return !String(줄.유통명 || '').trim(); })) {
+      u.토스트('품목명이 빈 줄이 있습니다 — 채우거나 지워 주세요'); return;
+    }
     var 지금 = 스냅샷();
     if (상태.스냅샷 === 지금) { u.토스트('이미 저장되었습니다 (바뀐 것이 없습니다)'); return; }
     var 합 = 계.합계(상태.줄들);
