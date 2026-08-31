@@ -290,7 +290,9 @@ table.items .xbtn{
 @media print{
   body.명세서인쇄중 > *:not(.doc){display:none !important}
   body.명세서인쇄중 > .doc{display:block !important}
-  body.명세서인쇄중 .doc{box-shadow:none; border-radius:0; padding:0}
+  /* 종이 여백 — @page 는 인쇄창에서 「여백 없음」을 고르면 무시되므로 .doc 에도 최소치를 준다 */
+  @page{margin:12mm}
+  body.명세서인쇄중 .doc{box-shadow:none; border-radius:0; padding:8mm 6mm}
   /* 화면에서만 쓰는 것 — 종이에는 안 나간다 */
   body.명세서인쇄중 .doc .tool,
   body.명세서인쇄중 .doc .addrow,
