@@ -88,7 +88,8 @@ select.inp.sm{height:34px; font-size:var(--font-md)}
 .parties{display:grid; grid-template-columns:1fr 1fr; gap:42px; margin-bottom:var(--space-4xl)}
 .party{
   border-top:var(--border-width-thick) solid var(--color-text); padding-top:var(--space-2xl);
-  display:grid; grid-template-columns:58px 1fr 66px 1fr; column-gap:var(--space-xl); row-gap:var(--space-md);
+  /* 한 줄에 한 칸 — 2열이면 전화·사업자번호가 잘리거나 두 줄로 접힌다 */
+  display:grid; grid-template-columns:66px 1fr; column-gap:var(--space-xl); row-gap:var(--space-md);
 }
 .party .ptitle{
   grid-column:1/-1; font-size:var(--font-sm); font-weight:var(--weight-bold);
@@ -96,8 +97,7 @@ select.inp.sm{height:34px; font-size:var(--font-md)}
 }
 .party .ptitle em{font-style:normal; font-size:var(--font-3xs); font-weight:var(--weight-medium); color:var(--color-text-muted); letter-spacing:0; margin-left:var(--space-xs)}
 .party .k{font-size:var(--font-3xs); color:var(--color-text-hint); letter-spacing:.05em; font-weight:var(--weight-semibold); display:flex; align-items:center}
-.party .v{font-size:var(--font-sm); font-weight:var(--weight-semibold); display:flex; align-items:center; min-width:0}
-.party .v.w3{grid-column:span 3}
+.party .v{font-size:var(--font-sm); font-weight:var(--weight-semibold); display:flex; align-items:center; min-width:0; word-break:keep-all}
 .party .v input{
   width:100%; font-family:inherit; font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text);
   border:none; border-bottom:var(--border-width) solid var(--color-border-faint);
