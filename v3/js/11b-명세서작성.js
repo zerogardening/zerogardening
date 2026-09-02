@@ -170,9 +170,11 @@ window.ZG = window.ZG || {};
     });
     입력.addEventListener('input', function () {
       줄[밭] = Math.max(0, Number(입력.value) || 0);
+      계.최종액풀기(줄);            // 단가·수량을 손대면 정방향으로 돌아간다
       바뀜();
     });
     칸.appendChild(입력);
+    칸.입력 = 입력;
     return 칸;
   }
 
@@ -192,14 +194,14 @@ window.ZG = window.ZG || {};
     u.비우기(표칸);
     var 표 = 만들기('table', { class: 'items' });
     var 묶 = 만들기('colgroup');
-    ['34px', '96px', '', '82px', '56px', '86px', '104px', '118px', '30px'].forEach(function (w) {
+    ['34px', '92px', '', '76px', '52px', '84px', '98px', '112px', '98px', '30px'].forEach(function (w) {
       묶.appendChild(만들기('col', { style: w ? 'width:' + w : null }));
     });
     표.appendChild(묶);
 
     var 머리 = 만들기('tr');
     [['NO', ''], ['품목코드', ''], ['품목명', 'l'], ['규격', ''], ['수량', ''], ['단가', ''],
-     ['공급가액', ''], ['세액', '']].forEach(function (쌍) {
+     ['공급가액', ''], ['세액', ''], ['합계', '']].forEach(function (쌍) {
       머리.appendChild(만들기('th', { class: 쌍[1] || null, text: 쌍[0] }));
     });
     머리.appendChild(만들기('th', { class: 'xcol' }));
@@ -208,7 +210,7 @@ window.ZG = window.ZG || {};
     var 몸 = 만들기('tbody');
     if (!상태.줄들.length) {
       몸.appendChild(만들기('tr', {}, [만들기('td', {
-        class: 'empty', colspan: '9', text: '아래 칸에서 품목을 찾아 넣어 주세요'
+        class: 'empty', colspan: '10', text: '아래 칸에서 품목을 찾아 넣어 주세요'
       })]));
     }
     상태.줄들.forEach(function (줄, i) {
@@ -221,12 +223,38 @@ window.ZG = window.ZG || {};
         과세셀.appendChild(만들기('option', { value: 값, text: 값 }));
       });
       과세셀.value = 줄.과세구분 === '과세' ? '과세' : '면세';
-      과세셀.addEventListener('change', function () { 줄.과세구분 = 과세셀.value; 셀바뀜(); });
+      과세셀.addEventListener('change', function () {
+        줄.과세구분 = 과세셀.value; 계.최종액풀기(줄); 셀바뀜();
+      });
       var 세액값 = 만들기('span', { class: 'taxamt' });
       var 세액칸 = 만들기('td', { class: 'r dim' }, [과세셀, 세액값]);
-      function 금액다시() {
-        공급칸.textContent = u.콤마((Number(줄.수량) || 0) * (Number(줄.단가) || 0));
+
+      var 수량칸 = 숫자셀(줄, '수량', '44px', 셀바뀜);
+      var 단가칸 = 숫자셀(줄, '단가', '74px', 셀바뀜);
+
+      /* 🔴 최종액을 넣으면 거꾸로 단가를 잡는다 — 모드를 따로 두지 않는다(우람님 8/31).
+         치는 도중에 이 칸 글자를 되쓰면 커서가 튀므로 여기만 건드리지 않는다 */
+      var 최종칸 = 만들기('td', { class: 'r b' });
+      var 최종입력 = 만들기('input', {
+        class: 'cellinp', type: 'number', min: '0', style: 'width:88px', 'aria-label': '합계'
+      });
+      최종입력.addEventListener('input', function () {
+        계.최종액맞추기(줄, 최종입력.value);
+        단가칸.입력.value = String(줄.단가);
+        공급세액다시(); 합계채우기();
+      });
+      /* 면세는 나머지를 먹을 세액이 없어 수량으로 안 나눠떨어지면 1~2원이 붙는다.
+         손을 떼는 순간 진짜 값으로 바꿔 보여 준다 — 종이와 화면이 어긋나면 안 된다 */
+      최종입력.addEventListener('blur', function () { 최종입력.value = String(계.줄최종(줄)); });
+      최종칸.appendChild(최종입력);
+
+      function 공급세액다시() {
+        공급칸.textContent = u.콤마(계.줄공급(줄));
         세액값.textContent = 줄.과세구분 === '과세' ? u.콤마(계.줄세액(줄)) : '';
+      }
+      function 금액다시() {
+        공급세액다시();
+        최종입력.value = String(계.줄최종(줄));
       }
       금액다시();
       function 셀바뀜() { 금액다시(); 합계채우기(); }
@@ -235,9 +263,7 @@ window.ZG = window.ZG || {};
         글자셀(줄, '품목코드', 'cd', '-'),
         글자셀(줄, '유통명', 'nm', '품목명'),
         글자셀(줄, '규격', 'sp', '-'),
-        숫자셀(줄, '수량', '46px', 셀바뀜),
-        숫자셀(줄, '단가', '76px', 셀바뀜),
-        공급칸, 세액칸,
+        수량칸, 단가칸, 공급칸, 세액칸, 최종칸,
         만들기('td', { class: 'xcol' }, [지움])
       ]));
     });
@@ -548,7 +574,7 @@ window.ZG = window.ZG || {};
           만들기('span', { text: [줄.품목코드, 줄.규격].filter(Boolean).join(' · ') || '직접 입력' })
         ]),
         만들기('div', { class: 'q', text: u.콤마(줄.수량) + ' × ' + u.콤마(줄.단가) }),
-        만들기('div', { class: 'a', text: u.콤마((Number(줄.수량) || 0) * (Number(줄.단가) || 0)) }),
+        만들기('div', { class: 'a', text: u.콤마(계.줄최종(줄)) }),
         지움
       ]));
     });
@@ -582,7 +608,7 @@ window.ZG = window.ZG || {};
     상태.줄들 = ZG.업체자료.명세서줄들(id).map(function (줄) {
       return {
         품목코드: 줄.품목코드 || '', 유통명: 줄.유통명 || '', 학명: 줄.학명 || '', 규격: 줄.규격 || '',
-        수량: Number(줄.수량) || 0, 단가: Number(줄.단가) || 0,
+        수량: Number(줄.수량) || 0, 단가: Number(줄.단가) || 0, 최종액: Number(줄.최종액) || 0,
         매입단가: Number(줄.매입단가) || 0, 과세구분: 줄.과세구분 === '과세' ? '과세' : '면세'
       };
     });
