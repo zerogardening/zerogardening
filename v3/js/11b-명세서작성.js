@@ -30,6 +30,7 @@ window.ZG = window.ZG || {};
     { 키: '합계', 이름: '합계', 폭: '98px' }
   ];
   var 숨긴칸 = {};                      // 키 → true 면 안 보인다. 기본은 전부 보임
+  var 끄는줄 = null;                    // 지금 끌고 있는 줄 번호
 
   function 할인율() { return 상태.할인모드 === '할증' ? -Number(상태.할인값 || 0) : Number(상태.할인값 || 0); }
 
@@ -241,6 +242,16 @@ window.ZG = window.ZG || {};
     상태.줄들.forEach(function (줄, i) {
       var 지움 = 만들기('button', { class: 'xbtn', type: 'button', text: '×', 'aria-label': '이 줄 지우기' });
       지움.addEventListener('click', function () { 상태.줄들.splice(i, 1); 표다시(); });
+      /* 🔴 NO 칸만 잡아 끈다 — 줄 전체를 draggable 로 두면 칸 안 글자를 못 고른다(입력칸이 먹통이 된다) */
+      var 번호칸 = 만들기('td', {
+        class: 'n c-NO grip', text: String(i + 1), draggable: 'true', title: '끌어서 순서 바꾸기'
+      });
+      번호칸.addEventListener('dragstart', function (e) {
+        끄는줄 = i;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(i));   // 이걸 안 넣으면 파이어폭스에서 안 끌린다
+      });
+      번호칸.addEventListener('dragend', function () { 끄는줄 = null; });
       var 공급칸 = 만들기('td', { class: 'r b c-공급가액' });
       /* 면세로 잘못 넣었을 때 지우고 다시 넣지 않도록 이 자리에서 바로 바꾼다 */
       var 과세셀 = 만들기('select', { class: 'taxsel', 'aria-label': '과세구분' });
@@ -288,18 +299,41 @@ window.ZG = window.ZG || {};
       }
       금액다시();
       function 셀바뀜() { 금액다시(); 합계채우기(); }
-      몸.appendChild(만들기('tr', {}, [
-        만들기('td', { class: 'n c-NO', text: String(i + 1) }),
+      var 줄칸 = 만들기('tr', {}, [
+        번호칸,
         글자셀(줄, '품목코드', 'cd c-품목코드', '-'),
         글자셀(줄, '유통명', 'nm c-품목명', '품목명'),
         글자셀(줄, '규격', 'sp c-규격', '-'),
         수량칸, 단가칸, 공급칸, 세액칸, 최종칸,
         만들기('td', { class: 'xcol' }, [지움])
-      ]));
+      ]);
+      줄칸.addEventListener('dragover', function (e) {
+        if (끄는줄 === null || 끄는줄 === i) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        줄칸.className = 끄는줄 < i ? '아래로' : '위로';
+      });
+      줄칸.addEventListener('dragleave', function () { 줄칸.className = ''; });
+      줄칸.addEventListener('drop', function (e) {
+        e.preventDefault();
+        줄칸.className = '';
+        옮기기(끄는줄, i);
+      });
+      몸.appendChild(줄칸);
     });
     표.appendChild(몸);
     표칸.appendChild(표);
     칸적용(표);
+  }
+
+  /* 끌어 놓은 자리로 줄을 옮긴다 — 배열에서 빼서 그 자리에 꽂는다 */
+  function 옮기기(에서, 로) {
+    var 옛 = 에서;
+    끄는줄 = null;
+    if (옛 === null || 옛 === 로 || 옛 < 0 || 옛 >= 상태.줄들.length) return;
+    var 뺀것 = 상태.줄들.splice(옛, 1)[0];
+    상태.줄들.splice(로, 0, 뺀것);
+    표다시();
   }
 
   /* 표 위의 칸 고르개 — 평소엔 전부 켜져 있고, 지우면 화면에서도 종이에서도 빠진다.
