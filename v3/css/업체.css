@@ -164,6 +164,11 @@ table.items .taxsel{
   color:var(--color-text-faint); padding:0; cursor:pointer;
 }
 table.items .taxamt{font-variant-numeric:tabular-nums; margin-left:6px}
+table.items .onpaper{display:none}
+.colpick{gap:var(--space-md); flex-wrap:wrap; margin-bottom:var(--space-md)}
+.colpick .lb{font-size:var(--font-3xs); color:var(--color-text-hint); letter-spacing:.05em; font-weight:var(--weight-semibold)}
+.colpick label{display:flex; align-items:center; gap:4px; font-size:var(--font-xs); color:var(--color-text-sub); cursor:pointer}
+.colpick input{margin:0; cursor:pointer}
 table.items .xbtn{
   background:none; border:none; cursor:pointer; font-family:inherit;
   color:var(--color-text-faint); font-size:var(--font-lg); line-height:1; padding:0;
@@ -302,6 +307,23 @@ table.items .xbtn{
   body.명세서인쇄중 .doc .dmetarow{border-top:none}
   /* 종이에 달력 아이콘·textarea 손잡이가 찍히면 안 된다 */
   body.명세서인쇄중 .doc input::-webkit-calendar-picker-indicator{display:none}
-  body.명세서인쇄중 .doc .taxsel{appearance:none; -webkit-appearance:none; text-align:right}
+  /* ── 종이에서만 다른 것 (우람님 9/2) ──
+     ① 과세/면세 드롭다운은 안 나간다 — 세액은 숫자만 찍힌다
+     ② 🔴 표 안의 입력칸을 전부 글자로 바꾼다 — <input> 은 줄바꿈이 안 되고 폭도 안 줄어
+        A4 의 좁은 칸에서 긴 품목명이 잘리고 단가와 공급가액이 서로 겹쳤다 */
+  body.명세서인쇄중 .doc table.items .taxsel,
+  body.명세서인쇄중 .doc table.items .cellinp{display:none !important}
+  /* 🔴 화면용 고정폭을 종이에 그대로 쓰면 A4 가 좁아 품목명이 서너 줄로 접힌다.
+     종이에서는 폭을 풀어 글자 길이대로 나눠 갖게 하고, 안 나가는 칸만 0 으로 눌러 둔다 */
+  body.명세서인쇄중 .doc table.items col{width:auto !important}
+  body.명세서인쇄중 .doc table.items td.nm,
+  body.명세서인쇄중 .doc table.items th.l{width:40%}
+  /* 폭을 풀면 숫자칸끼리 딱 붙어 「78,0007,800」 으로 읽힌다 — 사이를 벌린다 */
+  body.명세서인쇄중 .doc table.items th,
+  body.명세서인쇄중 .doc table.items td.r{padding-left:14px; white-space:nowrap}
+  body.명세서인쇄중 .doc table.items .onpaper{display:inline}
+  body.명세서인쇄중 .doc table.items td.nm{white-space:normal; overflow:visible}
+  body.명세서인쇄중 .doc table.items td.sp{white-space:normal}
+  body.명세서인쇄중 .doc table.items .taxamt{margin-left:0}
   body.명세서인쇄중 .dmemo .v{resize:none; overflow:visible}
 }
