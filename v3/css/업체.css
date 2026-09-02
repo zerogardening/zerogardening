@@ -318,14 +318,24 @@ table.items .xbtn{
         A4 의 좁은 칸에서 긴 품목명이 잘리고 단가와 공급가액이 서로 겹쳤다 */
   body.명세서인쇄중 .doc table.items .taxsel,
   body.명세서인쇄중 .doc table.items .cellinp{display:none !important}
-  /* 🔴 화면용 고정폭을 종이에 그대로 쓰면 A4 가 좁아 품목명이 서너 줄로 접힌다.
-     종이에서는 폭을 풀어 글자 길이대로 나눠 갖게 하고, 안 나가는 칸만 0 으로 눌러 둔다 */
-  body.명세서인쇄중 .doc table.items col{width:auto !important}
-  body.명세서인쇄중 .doc table.items td.nm,
-  body.명세서인쇄중 .doc table.items th.l{width:40%}
-  /* 폭을 풀면 숫자칸끼리 딱 붙어 「78,0007,800」 으로 읽힌다 — 사이를 벌린다 */
+  /* 🔴 화면용 px 고정폭을 종이에 그대로 쓰면 A4 가 좁아 품목명이 서너 줄로 접힌다.
+     그렇다고 width:auto 로 풀면 안 된다 — 공통.css 가 모든 표에 table-layout:fixed 를
+     걸어 두어, auto 인 칸끼리 남은 자리를 **똑같이** 49px 씩 나눠 갖고 긴 금액이 옆칸을
+     덮어썼다 (우람님 9/2 — 「340,000」 이 「170000」 위에 겹쳤다).
+     → 종이에서는 %로 준다. 품목명만 auto 라 남는 자리를 전부 가져가고,
+       체크를 지워 감춘 칸의 몫도 품목명에게 간다 */
+  body.명세서인쇄중 .doc table.items col.c-NO{width:4% !important}
+  body.명세서인쇄중 .doc table.items col.c-품목코드{width:8% !important}
+  body.명세서인쇄중 .doc table.items col.c-품목명{width:auto !important}
+  body.명세서인쇄중 .doc table.items col.c-규격{width:8% !important}
+  body.명세서인쇄중 .doc table.items col.c-수량{width:5% !important}
+  body.명세서인쇄중 .doc table.items col.c-단가{width:11% !important}
+  body.명세서인쇄중 .doc table.items col.c-공급가액{width:12% !important}
+  body.명세서인쇄중 .doc table.items col.c-세액{width:11% !important}
+  body.명세서인쇄중 .doc table.items col.c-합계{width:12% !important}
+  /* 숫자칸끼리 딱 붙으면 「78,0007,800」 으로 읽힌다 — 사이를 벌린다 */
   body.명세서인쇄중 .doc table.items th,
-  body.명세서인쇄중 .doc table.items td.r{padding-left:14px; white-space:nowrap}
+  body.명세서인쇄중 .doc table.items td.r{padding-left:10px; white-space:nowrap}
   body.명세서인쇄중 .doc table.items .onpaper{display:inline}
   body.명세서인쇄중 .doc table.items td.nm{white-space:normal; overflow:visible}
   body.명세서인쇄중 .doc table.items td.sp{white-space:normal}

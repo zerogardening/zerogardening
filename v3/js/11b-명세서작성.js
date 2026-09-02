@@ -186,11 +186,11 @@ window.ZG = window.ZG || {};
     });
     /* 글자칸과 같은 까닭 — 종이에는 <input> 대신 이 글자가 나간다.
        입력칸은 폭이 안 줄어 A4 에서 단가와 공급가액이 서로 겹쳤다(우람님 9/2) */
-    var 종이 = 만들기('span', { class: 'onpaper', text: String(줄[밭] || 0) });
+    var 종이 = 만들기('span', { class: 'onpaper', text: u.콤마(줄[밭] || 0) });
     입력.addEventListener('input', function () {
       줄[밭] = Math.max(0, Number(입력.value) || 0);
       계.최종액풀기(줄);            // 단가·수량을 손대면 정방향으로 돌아간다
-      종이.textContent = String(줄[밭]);
+      종이.textContent = u.콤마(줄[밭]);   // 종이에서는 옆칸과 같이 콤마를 찍는다
       바뀜();
     });
     칸.appendChild(입력);
@@ -277,7 +277,7 @@ window.ZG = window.ZG || {};
       최종입력.addEventListener('input', function () {
         계.최종액맞추기(줄, 최종입력.value);
         단가칸.입력.value = String(줄.단가);
-        단가칸.종이.textContent = String(줄.단가);
+        단가칸.종이.textContent = u.콤마(줄.단가);
         최종종이.textContent = u.콤마(계.줄최종(줄));
         공급세액다시(); 합계채우기();
       });
