@@ -10,7 +10,8 @@ window.ZG = window.ZG || {};
 
   var 상태 = {
     뷰: '목록', 날짜: '', 부터: '', 까지: '', 글: '', 묶음id: '',
-    상세키: '', 폈다: {}, 고른: {}, 쪽: 1, 기간칩: '오늘', 상태칩: ''
+    상세키: '', 폈다: {}, 고른: {}, 쪽: 1, 기간칩: '오늘', 상태칩: '',
+    출고배치: ''   // 출고리스트에서 고른 지난 배송완료 처리. 열 때마다 「지금 화면」으로 되돌린다
   };
 
   /* ══ 카페24 배송상태 ══
@@ -320,7 +321,7 @@ window.ZG = window.ZG || {};
       짝단추('sm'),
       단추('⬆ 주문 올리기', 주문올리기누름),
       단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
-      단추('📋 출고리스트', function () { ZG.주문입력.PC출고창(상태, 고른줄들()); }, true),
+      단추('📋 출고리스트', function () { 상태.출고배치 = ''; ZG.주문입력.PC출고창(상태, 고른줄들()); }, true),
       단추('💌 동봉카드', function () { 카드열기(포장순(고른건들())); }, true)
     ]);
   }
@@ -333,7 +334,7 @@ window.ZG = window.ZG || {};
     var 수동 = 만들기('button', { class: 'btn', type: 'button', text: '＋ 수동주문' });
     수동.addEventListener('click', function () { 열기('수동'); });
     var 출고 = 만들기('button', { class: 'btn', type: 'button', text: '📋 출고리스트' });
-    출고.addEventListener('click', function () { 열기('출고'); });
+    출고.addEventListener('click', function () { 상태.출고배치 = ''; 열기('출고'); });
     var 카드 = 만들기('button', { class: 'btn', type: 'button', text: '💌 동봉카드' });
     카드.addEventListener('click', function () { 카드열기(포장순(자.건으로묶기(줄들()))); });
     var 수집 = 만들기('button', { class: 'btn', type: 'button', text: '📥 주문수집' });

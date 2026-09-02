@@ -200,6 +200,8 @@ table.mini th{padding:var(--space-xs)}
   background:none; border:none; cursor:pointer; font-family:inherit;
 }
 .pcsheet .bd{padding:var(--space-lg) var(--space-2xl) var(--space-2xl)}
+/* 출고리스트 — 지난 배송완료 처리를 고르는 칩줄 (우람님 9/2) */
+.배치칩{margin-bottom:var(--space-lg)}
 
 /* 인쇄 — 창 안만 남긴다.
    🔴 반드시 body.인쇄중 아래에 둔다. 이 조건이 없으면 창을 안 열고 Ctrl+P 를 눌렀을 때
@@ -451,6 +453,8 @@ table.mini th{padding:var(--space-xs)}
   /* 여백을 없앴으니 종이 끝에 글자가 붙는다 — 카드가 아닌 창(출고리스트)은 스스로 여백을 갖는다 */
   body.인쇄중 .pcsheet:has(.encard) .bd{padding:0}
   body.인쇄중 .pcsheet:not(:has(.encard)) .bd{padding:12mm}
+  /* 종이에는 칩을 안 찍는다 — 무엇을 보고 있는지는 창 머리 글이 말한다 */
+  body.인쇄중 .배치칩{display:none}
   body.인쇄중 .encardframe{
     --s:.86; box-shadow:none; margin:0 auto;
     break-inside:avoid; break-after:page; page-break-after:always;

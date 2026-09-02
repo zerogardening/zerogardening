@@ -603,20 +603,79 @@ window.ZG = window.ZG || {};
   }
 
   /* ══ 출고리스트 ══ */
-  function 건수글(상태, 줄들) {
+  /* 「지금 화면」말고 **지난 배송완료 처리 한 번**을 골라 볼 수 있다 (우람님 9/2).
+     송장을 뽑고 바로 배송완료 처리한 뒤에 택배를 싸시기 때문이다.
+     🔴 2일에 걸쳐 보내시면 주문일자로는 절대 안 갈린다 — 주문 목록의 기간은 「언제 나갔나」를 모른다.
+        08f 가 처리마다 찍는 배치 도장만이 근거다.
+     고른 배치는 `상태.출고배치`에 둔다 — 폰은 다시그리기로, PC 는 창 안에서 표만 갈아 끼운다. */
+
+  function 배치들() {
+    return (ZG.배송완료 && ZG.배송완료.배치목록(5)) || [];
+  }
+
+  function 배치글(t) {
+    var 날 = t.출고일 === u.오늘문자() ? '오늘' : String(t.출고일 || '').slice(5).replace('-', '/');
+    /* 🔴 하루에 두 번 처리하시면 날짜만으로는 똑같은 칩이 둘이 된다 — 시각까지 붙인다 */
+    var d = new Date(t.때 || 0);
+    var 시각 = t.때 ? ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) : '';
+    return (t.수동 ? '✋ ' : '') + 날 + 시각 + ' · ' + t.건수 + '건';
+  }
+
+  /* 되돌려서 배치가 통째로 사라졌으면 조용히 「지금 화면」으로 돌아간다 */
+  function 고른것(상태) {
+    if (!상태.출고배치) return null;
+    var 찾 = null;
+    배치들().forEach(function (t) { if (t.배치 === 상태.출고배치) 찾 = t; });
+    if (!찾) 상태.출고배치 = '';
+    return 찾;
+  }
+
+  function 출고표자료(상태, 화면줄들) {
+    var t = 고른것(상태);
+    var 것들 = ZG.주문자료.출고리스트(t ? ZG.배송완료.배치줄들(t.배치) : 화면줄들);
+    /* 🔴 이미 나간 배치는 재고가 그만큼 깎인 뒤다 — 「재고부족」도 「충분」도 거짓이 된다.
+       (재고 0 에 「충분」이 찍히던 것) 그래서 재고칸을 통째로 비우고 「나감」만 남긴다 */
+    if (t) 것들.forEach(function (x) { x.부족 = false; x.지남 = true; });
+    return 것들;
+  }
+
+  /* 창 머리와 종이에 찍히는 「무엇을 보고 있나」 */
+  function 머리글(상태, 줄들, PC) {
+    var t = 고른것(상태);
+    if (t) return '🚚 ' + 배치글(t) + ' 배송완료 처리분';
+    var 기간 = PC ? (상태.부터 === 상태.까지 ? 상태.부터 : 상태.부터 + ' ~ ' + 상태.까지) : 상태.날짜;
     var 고름 = Object.keys(상태.고른).length;
-    var 건수 = ZG.주문자료.건으로묶기(줄들).length;
-    return (고름 ? '고른 ' : '') + 건수 + '건';
+    return 기간 + ' · ' + (고름 ? '고른 ' : '') + ZG.주문자료.건으로묶기(줄들).length + '건';
+  }
+
+  /* 칩을 누른 뒤 무엇을 다시 그릴지는 부른 쪽이 정한다 */
+  function 배치칩줄(상태, 누른뒤, 스타일) {
+    var 것들 = 배치들();
+    if (!것들.length) return null;              // 처리한 적이 없으면 줄 자체를 안 낸다
+    var 줄 = 만들기('div', { class: 'fchips 배치칩', style: 스타일 || '' });
+    [{ 배치: '', 글: '지금 화면' }].concat(것들.map(function (t) {
+      return { 배치: t.배치, 글: 배치글(t) };
+    })).forEach(function (c) {
+      var b = 만들기('button', {
+        class: 'fchip' + ((상태.출고배치 || '') === c.배치 ? ' on' : ''), type: 'button', text: c.글
+      });
+      b.addEventListener('click', function () { 상태.출고배치 = c.배치; 누른뒤(); });
+      줄.appendChild(b);
+    });
+    return 줄;
   }
 
   function 출고뷰(상태, 줄들) {
     return {
       제목: '출고리스트',
       왼: '‹ 주문',
-      오: 상태.날짜 + ' · ' + 건수글(상태, 줄들),
+      오: 머리글(상태, 줄들, false),
       그리기: function (칸) {
         칸.style.gap = '0';
-        칸.appendChild(폰표(ZG.주문자료.출고리스트(줄들)));
+        var 칩 = 배치칩줄(상태, function () { ZG.주문.다시그리기(); },
+                          'padding:0 var(--space-md) var(--space-sm)');
+        if (칩) 칸.appendChild(칩);
+        칸.appendChild(폰표(출고표자료(상태, 줄들)));
       }
     };
   }
@@ -642,7 +701,7 @@ window.ZG = window.ZG || {};
         만들기('td', { class: 'code', text: t.품목코드 }),
         이름칸,
         만들기('td', { class: 'r' + (t.부족 ? ' zero' : ''), text: String(t.필요) }),
-        만들기('td', { class: 'r' + (t.부족 ? ' zero' : ''), text: String(t.재고) })
+        만들기('td', { class: 'r' + (t.부족 ? ' zero' : '') + (t.지남 ? ' dim' : ''), text: t.지남 ? '—' : String(t.재고) })
       ]));
     });
     return 표;
@@ -659,14 +718,28 @@ window.ZG = window.ZG || {};
     var 닫기 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     닫기.addEventListener('click', 닫기창);
 
+    var 힌트 = 만들기('span', { class: 'hint' });
+    var 칩자리 = 만들기('div');
+    var 표칸 = 만들기('div');
+
+    /* 칩을 누르면 창을 다시 열지 않는다 — 다시 열면 스크롤이 맨 위로 튄다 */
+    function 새로() {
+      힌트.textContent = 머리글(상태, 줄들, true);
+      u.비우기(칩자리);
+      var 칩 = 배치칩줄(상태, 새로);
+      if (칩) 칩자리.appendChild(칩);
+      u.비우기(표칸);
+      표칸.appendChild(PC표(출고표자료(상태, 줄들)));
+    }
+
     var 창 = 만들기('div', { class: 'pcsheet', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
-        만들기('h3', { text: '출고리스트' }),
-        만들기('span', { class: 'hint', text: (상태.부터 === 상태.까지 ? 상태.부터 : 상태.부터 + ' ~ ' + 상태.까지) + ' · ' + 건수글(상태, 줄들) }),
+        만들기('h3', { text: '출고리스트' }), 힌트,
         만들기('span', { class: 'right' }, [인쇄, 닫기])
       ]),
-      만들기('div', { class: 'bd' }, [PC표(ZG.주문자료.출고리스트(줄들))])
+      만들기('div', { class: 'bd' }, [칩자리, 표칸])
     ]);
+    새로();
     document.body.appendChild(막);
     document.body.appendChild(창);
     document.body.classList.add('인쇄중');   // 이 표가 있을 때만 인쇄 CSS 가 걸린다 (주문.css 맨 아래)
@@ -702,8 +775,9 @@ window.ZG = window.ZG || {};
           만들기('div', { class: 'rgs', text: t.규격 || '' })
         ]),
         만들기('td', { class: 'r' + (t.부족 ? ' zero' : ''), text: String(t.필요) }),
-        만들기('td', { class: 'r' + (t.부족 ? ' zero' : ''), text: String(t.재고) }),
-        만들기('td', {}, [만들기('span', { class: 'chip' + (t.부족 ? ' out' : ''), text: t.부족 ? '재고부족' : '충분' })])
+        만들기('td', { class: 'r' + (t.부족 ? ' zero' : '') + (t.지남 ? ' dim' : ''), text: t.지남 ? '—' : String(t.재고) }),
+        만들기('td', {}, [만들기('span', { class: 'chip' + (t.부족 ? ' out' : ''),
+          text: t.지남 ? '나감' : (t.부족 ? '재고부족' : '충분') })])
       ]));
     });
     return 표;
