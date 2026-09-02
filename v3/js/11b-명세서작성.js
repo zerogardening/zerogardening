@@ -231,7 +231,8 @@ window.ZG = window.ZG || {};
       머리.appendChild(만들기('th', { class: ['c-' + 칸.키, 칸.머리반].filter(Boolean).join(' '), text: 칸.이름 }));
     });
     머리.appendChild(만들기('th', { class: 'xcol' }));
-    표.appendChild(머리);
+    /* <thead> 로 두면 여러 쪽으로 넘어갈 때 칸 이름이 쪽마다 다시 찍힌다 */
+    표.appendChild(만들기('thead', {}, [머리]));
 
     var 몸 = 만들기('tbody');
     if (!상태.줄들.length) {
