@@ -7,10 +7,42 @@ window.ZG = window.ZG || {};
 
   var u = ZG.ui, 자 = null;
 
+  var 못읽음 = '엑셀 도구를 못 읽었습니다 — js/lib/xlsx.min.js 를 확인해 주세요.';
+
+  /* 창이 이미 열린 뒤의 안전망이다. 입구는 아래 준비되면() 이 지킨다 */
   function 준비됐나() {
     if (window.XLSX) return true;
-    u.토스트('엑셀 도구를 못 읽었습니다 — js/lib/xlsx.min.js 를 확인해 주세요.');
+    u.토스트(못읽음);
     return false;
+  }
+
+  /* ── 엑셀 도구를 눌렀을 때 아직 안 와 있으면 기다렸다 이어서 한다 (우람님 9/2) ──
+     🔴 주문.html 이 xlsx(952KB)를 async 로 받는다. 튕겨 버리면 화면 뜨자마자 누르신 분만
+        「못 읽었습니다」를 보시게 된다 — 조금 뒤엔 멀쩡히 되는데도.
+     🔴 페이지의 async 태그를 지켜보지 않고 **우리가 직접 한 벌 더 부른다.**
+        아직 오는 중이면 브라우저가 같은 주소를 합쳐 주고, 이미 실패했으면 이게 곧 재시도다.
+        태그에 매달리면 우리가 붙기 전에 끝나 버린 실패를 영영 못 듣는다. */
+  var 기다리는것 = [], 부르는중 = false;
+
+  function 다받았다() {
+    부르는중 = false;
+    var 할일들 = 기다리는것;
+    기다리는것 = [];
+    if (!window.XLSX) { u.토스트(못읽음); return; }
+    할일들.forEach(function (f) { f(); });
+  }
+
+  function 준비되면(할일) {
+    if (window.XLSX) { 할일(); return; }
+    기다리는것.push(할일);
+    if (부르는중) return;
+    부르는중 = true;
+    u.토스트('엑셀 도구를 불러오는 중입니다…');
+    var s = document.createElement('script');
+    s.src = 'js/lib/xlsx.min.js';
+    s.onload = 다받았다;
+    s.onerror = 다받았다;
+    document.body.appendChild(s);
   }
 
   function 카페24로젠() {
@@ -108,7 +140,8 @@ window.ZG = window.ZG || {};
 
   /* ③ 화면 표 그대로 내려받기 */
   function 내려받기(줄들) {
-    if (!준비됐나()) return;
+    /* 엑셀이 아직 안 왔으면 기다렸다 저 스스로 다시 불린다 (08d.준비되면) */
+    if (!window.XLSX) { 준비되면(function () { 내려받기(줄들); }); return; }
     자 = 자 || ZG.주문자료;
     if (!줄들 || !줄들.length) { u.토스트('내려받을 주문이 없습니다.'); return; }
 
@@ -131,6 +164,7 @@ window.ZG = window.ZG || {};
 
   ZG.주문파일 = {
     카페24로젠: 카페24로젠, 배송완료: 배송완료, 내려받기: 내려받기,
-    파일고르기: 파일고르기, 시트배열: 시트배열, 읽기: 읽기, 칸: 칸, 준비됐나: 준비됐나
+    파일고르기: 파일고르기, 시트배열: 시트배열, 읽기: 읽기, 칸: 칸,
+    준비됐나: 준비됐나, 준비되면: 준비되면
   };
 })(window.ZG);

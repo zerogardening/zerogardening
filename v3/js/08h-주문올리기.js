@@ -294,7 +294,8 @@ window.ZG = window.ZG || {};
 
   function 열기() {
     if (창) return;
-    if (!ZG.주문파일.준비됐나()) return;
+    /* 엑셀이 아직 안 왔으면 기다렸다 저 스스로 다시 불린다 (08d.준비되면) */
+    if (!window.XLSX) { ZG.주문파일.준비되면(열기); return; }
     상태 = { 단계: '고르기', 파일: null, 파일명: '', 머리: null, 항목들: [], 무시: 0, 묶음: null };
     막 = 만들기('div', { class: 'pcscrim' });
     막.addEventListener('click', 닫기);
