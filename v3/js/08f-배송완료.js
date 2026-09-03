@@ -164,7 +164,15 @@ window.ZG = window.ZG || {};
     ZG.저장소.읽기(ZG.저장소.키.출고).forEach(function (r) {
       if (r.출처 === '주문' && r.배치 === 배치 && r.주문id) 집[r.주문id] = 1;
     });
-    return ZG.주문자료.읽기({}).filter(function (r) { return 집[r.id]; });
+    /* 🔴 서비스 줄의 출고는 출처가 「서비스」라 도장이 없다 — 도장으로만 고르면 그 건의 서비스가 통째로 빠져
+       출고리스트에 안 찍히고, 그대로 안 싸서 나간다. 상품 줄이 뽑힌 건의 서비스는 같이 데려온다 */
+    var 온 = ZG.주문자료.읽기({}), 키 = Object.create(null);
+    온.forEach(function (r) {
+      if (집[r.id] && r.서비스 !== true) 키[r.묶음키 || ZG.주문자료.묶음키(r)] = 1;
+    });
+    return 온.filter(function (r) {
+      return 집[r.id] || (r.서비스 === true && 키[r.묶음키 || ZG.주문자료.묶음키(r)]);
+    });
   }
 
   /* ══ 합포장 형제 (우람님 8/19) ══
