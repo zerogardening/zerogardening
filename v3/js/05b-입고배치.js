@@ -82,7 +82,7 @@ window.ZG = window.ZG || {};
       내.필드('입고업체 <span class="req">*</span> <span class="auto">오늘 계속 이 업체입니다</span>', 업체칸(), null, '입고업체'),
       내.필드('유통명 <span class="req">*</span>', 유통명칸(), null, '유통명'),
       참조.자동완성칸,
-      내.필드('학명 <span class="auto">골라주시면 저절로 채워집니다</span>', 학명칸(), null, '학명'),
+      내.필드('학명', 학명칸(), null, '학명'),
       내.필드('규격 <span class="req">*</span> <span class="auto">「치」로 들어와도 cm로 저장합니다</span>', 내.규격칸()),
       만들기('div', { class: 'pair' }, [
         내.필드('수량 <span class="req">*</span>', 내.숫자칸('수량'), null, '수량'),

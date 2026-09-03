@@ -436,8 +436,8 @@ window.ZG = window.ZG || {};
     } else {
       고른칸 = 만들기('div', { class: 'drop' }, [
         만들기('span', { class: 'ic', text: '📄' }),
-        만들기('div', { class: 't', text: '카페24 · 심폴에서 받은 주문 파일을 고르세요' }),
-        만들기('div', { class: 's', text: '여기로 끌어다 놓아도 됩니다 · .csv · .xls · .xlsx' }),
+        만들기('div', { class: 't', text: '카페24 · 심폴 주문 파일' }),
+        만들기('div', { class: 's', text: '.csv · .xls · .xlsx' }),
         단추('파일 고르기', 파일찾기)
       ]);
       고른칸.addEventListener('dragover', function (e) { e.preventDefault(); 고른칸.classList.add('over'); });
@@ -717,7 +717,7 @@ window.ZG = window.ZG || {};
         숫자칸('ok', 상태.묶음 ? '저장된 줄' : '저장 안 함', 상태.묶음 ? 새.length : 0,
           상태.묶음 ? '주문 ' + 건수(새) + '건으로 들어갔습니다' : '전부 이미 있던 주문입니다'),
         숫자칸('', '건너뛴 줄', 이미, '이미 있던 주문입니다'),
-        숫자칸('노랑', '품목코드 없이 저장', 상태.묶음 ? 코드없음 : 0, '주문 화면에서 코드를 지정해 주세요')
+        숫자칸('노랑', '품목코드 없이 저장', 상태.묶음 ? 코드없음 : 0, '')
       ]),
       만들기('div', { class: 'done' }, [만들기('span', {
         html: 상태.묶음
@@ -741,8 +741,7 @@ window.ZG = window.ZG || {};
           만들기('span', { class: 'l', text: '파일 이름 —' }),
           만들기('span', { class: 'note', html: '<b>' + 이름 + '</b>' }),
           만들기('span', { style: 'flex:1' }),
-          만들기('span', { class: 'note', text: '로젠 홈페이지 → 대량등록 → 이 파일 올리기' })
-        ])
+          ])
       ])
     ];
 

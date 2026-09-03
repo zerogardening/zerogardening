@@ -85,8 +85,8 @@ window.ZG = window.ZG || {};
     } else {
       고른칸 = 만들기('div', { class: 'drop' }, [
         만들기('span', { class: 'ic', text: '📄' }),
-        만들기('div', { class: 't', text: '로젠 「출력완료」 파일을 고르세요' }),
-        만들기('div', { class: 's', text: '여기로 끌어다 놓아도 됩니다 · .xls · .xlsx' }),
+        만들기('div', { class: 't', text: '로젠 「출력완료」 파일' }),
+        만들기('div', { class: 's', text: '.xls · .xlsx' }),
         단추('파일 고르기', 파일찾기)
       ]);
       고른칸.addEventListener('dragover', function (e) { e.preventDefault(); 고른칸.classList.add('over'); });
@@ -141,7 +141,7 @@ window.ZG = window.ZG || {};
 
     return 만들기('div', { class: 'allrow' }, [
       만들기('span', { class: 'l', text: '또는, 로젠 파일 없이 —' }),
-      만들기('span', { class: 'note', text: 건들.length ? '표에서 고른 ' + 건들.length + '건' : '먼저 주문표에서 건을 고르세요' }),
+      만들기('span', { class: 'note', text: 건들.length ? '고른 ' + 건들.length + '건' : '' }),
       만들기('span', { style: 'flex:1' }), 넘김, 되돌
     ]);
   }
@@ -253,12 +253,10 @@ window.ZG = window.ZG || {};
     var 몸 = [
       만들기('div', { class: 'sums' }, [
         만들기('div', { class: 'sum ok' }, [
-          만들기('div', { class: 'k', text: '정상 처리' }), 초록수,
-          만들기('div', { class: 's', text: '주문번호를 찾아 「나갔다」고 기록했습니다' })
+          만들기('div', { class: 'k', text: '정상 처리' }), 초록수
         ]),
         만들기('div', { class: 'sum ng' }, [
-          만들기('div', { class: 'k', text: '확인 필요' }), 빨강수,
-          만들기('div', { class: 's', text: '어느 주문인지 못 찾았습니다' })
+          만들기('div', { class: 'k', text: '확인 필요' }), 빨강수
         ])
       ]),
       만들기('div', { class: 'done' }, [완료글, 전체되돌리기])

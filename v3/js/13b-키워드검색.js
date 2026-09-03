@@ -424,8 +424,7 @@ window.ZG = window.ZG || {};
     if (상태.목록 == null) {
       결과칸.appendChild(만들기('div', { class: 'card' }, [만들기('div', {
         class: 'empty',
-        html: '🔍 검색할 키워드를 넣고 <b>검색</b>을 눌러 주세요.<br>' +
-              '나온 줄의 <b>★</b>을 한 번 누르면 그 자리에서 즐겨찾기에 담깁니다.'
+        text: '아직 검색하지 않았습니다'
       })]));
       return;
     }

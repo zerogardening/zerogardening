@@ -218,7 +218,7 @@ window.ZG = window.ZG || {};
     인쇄.addEventListener('click', function () {
       if (u.폰인가()) 사무실로(건들); else window.print();
     });
-    var 수동 = 만들기('button', { class: 'btn sm', type: 'button', text: '✎ 수동 카드', title: '주문 없이 품목만 골라 카드 만들기' });
+    var 수동 = 만들기('button', { class: 'btn sm', type: 'button', text: '✎ 수동 카드' });
     수동.addEventListener('click', function () { ZG.카드설정.수동창(); });
     var 설정 = 만들기('button', { class: 'btn sm', type: 'button', text: '⚙', 'aria-label': '동봉카드 설정' });
     설정.addEventListener('click', function () { ZG.카드설정.설정창(); });
@@ -396,12 +396,12 @@ window.ZG = window.ZG || {};
       if (거리.열쇠없음.length) {
         속.appendChild(만들기('div', { class: 'ph-card', style: 'margin-top:8px' }, [
           만들기('div', { text: '품목도 상품코드도 없는 줄 ' + 거리.열쇠없음.length + '개 — ' + 거리.열쇠없음.join(' · ') }),
-          만들기('div', { class: 'sub', text: '기억할 열쇠가 없어 여기서는 못 짓습니다 — 주문 화면에서 품목을 지정해 주세요' })
+          만들기('div', { class: 'sub', text: '기억할 열쇠가 없어 여기서는 못 짓습니다' })
         ]));
       }
       if (!짝상자 && !거리.빈품목.length && !거리.열쇠없음.length) {
         속.appendChild(만들기('div', { class: 'ph-card', style: 'text-align:center; padding:24px',
-          text: '다 채웠습니다 — 「💌 카드 만들기」를 눌러 주세요.' }));
+          text: '다 채웠습니다' }));
       }
     }
 
@@ -414,7 +414,6 @@ window.ZG = window.ZG || {};
     var 창 = 만들기('div', { class: 'pcsheet dlv', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
         만들기('h3', { text: '💌 카드 만들기 전 손질' }),
-        만들기('span', { class: 'hint', text: '빈칸으로 나갈 것만 모았습니다 — 그냥 만드셔도 됩니다' }),
         만들기('span', { class: 'right' }, [만들단추, 닫기버튼])
       ]),
       속

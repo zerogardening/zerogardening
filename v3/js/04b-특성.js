@@ -93,7 +93,7 @@ window.ZG = window.ZG || {};
     /* 접힘 여부에 따라 ＋/－ 를 다시 쓴다. 세 자리(처음·누를 때·펼쳐서 열 때)가 같은 글을 써야 한다 */
     function 머리글(열림) {
       머리.setAttribute('aria-expanded', 열림 ? 'true' : 'false');
-      머리.innerHTML = (열림 ? '－' : '＋') + ' 식물 특성 <span class="s">선택 · 나중에 채워도 됩니다</span>' +
+      머리.innerHTML = (열림 ? '－' : '＋') + ' 식물 특성' +
         '<span class="r">' + u.안전(요약글) + '</span>';
     }
     머리글(false);

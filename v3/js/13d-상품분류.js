@@ -216,7 +216,7 @@ window.ZG = window.ZG || {};
       오른쪽.appendChild(만들기('div', {
         class: 'empty',
         html: 미분류
-          ? '🗂 미분류에 든 키워드가 없습니다.<br>「키워드 검색」 탭에서 ★을 눌러 담아 주세요.'
+          ? '🗂 미분류에 든 키워드가 없습니다.'
           : '📁 이 폴더는 비어 있습니다.<br>미분류에서 「폴더 옮기기」로 키워드를 옮겨 오세요.'
       }));
     } else {
@@ -261,7 +261,7 @@ window.ZG = window.ZG || {};
     if (!자().폴더들().length) {
       부모.appendChild(만들기('div', {
         class: 'nokey', style: 'background:var(--color-surface); border-color:var(--color-border); color:var(--color-text-sub)',
-        html: '아직 폴더가 없습니다. <b>＋ 새 폴더</b>로 만들어 주세요. 담은 키워드는 그때까지 <b>미분류</b>에 있습니다.'
+        html: '아직 폴더가 없습니다.'
       }));
     }
     부모.appendChild(격자);

@@ -28,14 +28,16 @@ time.sleep(1.2)
   const 줄들 = ZG.주문자료.읽기({}).filter(r => r.품목코드);
   const 갑 = 줄들.slice(0, 2), 을 = 줄들.slice(2, 5);
   const A = ZG.배송완료.새배치(), B = ZG.배송완료.새배치();
-  ZG.배송완료.출고넣기(갑, '2026-09-01', null, { 배치: A });
-  ZG.배송완료.출고넣기(을, '2026-09-02', null, { 배치: B });
+  const 오늘 = ZG.ui.오늘문자();
+  const 어제 = ZG.계산.날짜문자(Date.parse(오늘) - 86400000);
+  ZG.배송완료.출고넣기(갑, 어제, null, { 배치: A });
+  ZG.배송완료.출고넣기(을, 오늘, null, { 배치: B });
   // 같은 밀리초에 만들어져 차례가 흔들리지 않게 시각을 손으로 못박는다
   저.읽기(키.출고).forEach(r => {
     if (r.배치 === A) 저.바꾸기(키.출고, r.id, Object.assign({}, r, { 등록일시: 1000 }));
     if (r.배치 === B) 저.바꾸기(키.출고, r.id, Object.assign({}, r, { 등록일시: 2000 }));
   });
-  return { A, B, 갑: 갑.map(r => r.id), 을: 을.map(r => r.id),
+  return { A, B, 오늘, 어제, 갑: 갑.map(r => r.id), 을: 을.map(r => r.id),
            갑건: new Set(갑.map(r => r.id)).size, 을건: new Set(을.map(r => r.id)).size };
 }"""
 
@@ -70,8 +72,9 @@ try:
         쪽.click("button:has-text('📋 출고리스트')"); 쪽.wait_for_timeout(500)
         칩글 = 쪽.eval_on_selector_all('.배치칩 .fchip', 'els => els.map(e => e.textContent)')
         본다('칩이 「지금 화면」 + 배치 2개', len(칩글) == 3 and 칩글[0] == '지금 화면', 칩글)
+        어제글 = 만든['어제'][5:].replace('-', '/')
         본다('오늘 배치는 「오늘」로, 지난 배치는 날짜로 적힌다',
-             칩글[1].startswith('오늘') and 칩글[2].startswith('09/01'), 칩글[1:])
+             칩글[1].startswith('오늘') and 칩글[2].startswith(어제글), [칩글[1:], 어제글])
         본다('처음엔 「지금 화면」이 켜져 있다',
              쪽.eval_on_selector('.배치칩 .fchip.on', 'e => e.textContent') == '지금 화면')
 

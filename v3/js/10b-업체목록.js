@@ -117,7 +117,7 @@ window.ZG = window.ZG || {};
     if (!것들.length) {
       표칸.appendChild(만들기('div', {
         class: 'empty',
-        html: '🏢 조건에 맞는 업체가 없습니다.<br>「업체 등록」 탭에서 새 업체를 넣어 주세요.'
+        html: '🏢 조건에 맞는 업체가 없습니다.'
       }));
       return;
     }

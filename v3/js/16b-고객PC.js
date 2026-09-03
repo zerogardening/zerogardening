@@ -375,7 +375,6 @@ window.ZG = window.ZG || {};
     return 만들기('div', { class: 'card' }, [
       만들기('h3', {}, [
         만들기('span', { text: '메모 ' }),
-        만들기('span', { class: 'hint', text: '오래된 것이 위, 새 것이 아래' })
       ]),
       만들기('div', { class: 'box' }, [몸]),
       만들기('div', { class: 'field', style: 'margin-top:var(--space-md)' }, [적는칸]),
@@ -535,7 +534,6 @@ window.ZG = window.ZG || {};
     창 = 만들기('div', { class: 'pcsheet', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
         만들기('h3', { text: '고객 등록' }),
-        만들기('span', { class: 'hint', text: '주문이 아직 없는 분만 손으로 넣습니다' }),
         만들기('span', { class: 'right' }, [등록, 닫기버튼])
       ]),
       만들기('div', { class: 'bd' }, [

@@ -237,7 +237,7 @@ window.ZG = window.ZG || {};
     var 몸 = 만들기('tbody');
     if (!상태.줄들.length) {
       몸.appendChild(만들기('tr', {}, [만들기('td', {
-        class: 'empty', colspan: String(칸들.length + 1), text: '아래 칸에서 품목을 찾아 넣어 주세요'
+        class: 'empty', colspan: String(칸들.length + 1), text: '품목 없음'
       })]));
     }
     상태.줄들.forEach(function (줄, i) {
@@ -453,14 +453,14 @@ window.ZG = window.ZG || {};
   function 공급자칸() {
     var 자사 = ZG.업체자료.자사();
     var 것 = 만들기('div', { class: 'party self' }, [
-      만들기('div', { class: 'ptitle', html: '공 급 자 <em>· 업체 관리에서 수정</em>' })
+      만들기('div', { class: 'ptitle', text: '공 급 자' })
     ]);
     function 줄(라벨, 값, 넓게, 경고) {
       것.appendChild(만들기('div', { class: 'k', text: 라벨 }));
       것.appendChild(만들기('div', { class: 'v' + (넓게 ? ' w3' : '') + (경고 ? ' warn' : ''), text: 값 || '-' }));
     }
     if (!자사) {
-      줄('상호', '⚠ 업체 등록에서 "공급자로 지정"을 체크해주세요', true, true);
+      줄('상호', '⚠ 공급자 미지정', true, true);
       return 것;
     }
     줄('상호', 자사.이름, true);
@@ -487,26 +487,17 @@ window.ZG = window.ZG || {};
     ['할인', '할증'].forEach(function (m) { 모드.appendChild(만들기('option', { value: m, text: m })); });
     모드.value = 상태.할인모드;
     var 값 = 만들기('input', { class: 'pct', type: 'number', value: String(상태.할인값 || 0), 'aria-label': '할인율' });
-    var 설명 = 만들기('span', { class: 'why' });
-
-    function 설명맞추기() {
-      설명.textContent = 상태.할인모드 === '할증'
-        ? '단가 = (매입가×2)×(1+할증율) → 100원 반올림'
-        : '단가 = (매입가×2)×(1−할인율) → 100원 반올림';
-    }
     function 바뀜() {
       var 옛 = 할인율();
       상태.할인모드 = 모드.value;
       상태.할인값 = 계.할인율자르기(Number(값.value) || 0);
-      설명맞추기();
       계.할인다시(상태.줄들, 옛, 할인율());
       표다시();
     }
     모드.addEventListener('change', 바뀜);
     값.addEventListener('change', 바뀜);
-    설명맞추기();
     return 만들기('label', { class: 'tool' }, [
-      document.createTextNode('💰'), 모드, 값, document.createTextNode(' %'), 설명
+      document.createTextNode('💰'), 모드, 값, document.createTextNode(' %')
     ]);
   }
 

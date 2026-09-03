@@ -248,7 +248,7 @@ window.ZG = window.ZG || {};
 
     자리.appendChild(달줄(달));
     if (!줄들.length) {
-      자리.appendChild(만들기('div', { class: 'empty', text: '할 일이 없습니다. ＋ 로 추가하세요' }));
+      자리.appendChild(만들기('div', { class: 'empty', text: '할 일이 없습니다' }));
     } else {
       var 목 = 만들기('div', { class: 'cklist' });
       줄들.forEach(function (r) { 목.appendChild(줄만들기(r, 달)); });

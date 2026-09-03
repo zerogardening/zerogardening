@@ -287,7 +287,6 @@ window.ZG = window.ZG || {};
     var 창 = 만들기('div', { class: 'pcsheet dlv', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
         만들기('h3', { text: '🔗 품목 짝짓기' }),
-        만들기('span', { class: 'hint', text: '한 번 지어 두시면 다음부터 저절로 붙습니다' }),
         만들기('span', { class: 'right' }, [닫기])
       ]),
       속
@@ -304,7 +303,7 @@ window.ZG = window.ZG || {};
     var n = 짝못붙은수();
     if (!n) return null;
     var b = 만들기('button', { class: 'btn' + (반 ? ' ' + 반 : ''), type: 'button',
-      text: '🔗 품목 짝짓기 ' + n, title: '품목이 안 붙은 상품 ' + n + '종 — 짝을 지어 두시면 다음부터 저절로 붙습니다' });
+      text: '🔗 품목 짝짓기 ' + n, title: '품목이 안 붙은 상품 ' + n + '종' });
     b.addEventListener('click', 짝짓기창);
     return b;
   }
