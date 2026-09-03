@@ -32,6 +32,9 @@ try:
         막기 = lambda r: r.abort()
         쪽.route('**xlsx.min.js', 막기)          # 엑셀이 아직 안 온 상태를 만든다
         쪽.add_init_script("localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');")
+        # 🔴 이 시험은 서비스워커 **아래층**(00-새판 · 08d 엑셀)을 본다. 워커가 끼면 조건 자체가 안 만들어진다
+        #    (워커는 HTML 을 제가 받아 오고 js 를 캐시에서 낸다) — 워커까지 얹은 동작은 서비스워커-시험.py 가 본다.
+        쪽.add_init_script("Object.defineProperty(navigator,'serviceWorker',{get:()=>undefined});")
         쪽.goto(주소, wait_until='domcontentloaded')
         쪽.wait_for_function("() => window.ZG && ZG.주문 && document.querySelector('.pc-side, .ph-nav')", timeout=15000)
 

@@ -16,6 +16,16 @@
      캐시가 문제되는 곳은 배포된 http(s) 뿐이라 잃는 것도 없다 */
   if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
 
+  /* ── 서비스워커 — 탭을 누를 때마다 파일 39개를 다시 묻던 왕복을 없앤다 (우람님 9/3) ──
+     🔴 여기 두는 까닭: 이 파일이 여섯 화면 **전부**에 실리고, 판 번호를 다루는 자리도 여기다.
+        주소는 문서 기준으로 풀리므로 `sw.js` 는 v3/ 것이고, 다스리는 범위도 v3/ 안쪽이다.
+     🔴 안 되는 브라우저·막힌 환경이면 조용히 지금까지 하던 대로 돈다. */
+  if ('serviceWorker' in navigator) {
+    try {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* 그냥 지금처럼 */ });
+    } catch (e) { /* 그냥 지금처럼 */ }
+  }
+
   // 🔴 아이콘도 `?v=2` 를 달고 있다. 반드시 js·css 만 본다 — 안 그러면 늘 어긋나 되돌이 새로고침이 된다
   var 판찾기 = /\.(?:js|css)\?v=(\d+)/;
 

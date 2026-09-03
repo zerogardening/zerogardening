@@ -13,8 +13,11 @@ time.sleep(1.2)
 주소 = 'http://localhost:8777/%EB%A9%94%EB%AA%A8.html'   # 메모.html
 지금판 = re.search(r'\.js\?v=(\d+)', io.open(os.path.join(뿌리, '메모.html'), encoding='utf-8').read()).group(1)
 옛으로 = lambda 글: re.sub(r'(\.(?:js|css))\?v=\d+', r'\1?v=1', 글)   # 옛 HTML 인 척
+# 🔴 이 시험은 서비스워커 **아래층**(00-새판 · 08d 엑셀)을 본다. 워커가 끼면 조건 자체가 안 만들어진다
+#    (워커는 HTML 을 제가 받아 오고 js 를 캐시에서 낸다) — 워커까지 얹은 동작은 서비스워커-시험.py 가 본다.
+워커끄기 = "Object.defineProperty(navigator,'serviceWorker',{get:()=>undefined});"
 심기 = ("localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"
-        "Object.defineProperty(window,'supabase',{value:undefined,writable:false,configurable:false});")
+        "Object.defineProperty(window,'supabase',{value:undefined,writable:false,configurable:false});" + 워커끄기)
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(참); print(('  ✅ ' if 참 else '  🔴 ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
