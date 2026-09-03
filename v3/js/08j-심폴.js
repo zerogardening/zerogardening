@@ -128,7 +128,7 @@ window.ZG = window.ZG || {};
     (항목들 || []).forEach(function (것) {
       var r = 것 && 것.줄;
       if (!r) return;
-      var 심 = r.판매처 === '심폴';
+      var 심 = r.판매처 === '심폴' || r.판매처 === '당근';
       var p = 마스터[표[r.원본코드]] || null;
       if (!심 && (r.품목코드 || !p)) return;
       r.품목코드 = p ? p.품목코드 : '';

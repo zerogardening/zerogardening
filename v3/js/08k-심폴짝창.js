@@ -48,7 +48,7 @@ window.ZG = window.ZG || {};
       if (!r) return;
       var c = r.원본코드 || '';
       if (!c) return;
-      if (r.판매처 !== '심폴' && r.품목코드 && !짝[c]) return;
+      if (r.판매처 !== '심폴' && r.판매처 !== '당근' && r.품목코드 && !짝[c]) return;
       if (!표[c]) { 표[c] = { 코드: c, 상품명: 것.상품명 || '', 줄수: 0 }; 차례.push(표[c]); }
       표[c].줄수++;
     });
@@ -164,7 +164,8 @@ window.ZG = window.ZG || {};
     return 만들기('div', { style: 'padding:10px 0; border-top:1px solid var(--color-border)' }, [
       만들기('div', { style: 'display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:6px' }, [
         만들기('b', { text: 것.상품명 || '(상품명 없음)' }),
-        만들기('span', { class: 'sub', text: '상품코드 ' + 것.코드 }),
+        /* 당근은 상품코드가 없어 상품명 자체가 열쇠다 — 같은 글자를 두 번 쓰지 않는다 */
+        만들기('span', { class: 'sub', text: 것.코드 === 것.상품명 ? '' : '상품코드 ' + 것.코드 }),
         만들기('span', { class: 'sub', style: 톤.노랑글, text: '이 파일에 ' + 것.줄수 + '줄' })
       ]),
       묶음.요소,
@@ -194,7 +195,7 @@ window.ZG = window.ZG || {};
       return 만들기('tr', {}, [
         만들기('td', {}, [만들기('div', { text: 것.상품명 }),
           만들기('div', { class: 'sub', text: '이 파일에 ' + 것.줄수 + '줄' })]),
-        만들기('td', { class: 'code', text: 것.코드 }),
+        만들기('td', { class: 'code', text: 것.코드 === 것.상품명 ? '—' : 것.코드 }),
         만들기('td', {}, [만들기('div', { class: 'code', text: 코드 }),
           만들기('div', { class: 'sub', text: p ? (p.유통명 + ' · ' + (p.규격 || '')) : 'v3에 이 품목이 없습니다' })]),
         만들기('td', { class: 'r' }, [단추('짝 풀기', function () {
