@@ -11,10 +11,30 @@ window.ZG = window.ZG || {};
   /* 🔴 소급 방지 경계 — 굴러가는 창이 아니라 박아 둔 날이다 (착수일 9/12 기준 3일) */
   var 경계 = new Date(2026, 8, 9).getTime();
 
+  /* [번호, 이름, 찍는자리, 추가(없어도 된다)] — 필수는 7개, 6~9 는 넣어도 되고 안 넣어도 된다 */
   var 자리들 = [
     [1, '대표이미지 배경'], [2, '구역1 메인'], [3, '구역2 꽃'], [4, '구역3 잎'], [5, '구역4 재배'],
+    [6, '추가', false, true], [7, '추가', false, true], [8, '추가', false, true], [9, '추가', false, true],
     [10, '구역6 실촬영 · 화분 하나', true], [11, '구역6 실촬영 · 여러 포기', true]
   ];
+
+  function 필수수(있다) {
+    return 자리들.filter(function (자) { return !자[3] && 있다(자[0]); }).length;
+  }
+
+  /* 자름 창·추가 칸 모양 — 06g 만 쓰는 몇 줄이라 여기 둔다(css 캐시버스터를 안 건드리려는 뜻도 있다) */
+  var 결 = document.createElement('style');
+  결.textContent =
+    '.사진칸.추가 .이름{color:var(--color-text-faint)}' +
+    '.사진칸.추가 .번{background:transparent; color:var(--color-text-faint); border:1px dashed var(--color-border)}' +
+    '.사진칸.추가 .틀.빔{border-style:dotted; opacity:.65}' +
+    '.자름덮개{position:fixed; inset:0; z-index:220; background:rgba(0,0,0,.62); display:flex;' +
+    ' flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:16px}' +
+    '.자름상자{position:relative; width:min(360px,86vw); aspect-ratio:1/1; overflow:hidden;' +
+    ' border-radius:var(--radius-md); background:#000; touch-action:none; cursor:grab}' +
+    '.자름상자 canvas{position:absolute; left:0; top:0}' +
+    '.자름줄{display:flex; gap:10px}';
+  document.head.appendChild(결);
 
   function 통() {
     var 서 = ZG.서버;
@@ -37,12 +57,12 @@ window.ZG = window.ZG || {};
     });
   }
 
-  function 판그리기(그림, 최대) {
-    var w = 그림.width, h = 그림.height, 큰 = Math.max(w, h);
-    if (큰 > 최대) { var 비 = 최대 / 큰; w = Math.round(w * 비); h = Math.round(h * 비); }
+  /* 자른것 = {그림, 잘:{x,y,변}} — 우람님이 쓰시는 사진은 다 1:1 이라 정사각으로만 만든다 */
+  function 판그리기(자른것, 최대) {
+    var 잘 = 자른것.잘, 변 = Math.min(최대, Math.round(잘.변));
     var 판 = document.createElement('canvas');
-    판.width = w; 판.height = h;
-    판.getContext('2d').drawImage(그림, 0, 0, w, h);
+    판.width = 변; 판.height = 변;
+    판.getContext('2d').drawImage(자른것.그림, 잘.x, 잘.y, 잘.변, 잘.변, 0, 0, 변, 변);
     return 판;
   }
 
@@ -54,18 +74,14 @@ window.ZG = window.ZG || {};
 
   /* 원본(1600·q80)과 썸네일(200·q70)을 한 번에 만든다 —
      목록에서 1600px 을 받으면 폰에서 몇 초씩 걸린다 */
-  function 두장만들기(파일) {
-    return 그림읽기(파일).then(function (그림) {
-      var 큰판 = 판그리기(그림, 1600), 작은판 = 판그리기(그림, 200);
-      if (그림.close) 그림.close();
-      return Promise.all([블롭(큰판, 0.8), 블롭(작은판, 0.7)]);
-    });
+  function 두장만들기(자른것) {
+    return Promise.all([블롭(판그리기(자른것, 1600), 0.8), 블롭(판그리기(자른것, 200), 0.7)]);
   }
 
-  function 올리기(코드, 번, 파일) {
+  function 올리기(코드, 번, 자른것) {
     var t = 통();
     if (!t) return Promise.reject(new Error('오프라인'));
-    return 두장만들기(파일).then(function (둘) {
+    return 두장만들기(자른것).then(function (둘) {
       var 옵션 = { contentType: 'image/jpeg', upsert: true };
       return Promise.all([
         t.upload(코드 + '/' + 번 + '.jpg', 둘[0], 옵션),
@@ -110,7 +126,7 @@ window.ZG = window.ZG || {};
 
   function 칩달기(칩, 코드) {
     사진훑기(코드).then(function (표) {
-      var 수 = 자리들.filter(function (자) { return 표[자[0]]; }).length;
+      var 수 = 필수수(function (번) { return 표[번]; });
       칩.textContent = 수 + '/7';
       칩.className = 'chip 사진' + (수 === 7 ? ' 완' : (수 ? ' 일부' : ''));
     }).catch(function () { 칩.style.display = 'none'; });   // 못 세면 숫자를 지어내지 않는다
@@ -170,6 +186,72 @@ window.ZG = window.ZG || {};
     return 감쌈;
   }
 
+  /* ══════════ 1:1 로 자르기 — 끌어서 자리만 옮긴다(확대·축소는 안 넣는다) ══════════ */
+
+  function 자름열기(파일, 넣을때) {
+    그림읽기(파일).then(function (그림) {
+      var 덮개 = 만들기('div', { class: '자름덮개' });
+      var 상자 = 만들기('div', { class: '자름상자' });
+      var 그만 = 만들기('button', { class: 'btn', type: 'button', text: '그만' });
+      var 넣기 = 만들기('button', { class: 'btn main', type: 'button', text: '넣기' });
+      덮개.appendChild(상자);
+      덮개.appendChild(만들기('div', { class: '자름줄' }, [그만, 넣기]));
+      document.body.appendChild(덮개);
+
+      var 박스 = 상자.clientWidth;
+      var 배율 = 박스 / Math.min(그림.width, 그림.height);   // 정사각을 꽉 채운다(cover)
+      var 폭 = Math.round(그림.width * 배율), 높 = Math.round(그림.height * 배율);
+      var 판 = document.createElement('canvas');
+      판.width = 폭; 판.height = 높;
+      판.getContext('2d').drawImage(그림, 0, 0, 폭, 높);
+      상자.appendChild(판);
+
+      var x = (박스 - 폭) / 2, y = (박스 - 높) / 2;          // 기본은 가운데
+      function 놓기() { 판.style.left = x + 'px'; 판.style.top = y + 'px'; }
+      놓기();
+
+      var 잡은 = null;
+      function 자리(e) { var t = e.touches && e.touches[0]; return t || e; }
+      function 시작(e) { var p = 자리(e); 잡은 = { x: p.clientX - x, y: p.clientY - y }; }
+      function 끌기(e) {
+        if (!잡은) return;
+        e.preventDefault();
+        var p = 자리(e);
+        x = Math.min(0, Math.max(박스 - 폭, p.clientX - 잡은.x));
+        y = Math.min(0, Math.max(박스 - 높, p.clientY - 잡은.y));
+        놓기();
+      }
+      function 놓침() { 잡은 = null; }
+      상자.addEventListener('mousedown', 시작);
+      상자.addEventListener('touchstart', 시작, { passive: true });
+      document.addEventListener('mousemove', 끌기);
+      document.addEventListener('touchmove', 끌기, { passive: false });
+      document.addEventListener('mouseup', 놓침);
+      document.addEventListener('touchend', 놓침);
+
+      function 치우기() {
+        document.removeEventListener('mousemove', 끌기);
+        document.removeEventListener('touchmove', 끌기);
+        document.removeEventListener('mouseup', 놓침);
+        document.removeEventListener('touchend', 놓침);
+        if (덮개.parentNode) 덮개.parentNode.removeChild(덮개);
+        if (창) u.탈출걸기(닫기);                            // 탈출은 한 자리뿐이라 사진 창 것으로 되돌린다
+      }
+      그만.addEventListener('click', function () {
+        if (그림.close) 그림.close();
+        치우기();
+      });
+      넣기.addEventListener('click', function () {
+        치우기();
+        넣을때({ 그림: 그림, 잘: { x: -x / 배율, y: -y / 배율, 변: Math.min(그림.width, 그림.height) } });
+      });
+      u.탈출걸기(function () { if (그림.close) 그림.close(); 치우기(); });
+    }).catch(function (e) {
+      console.warn(e);
+      u.토스트('사진을 못 읽었습니다');
+    });
+  }
+
   /* ══════════ 사진 7칸 ══════════ */
 
   var 창 = null;
@@ -181,25 +263,26 @@ window.ZG = window.ZG || {};
     창 = null;
   }
 
-  function 붙이기(번, 파일) {
+  function 붙이기(번, 자른것) {
     창.진행[번] = { 퍼센트: 12 };
     판다시();
     var 막대 = 창.판.querySelector('[data-바="' + 번 + '"]');
     if (막대) setTimeout(function () { 막대.style.width = '88%'; }, 30);
-    올리기(창.코드, 번, 파일).then(function () {
+    올리기(창.코드, 번, 자른것).then(function () {
       delete 창.진행[번];
       창.있는것[번] = Date.now();
+      if (자른것.그림.close) 자른것.그림.close();
       판다시();
     }).catch(function (e) {
       console.warn('사진 올리기 실패', e);
-      창.진행[번] = { 실패: true, 파일: 파일 };
+      창.진행[번] = { 실패: true, 자른것: 자른것 };   // 다시 올릴 때 자른 자리를 그대로 쓴다
       판다시();
     });
   }
 
   function 칸그리기(자리) {
     var 번 = 자리[0], 진 = 창.진행[번], 때 = 창.있는것[번];
-    var 칸 = 만들기('div', { class: '사진칸' + (자리[2] ? ' 찍기' : '') + (진 && 진.실패 ? ' 실패' : '') });
+    var 칸 = 만들기('div', { class: '사진칸' + (자리[2] ? ' 찍기' : '') + (자리[3] ? ' 추가' : '') + (진 && 진.실패 ? ' 실패' : '') });
     칸.appendChild(만들기('div', {
       class: '이름',
       html: '<span class="번' + (때 && !진 ? ' 됨' : '') + '">' + 번 + '</span>' + u.안전(자리[1])
@@ -213,13 +296,13 @@ window.ZG = window.ZG || {};
     고르기.addEventListener('change', function () {
       var 파일 = 고르기.files && 고르기.files[0];
       고르기.value = '';
-      if (파일) 붙이기(번, 파일);
+      if (파일) 자름열기(파일, function (자른것) { 붙이기(번, 자른것); });
     });
     틀.appendChild(고르기);
 
     if (진 && 진.실패) {
       var 다시올리기 = 만들기('button', { class: 'btn sm', type: 'button', text: '다시 올리기' });
-      다시올리기.addEventListener('click', function () { 붙이기(번, 진.파일); });
+      다시올리기.addEventListener('click', function () { 붙이기(번, 진.자른것); });
       틀.appendChild(만들기('div', { class: '덮개' }, [
         만들기('div', { class: '상태', text: '올리지 못했습니다' }), 다시올리기
       ]));
@@ -244,7 +327,7 @@ window.ZG = window.ZG || {};
     if (!창) return;
     u.비우기(창.판);
     자리들.forEach(function (자리) { 창.판.appendChild(칸그리기(자리)); });
-    var 수 = 자리들.filter(function (자) { return 창.있는것[자[0]]; }).length;
+    var 수 = 필수수(function (번) { return 창.있는것[번]; });   // 추가 칸(6~9)은 안 센다
     창.셈.textContent = 수 + '/7';
     창.셈.className = 'chip 사진' + (수 === 7 ? ' 완' : (수 ? ' 일부' : ''));
     창.요청.disabled = 수 < 7;
