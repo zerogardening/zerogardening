@@ -30,6 +30,15 @@ window.ZG = window.ZG || {};
     return null;
   }
 
+  /* 🔴 supabase-js 는 인터넷이 끊기거나 세션이 상하면 약속을 영영 안 끝낼 때가 있다.
+     그대로 두면 원고 갈래가 「불러오는 중…」에 멈춰 선다 — 조용히 실패하지 않는다 (설계 §2).
+     10초가 지나면 오프라인으로 보고 말썽()이 사람 말로 바꿔 준다. */
+  function 제때(p) {
+    return Promise.race([p, new Promise(function (_, 깨기) {
+      setTimeout(function () { 깨기(new Error('오프라인')); }, 10000);
+    })]);
+  }
+
   function 통() {
     var 서 = ZG.서버;
     return 서 && 서.켜짐 && 서.클라이언트 ? 서.클라이언트.from(표이름) : null;
@@ -62,7 +71,7 @@ window.ZG = window.ZG || {};
   function 불러오기(코드) {
     var t = 통();
     if (!t) return Promise.reject(new Error('오프라인'));
-    return t.select('id,내용,삭제됨').in('id', id들(코드)).then(function (답) {
+    return 제때(t.select('id,내용,삭제됨').in('id', id들(코드))).then(function (답) {
       if (답 && 답.error) throw 답.error;
       var 칸값 = {}, 머리 = {};
       ((답 && 답.data) || []).forEach(function (r) {
@@ -90,7 +99,7 @@ window.ZG = window.ZG || {};
         삭제됨: false
       };
     });
-    return t.upsert(행들, { onConflict: 'id' }).then(function (답) {
+    return 제때(t.upsert(행들, { onConflict: 'id' })).then(function (답) {
       if (답 && 답.error) throw 답.error;
       return 줄들.length;
     });
@@ -102,7 +111,7 @@ window.ZG = window.ZG || {};
     if (!t) return Promise.reject(new Error('오프라인'));
     var 내용 = { 품목코드: 코드 };
     Object.keys(덧 || {}).forEach(function (k) { 내용[k] = 덧[k]; });
-    return t.upsert([{ id: 코드, 내용: 내용, 삭제됨: false }], { onConflict: 'id' }).then(function (답) {
+    return 제때(t.upsert([{ id: 코드, 내용: 내용, 삭제됨: false }], { onConflict: 'id' })).then(function (답) {
       if (답 && 답.error) throw 답.error;
       return 내용;
     });
@@ -111,7 +120,7 @@ window.ZG = window.ZG || {};
   function 머리읽기(코드) {
     var t = 통();
     if (!t) return Promise.reject(new Error('오프라인'));
-    return t.select('id,내용,삭제됨').eq('id', 코드).then(function (답) {
+    return 제때(t.select('id,내용,삭제됨').eq('id', 코드)).then(function (답) {
       if (답 && 답.error) throw 답.error;
       var r = ((답 && 답.data) || [])[0];
       return (r && !r.삭제됨 && r.내용) || {};
@@ -126,7 +135,8 @@ window.ZG = window.ZG || {};
   /* 서버가 안 닿거나 표가 아직 없을 때 — 조용히 실패하지 않는다 (설계 §2) */
   function 말썽(e) {
     var m = (e && (e.message || e.msg)) || '';
-    if (/오프라인/.test(m)) return '인터넷이 안 닿아 원고를 못 다룹니다';
+    if (/오프라인|Failed to fetch|NetworkError|Load failed/i.test(m))
+      return '인터넷이 안 닿아 원고를 못 다룹니다';
     if (/does not exist|schema cache|42P01|PGRST205/i.test(m)) return '서버에 v3_원고 표가 아직 없습니다';
     return '원고를 못 읽었습니다 — ' + (m || '까닭 모름');
   }
