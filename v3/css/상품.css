@@ -154,6 +154,5 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
   .사진창 .hd{border-radius:0; padding:var(--space-lg)}
   .사진창 .bd{padding:var(--space-lg) var(--space-lg) var(--space-3xl)}
   .사진판{grid-template-columns:1fr 1fr; gap:var(--space-md)}
-  .사진칸 .틀{aspect-ratio:4/3}
   .사진창 .btnrow .btn{flex:1; min-height:46px}
 }
