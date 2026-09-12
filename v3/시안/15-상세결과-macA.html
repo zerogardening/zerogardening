@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 품목 상세 [결과] 탭 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  .itemhead{display:flex; align-items:center; gap:var(--space-lg); margin-bottom:var(--space-lg)}
+  .itemhead .nm{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.03em}
+  .itemhead .cd{
+    font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold);
+    color:var(--color-accent-dark); background:var(--color-accent-bg);
+    border:var(--border-width) solid var(--color-accent-border); padding:var(--pad-tag); border-radius:var(--radius-badge);
+  }
+  .itemhead .toggle{margin-left:auto; width:300px}
+  .ph-tabs{padding:var(--space-md) var(--space-3xl) 0}
+  .ph-tabs .toggle button{font-size:var(--font-lg)}
+
+  /* 만들어진 6장 */
+  .shots{display:flex; gap:var(--space-lg); align-items:flex-start}
+  .shots figure{flex:1; display:flex; flex-direction:column; gap:var(--space-xs)}
+  .shots img{
+    width:100%; display:block; border-radius:var(--radius-md);
+    border:var(--border-width) solid var(--color-border); background:var(--color-surface);
+  }
+  .shotlab{display:flex; align-items:center; gap:var(--space-xs); font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+  .shotlab .n{
+    width:16px; height:16px; border-radius:var(--radius-sm); background:var(--color-seg-bg);
+    color:var(--color-text-sub); font-size:var(--font-3xs); font-weight:var(--weight-bold);
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .shotlab .px{margin-left:auto; color:var(--color-text-hint); font-variant-numeric:tabular-nums; font-weight:var(--weight-medium)}
+
+  /* 폰 — 세로로 이어보기 */
+  .filmstrip{
+    display:flex; gap:var(--space-xs); padding:var(--space-sm) var(--space-3xl);
+    background:var(--color-ios-bar); border-bottom:var(--border-width) solid var(--color-border);
+  }
+  .filmstrip span{
+    flex:1; height:30px; border-radius:var(--radius-sm); background:var(--color-surface);
+    border:var(--border-width) solid var(--color-border); display:flex; align-items:center; justify-content:center;
+    font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-sub);
+  }
+  .filmstrip span.on{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent-dark)}
+  .filmstrip span.empty{background:var(--color-bg); color:var(--color-text-faint); border-style:dashed}
+  .phone .ph-body{overflow:hidden; min-height:0}
+  .ph-shots{display:flex; flex-direction:column; gap:var(--space-md)}
+  .ph-shots img{width:100%; display:block; border-radius:var(--radius-md); border:var(--border-width) solid var(--color-border)}
+
+  /* 아직 안 만든 자리 */
+  .ghost{
+    border:var(--border-width-thick) dashed var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-bg); display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:var(--space-3xs); color:var(--color-text-hint); font-size:var(--font-xs); font-weight:var(--weight-semibold);
+  }
+  .ghost b{font-size:var(--font-md); color:var(--color-text-faint)}
+  .ghosts{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md)}
+  .ghosts .ghost{height:96px}
+
+  /* 준비 상태 */
+  .ready{display:flex; gap:var(--space-sm); flex-wrap:wrap; align-items:center}
+  .rchip{
+    display:inline-flex; align-items:center; gap:var(--gap-chip); font-size:var(--font-2xs);
+    font-weight:var(--weight-semibold); padding:var(--pad-chip); border-radius:var(--radius-pill);
+    background:var(--color-accent-bg); color:var(--color-accent-dark);
+    border:var(--border-width) solid var(--color-accent-border);
+  }
+  .rchip::before{content:'✓'; font-size:var(--font-2xs)}
+  .rchip.no{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+  .rchip.no::before{content:'!'}
+
+  .ph-savebar{
+    display:flex; align-items:center; gap:var(--space-lg); padding:var(--space-sm) var(--space-3xl) var(--space-md);
+    background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border);
+  }
+  .ph-savebar .st{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); line-height:1.4}
+  .ph-savebar .st b{color:var(--color-text); display:block; font-size:var(--font-sm)}
+  .ph-savebar .btn{flex:1; min-height:46px; font-size:var(--font-xl)}
+  .toolbar{display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-lg)}
+  .toolbar .made{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted)}
+  .toolbar .spacer{flex:1}
+  .bigmake{display:flex; flex-direction:column; align-items:center; gap:var(--space-lg); padding:var(--space-4xl) 0 var(--space-lg)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════ 폰 ③ 결과 — 다 만들어진 뒤 ══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">③ 아이폰 <b>390px</b> — [결과] 탭, 만들어진 6장을 <b>세로로 이어 봅니다</b> <span class="tag">macOS A안 · 브랜드 초록</span></div>
+  <div class="phone">
+    <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+    <div class="ph-top">
+      <div>
+        <div class="ph-back">‹ 재고</div>
+        <h1>구절초 노랑</h1>
+      </div>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub"><span>QUC02-10 · 10cm 포트</span><span>만든 때 2026-09-10 14:22</span></div>
+    <div class="ph-tabs">
+      <div class="toggle">
+        <button style="flex:1; padding:0">사진</button>
+        <button style="flex:1; padding:0">원고</button>
+        <button class="on" style="flex:1; padding:0">결과</button>
+      </div>
+    </div>
+    <div class="filmstrip">
+      <span class="on">1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span>
+    </div>
+    <div class="ph-body" style="padding-top:var(--space-md)">
+      <div class="ph-shots">
+        <div class="shotlab"><span class="n">1</span>소개<span class="px">1000 × 2454</span></div>
+        <img src="_결과예시/1.jpg" alt="">
+        <div class="shotlab"><span class="n">2</span>꽃<span class="px">1000 × 1489</span></div>
+        <img src="_결과예시/2.jpg" alt="">
+      </div>
+    </div>
+    <div class="ph-savebar">
+      <div class="st">6장<b>모두 있음</b></div>
+      <button class="btn main">다시 만들기</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>상품</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">📄</span>명세서</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ 폰 ④ 결과 — 아직 안 만든 상태 ══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">④ 아이폰 — [결과] 탭, <b>사진·원고는 다 찼고 아직 조립 전</b></div>
+  <div class="phone">
+    <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+    <div class="ph-top">
+      <div>
+        <div class="ph-back">‹ 재고</div>
+        <h1>구절초 분홍</h1>
+      </div>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub"><span>QUC01-10 · 10cm 포트</span><span>만든 적 없음</span></div>
+    <div class="ph-tabs">
+      <div class="toggle">
+        <button style="flex:1; padding:0">사진</button>
+        <button style="flex:1; padding:0">원고</button>
+        <button class="on" style="flex:1; padding:0">결과</button>
+      </div>
+    </div>
+    <div class="filmstrip">
+      <span class="empty">1</span><span class="empty">2</span><span class="empty">3</span><span class="empty">4</span><span class="empty">5</span><span class="empty">6</span>
+    </div>
+    <div class="ph-body" style="padding-top:var(--space-lg)">
+      <div class="ready">
+        <span class="rchip">사진 12장</span>
+        <span class="rchip">원고 5구역</span>
+        <span class="rchip">글자수 모두 안쪽</span>
+      </div>
+      <div class="ghosts">
+        <div class="ghost"><b>1</b>소개</div>
+        <div class="ghost"><b>2</b>꽃</div>
+        <div class="ghost"><b>3</b>잎</div>
+        <div class="ghost"><b>4</b>How to grow</div>
+        <div class="ghost"><b>5</b>식재 간격</div>
+        <div class="ghost"><b>6</b>실촬영</div>
+      </div>
+    </div>
+    <div class="ph-savebar">
+      <div class="st">만들 장수<b>6장</b></div>
+      <button class="btn main">상세페이지 만들기</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>상품</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">📄</span>명세서</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PC ③ ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">③ 맥 <b>1440px</b> — [결과] 탭, 6장을 <b>한 줄에 나란히</b> 놓아 한눈에 봅니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>구절초 노랑</h2><div class="path">상품 › 재고 › 구절초 노랑</div></div>
+        <div class="card">
+          <div class="itemhead">
+            <span class="nm">구절초 노랑</span>
+            <span class="cd">QUC02-10</span>
+            <span style="font-size:var(--font-xs); color:var(--color-text-muted)">10cm 포트</span>
+            <div class="toggle">
+              <button style="flex:1; padding:0">사진</button>
+              <button style="flex:1; padding:0">원고</button>
+              <button class="on" style="flex:1; padding:0">결과</button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <span class="rchip">6장 모두 있음</span>
+            <span class="made">만든 때 2026-09-10 14:22 · 원고 고친 때 2026-09-04</span>
+            <div class="spacer"></div>
+            <button class="btn sm">폴더 열기</button>
+            <button class="btn sm">내려받기</button>
+            <button class="btn main sm">다시 만들기</button>
+          </div>
+          <div class="shots">
+            <figure>
+              <div class="shotlab"><span class="n">1</span>소개<span class="px">2454</span></div>
+              <img src="_결과예시/1.jpg" alt="">
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">2</span>꽃<span class="px">1489</span></div>
+              <img src="_결과예시/2.jpg" alt="">
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">3</span>잎<span class="px">1845</span></div>
+              <img src="_결과예시/3.jpg" alt="">
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">4</span>How to grow<span class="px">2777</span></div>
+              <img src="_결과예시/4.jpg" alt="">
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">5</span>식재 간격<span class="px">1237</span></div>
+              <img src="_결과예시/5.jpg" alt="">
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">6</span>실촬영<span class="px">2701</span></div>
+              <img src="_결과예시/6.jpg" alt="">
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PC ④ ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">④ 맥 — [결과] 탭, <b>사진·원고는 다 찼고 아직 조립 전</b></div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>구절초 분홍</h2><div class="path">상품 › 재고 › 구절초 분홍</div></div>
+        <div class="card">
+          <div class="itemhead">
+            <span class="nm">구절초 분홍</span>
+            <span class="cd">QUC01-10</span>
+            <span style="font-size:var(--font-xs); color:var(--color-text-muted)">10cm 포트</span>
+            <div class="toggle">
+              <button style="flex:1; padding:0">사진</button>
+              <button style="flex:1; padding:0">원고</button>
+              <button class="on" style="flex:1; padding:0">결과</button>
+            </div>
+          </div>
+          <div class="toolbar">
+            <span class="rchip">사진 12장</span>
+            <span class="rchip">원고 5구역</span>
+            <span class="rchip">글자수 모두 안쪽</span>
+            <span class="made">만든 적 없음</span>
+            <div class="spacer"></div>
+            <button class="btn main wide">상세페이지 만들기</button>
+          </div>
+          <div class="shots">
+            <figure>
+              <div class="shotlab"><span class="n">1</span>소개</div>
+              <div class="ghost" style="height:420px"><b>1</b>소개</div>
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">2</span>꽃</div>
+              <div class="ghost" style="height:280px"><b>2</b>꽃</div>
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">3</span>잎</div>
+              <div class="ghost" style="height:330px"><b>3</b>잎</div>
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">4</span>How to grow</div>
+              <div class="ghost" style="height:470px"><b>4</b>How to grow</div>
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">5</span>식재 간격</div>
+              <div class="ghost" style="height:240px"><b>5</b>식재 간격</div>
+            </figure>
+            <figure>
+              <div class="shotlab"><span class="n">6</span>실촬영</div>
+              <div class="ghost" style="height:460px"><b>6</b>실촬영</div>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

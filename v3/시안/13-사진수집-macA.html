@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 상품 › 재고 › 사진 수집 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  .phone{height:auto; min-height:844px; position:relative}
+  .twoup{display:flex; align-items:flex-start; gap:28px; margin-bottom:34px}
+  .twoup .col .cap{font-size:12px; margin-bottom:8px}
+  .sub{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+  td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
+  .btn:disabled, .btn[disabled]{opacity:.4; cursor:not-allowed}
+
+  /* ══ 목록 줄에 붙는 사진 칩 — 기존 .chip.요청 과 같은 결 ══ */
+  .chip.요청{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  .chip.요청::before{background:var(--color-accent)}
+  .chip.요청.진행{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+  .chip.요청.진행::before{background:#C88A00}
+  .chip.사진{background:var(--color-surface); color:var(--color-text-muted); border-color:var(--color-border); font-variant-numeric:tabular-nums}
+  .chip.사진::before{content:'📷'; background:none; width:auto; height:auto; border-radius:0; font-size:10px; line-height:1}
+  .chip.사진.일부{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+  .chip.사진.완{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  td .chip + .chip, .ph-card .chip + .chip{margin-left:var(--space-xs)}
+
+  /* ══ 사진 칸 7개 ══ */
+  .사진판{display:grid; gap:var(--space-md)}
+  .phone .사진판{grid-template-columns:1fr 1fr}
+  .phone .사진칸 .틀{aspect-ratio:4/3}
+  .pcsheet .사진판{grid-template-columns:repeat(4,1fr); gap:var(--space-lg)}
+  .사진칸{display:flex; flex-direction:column; gap:var(--space-xs); min-width:0}
+  .사진칸 .이름{
+    display:flex; align-items:flex-start; gap:var(--space-xs); line-height:1.35;
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub);
+  }
+  .사진칸 .번{
+    flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+    min-width:20px; height:18px; padding:0 6px; border-radius:var(--radius-pill);
+    background:var(--color-seg-bg); color:var(--color-text-sub);
+    font-size:var(--font-2xs); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums;
+  }
+  .사진칸 .번.됨{background:var(--color-accent); color:var(--color-on-accent)}
+  .사진칸.찍기 .번{background:var(--color-accent-bg); color:var(--color-accent-dark); border:var(--border-width) solid var(--color-accent-border)}
+  .사진칸.찍기 .번.됨{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent-dark)}
+  .사진칸 .틀{
+    position:relative; aspect-ratio:1/1; border-radius:var(--radius-md); overflow:hidden;
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .사진칸 .틀.빔{border-style:dashed; background:var(--color-bg)}
+  .사진칸.찍기 .틀.빔{border-color:var(--color-accent-border); background:var(--color-accent-bg)}
+  .사진칸 .틀 img{width:100%; height:100%; object-fit:cover; display:block}
+  .사진칸 .빈표{font-size:26px; color:var(--color-text-faint); line-height:1}
+  .사진칸.찍기 .빈표{font-size:24px; color:var(--color-accent-dark); opacity:.85}
+  .사진칸 .다시{
+    position:absolute; right:5px; bottom:5px; border:none; cursor:pointer; font-family:inherit;
+    background:rgba(29,29,31,.68); color:#fff; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    padding:3px 9px; border-radius:var(--radius-pill);
+  }
+  .사진칸 .덮개{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:7px; background:rgba(255,255,255,.78); padding:0 10px;
+  }
+  .사진칸 .상태{font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
+  .사진칸 .바{width:74%; height:5px; border-radius:3px; background:var(--color-border); overflow:hidden}
+  .사진칸 .바 i{display:block; height:100%; border-radius:3px; background:var(--color-accent)}
+  .사진칸.실패 .틀{border-color:var(--color-danger)}
+  .사진칸.실패 .번{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+  .사진칸.실패 .덮개{background:rgba(255,241,240,.9)}
+  .사진칸.실패 .상태{color:var(--color-danger)}
+  .사진칸.실패 .btn{background:#fff; border-color:var(--color-danger-border); color:var(--color-danger)}
+
+  /* ══ PC 팝업 창 (주문.css · 업체.css 와 같은 모양 — 그림에서는 창 안에 앉힌다) ══ */
+  .pc-body{position:relative}
+  .pc-body.창{min-height:720px}
+  .pcscrim{position:absolute; inset:0; background:rgba(0,0,0,.34); z-index:60}
+  .pcsheet{
+    position:absolute; z-index:61; top:4%; left:50%; transform:translateX(-50%);
+    width:min(780px,94%); max-height:92%; overflow:auto;
+    background:var(--color-bg); border-radius:var(--radius-lg);
+    box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+  }
+  .pcsheet .hd{
+    display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+    padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+  }
+  .pcsheet .hd h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .pcsheet .hd .cd{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-family:var(--font-mono)}
+  .pcsheet .hd .right{margin-left:auto; display:flex; gap:var(--space-md); align-items:center}
+  .pcsheet .hd .x{font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1; background:none; border:none; cursor:pointer; font-family:inherit}
+  .pcsheet .bd{padding:var(--space-xl) var(--space-2xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-xl)}
+  .pcsheet .btnrow{display:flex; gap:var(--space-sm); justify-content:flex-end; align-items:center}
+  .pcsheet .btnrow .spacer{flex:1}
+
+  /* ══ 확인 대화상자 ══ */
+  .askscrim{position:absolute; inset:0; background:rgba(0,0,0,.28); z-index:200}
+  .phone .askbox{width:calc(100% - 36px)}
+  .askbox{
+    position:absolute; z-index:201; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:min(430px, calc(100% - 40px)); background:var(--color-surface);
+    border-radius:var(--radius-lg); box-shadow:var(--shadow-panel);
+    padding:var(--pad-card); display:flex; flex-direction:column; gap:var(--space-lg);
+  }
+  .askbox h4{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .askbox p{font-size:var(--font-sm); color:var(--color-text-sub); line-height:1.7}
+  .askbox p b{color:var(--color-text)}
+  .askbox .btnrow{display:flex; gap:var(--space-sm); justify-content:flex-end}
+  .askbox .btnrow .btn{min-width:96px}
+  .askbox.sheetup{
+    top:auto; bottom:0; left:0; transform:none; width:100%;
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0; padding-bottom:var(--space-3xl);
+  }
+  .askbox.sheetup .btnrow .btn{flex:1; min-height:46px}
+
+  /* ══ 폰 — 고르는 중 · 아래 작업 막대 (기존 06a) ══ */
+  .ph-card.고르는중{padding-left:50px; position:relative}
+  .ph-card .동그라미{
+    position:absolute; left:16px; top:50%; margin-top:-11px; width:22px; height:22px;
+    border-radius:50%; border:2px solid var(--color-border); background:var(--color-surface);
+  }
+  .ph-card.골랐다{background:var(--color-accent-bg); box-shadow:inset 0 0 0 2px var(--color-accent)}
+  .ph-card.골랐다 .동그라미{border-color:var(--color-accent); background:var(--color-accent); box-shadow:inset 0 0 0 3px var(--color-surface)}
+  .ph-작업막대{
+    position:absolute; left:var(--space-lg); right:var(--space-lg); bottom:16px; z-index:31;
+    gap:var(--space-sm); display:flex;
+  }
+  .ph-작업막대 > button{
+    flex:1; min-width:0; padding:13px var(--space-xs); font-size:var(--font-lg);
+    font-weight:var(--weight-bold); font-family:inherit; border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-btn-main); background:var(--color-surface); color:var(--color-text);
+    border:var(--border-width) solid var(--color-border); white-space:nowrap;
+  }
+  .ph-작업막대 > button.켬{background:var(--color-accent); color:#fff; border-color:var(--color-accent-dark)}
+  .ph-작업막대 > button.끔{opacity:.4}
+  .ph-작업막대 > button.삭제{background:var(--color-danger); color:#fff; border:none}
+  .ph-sec.고름줄{display:flex; align-items:center; justify-content:space-between; gap:var(--space-sm)}
+  .선택바{
+    display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+    border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:var(--space-md) var(--space-lg);
+    font-size:var(--font-sm);
+  }
+  .ph-back{font-size:22px; color:var(--color-accent-dark); font-weight:var(--weight-bold); line-height:1}
+  .ph-top .왼{display:flex; align-items:center; gap:var(--space-sm); min-width:0}
+  .ph-body{gap:var(--space-lg)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════════════════════════════════════════════
+     폰 390 × 844
+     ══════════════════════════════════════════════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 밭에서 찍어 <b>그 자리에서 올립니다</b> <span class="tag">칩을 누르면 사진 칸이 열립니다</span></div>
+
+  <div class="twoup">
+    <!-- ───────── ① 재고 목록 · 사진 칩 ───────── -->
+    <div class="col">
+      <div class="cap">① 재고 목록 — 줄마다 사진 칩</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><h1>재고</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-sub"><span>등록 <b>126</b>종 · 총 <b>4,283</b>주</span><span>사진 다 모임 <b>1</b>종</span></div>
+        <div class="ph-body">
+          <div class="field"><input class="inp" value="🔍  유통명 · 학명 · 품목코드"></div>
+          <div class="fchips">
+            <button class="fchip on">전체 <span class="n">126</span></button>
+            <button class="fchip">판매중 <span class="n">98</span></button>
+            <button class="fchip">품절 <span class="n">14</span></button>
+          </div>
+          <div class="ph-sec 고름줄"><span>소진일 빠른 순</span><button class="btn sm">선택</button></div>
+          <div class="ph-list">
+
+            <div class="ph-card">
+              <div class="r1"><div class="nm">몬스테라 15cm화분</div><div class="days d2" style="margin-left:auto; font-size:var(--font-xl)">64일</div><span class="chev">›</span></div>
+              <div class="sci">Monstera deliciosa</div>
+              <div class="r2">MON01-15 · <b>12</b>주 · 월 6주 나감</div>
+              <div class="r2"><span class="chip 사진">0/7</span></div>
+            </div>
+
+            <div class="ph-card">
+              <div class="r1"><div class="nm">구절초 노랑 10cm</div><div class="days d1" style="margin-left:auto; font-size:var(--font-xl)">18일</div><span class="chev">›</span></div>
+              <div class="sci">Dendranthema zawadskii</div>
+              <div class="r2">CHR01-10 · <b>5</b>주 · 월 9주 나감</div>
+              <div class="r2"><span class="chip 사진 일부">5/7</span></div>
+            </div>
+
+            <div class="ph-card">
+              <div class="r1"><div class="nm">용담 보라 10cm</div><div class="days d2" style="margin-left:auto; font-size:var(--font-xl)">41일</div><span class="chev">›</span></div>
+              <div class="sci">Gentiana scabra</div>
+              <div class="r2">GEN01-10 · <b>8</b>주 · 월 6주 나감</div>
+              <div class="r2"><span class="chip 사진 완">7/7</span><span class="chip 요청">상세 요청</span></div>
+            </div>
+
+            <div class="ph-card">
+              <div class="r1"><div class="nm">휴케라 팰리스퍼플</div><div class="days d0" style="margin-left:auto; font-size:var(--font-xl)">2일</div><span class="chev">›</span></div>
+              <div class="sci">Heuchera micrantha</div>
+              <div class="r2">HEP01-15 · <b>2</b>주 · 월 28주 나감</div>
+              <div class="r2"><span class="chip 사진 일부">3/7</span><span class="chip out">재입고 필요</span></div>
+            </div>
+
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div>
+          <div class="on"><span class="ic">📦</span>재고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── ② 사진 칸 — 빈 상태 ───────── -->
+    <div class="col">
+      <div class="cap">② 사진 칸 7개 — 빈 상태</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><span class="ph-back">‹</span><h1>사진</h1></div></div>
+        <div class="ph-sub"><span>몬스테라 15cm화분 · MON01-15</span><span><b>0/7</b></span></div>
+        <div class="ph-body">
+          <div class="사진판">
+            <div class="사진칸"><div class="이름"><span class="번">1</span>대표이미지 배경</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">2</span>구역1 메인</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">3</span>구역2 꽃</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">4</span>구역3 잎</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">5</span>구역4 재배</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번">10</span>구역6 실촬영 · 화분 하나</div><div class="틀 빔"><span class="빈표">📷</span></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번">11</span>구역6 실촬영 · 여러 포기</div><div class="틀 빔"><span class="빈표">📷</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="twoup">
+    <!-- ───────── ③ 5장 채워짐 + 올리는 중 + 실패 ───────── -->
+    <div class="col">
+      <div class="cap">③ 5장 채워짐 — 올리는 중 <b>11</b> · 실패 <b>10</b></div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><span class="ph-back">‹</span><h1>사진</h1></div></div>
+        <div class="ph-sub"><span>구절초 노랑 10cm · CHR01-10</span><span><b>5/7</b></span></div>
+        <div class="ph-body">
+          <div class="사진판">
+            <div class="사진칸"><div class="이름"><span class="번 됨">1</span>대표이미지 배경</div><div class="틀"><img src="_사진예시/1.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">2</span>구역1 메인</div><div class="틀"><img src="_사진예시/2.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">3</span>구역2 꽃</div><div class="틀"><img src="_사진예시/3.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">4</span>구역3 잎</div><div class="틀"><img src="_사진예시/4.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">5</span>구역4 재배</div><div class="틀"><img src="_사진예시/5.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸 찍기 실패">
+              <div class="이름"><span class="번">10</span>구역6 실촬영 · 화분 하나</div>
+              <div class="틀"><img src="_사진예시/10.jpg" alt=""><div class="덮개"><div class="상태">올리지 못했습니다</div><button class="btn sm">다시 올리기</button></div></div>
+            </div>
+            <div class="사진칸 찍기">
+              <div class="이름"><span class="번">11</span>구역6 실촬영 · 여러 포기</div>
+              <div class="틀"><img src="_사진예시/11.jpg" alt=""><div class="덮개"><div class="상태">올리는 중</div><div class="바"><i style="width:62%"></i></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── ④ 7/7 + 확인창 ───────── -->
+    <div class="col">
+      <div class="cap">④ 7/7 — 요청 단추가 켜지고 확인창</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><span class="ph-back">‹</span><h1>사진</h1></div></div>
+        <div class="ph-sub"><span>구절초 노랑 10cm · CHR01-10</span><span><b>7/7</b></span></div>
+        <div class="ph-body" style="padding-bottom:96px">
+          <div class="사진판">
+            <div class="사진칸"><div class="이름"><span class="번 됨">1</span>대표이미지 배경</div><div class="틀"><img src="_사진예시/1.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">2</span>구역1 메인</div><div class="틀"><img src="_사진예시/2.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">3</span>구역2 꽃</div><div class="틀"><img src="_사진예시/3.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">4</span>구역3 잎</div><div class="틀"><img src="_사진예시/4.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">5</span>구역4 재배</div><div class="틀"><img src="_사진예시/5.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번 됨">10</span>구역6 실촬영 · 화분 하나</div><div class="틀"><img src="_사진예시/10.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번 됨">11</span>구역6 실촬영 · 여러 포기</div><div class="틀"><img src="_사진예시/11.jpg" alt=""><button class="다시">다시</button></div></div>
+          </div>
+        </div>
+        <div class="ph-작업막대"><button class="켬">상세페이지 요청</button></div>
+        <div class="askscrim"></div>
+        <div class="askbox">
+          <h4>상세페이지 요청</h4>
+          <p><b>구절초 노랑 10cm</b> · 사진 <b>7장</b><br>CHR01-10</p>
+          <div class="btnrow"><button class="btn">취소</button><button class="btn main">요청</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PC 1440 (그림은 1120으로 줄임)
+     ══════════════════════════════════════════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 재고 표의 「상태」 칸에 사진 칩이 붙습니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+
+  <!-- ───────── ① 재고 목록 ───────── -->
+  <div class="cap" style="margin-bottom:8px">① 재고 목록 — 「상태」 칸의 사진 칩을 누르면 ②가 열립니다</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품 › 재고</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 재고</div></div>
+        <div class="pc-tabs"><span>입고</span><span class="on">재고</span></div>
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">전체 품목 <span class="hint">소진일 빠른 순</span>
+            <span class="right" style="display:flex; gap:var(--space-sm)"><button class="btn sm">⬇ 엑셀 내려받기</button><button class="btn sm">인쇄</button></span>
+          </h3>
+          <div class="tablewrap"><table>
+            <colgroup><col style="width:34px"><col style="width:96px"><col><col style="width:84px"><col style="width:74px"><col style="width:68px"><col style="width:196px"><col style="width:62px"></colgroup>
+            <thead><tr><th class="ck"></th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th class="r">현재고</th><th class="r">소진일</th><th>상태</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="ck"></td><td class="code">HEP01-15</td><td>휴케라 팰리스퍼플<div class="sci">Heuchera micrantha 'Palace Purple'</div></td><td class="dim">15cm 포트</td><td class="r">2<span class="sub">월 28주</span></td><td class="r"><span class="days d0">2일</span></td><td><span class="chip out">재입고 필요</span><span class="chip 사진 일부">3/7</span></td><td><button class="btn sm">수정</button></td></tr>
+              <tr><td class="ck"></td><td class="code">CHR01-10</td><td>구절초 노랑 10cm<div class="sci">Dendranthema zawadskii</div></td><td class="dim">10cm 포트</td><td class="r">5<span class="sub">월 9주</span></td><td class="r"><span class="days d1">18일</span></td><td><span class="chip">판매중</span><span class="chip 사진 일부">5/7</span></td><td><button class="btn sm">수정</button></td></tr>
+              <tr><td class="ck"></td><td class="code">GEN01-10</td><td>용담 보라 10cm<div class="sci">Gentiana scabra</div></td><td class="dim">10cm 포트</td><td class="r">8<span class="sub">월 6주</span></td><td class="r"><span class="days d2">41일</span></td><td><span class="chip">판매중</span><span class="chip 사진 완">7/7</span><span class="chip 요청">상세 요청</span></td><td><button class="btn sm">수정</button></td></tr>
+              <tr><td class="ck"></td><td class="code">MON01-15</td><td>몬스테라 15cm화분<div class="sci">Monstera deliciosa</div></td><td class="dim">15cm 화분</td><td class="r">12<span class="sub">월 6주</span></td><td class="r"><span class="days d2">64일</span></td><td><span class="chip">판매중</span><span class="chip 사진">0/7</span></td><td><button class="btn sm">수정</button></td></tr>
+              <tr><td class="ck"></td><td class="code">CAR01-10</td><td>청사초<div class="sci">Carex breviculmis</div></td><td class="dim">10cm 포트</td><td class="r">88<span class="sub">월 100주</span></td><td class="r"><span class="days d1">21일</span></td><td><span class="chip">판매중</span><span class="chip 사진 완">7/7</span></td><td><button class="btn sm">수정</button></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── ② 사진 칸 빈 상태 ───────── -->
+  <div class="cap" style="margin-bottom:8px">② 사진 칸 7개 — 빈 상태</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품 › 재고</span></div>
+    <div class="pc-body 창">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 재고</div></div>
+        <div class="pc-tabs"><span>입고</span><span class="on">재고</span></div>
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">전체 품목 <span class="hint">소진일 빠른 순</span></h3>
+          <div class="tablewrap"><table>
+            <colgroup><col style="width:96px"><col><col style="width:88px"><col style="width:74px"><col style="width:196px"></colgroup>
+            <thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th class="r">현재고</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td class="code">MON01-15</td><td>몬스테라 15cm화분<div class="sci">Monstera deliciosa</div></td><td class="dim">15cm 화분</td><td class="r">12</td><td><span class="chip">판매중</span><span class="chip 사진">0/7</span></td></tr>
+              <tr><td class="code">CHR01-10</td><td>구절초 노랑 10cm<div class="sci">Dendranthema zawadskii</div></td><td class="dim">10cm 포트</td><td class="r">5</td><td><span class="chip">판매중</span><span class="chip 사진 일부">5/7</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="pcscrim"></div>
+      <div class="pcsheet">
+        <div class="hd">
+          <h3>사진</h3><span class="cd">MON01-15 · 몬스테라 15cm화분</span>
+          <span class="right"><span class="chip 사진">0/7</span><button class="x">✕</button></span>
+        </div>
+        <div class="bd">
+          <div class="사진판">
+            <div class="사진칸"><div class="이름"><span class="번">1</span>대표이미지 배경</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">2</span>구역1 메인</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">3</span>구역2 꽃</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">4</span>구역3 잎</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸"><div class="이름"><span class="번">5</span>구역4 재배</div><div class="틀 빔"><span class="빈표">＋</span></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번">10</span>구역6 실촬영 · 화분 하나</div><div class="틀 빔"><span class="빈표">📷</span></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번">11</span>구역6 실촬영 · 여러 포기</div><div class="틀 빔"><span class="빈표">📷</span></div></div>
+          </div>
+          <div class="btnrow"><button class="btn">닫기</button><button class="btn main" disabled>상세페이지 요청</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── ③ 5장 채워짐 ───────── -->
+  <div class="cap" style="margin-bottom:8px">③ 5장 채워짐 — 올리는 중 <b>11</b> · 실패 <b>10</b></div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품 › 재고</span></div>
+    <div class="pc-body 창">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 재고</div></div>
+        <div class="pc-tabs"><span>입고</span><span class="on">재고</span></div>
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">전체 품목 <span class="hint">소진일 빠른 순</span></h3>
+          <div class="tablewrap"><table>
+            <colgroup><col style="width:96px"><col><col style="width:88px"><col style="width:74px"><col style="width:196px"></colgroup>
+            <thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th class="r">현재고</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td class="code">MON01-15</td><td>몬스테라 15cm화분<div class="sci">Monstera deliciosa</div></td><td class="dim">15cm 화분</td><td class="r">12</td><td><span class="chip">판매중</span><span class="chip 사진">0/7</span></td></tr>
+              <tr><td class="code">CHR01-10</td><td>구절초 노랑 10cm<div class="sci">Dendranthema zawadskii</div></td><td class="dim">10cm 포트</td><td class="r">5</td><td><span class="chip">판매중</span><span class="chip 사진 일부">5/7</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="pcscrim"></div>
+      <div class="pcsheet">
+        <div class="hd">
+          <h3>사진</h3><span class="cd">CHR01-10 · 구절초 노랑 10cm</span>
+          <span class="right"><span class="chip 사진 일부">5/7</span><button class="x">✕</button></span>
+        </div>
+        <div class="bd">
+          <div class="사진판">
+            <div class="사진칸"><div class="이름"><span class="번 됨">1</span>대표이미지 배경</div><div class="틀"><img src="_사진예시/1.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">2</span>구역1 메인</div><div class="틀"><img src="_사진예시/2.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">3</span>구역2 꽃</div><div class="틀"><img src="_사진예시/3.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">4</span>구역3 잎</div><div class="틀"><img src="_사진예시/4.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸"><div class="이름"><span class="번 됨">5</span>구역4 재배</div><div class="틀"><img src="_사진예시/5.jpg" alt=""><button class="다시">다시</button></div></div>
+            <div class="사진칸 찍기 실패"><div class="이름"><span class="번">10</span>구역6 실촬영 · 화분 하나</div><div class="틀"><img src="_사진예시/10.jpg" alt=""><div class="덮개"><div class="상태">올리지 못했습니다</div><button class="btn sm">다시 올리기</button></div></div></div>
+            <div class="사진칸 찍기"><div class="이름"><span class="번">11</span>구역6 실촬영 · 여러 포기</div><div class="틀"><img src="_사진예시/11.jpg" alt=""><div class="덮개"><div class="상태">올리는 중</div><div class="바"><i style="width:62%"></i></div></div></div></div>
+          </div>
+          <div class="btnrow"><button class="btn">닫기</button><button class="btn main" disabled>상세페이지 요청</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── ④ 7/7 + 확인창 ───────── -->
+  <div class="cap" style="margin-bottom:8px">④ 7/7 — 요청 단추가 켜지고 확인창</div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품 › 재고</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 재고</div></div>
+        <div class="pc-tabs"><span>입고</span><span class="on">재고</span></div>
+        <div class="선택바"><b>1종 골랐습니다</b><div style="flex:1"></div>
+          <button class="btn sm main">상세페이지</button><button class="btn sm">식물정보</button>
+          <button class="btn sm">선택 해제</button><button class="btn sm warn">선택 삭제</button>
+        </div>
+        <div class="card table-card">
+          <h3 style="padding:0 var(--space-sm)">전체 품목 <span class="hint">소진일 빠른 순</span></h3>
+          <div class="tablewrap"><table>
+            <colgroup><col style="width:34px"><col style="width:96px"><col><col style="width:88px"><col style="width:74px"><col style="width:196px"></colgroup>
+            <thead><tr><th class="ck"></th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th class="r">현재고</th><th>상태</th></tr></thead>
+            <tbody>
+              <tr><td class="ck"></td><td class="code">MON01-15</td><td>몬스테라 15cm화분<div class="sci">Monstera deliciosa</div></td><td class="dim">15cm 화분</td><td class="r">12</td><td><span class="chip">판매중</span><span class="chip 사진">0/7</span></td></tr>
+              <tr class="골랐다"><td class="ck">✓</td><td class="code">CHR01-10</td><td>구절초 노랑 10cm<div class="sci">Dendranthema zawadskii</div></td><td class="dim">10cm 포트</td><td class="r">5</td><td><span class="chip">판매중</span><span class="chip 사진 완">7/7</span></td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="askscrim"></div>
+      <div class="askbox">
+        <h4>상세페이지 요청</h4>
+        <p><b>구절초 노랑 10cm</b> · 사진 <b>7장</b><br>CHR01-10</p>
+        <div class="btnrow"><button class="btn">취소</button><button class="btn main">요청</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 품목 상세 [원고] 탭 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* 이 화면에서만 새로 쓰는 부품 — 색·글씨·간격은 모두 _공통-macA.css 의 값 그대로 */
+  .ta{
+    width:100%; font-family:inherit; font-size:var(--font-md); font-weight:var(--weight-regular);
+    line-height:1.72; padding:var(--space-md) var(--space-lg); display:block; resize:none;
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-surface); color:var(--color-text);
+    box-shadow:inset 0 1px 1px rgba(0,0,0,.03); letter-spacing:-.01em;
+  }
+  .phone .ta{font-size:var(--font-lg)}
+  .ta.edit{border-color:var(--color-accent); box-shadow:0 0 0 3px rgba(47,158,68,.16)}
+  .ta.over{border-color:var(--color-danger); background:#FFFCFC}
+  .cur{display:inline-block; width:1.5px; height:1.05em; background:var(--color-accent-dark); vertical-align:-2px; margin-left:1px}
+
+  /* 구역 카드 */
+  .zone{background:var(--color-surface); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); overflow:hidden}
+  .zhd{
+    display:flex; align-items:center; gap:var(--space-sm); cursor:pointer;
+    padding:var(--space-lg) var(--space-2xl); font-size:var(--font-lg); font-weight:var(--weight-bold);
+    letter-spacing:-.02em; color:var(--color-text);
+  }
+  .zhd .no{
+    width:20px; height:20px; border-radius:var(--radius-sm); background:var(--color-seg-bg);
+    color:var(--color-text-sub); font-size:var(--font-2xs); font-weight:var(--weight-bold);
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .zhd .sub{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+  .zbody{padding:0 var(--space-2xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-md)}
+  .zone.open .zhd{padding-bottom:var(--space-sm)}
+  .zone.dirty{box-shadow:var(--shadow-card), inset 3px 0 0 var(--color-accent)}
+  .zone.bad{box-shadow:var(--shadow-card), inset 3px 0 0 var(--color-danger)}
+
+  /* 고친 표시 · 글자수 */
+  .mark{
+    display:inline-flex; align-items:center; gap:var(--space-3xs); font-size:var(--font-2xs);
+    font-weight:var(--weight-semibold); color:var(--color-accent-dark);
+  }
+  .mark::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:var(--color-accent)}
+  .cnt{
+    margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+    color:var(--color-text-hint); font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .cnt.near{color:#B4690E}
+  .cnt.over{color:var(--color-danger)}
+  .zhd .chev{font-size:var(--font-xl)}
+
+  /* 4구역 3항목 */
+  .item{border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-md); display:flex; flex-direction:column; gap:var(--space-xs)}
+  .item:first-child{border-top:none; padding-top:0}
+  .item .ihd{display:flex; align-items:center; gap:var(--space-sm)}
+  .item .ihd .n{font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-text-sub); width:14px}
+  .item .ihd .inp{height:32px; font-size:var(--font-md); font-weight:var(--weight-semibold); width:170px}
+
+  /* 소제목 줄 */
+  .subline{display:flex; align-items:center; gap:var(--space-sm)}
+  .subline label{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted)}
+  .subline .inp{height:32px; width:150px; font-size:var(--font-md); font-weight:var(--weight-semibold)}
+
+  /* 폰 저장 바 */
+  .ph-savebar{
+    display:flex; align-items:center; gap:var(--space-lg); padding:var(--space-md) var(--space-3xl) var(--space-lg);
+    background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border);
+  }
+  .ph-savebar .st{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); line-height:1.4}
+  .ph-savebar .st b{color:var(--color-accent-dark); display:block; font-size:var(--font-sm)}
+  .ph-savebar .st b.no{color:var(--color-danger)}
+  .ph-savebar .btn{flex:1; min-height:46px; font-size:var(--font-xl)}
+  .btn.off{background:var(--color-seg-bg); color:var(--color-text-hint); border-color:var(--color-border); box-shadow:none}
+
+  /* 품목 머리 — 사진/원고/결과 */
+  .itemhead{display:flex; align-items:center; gap:var(--space-lg); margin-bottom:var(--space-lg)}
+  .itemhead .nm{font-size:var(--font-4xl); font-weight:var(--weight-bold); letter-spacing:-.03em}
+  .itemhead .cd{
+    font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold);
+    color:var(--color-accent-dark); background:var(--color-accent-bg);
+    border:var(--border-width) solid var(--color-accent-border); padding:var(--pad-tag); border-radius:var(--radius-badge);
+  }
+  .itemhead .toggle{margin-left:auto; width:300px}
+  .ph-tabs{padding:var(--space-md) var(--space-3xl) 0}
+  .ph-tabs .toggle button{font-size:var(--font-lg)}
+
+  .zonelist{display:flex; flex-direction:column; gap:var(--space-md)}
+  .phone .zonelist{gap:var(--space-sm)}
+  .phone .zhd{padding:var(--space-md) var(--space-lg); gap:var(--space-xs)}
+  .phone .zbody{padding:0 var(--space-lg) var(--space-lg)}
+  .phone .ta{line-height:1.62; padding:var(--space-sm) var(--space-md)}
+  .phone .ph-savebar{padding:var(--space-sm) var(--space-3xl) var(--space-md)}
+  .phone .subline .inp{height:30px; width:130px}
+  .cols{display:flex; gap:var(--space-3xl); align-items:flex-start}
+  .cols > div{flex:1; display:flex; flex-direction:column; gap:var(--space-lg)}
+  .pc .zone{border:var(--border-width) solid var(--color-border-faint)}
+  .pcsave{display:flex; align-items:center; gap:var(--space-lg); margin-top:var(--space-3xl)}
+  .pcsave .st{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-muted)}
+  .pcsave .st b{color:var(--color-accent-dark)}
+  .pcsave .st b.no{color:var(--color-danger)}
+  .pcsave .spacer{flex:1}
+  .alert .zlink{
+    display:inline-block; font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-danger);
+    background:var(--color-surface); border:var(--border-width) solid var(--color-danger-border);
+    padding:var(--pad-tag); border-radius:var(--radius-badge); margin-right:var(--space-xs);
+  }
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════ 폰 ① 원고 탭 — 연 직후 ══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">① 아이폰 <b>390px</b> — 품목 상세 [원고] 탭, 연 직후 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+  <div class="phone">
+    <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+    <div class="ph-top">
+      <div>
+        <div class="ph-back">‹ 재고</div>
+        <h1>구절초 노랑</h1>
+      </div>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub"><span>QUC02-10 · 10cm 포트</span><span>원고 2026-09-04</span></div>
+    <div class="ph-tabs">
+      <div class="toggle">
+        <button style="flex:1; padding:0">사진</button>
+        <button class="on" style="flex:1; padding:0">원고</button>
+        <button style="flex:1; padding:0">결과</button>
+      </div>
+    </div>
+    <div class="ph-body">
+      <div class="zonelist">
+
+        <div class="zone open">
+          <div class="zhd"><span class="no">1</span>소개<span class="cnt">96 / 160</span><span class="chev">⌄</span></div>
+          <div class="zbody">
+            <textarea class="ta" rows="4">9~10월 화단은 흰색과 보라 쪽으로 기웁니다.
+그 사이에서 덩어리로 노랗게 피는 꽃은 몇 안 돼요.
+가지 끝마다 꽃이 달려 포기 전체가 노랗게 덮이는 국화과 여러해살이입니다.</textarea>
+          </div>
+        </div>
+
+        <div class="zone"><div class="zhd"><span class="no">2</span>꽃<span class="cnt">86 / 130</span><span class="chev">›</span></div></div>
+        <div class="zone"><div class="zhd"><span class="no">3</span>잎<span class="cnt">75 / 130</span><span class="chev">›</span></div></div>
+        <div class="zone"><div class="zhd"><span class="no">4</span>How to grow<span class="sub">3항목</span><span class="cnt">359 / 570</span><span class="chev">›</span></div></div>
+        <div class="zone"><div class="zhd"><span class="no">5</span>식재 간격<span class="cnt">68 / 83</span><span class="chev">›</span></div></div>
+        <div class="zone"><div class="zhd" style="color:var(--color-text-hint)"><span class="no">6</span>실촬영<span class="sub">사진만 — 글 없음</span><span class="cnt">—</span></div></div>
+
+      </div>
+    </div>
+    <div class="ph-savebar">
+      <div class="st">고친 곳<b style="color:var(--color-text-hint)">없음</b></div>
+      <button class="btn main off">저장</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>상품</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">📄</span>명세서</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ 폰 ② 고치는 중 ══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">② 아이폰 — 고치는 중 <b>(2구역에 커서 · 고친 곳 2 · 저장 살아남)</b></div>
+  <div class="phone">
+    <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+    <div class="ph-top">
+      <div>
+        <div class="ph-back">‹ 재고</div>
+        <h1>구절초 노랑</h1>
+      </div>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub"><span>QUC02-10 · 10cm 포트</span><span>원고 2026-09-04</span></div>
+    <div class="ph-tabs">
+      <div class="toggle">
+        <button style="flex:1; padding:0">사진</button>
+        <button class="on" style="flex:1; padding:0">원고</button>
+        <button style="flex:1; padding:0">결과</button>
+      </div>
+    </div>
+    <div class="ph-body">
+      <div class="zonelist">
+
+        <div class="zone"><div class="zhd"><span class="no">1</span>소개<span class="cnt">96 / 160</span><span class="chev">›</span></div></div>
+
+        <div class="zone open dirty">
+          <div class="zhd"><span class="no">2</span>꽃<span class="mark">고침</span><span class="cnt near">121 / 130</span><span class="chev">⌄</span></div>
+          <div class="zbody">
+            <div class="subline"><label>소제목</label><input class="inp" value="꽃"></div>
+            <div class="ta edit" style="min-height:118px">가지 끝마다 지름 3~6cm 꽃이 하나씩 달립니다.<br>노란 꽃잎이 빙 두르고 가운데도 노란색이에요.<br>9월에 피기 시작해 10월까지 이어지고, 벌과 나비가 모입니다.<span class="cur"></span></div>
+          </div>
+        </div>
+
+        <div class="zone"><div class="zhd"><span class="no">3</span>잎<span class="cnt">75 / 130</span><span class="chev">›</span></div></div>
+        <div class="zone"><div class="zhd"><span class="no">4</span>How to grow<span class="sub">3항목</span><span class="cnt">359 / 570</span><span class="chev">›</span></div></div>
+        <div class="zone dirty"><div class="zhd"><span class="no">5</span>식재 간격<span class="mark">고침</span><span class="cnt near">79 / 83</span><span class="chev">›</span></div></div>
+
+      </div>
+    </div>
+    <div class="ph-savebar">
+      <div class="st">고친 곳<b>2구역 · 5구역</b></div>
+      <button class="btn main">저장</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>상품</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">📄</span>명세서</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ 폰 ②′ 글자수 초과로 저장 실패 ══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">②′ 아이폰 — 저장을 눌렀는데 <b>글자수가 넘쳐 조판이 안 됩니다</b> (넘친 구역이 저절로 펴집니다)</div>
+  <div class="phone">
+    <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+    <div class="ph-top">
+      <div>
+        <div class="ph-back">‹ 재고</div>
+        <h1>구절초 노랑</h1>
+      </div>
+      <span class="pcbtn">🖥 PC화면으로</span>
+    </div>
+    <div class="ph-sub"><span>QUC02-10 · 10cm 포트</span><span>원고 2026-09-04</span></div>
+    <div class="ph-tabs">
+      <div class="toggle">
+        <button style="flex:1; padding:0">사진</button>
+        <button class="on" style="flex:1; padding:0">원고</button>
+        <button style="flex:1; padding:0">결과</button>
+      </div>
+    </div>
+    <div class="ph-body">
+      <div class="alert" style="padding:var(--space-lg) var(--space-2xl)">
+        <h4 style="margin-bottom:var(--space-3xs)">5구역이 8자 넘칩니다 <span class="right">저장 안 됨</span></h4>
+        <p><b>91자</b> — 들어갈 자리는 83자입니다.</p>
+      </div>
+      <div class="zonelist">
+        <div class="zone"><div class="zhd"><span class="no">3</span>잎<span class="cnt">75 / 130</span><span class="chev">›</span></div></div>
+        <div class="zone"><div class="zhd"><span class="no">4</span>How to grow<span class="sub">3항목</span><span class="cnt">359 / 570</span><span class="chev">›</span></div></div>
+
+        <div class="zone open bad">
+          <div class="zhd"><span class="no">5</span>식재 간격<span class="mark">고침</span><span class="cnt over">91 / 83 · 8자 넘침</span><span class="chev">⌄</span></div>
+          <div class="zbody">
+            <div class="ta over edit" style="min-height:128px">30-40cm 간격으로 심어주세요.<br>1㎡에 6~9포기가 들어갑니다.<br>다 자라면 키도 폭도 40~60cm까지 커져서 포기끼리 서로 맞닿습니다.<span class="cur"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ph-savebar">
+      <div class="st">넘친 곳<b class="no">5구역</b></div>
+      <button class="btn main">다시 저장</button>
+    </div>
+    <div class="ph-nav">
+      <div class="on"><span class="ic">🌿</span>상품</div>
+      <div><span class="ic">🛒</span>주문</div>
+      <div><span class="ic">📄</span>명세서</div>
+      <div><span class="ic">⋯</span>더보기</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PC ① ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">① 맥 <b>1440px</b> — [원고] 탭, 다섯 구역이 다 펼쳐져 있습니다 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>구절초 노랑</h2><div class="path">상품 › 재고 › 구절초 노랑</div></div>
+        <div class="card">
+          <div class="itemhead">
+            <span class="nm">구절초 노랑</span>
+            <span class="cd">QUC02-10</span>
+            <span class="hint" style="font-size:var(--font-xs); color:var(--color-text-muted)">10cm 포트 · 원고 2026-09-04</span>
+            <div class="toggle">
+              <button style="flex:1; padding:0">사진</button>
+              <button class="on" style="flex:1; padding:0">원고</button>
+              <button style="flex:1; padding:0">결과</button>
+            </div>
+          </div>
+          <div class="cols">
+            <div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">1</span>소개<span class="cnt">96 / 160</span></div>
+                <div class="zbody"><textarea class="ta" rows="4">9~10월 화단은 흰색과 보라 쪽으로 기웁니다.
+그 사이에서 덩어리로 노랗게 피는 꽃은 몇 안 돼요.
+가지 끝마다 꽃이 달려 포기 전체가 노랗게 덮이는 국화과 여러해살이입니다.</textarea></div>
+              </div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">2</span>꽃<span class="cnt">86 / 130</span></div>
+                <div class="zbody">
+                  <div class="subline"><label>소제목</label><input class="inp" value="꽃"></div>
+                  <textarea class="ta" rows="4">가지 끝마다 지름 3~6cm 꽃이 하나씩 달립니다.
+노란 꽃잎이 빙 두르고 가운데도 노란색이에요.
+9월에 피기 시작해 10월까지 가고, 벌과 나비가 모입니다.</textarea>
+                </div>
+              </div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">3</span>잎<span class="cnt">75 / 130</span></div>
+                <div class="zbody">
+                  <div class="subline"><label>소제목</label><input class="inp" value="잎"></div>
+                  <textarea class="ta" rows="4">잎은 어긋나게 붙고 깃꼴로 잘게 갈라집니다.
+갈래가 가늘고 끝이 뾰족해요.
+짙은 녹색에 조금 두툼하고 매끈하며, 스치면 국화 향이 납니다.</textarea>
+                </div>
+              </div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">5</span>식재 간격<span class="cnt">68 / 83</span></div>
+                <div class="zbody"><textarea class="ta" rows="4">30-40cm 간격으로 심어주세요.
+1㎡에 6~9포기가 들어갑니다.
+다 자라면 키도 폭도 40~60cm라 포기끼리 맞닿습니다.</textarea></div>
+              </div>
+              <div class="zone">
+                <div class="zhd" style="color:var(--color-text-hint)"><span class="no">6</span>실촬영<span class="sub">사진만 — 글 없음</span><span class="cnt">—</span></div>
+              </div>
+            </div>
+            <div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">4</span>How to grow<span class="sub">3항목 고정</span><span class="cnt">359 / 570</span></div>
+                <div class="zbody">
+                  <div class="item">
+                    <div class="ihd"><span class="n">①</span><input class="inp" value="심는 시기"><span class="cnt">105 / 190</span></div>
+                    <textarea class="ta" rows="4">봄 3~4월이나 가을 9~10월에 심어주세요. 한여름과 한겨울만 피하면 됩니다.
+꽃이 핀 채로 가을에 심을 때는 꽃과 꽃봉오리를 잘라내고 심어주세요.
+뿌리 내리는 데 힘을 몰아주기 위해서예요.</textarea>
+                  </div>
+                  <div class="item">
+                    <div class="ihd"><span class="n">②</span><input class="inp" value="볕과 물"><span class="cnt">116 / 190</span></div>
+                    <textarea class="ta" rows="4">볕이 좋을수록 꽃이 많이 달리고 포기가 단단합니다. 반그늘에서도 살지만 웃자라 쓰러져요.
+물은 겉흙이 마르면 흠뻑 주고, 물이 고이는 낮은 자리는 피해주세요.
+마사토에 부엽을 반쯤 섞어 심으면 물이 잘 빠집니다.</textarea>
+                  </div>
+                  <div class="item">
+                    <div class="ihd"><span class="n">③</span><input class="inp" value="월동과 봄맞이"><span class="cnt">138 / 190</span></div>
+                    <textarea class="ta" rows="5">영하 28℃까지 견뎌 중부지방 노지에서 겨울을 납니다.
+겨울에 위쪽이 다 마르고 봄이면 뿌리에서 다시 올라와요.
+가을에 줄기를 바짝 자르지 마시고, 3월에 마른 줄기를 걷어내주세요.
+2~3년에 한 번 봄이나 가을에 포기를 나누면 가운데가 비지 않습니다.</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pcsave">
+            <div class="st">고친 곳 <b style="color:var(--color-text-hint)">없음</b></div>
+            <div class="spacer"></div>
+            <button class="btn">되돌리기</button>
+            <button class="btn main wide off">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PC ② 고치는 중 ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">② 맥 — 고치는 중 <b>(2구역에 커서 · 고친 구역 왼쪽에 초록 띠 · 저장 살아남)</b></div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>구절초 노랑</h2><div class="path">상품 › 재고 › 구절초 노랑</div></div>
+        <div class="card">
+          <div class="itemhead">
+            <span class="nm">구절초 노랑</span>
+            <span class="cd">QUC02-10</span>
+            <span class="hint" style="font-size:var(--font-xs); color:var(--color-text-muted)">10cm 포트 · 원고 2026-09-04</span>
+            <div class="toggle">
+              <button style="flex:1; padding:0">사진</button>
+              <button class="on" style="flex:1; padding:0">원고</button>
+              <button style="flex:1; padding:0">결과</button>
+            </div>
+          </div>
+          <div class="cols">
+            <div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">1</span>소개<span class="cnt">96 / 160</span></div>
+                <div class="zbody"><textarea class="ta" rows="4">9~10월 화단은 흰색과 보라 쪽으로 기웁니다.
+그 사이에서 덩어리로 노랗게 피는 꽃은 몇 안 돼요.
+가지 끝마다 꽃이 달려 포기 전체가 노랗게 덮이는 국화과 여러해살이입니다.</textarea></div>
+              </div>
+              <div class="zone open dirty">
+                <div class="zhd"><span class="no">2</span>꽃<span class="mark">고침</span><span class="cnt near">121 / 130</span></div>
+                <div class="zbody">
+                  <div class="subline"><label>소제목</label><input class="inp" value="꽃"></div>
+                  <div class="ta edit" style="min-height:96px">가지 끝마다 지름 3~6cm 꽃이 하나씩 달립니다.<br>노란 꽃잎이 빙 두르고 가운데도 노란색이에요.<br>9월에 피기 시작해 10월까지 이어지고, 벌과 나비가 모입니다.<span class="cur"></span></div>
+                </div>
+              </div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">3</span>잎<span class="cnt">75 / 130</span></div>
+                <div class="zbody">
+                  <div class="subline"><label>소제목</label><input class="inp" value="잎"></div>
+                  <textarea class="ta" rows="4">잎은 어긋나게 붙고 깃꼴로 잘게 갈라집니다.
+갈래가 가늘고 끝이 뾰족해요.
+짙은 녹색에 조금 두툼하고 매끈하며, 스치면 국화 향이 납니다.</textarea>
+                </div>
+              </div>
+              <div class="zone open dirty">
+                <div class="zhd"><span class="no">5</span>식재 간격<span class="mark">고침</span><span class="cnt near">79 / 83</span></div>
+                <div class="zbody"><textarea class="ta" rows="4">30-40cm 간격으로 심어주세요.
+1㎡에 6~9포기가 들어갑니다.
+다 자라면 키도 폭도 40~60cm까지 커져 포기끼리 맞닿습니다.</textarea></div>
+              </div>
+              <div class="zone">
+                <div class="zhd" style="color:var(--color-text-hint)"><span class="no">6</span>실촬영<span class="sub">사진만 — 글 없음</span><span class="cnt">—</span></div>
+              </div>
+            </div>
+            <div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">4</span>How to grow<span class="sub">3항목 고정</span><span class="cnt">359 / 570</span></div>
+                <div class="zbody">
+                  <div class="item">
+                    <div class="ihd"><span class="n">①</span><input class="inp" value="심는 시기"><span class="cnt">105 / 190</span></div>
+                    <textarea class="ta" rows="4">봄 3~4월이나 가을 9~10월에 심어주세요. 한여름과 한겨울만 피하면 됩니다.
+꽃이 핀 채로 가을에 심을 때는 꽃과 꽃봉오리를 잘라내고 심어주세요.
+뿌리 내리는 데 힘을 몰아주기 위해서예요.</textarea>
+                  </div>
+                  <div class="item">
+                    <div class="ihd"><span class="n">②</span><input class="inp" value="볕과 물"><span class="cnt">116 / 190</span></div>
+                    <textarea class="ta" rows="4">볕이 좋을수록 꽃이 많이 달리고 포기가 단단합니다. 반그늘에서도 살지만 웃자라 쓰러져요.
+물은 겉흙이 마르면 흠뻑 주고, 물이 고이는 낮은 자리는 피해주세요.
+마사토에 부엽을 반쯤 섞어 심으면 물이 잘 빠집니다.</textarea>
+                  </div>
+                  <div class="item">
+                    <div class="ihd"><span class="n">③</span><input class="inp" value="월동과 봄맞이"><span class="cnt">138 / 190</span></div>
+                    <textarea class="ta" rows="5">영하 28℃까지 견뎌 중부지방 노지에서 겨울을 납니다.
+겨울에 위쪽이 다 마르고 봄이면 뿌리에서 다시 올라와요.
+가을에 줄기를 바짝 자르지 마시고, 3월에 마른 줄기를 걷어내주세요.
+2~3년에 한 번 봄이나 가을에 포기를 나누면 가운데가 비지 않습니다.</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pcsave">
+            <div class="st">고친 곳 <b>2구역 · 5구역</b></div>
+            <div class="spacer"></div>
+            <button class="btn">되돌리기</button>
+            <button class="btn main wide">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ PC ②′ 글자수 초과 ══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">②′ 맥 — 저장을 눌렀는데 <b>글자수가 넘쳐 조판이 안 됩니다</b></div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a>
+        <a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">📄</span>명세서 발행</a>
+        <a><span class="ic">🏢</span>업체 관리</a>
+        <a><span class="ic">🌱</span>소싱 추천</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>구절초 노랑</h2><div class="path">상품 › 재고 › 구절초 노랑</div></div>
+        <div class="card">
+          <div class="itemhead">
+            <span class="nm">구절초 노랑</span>
+            <span class="cd">QUC02-10</span>
+            <span class="hint" style="font-size:var(--font-xs); color:var(--color-text-muted)">10cm 포트 · 원고 2026-09-04</span>
+            <div class="toggle">
+              <button style="flex:1; padding:0">사진</button>
+              <button class="on" style="flex:1; padding:0">원고</button>
+              <button style="flex:1; padding:0">결과</button>
+            </div>
+          </div>
+          <div class="alert" style="margin-bottom:var(--space-lg)">
+            <h4>글자가 넘쳐 저장하지 못했습니다 <span class="right">2곳</span></h4>
+            <p><span class="zlink">5구역 · 91 / 83</span><span class="zlink">4구역 ③ · 206 / 190</span> 넘친 만큼 줄이면 저장됩니다.</p>
+          </div>
+          <div class="cols">
+            <div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">1</span>소개<span class="cnt">96 / 160</span></div>
+                <div class="zbody"><textarea class="ta" rows="4">9~10월 화단은 흰색과 보라 쪽으로 기웁니다.
+그 사이에서 덩어리로 노랗게 피는 꽃은 몇 안 돼요.
+가지 끝마다 꽃이 달려 포기 전체가 노랗게 덮이는 국화과 여러해살이입니다.</textarea></div>
+              </div>
+              <div class="zone open dirty">
+                <div class="zhd"><span class="no">2</span>꽃<span class="mark">고침</span><span class="cnt near">121 / 130</span></div>
+                <div class="zbody">
+                  <div class="subline"><label>소제목</label><input class="inp" value="꽃"></div>
+                  <textarea class="ta" rows="4">가지 끝마다 지름 3~6cm 꽃이 하나씩 달립니다.
+노란 꽃잎이 빙 두르고 가운데도 노란색이에요.
+9월에 피기 시작해 10월까지 이어지고, 벌과 나비가 모입니다.</textarea>
+                </div>
+              </div>
+              <div class="zone open">
+                <div class="zhd"><span class="no">3</span>잎<span class="cnt">75 / 130</span></div>
+                <div class="zbody">
+                  <div class="subline"><label>소제목</label><input class="inp" value="잎"></div>
+                  <textarea class="ta" rows="4">잎은 어긋나게 붙고 깃꼴로 잘게 갈라집니다.
+갈래가 가늘고 끝이 뾰족해요.
+짙은 녹색에 조금 두툼하고 매끈하며, 스치면 국화 향이 납니다.</textarea>
+                </div>
+              </div>
+              <div class="zone open bad">
+                <div class="zhd"><span class="no">5</span>식재 간격<span class="mark">고침</span><span class="cnt over">91 / 83 · 8자 넘침</span></div>
+                <div class="zbody"><div class="ta over edit" style="min-height:96px">30-40cm 간격으로 심어주세요.<br>1㎡에 6~9포기가 들어갑니다.<br>다 자라면 키도 폭도 40~60cm까지 커져서 포기끼리 서로 맞닿습니다.<span class="cur"></span></div></div>
+              </div>
+              <div class="zone">
+                <div class="zhd" style="color:var(--color-text-hint)"><span class="no">6</span>실촬영<span class="sub">사진만 — 글 없음</span><span class="cnt">—</span></div>
+              </div>
+            </div>
+            <div>
+              <div class="zone open bad">
+                <div class="zhd"><span class="no">4</span>How to grow<span class="sub">3항목 고정</span><span class="cnt over">427 / 570 · ③ 넘침</span></div>
+                <div class="zbody">
+                  <div class="item">
+                    <div class="ihd"><span class="n">①</span><input class="inp" value="심는 시기"><span class="cnt">105 / 190</span></div>
+                    <textarea class="ta" rows="4">봄 3~4월이나 가을 9~10월에 심어주세요. 한여름과 한겨울만 피하면 됩니다.
+꽃이 핀 채로 가을에 심을 때는 꽃과 꽃봉오리를 잘라내고 심어주세요.
+뿌리 내리는 데 힘을 몰아주기 위해서예요.</textarea>
+                  </div>
+                  <div class="item">
+                    <div class="ihd"><span class="n">②</span><input class="inp" value="볕과 물"><span class="cnt">116 / 190</span></div>
+                    <textarea class="ta" rows="4">볕이 좋을수록 꽃이 많이 달리고 포기가 단단합니다. 반그늘에서도 살지만 웃자라 쓰러져요.
+물은 겉흙이 마르면 흠뻑 주고, 물이 고이는 낮은 자리는 피해주세요.
+마사토에 부엽을 반쯤 섞어 심으면 물이 잘 빠집니다.</textarea>
+                  </div>
+                  <div class="item">
+                    <div class="ihd"><span class="n">③</span><input class="inp" value="월동과 봄맞이"><span class="cnt over">206 / 190 · 16자 넘침</span></div>
+                    <textarea class="ta over" rows="6">영하 28℃까지 견뎌 중부지방 노지에서 겨울을 납니다.
+겨울에 위쪽이 다 마르고 봄이면 뿌리에서 다시 올라와요.
+가을에 줄기를 바짝 자르지 마시고, 3월에 마른 줄기를 걷어내주세요.
+2~3년에 한 번 봄이나 가을에 포기를 나누면 가운데가 비지 않고 꽃도 잘 올라옵니다.</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="pcsave">
+            <div class="st">고친 곳 <b>2구역 · 5구역</b> · <b class="no">넘친 곳 2</b></div>
+            <div class="spacer"></div>
+            <button class="btn">되돌리기</button>
+            <button class="btn main wide">다시 저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
