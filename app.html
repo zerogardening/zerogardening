@@ -2317,7 +2317,10 @@ table.orders-table tr.selected td{background:#e7f0ff !important}
                     <option value="27">27cm 포트</option>
                     <option value="custom">직접 입력</option>
                   </select>
-                  <input type="text" name="spec" id="manual-spec" class="form-control" placeholder="예: 5호분, 30cm" style="margin-top:6px;display:none">
+                  <div class="product-wrap" id="manual-spec-wrap">
+                    <input type="text" name="spec" id="manual-spec" class="form-control" placeholder="예: 뿌리묘, 구근12+, 5호분" autocomplete="off" style="margin-top:6px;display:none">
+                    <div id="manual-spec-list" class="product-list"></div>
+                  </div>
                 </div>
 
                 <!-- 3행: 품목코드 / 매입단가 / 수량 -->
@@ -5315,20 +5318,31 @@ function extractSizeNum(specText){
   const m = norm.match(/(\d+)\s*(cm|호|호분|inch)?/i);
   return m ? m[1] : '';
 }
+// 규격 → 품목코드 꼬리. 숫자 규격은 숫자(10cm 포트 → 10), 글자 규격은 영문(뿌리묘 → ROOT · 구근12+ → BULB12+)
+// 짝이 없는 글자 규격은 글자 그대로 둔다 — 코드는 덜 예뻐도 SKU 는 구분된다
+const SPEC_CODE_WORDS = { '뿌리묘':'ROOT', '구근':'BULB' };
+function specCodeSuffix(specText){
+  const s = normalizeSpecText(specText).replace(/\s+/g,'');
+  if(!s) return '';
+  if(/^\d/.test(s)) return s.match(/^\d+/)[0];
+  const word = (s.match(/^[가-힣]+/)||[''])[0];
+  const en = SPEC_CODE_WORDS[word];
+  return en ? en + (s.slice(word.length).match(/[\d+]+/)||[''])[0] : s;
+}
 function generateItemCode(scientificName, specText, excludeId){
   const prefix = genCodePrefix(scientificName);
   if(!prefix) return '';
   const all = Store.listReceivings().filter(r => r.id !== excludeId);
   const normSci = normalizeSci(scientificName);
   const reBase = new RegExp('^' + prefix + '(\\d{2})');
-  const sizeNum = extractSizeNum(specText);
+  const sizeNum = specCodeSuffix(specText);
 
   // 1) 동일 학명 + 동일 규격이 이미 있으면 그 번호 재사용
   //    (다른 규격은 새 SKU로 간주 → 다른 번호)
   let num = null;
   for(const r of all){
     if(normalizeSci(r.scientificName) === normSci && r.scientificName){
-      const rSize = extractSizeNum(r.spec || '');
+      const rSize = specCodeSuffix(r.spec || '');
       if(rSize === sizeNum){
         const m = (r.barcode||'').match(reBase);
         if(m){ num = parseInt(m[1],10); break; }
@@ -5691,7 +5705,7 @@ function setupManualForm(){
     } else if(preset === 'custom'){
       specPreset.value = 'custom';
       specInput.style.display = '';
-      specInput.placeholder = '예: 5호분, 30cm';
+      specInput.placeholder = '예: 뿌리묘, 구근12+, 5호분';
       specInput.value = p.lastSpec || '';
     } else {
       specPreset.value = preset;
@@ -5820,7 +5834,7 @@ function setupManualForm(){
       specInput.value = '';
     } else if(v === 'custom'){
       specInput.style.display = '';
-      specInput.placeholder = '예: 5호분, 30cm';
+      specInput.placeholder = '예: 뿌리묘, 구근12+, 5호분';
       specInput.value = '';
       setTimeout(()=> specInput.focus(), 0);
     } else {
@@ -5845,6 +5859,43 @@ function setupManualForm(){
       autoGenBarcode(false);
       toast(`✓ 규격 자동 변환: ${norm}`);
     }
+  });
+
+  // ── 규격 자동완성: 지금까지 입고에 쓴 적 있는 규격만 띄운다 (없는 값은 만들지 않는다) ──
+  const specWrap = document.getElementById('manual-spec-wrap');
+  const specList = document.getElementById('manual-spec-list');
+  function showSpecSuggestions(){
+    const q = specInput.value.trim();
+    const seen = new Map();
+    Store.listReceivings().forEach(r=>{
+      const v = normalizeSpecText(r.spec||'');
+      if(v) seen.set(v, (seen.get(v)||0)+1);
+    });
+    const matches = Array.from(seen.entries())
+      .filter(([v]) => !q || v.includes(q))
+      .sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0],'ko'))
+      .slice(0,20);
+    if(!matches.length){ specList.classList.remove('open'); return; }
+    specList.innerHTML = matches.map(([v,c])=>
+      `<div class="product-item" data-spec="${escapeHtml(v)}">
+        <div class="p-info"><div class="p-name">${escapeHtml(v)}</div></div>
+        <div class="p-meta"><span class="p-count">${c}회</span><div class="p-arrow">↵ 클릭</div></div>
+      </div>`).join('');
+    specList.classList.add('open');
+  }
+  specInput.addEventListener('input', showSpecSuggestions);
+  specInput.addEventListener('focus', showSpecSuggestions);
+  specInput.addEventListener('keydown', e=>{ if(e.key==='Escape') specList.classList.remove('open'); });
+  specList.addEventListener('mousedown', e=>{
+    const li = e.target.closest('.product-item');
+    if(!li) return;
+    e.preventDefault(); // blur 자동변환보다 먼저 잡는다
+    specInput.value = li.dataset.spec;
+    specList.classList.remove('open');
+    autoGenBarcode(false);
+  });
+  document.addEventListener('click', e=>{
+    if(!specWrap.contains(e.target)) specList.classList.remove('open');
   });
 
   // 품목코드 자동 생성 버튼
@@ -6206,7 +6257,7 @@ function processBulkRows(rows){
         normalizeSci(r.distributionName) === normName
       );
       if(!same) continue;
-      const rSize = extractSizeNum(r.spec || '');
+      const rSize = specCodeSuffix(r.spec || '');
       if(rSize === sizeNum){
         const mm = (r.barcode||'').match(reBase);
         if(mm){ num = parseInt(mm[1],10); break; }
@@ -6237,7 +6288,7 @@ function processBulkRows(rows){
     const distName = (r.C==null? '' : String(r.C)).trim();
     const origBarcode = (r.B==null? '' : String(r.B)).trim();
     const specInfo = convertChiToSpec(r.D);
-    const sizeNum = extractSizeNum(specInfo.converted);
+    const sizeNum = specCodeSuffix(specInfo.converted);
     determineCodeForFirstRow(distName, sizeNum, origBarcode, rowNum);
   });
 
@@ -6263,7 +6314,7 @@ function processBulkRows(rows){
     const supplier = (r.H==null? '' : String(r.H)).trim();
     const distName = (r.C==null? '' : String(r.C)).trim();
     const origBarcode = (r.B==null? '' : String(r.B)).trim();
-    const sizeNum = extractSizeNum(specInfo.converted);
+    const sizeNum = specCodeSuffix(specInfo.converted);
 
     // (품목명 + 사이즈) 조합별 코드 적용
     const key = distSizeKey(distName, sizeNum);
@@ -6595,7 +6646,7 @@ function processCleanupReceivings(){
     const oldSpec = r.spec || '';
     const oldBarcode = r.barcode || '';
     const newSpec = normalizeSpecText(oldSpec);
-    const sizeNum = extractSizeNum(newSpec);
+    const sizeNum = specCodeSuffix(newSpec);
     const codeInfo = determineCode(r, sizeNum);
     const newBarcode = codeInfo ? codeInfo.fullCode : oldBarcode;
 
