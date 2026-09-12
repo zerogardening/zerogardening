@@ -8,10 +8,12 @@ Supabase Storage 의 공개 버킷 `product` 에 `{품목코드}/1.jpg … 11.jp
 품목코드로 v3_품목 에서 유통명을 찾아 `~/이미지/{식물}/` 에 번호 그대로 떨군다 —
 그 자리가 상품/_도구 의 제작 도구들이 원료를 찾는 곳이다.
 
-🔴 멱등이다. 두 번 돌려도 늘지 않는다. 이미 있는 파일은 건너뛴다(「다시」면 덮는다).
+🔴 창고 쪽이 더 새것이면 덮는다 — 폰에서 사진을 갈아 끼우면 맥에도 갈린다.
+🔴 멱등이다. 안 바뀐 것은 건너뛰니 두 번 돌려도 늘지도, 다시 받지도 않는다.
 🔴 열쇠·REST 호출·폴더명 규칙은 제작요청.py 것을 그대로 쓴다 — 규칙이 갈리면 폴더가 둘로 갈린다.
 """
-import sys, json, urllib.request, urllib.parse
+import os, sys, json, urllib.request, urllib.parse
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -33,12 +35,26 @@ def 창고부르기(길, 몸=None):
         return json.loads(r.read() or b'null')
 
 
-def 목록(길=''):
-    """그 폴더 바로 아래 이름들. Storage 의 list 는 한 겹씩만 준다"""
+def 목록때(길=''):
+    """그 폴더 바로 아래 {이름: 올린때(초)}. Storage 의 list 는 한 겹씩만 준다"""
     답 = 창고부르기('object/list/' + 버킷,
                     {'prefix': 길, 'limit': 1000, 'offset': 0,
                      'sortBy': {'column': 'name', 'order': 'asc'}}) or []
-    return [x['name'] for x in 답]
+    return {x['name']: 초로(x.get('updated_at') or x.get('created_at')) for x in 답}
+
+
+def 목록(길=''):
+    return list(목록때(길))
+
+
+def 초로(때):
+    """`2026-09-12T04:20:11.123Z` → epoch 초. 못 읽으면 0 — 0 이면 늘 새로 받는다"""
+    if not 때:
+        return 0
+    try:
+        return datetime.fromisoformat(때.replace('Z', '+00:00')).timestamp()
+    except ValueError:
+        return 0
 
 
 def 내려받기(길):
@@ -68,7 +84,7 @@ def 받기(덮을까):
             print('  ⚠️  유통명이 비어 건너뛴다 —', 코드)
             continue
         방 = 원본사진방 / 폴더명(유통명)
-        있는것 = set(목록(코드))
+        있는것 = 목록때(코드)
         찍을것 = [n for n in 번호들 if n + '.jpg' in 있는것]
         if not 찍을것:
             continue
@@ -76,10 +92,14 @@ def 받기(덮을까):
         새로받은 = []
         for n in 찍을것:
             나갈곳 = 방 / (n + '.jpg')
-            if 나갈곳.exists() and not 덮을까:
+            # 창고 쪽이 더 새것이면 덮는다 — 폰에서 갈아 끼운 사진이 맥에도 와야 한다
+            if 나갈곳.exists() and not 덮을까 and 있는것[n + '.jpg'] <= 나갈곳.stat().st_mtime:
                 건너뛴수 += 1
                 continue
             나갈곳.write_bytes(내려받기(코드 + '/' + n + '.jpg'))
+            # 파일 시각을 창고 시각에 맞춘다 — 맥 시계가 서버와 어긋나도 매번 다시 받지 않는다
+            if 있는것[n + '.jpg']:
+                os.utime(나갈곳, (있는것[n + '.jpg'], 있는것[n + '.jpg']))
             새로받은.append(n)
             받은수 += 1
         print('  ✅' if 새로받은 else '  ·', 방.name,
