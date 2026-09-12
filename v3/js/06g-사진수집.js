@@ -33,7 +33,8 @@ window.ZG = window.ZG || {};
     '.자름상자{position:relative; width:min(360px,86vw); aspect-ratio:1/1; overflow:hidden;' +
     ' border-radius:var(--radius-md); background:#000; touch-action:none; cursor:grab}' +
     '.자름상자 canvas{position:absolute; left:0; top:0}' +
-    '.자름줄{display:flex; gap:10px}';
+    '.자름줄{display:flex; gap:10px}' +
+    '.ph-card.끝남, tr.끝남{opacity:.5}';
   document.head.appendChild(결);
 
   function 통() {
@@ -117,14 +118,44 @@ window.ZG = window.ZG || {};
 
   /* ══════════ 대기 목록 ══════════ */
 
-  function 대기품목() {
-    var 현 = ZG.제작요청.현황();
-    return ZG.저장소.품목들().filter(function (p) {
-      return (p.등록일시 || 0) >= 경계 && !(현[p.품목코드] && 현[p.품목코드]['상세페이지']);
-    }).sort(function (a, b) { return (b.등록일시 || 0) - (a.등록일시 || 0); });
+  var 진행순 = { 대기: 1, 받음: 2, 끝: 3 };
+
+  /* 06e 의 현황() 은 상태가 '끝' 인 것을 빼 버려 완료를 가려낼 수 없다 — 표를 직접 본다.
+     같은 품목에 요청이 둘이면 더 진행된 쪽이 그 품목의 상태다 */
+  function 상세요청(코드) {
+    var 최 = null;
+    ZG.저장소.읽기(ZG.저장소.키.제작요청).forEach(function (r) {
+      if (r.삭제됨 || r.종류 !== '상세페이지' || r.품목코드 !== 코드) return;
+      if (!최 || (진행순[r.상태] || 0) > (진행순[최.상태] || 0)) 최 = r;
+    });
+    return 최;
   }
 
-  function 칩달기(칩, 코드) {
+  function 상태표() {
+    var 표 = {};
+    ZG.저장소.읽기(ZG.저장소.키.제작요청).forEach(function (r) {
+      if (r.삭제됨 || r.종류 !== '상세페이지') return;
+      if ((진행순[r.상태] || 0) > (진행순[표[r.품목코드]] || 0)) 표[r.품목코드] = r.상태;
+    });
+    return 표;
+  }
+
+  /* 요청이 걸려도 목록에서 빼지 않는다 — 그 뒤에도 사진을 바꿔야 한다.
+     완료(끝)는 흐리게 해서 맨 아래로 내린다 */
+  function 대기품목() {
+    var 상 = 상태표();
+    return ZG.저장소.품목들().filter(function (p) {
+      return (p.등록일시 || 0) >= 경계;
+    }).sort(function (a, b) {
+      var x = 상[a.품목코드] === '끝' ? 1 : 0, y = 상[b.품목코드] === '끝' ? 1 : 0;
+      return x !== y ? x - y : (b.등록일시 || 0) - (a.등록일시 || 0);
+    });
+  }
+
+  function 칩달기(칩, 코드, 상태) {
+    if (상태 === '끝') { 칩.textContent = '완료'; 칩.className = 'chip 사진 완'; return; }
+    if (상태 === '받음') { 칩.textContent = '제작 중'; 칩.className = 'chip 요청 진행'; return; }
+    if (상태 === '대기') { 칩.textContent = '요청함'; 칩.className = 'chip 요청'; return; }
     사진훑기(코드).then(function (표) {
       var 수 = 필수수(function (번) { return 표[번]; });
       칩.textContent = 수 + '/7';
@@ -134,14 +165,15 @@ window.ZG = window.ZG || {};
 
   /* 폰 — 05d 의 폰내역() 카드와 같은 결(.ph-list > .ph-card) */
   function 폰목록(목록) {
+    var 상 = 상태표();
     var 목 = 만들기('div', { class: 'ph-list' });
     목록.forEach(function (p) {
-      var 칸 = 만들기('div', { class: 'ph-card' });
+      var 칸 = 만들기('div', { class: 'ph-card' + (상[p.품목코드] === '끝' ? ' 끝남' : '') });
       칸.innerHTML =
         '<div class="r1"><div class="nm">' + u.안전(p.유통명) + '</div><div class="cd">' + u.안전(p.품목코드) + '</div></div>' +
         '<div class="sci">' + u.안전(p.학명) + '</div>' +
         '<div class="r2">' + u.안전(p.규격) + '<span class="amt"><span class="chip 사진">…</span></span></div>';
-      칩달기(칸.querySelector('.chip'), p.품목코드);
+      칩달기(칸.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
       칸.addEventListener('click', function () { 열기(p); });
       목.appendChild(칸);
     });
@@ -154,6 +186,7 @@ window.ZG = window.ZG || {};
 
   /* PC — 05d 의 내역카드() 와 같은 결(.card.table-card > .tablewrap > table) */
   function PC목록(목록) {
+    var 상 = 상태표();
     var 카드 = 만들기('div', { class: 'card table-card' });
     카드.appendChild(만들기('h3', { style: 'padding:0 var(--space-sm)', text: '상세페이지 작업 대기' }));
     var 표 = 만들기('table');
@@ -162,13 +195,13 @@ window.ZG = window.ZG || {};
       '<thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th>사진</th></tr></thead>';
     var 몸 = 만들기('tbody');
     목록.forEach(function (p) {
-      var 줄 = 만들기('tr', { style: 'cursor:pointer' });
+      var 줄 = 만들기('tr', { class: 상[p.품목코드] === '끝' ? '끝남' : '', style: 'cursor:pointer' });
       줄.innerHTML =
         '<td class="code">' + u.안전(p.품목코드) + '</td>' +
         '<td>' + u.안전(p.유통명) + '<div class="sci">' + u.안전(p.학명) + '</div></td>' +
         '<td class="dim">' + u.안전(p.규격) + '</td>' +
         '<td><span class="chip 사진">…</span></td>';
-      칩달기(줄.querySelector('.chip'), p.품목코드);
+      칩달기(줄.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
       줄.addEventListener('click', function () { 열기(p); });
       몸.appendChild(줄);
     });
@@ -264,16 +297,19 @@ window.ZG = window.ZG || {};
   }
 
   function 붙이기(번, 자른것) {
+    var 그창 = 창;                                  // 올리는 사이에 창이 닫히거나 다른 품목으로 바뀔 수 있다
     창.진행[번] = { 퍼센트: 12 };
     판다시();
     var 막대 = 창.판.querySelector('[data-바="' + 번 + '"]');
     if (막대) setTimeout(function () { 막대.style.width = '88%'; }, 30);
     올리기(창.코드, 번, 자른것).then(function () {
+      if (그창 !== 창) return;
       delete 창.진행[번];
       창.있는것[번] = Date.now();
       if (자른것.그림.close) 자른것.그림.close();
       판다시();
     }).catch(function (e) {
+      if (그창 !== 창) return;
       console.warn('사진 올리기 실패', e);
       창.진행[번] = { 실패: true, 자른것: 자른것 };   // 다시 올릴 때 자른 자리를 그대로 쓴다
       판다시();
@@ -330,7 +366,28 @@ window.ZG = window.ZG || {};
     var 수 = 필수수(function (번) { return 창.있는것[번]; });   // 추가 칸(6~9)은 안 센다
     창.셈.textContent = 수 + '/7';
     창.셈.className = 'chip 사진' + (수 === 7 ? ' 완' : (수 ? ' 일부' : ''));
-    창.요청.disabled = 수 < 7;
+    단추맞추기(수);
+  }
+
+  /* 단추는 상태에 따라 셋이다 — 요청 전 / 완료로 표시 / 완료 취소 */
+  function 단추맞추기(수) {
+    var 상 = 창.상태;
+    창.요청.textContent = !상 ? '상세페이지 요청' : (상 === '끝' ? '완료 취소' : '완료로 표시');
+    창.요청.className = 'btn' + (상 === '끝' ? '' : ' main');
+    창.요청.disabled = !상 && 수 < 7;
+  }
+
+  function 단추누름() {
+    if (!창) return;
+    if (!창.상태) { 요청걸기(); return; }
+    var r = 상세요청(창.코드);
+    if (!r) { u.토스트('요청 기록을 못 찾았습니다'); return; }
+    var 새 = 창.상태 === '끝' ? '받음' : '끝';
+    ZG.저장소.바꾸기(ZG.저장소.키.제작요청, r.id, { 상태: 새 });   // 서버 전송은 저장소가 한다
+    창.상태 = 새;
+    판다시();
+    ZG.앱.다시그리기();
+    u.토스트(새 === '끝' ? '완료로 표시했습니다' : '완료를 취소했습니다');
   }
 
   function 요청걸기() {
@@ -347,6 +404,7 @@ window.ZG = window.ZG || {};
     var 셈 = 만들기('span', { class: 'chip 사진', text: '0/7' });
     var 닫기단추 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     var 요청 = 만들기('button', { class: 'btn main', type: 'button', text: '상세페이지 요청', disabled: 'disabled' });
+    var 요청r = 상세요청(품목.품목코드);
 
     var 상자 = 만들기('div', { class: '사진창' }, [
       만들기('div', { class: 'hd' }, [
@@ -359,10 +417,11 @@ window.ZG = window.ZG || {};
     덮개.appendChild(상자);
     덮개.addEventListener('click', function (e) { if (e.target === 덮개) 닫기(); });
     닫기단추.addEventListener('click', 닫기);
-    요청.addEventListener('click', 요청걸기);
+    요청.addEventListener('click', 단추누름);
     document.body.appendChild(덮개);
 
-    창 = { 코드: 품목.품목코드, 덮개: 덮개, 판: 판, 셈: 셈, 요청: 요청, 있는것: {}, 진행: {} };
+    창 = { 코드: 품목.품목코드, 덮개: 덮개, 판: 판, 셈: 셈, 요청: 요청,
+           상태: (요청r && 요청r.상태) || '', 있는것: {}, 진행: {} };
     u.탈출걸기(닫기);
     판다시();
     if (!통()) u.토스트('인터넷이 안 닿아 사진을 못 올립니다');
