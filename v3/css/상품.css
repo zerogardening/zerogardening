@@ -82,3 +82,78 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
   border-radius:var(--radius-pill); padding:var(--pad-btn-sm); animation:none;
 }
 .fchip.alert.on{background:var(--color-danger); border-color:var(--color-danger); color:var(--color-on-accent)}
+
+/* ══ 15단계 A — 사진 수집 (시안 13-사진수집-macA.html) ══ */
+.chip.사진{background:var(--color-surface); color:var(--color-text-muted); border-color:var(--color-border); font-variant-numeric:tabular-nums}
+.chip.사진::before{content:'📷'; background:none; width:auto; height:auto; border-radius:0; font-size:10px; line-height:1}
+.chip.사진.일부{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+.chip.사진.완{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+
+.사진덮개{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.34); display:flex; align-items:flex-start; justify-content:center; overflow:auto}
+.사진창{
+  width:min(780px,94%); margin:4vh 0; background:var(--color-bg); border-radius:var(--radius-lg);
+  box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+}
+.사진창 .hd{
+  display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
+  padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+}
+.사진창 .hd h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.사진창 .hd .cd{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-family:var(--font-mono)}
+.사진창 .hd .right{margin-left:auto; display:flex; gap:var(--space-md); align-items:center}
+.사진창 .hd .x{font-size:var(--font-2xl); color:var(--color-text-muted); line-height:1; background:none; border:none; cursor:pointer; font-family:inherit}
+.사진창 .bd{padding:var(--space-xl) var(--space-2xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-xl)}
+.사진창 .btnrow{display:flex; gap:var(--space-sm); justify-content:flex-end}
+
+.사진판{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--space-lg)}
+.사진칸{display:flex; flex-direction:column; gap:var(--space-xs); min-width:0}
+.사진칸 .이름{
+  display:flex; align-items:flex-start; gap:var(--space-xs); line-height:1.35;
+  font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub);
+}
+.사진칸 .번{
+  flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+  min-width:20px; height:18px; padding:0 6px; border-radius:var(--radius-pill);
+  background:var(--color-seg-bg); color:var(--color-text-sub);
+  font-size:var(--font-2xs); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums;
+}
+.사진칸 .번.됨{background:var(--color-accent); color:var(--color-on-accent)}
+.사진칸.찍기 .번{background:var(--color-accent-bg); color:var(--color-accent-dark); border:var(--border-width) solid var(--color-accent-border)}
+.사진칸.찍기 .번.됨{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent-dark)}
+.사진칸 .틀{
+  position:relative; aspect-ratio:1/1; border-radius:var(--radius-md); overflow:hidden; cursor:pointer;
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  display:flex; align-items:center; justify-content:center;
+}
+.사진칸 .틀.빔{border-style:dashed; background:var(--color-bg)}
+.사진칸.찍기 .틀.빔{border-color:var(--color-accent-border); background:var(--color-accent-bg)}
+.사진칸 .틀 img{width:100%; height:100%; object-fit:cover; display:block}
+.사진칸 .빈표{font-size:26px; color:var(--color-text-faint); line-height:1}
+.사진칸.찍기 .빈표{font-size:24px; color:var(--color-accent-dark); opacity:.85}
+.사진칸 .다시{
+  position:absolute; right:5px; bottom:5px; border:none; cursor:pointer; font-family:inherit;
+  background:rgba(29,29,31,.68); color:#fff; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  padding:3px 9px; border-radius:var(--radius-pill);
+}
+.사진칸 .덮개{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:7px; background:rgba(255,255,255,.78); padding:0 10px;
+}
+.사진칸 .상태{font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
+.사진칸 .바{width:74%; height:5px; border-radius:3px; background:var(--color-border); overflow:hidden}
+.사진칸 .바 i{display:block; height:100%; border-radius:3px; background:var(--color-accent); transition:width 2.4s ease-out}
+.사진칸.실패 .틀{border-color:var(--color-danger)}
+.사진칸.실패 .번{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+.사진칸.실패 .덮개{background:rgba(255,241,240,.9)}
+.사진칸.실패 .상태{color:var(--color-danger)}
+.사진칸.실패 .btn{background:#fff; border-color:var(--color-danger-border); color:var(--color-danger)}
+
+@media (max-width:899px){
+  .사진창{width:100%; margin:0; min-height:100%; border-radius:0}
+  .사진창 .hd{border-radius:0; padding:var(--space-lg)}
+  .사진창 .bd{padding:var(--space-lg) var(--space-lg) var(--space-3xl)}
+  .사진판{grid-template-columns:1fr 1fr; gap:var(--space-md)}
+  .사진칸 .틀{aspect-ratio:4/3}
+  .사진창 .btnrow .btn{flex:1; min-height:46px}
+}

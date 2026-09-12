@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 상품 이미지 편집기(127.0.0.1:8765)를 맥 켤 때 띄운다 (15단계 A-5).
+     이게 꺼져 있으면 통합관리 「상품 이미지」 탭이 빈 창으로 뜬다.
+     넣는 법:  cp 통합관리/도구/com.zerogardening.imgeditor.plist ~/Library/LaunchAgents/
+               launchctl load ~/Library/LaunchAgents/com.zerogardening.imgeditor.plist
+     🔴 BROWSER=/usr/bin/true — 편집.py 는 뜨면서 브라우저를 연다. 부팅 때마다
+        창이 튀어나오지 않게 아무것도 안 하는 명령을 브라우저 자리에 둔다. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.zerogardening.imgeditor</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/zerogardening/claude-projects/제로가드닝/상품/_도구/편집.py</string>
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>BROWSER</key>
+		<string>/usr/bin/true</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/zg-편집기.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/zg-편집기.log</string>
+</dict>
+</plist>
