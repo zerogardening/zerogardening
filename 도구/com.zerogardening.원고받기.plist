@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 60초마다 원고받기.py 를 돌린다 (15단계 B).
+     폰·PC 에서 고친 원고를 맥의 제작.html·작성내용.md 로 옮기고, 맥 쪽 원고를 올린다.
+     이게 꺼져 있으면 [원고] 탭에서 저장해도 맥에 영영 안 닿는다.
+     넣는 법:  cp 통합관리/도구/com.zerogardening.원고받기.plist ~/Library/LaunchAgents/
+               launchctl load ~/Library/LaunchAgents/com.zerogardening.원고받기.plist
+     🔴 service_role 키(~/.zg_supabase_key)가 있어야 돈다. 없으면 로그에 그 말이 찍힌다. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.zerogardening.원고받기</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/zerogardening/claude-projects/제로가드닝/통합관리/도구/원고받기.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>60</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/zg-원고받기.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/zg-원고받기.log</string>
+</dict>
+</plist>

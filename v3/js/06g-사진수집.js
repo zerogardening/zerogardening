@@ -34,7 +34,8 @@ window.ZG = window.ZG || {};
     ' border-radius:var(--radius-md); background:#000; touch-action:none; cursor:grab}' +
     '.자름상자 canvas{position:absolute; left:0; top:0}' +
     '.자름줄{display:flex; gap:10px}' +
-    '.ph-card.끝남, tr.끝남{opacity:.5}';
+    '.ph-card.끝남, tr.끝남{opacity:.5}' +
+    '.사진창 .hd .cd{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}';
   document.head.appendChild(결);
 
   function 통() {
@@ -408,6 +409,36 @@ window.ZG = window.ZG || {};
     ZG.제작요청.요청하기('상세페이지', 닫기);
   }
 
+  /* ══════════ 갈래 셋 — [사진][원고][결과] (15단계 B 설계 §1·§4) ══════════ */
+
+  var 갈래들 = ['사진', '원고', '결과'];
+
+  /* 사진 갈래는 A단계 그대로다. 원고·결과만 몸을 갈아 끼운다 */
+  function 몸다시() {
+    if (!창) return;
+    u.비우기(창.몸);
+    창.셈.style.display = 창.갈래 === '사진' ? '' : 'none';
+    [].slice.call(창.갈래줄.children).forEach(function (b, i) {
+      b.className = 갈래들[i] === 창.갈래 ? 'on' : '';
+    });
+    if (창.갈래 === '사진') {
+      창.몸.appendChild(창.판);
+      창.몸.appendChild(창.버튼줄);
+      판다시();
+    } else if (창.갈래 === '원고') ZG.원고화면.그리기(창.몸, 창);
+    else ZG.결과화면.그리기(창.몸, 창);
+  }
+
+  function 갈래줄만들기() {
+    var 줄 = 만들기('div', { class: 'toggle', style: 'width:220px' });
+    갈래들.forEach(function (g) {
+      var b = 만들기('button', { type: 'button', text: g, style: 'flex:1; padding:0' });
+      b.addEventListener('click', function () { if (창.갈래 !== g) { 창.갈래 = g; 몸다시(); } });
+      줄.appendChild(b);
+    });
+    return 줄;
+  }
+
   function 열기(품목) {
     닫기();
     var 덮개 = 만들기('div', { class: '사진덮개' });
@@ -416,14 +447,17 @@ window.ZG = window.ZG || {};
     var 닫기단추 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     var 요청 = 만들기('button', { class: 'btn main', type: 'button', text: '상세페이지 요청', disabled: 'disabled' });
     var 요청r = 상세요청(품목.품목코드);
+    var 갈래줄 = 갈래줄만들기();
+    var 몸 = 만들기('div', { class: 'bd' });
+    var 버튼줄 = 만들기('div', { class: 'btnrow' }, [요청]);
 
     var 상자 = 만들기('div', { class: '사진창' }, [
       만들기('div', { class: 'hd' }, [
-        만들기('h3', { text: '사진' }),
         만들기('span', { class: 'cd', text: 품목.품목코드 + ' · ' + 품목.유통명 }),
+        갈래줄,
         만들기('span', { class: 'right' }, [셈, 닫기단추])
       ]),
-      만들기('div', { class: 'bd' }, [판, 만들기('div', { class: 'btnrow' }, [요청])])
+      몸
     ]);
     덮개.appendChild(상자);
     덮개.addEventListener('click', function (e) { if (e.target === 덮개) 닫기(); });
@@ -431,15 +465,17 @@ window.ZG = window.ZG || {};
     요청.addEventListener('click', 단추누름);
     document.body.appendChild(덮개);
 
-    창 = { 코드: 품목.품목코드, 덮개: 덮개, 판: 판, 셈: 셈, 요청: 요청,
+    창 = { 코드: 품목.품목코드, 품목: 품목, 덮개: 덮개, 판: 판, 몸: 몸, 버튼줄: 버튼줄,
+           갈래줄: 갈래줄, 갈래: '사진', 셈: 셈, 요청: 요청,
            상태: (요청r && 요청r.상태) || '', 있는것: {}, 진행: {} };
     u.탈출걸기(닫기);
-    판다시();
+    몸다시();
     if (!통()) u.토스트('인터넷이 안 닿아 사진을 못 올립니다');
     else 사진훑기(품목.품목코드).then(function (표) {
-      if (창 && 창.코드 === 품목.품목코드) { 창.있는것 = 표; 판다시(); }
+      if (창 && 창.코드 === 품목.품목코드) { 창.있는것 = 표; if (창.갈래 === '사진') 판다시(); }
     }).catch(function (e) { console.warn(e); u.토스트('올라간 사진을 못 읽었습니다'); });
   }
 
-  ZG.사진수집 = { 대기카드: 대기카드, 대기다시: 대기다시, 대기품목: 대기품목, 열기: 열기, 경계: 경계 };
+  ZG.사진수집 = { 대기카드: 대기카드, 대기다시: 대기다시, 대기품목: 대기품목, 열기: 열기, 경계: 경계,
+                  주소: 주소, 사진훑기: 사진훑기, 요청걸기: 요청걸기 };
 })(window.ZG);
