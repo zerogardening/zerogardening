@@ -13,15 +13,19 @@ window.ZG = window.ZG || {};
      경계 밖으로 밀려 「사진 대기」로 9일째 서 있었다. 이미 다 만든 34품목은 여전히 안 뜬다. */
   var 경계 = new Date(2026, 8, 1).getTime();
 
-  /* [번호, 이름, 찍는자리, 추가(없어도 된다)] — 필수는 7개, 6~9 는 넣어도 되고 안 넣어도 된다 */
-  var 자리들 = [
-    [1, '대표이미지 배경'], [2, '구역1 메인'], [3, '구역2 꽃'], [4, '구역3 잎'], [5, '구역4 재배'],
-    [6, '추가', false, true], [7, '추가', false, true], [8, '추가', false, true], [9, '추가', false, true],
-    [10, '구역6 실촬영 · 화분 하나', true], [11, '구역6 실촬영 · 여러 포기', true]
-  ];
+  /* 🔴 사진 칸은 품목마다 다르다 — 02-품목코드.js 의 ZG.상세폼 이 가른다 (2026-09-14).
+     화분묘는 일곱 칸(1·2·3·4·5·10·11), 구근은 넷(1·2·10·11)에 꽃 두 칸이 선택이다.
+     예전엔 여기 배열 하나가 박혀 있어 구근도 「7칸 중 4칸」으로 서 있었다. */
+  function 자리들(품목) {
+    return (ZG.상세폼 && ZG.상세폼.사진자리(품목)) || [];
+  }
 
-  function 필수수(있다) {
-    return 자리들.filter(function (자) { return !자[3] && 있다(자[0]); }).length;
+  function 필수수(자리, 있다) {
+    return 자리.filter(function (자) { return !자[3] && 있다(자[0]); }).length;
+  }
+
+  function 필수총(자리) {
+    return 자리.filter(function (자) { return !자[3]; }).length;
   }
 
   /* 자름 창·추가 칸 모양 — 06g 만 쓰는 몇 줄이라 여기 둔다(css 캐시버스터를 안 건드리려는 뜻도 있다) */
@@ -189,14 +193,15 @@ window.ZG = window.ZG || {};
     return 줄;
   }
 
-  function 칩달기(칩, 코드, 상태) {
+  function 칩달기(칩, 품목, 상태) {
     if (상태 === '끝') { 칩.textContent = '완료'; 칩.className = 'chip 사진 완'; return; }
     if (상태 === '받음') { 칩.textContent = '제작 중'; 칩.className = 'chip 요청 진행'; return; }
     if (상태 === '대기') { 칩.textContent = '요청함'; 칩.className = 'chip 요청'; return; }
-    사진훑기(코드).then(function (표) {
-      var 수 = 필수수(function (번) { return 표[번]; });
-      칩.textContent = 수 + '/7';
-      칩.className = 'chip 사진' + (수 === 7 ? ' 완' : (수 ? ' 일부' : ''));
+    var 자리 = 자리들(품목), 총 = 필수총(자리);     // 🔴 구근은 4, 화분묘는 7 이다
+    사진훑기(품목.품목코드).then(function (표) {
+      var 수 = 필수수(자리, function (번) { return 표[번]; });
+      칩.textContent = 수 + '/' + 총;
+      칩.className = 'chip 사진' + (수 === 총 ? ' 완' : (수 ? ' 일부' : ''));
     }).catch(function () { 칩.style.display = 'none'; });   // 못 세면 숫자를 지어내지 않는다
   }
 
@@ -283,7 +288,7 @@ window.ZG = window.ZG || {};
         '<div class="r1"><div class="nm">' + u.안전(p.유통명) + '</div><div class="cd">' + u.안전(p.품목코드) + '</div></div>' +
         '<div class="sci">' + u.안전(p.학명) + '</div>' +
         '<div class="r2">' + u.안전(p.규격) + '<span class="amt"><span class="chip 사진">…</span></span></div>';
-      칩달기(칸.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
+      칩달기(칸.querySelector('.chip'), p, 상[p.품목코드]);
       칸.addEventListener('click', function () { 열기(p); });
       칸.appendChild(뺌단추(p));            // 밀기가 안 되는 기기를 위해 남겨 둔다(폰에선 CSS 로 감춘다)
       목.appendChild(민카드(칸, p));
@@ -314,7 +319,7 @@ window.ZG = window.ZG || {};
         '<td class="dim">' + u.안전(p.규격) + '</td>' +
         '<td><span class="chip 사진">…</span></td>' +
         '<td class="뺌칸"></td>';
-      칩달기(줄.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
+      칩달기(줄.querySelector('.chip'), p, 상[p.품목코드]);
       줄.querySelector('.뺌칸').appendChild(뺌단추(p));
       줄.addEventListener('click', function () { 열기(p); });
       몸.appendChild(줄);
@@ -494,10 +499,11 @@ window.ZG = window.ZG || {};
   function 판다시() {
     if (!창) return;
     u.비우기(창.판);
-    자리들.forEach(function (자리) { 창.판.appendChild(칸그리기(자리)); });
-    var 수 = 필수수(function (번) { return 창.있는것[번]; });   // 추가 칸(6~9)은 안 센다
-    창.셈.textContent = 수 + '/7';
-    창.셈.className = 'chip 사진' + (수 === 7 ? ' 완' : (수 ? ' 일부' : ''));
+    var 자리 = 자리들(창.품목), 총 = 필수총(자리);
+    자리.forEach(function (한칸) { 창.판.appendChild(칸그리기(한칸)); });
+    var 수 = 필수수(자리, function (번) { return 창.있는것[번]; });   // 선택 칸은 안 센다
+    창.셈.textContent = 수 + '/' + 총;
+    창.셈.className = 'chip 사진' + (수 === 총 ? ' 완' : (수 ? ' 일부' : ''));
     단추맞추기(수);
   }
 
@@ -563,7 +569,7 @@ window.ZG = window.ZG || {};
     닫기();
     var 덮개 = 만들기('div', { class: '사진덮개' });
     var 판 = 만들기('div', { class: '사진판' });
-    var 셈 = 만들기('span', { class: 'chip 사진', text: '0/7' });
+    var 셈 = 만들기('span', { class: 'chip 사진', text: '0/' + 필수총(자리들(품목)) });
     var 닫기단추 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     var 요청 = 만들기('button', { class: 'btn main', type: 'button', text: '상세페이지 요청', disabled: 'disabled' });
     var 요청r = 상세요청(품목.품목코드);

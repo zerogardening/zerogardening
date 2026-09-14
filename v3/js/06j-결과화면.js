@@ -7,7 +7,11 @@ window.ZG = window.ZG || {};
 
   var u = ZG.ui, 만들기 = u.만들기;
   var 번호들 = ['1', '2', '3', '4', '5', '6'];
-  var 이름들 = { '1': '소개', '2': '꽃', '3': '잎', '4': 'How to grow', '5': '식재 간격', '6': '실촬영' };
+  /* 🔴 구근은 구역 이름이 다르다 — ZG.상세폼 이 가른다 (2026-09-14) */
+  function 이름들(품목) {
+    return (ZG.상세폼 && ZG.상세폼.구역이름(품목)) ||
+      { '1': '소개', '2': '꽃', '3': '잎', '4': 'How to grow', '5': '식재 간격', '6': '실촬영' };
+  }
 
   var 결 = document.createElement('style');
   결.textContent =
@@ -253,12 +257,12 @@ window.ZG = window.ZG || {};
     var 통 = 만들기('div', { class: 폰 ? 'ph-shots' : 'shots' });
     번호들.forEach(function (n) {
       var 라벨 = 만들기('div', { class: 'shotlab' }, [
-        만들기('span', { class: 'n', text: n }), 만들기('span', { text: 이름들[n] })
+        만들기('span', { class: 'n', text: n }), 만들기('span', { text: 이름들(창.품목)[n] })
       ]);
       var 것 = s.있는것[n]
         ? 만들기('img', { src: 자료().발행주소(창.코드, n, s.있는것[n]), alt: '' })
         : 만들기('div', { class: 'ghost', style: 폰 ? 'height:96px' : 'height:200px' },
-                 [만들기('b', { text: n }), 만들기('span', { text: 이름들[n] })]);
+                 [만들기('b', { text: n }), 만들기('span', { text: 이름들(창.품목)[n] })]);
       if (폰) { 통.appendChild(라벨); 통.appendChild(것); }
       else 통.appendChild(만들기('figure', {}, [라벨, 것]));
     });
@@ -268,7 +272,7 @@ window.ZG = window.ZG || {};
   function 빈자리들() {
     var 통 = 만들기('div', { class: 'ghosts' });
     번호들.forEach(function (n) {
-      통.appendChild(만들기('div', { class: 'ghost' }, [만들기('b', { text: n }), 만들기('span', { text: 이름들[n] })]));
+      통.appendChild(만들기('div', { class: 'ghost' }, [만들기('b', { text: n }), 만들기('span', { text: 이름들(창.품목)[n] })]));
     });
     return 통;
   }
