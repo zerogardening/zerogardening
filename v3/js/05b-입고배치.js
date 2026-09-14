@@ -48,7 +48,9 @@ window.ZG = window.ZG || {};
 
     var 단추줄 = 만들기('div', { class: 'row bottom' }, [만들기('div', { class: 'spacer' })]);
     참조.저장단추들 = [];
-    [['칸 비우기', 'btn', '비우기'], ['저장하고 끝내기', 'btn', '끝내기'], ['저장하고 계속', 'btn main wide', '계속']]
+    // 🔴 2026-09-14 우람님 — 「모든 버튼이 간결하게 표현된 게 좋다」.
+      //    「저장하고 계속」이 기본이라 그냥 `저장` 이다. 끝내기는 눌러 본 적이 드물어 글자만 줄였다.
+      [['비우기', 'btn', '비우기'], ['저장·끝', 'btn', '끝내기'], ['저장', 'btn main wide', '계속']]
       .forEach(function (셋) {
         var b = 만들기('button', { class: 셋[1], type: 'button', text: 셋[0] });
         b.addEventListener('click', function () { ZG.입고.단추(셋[2]); });
@@ -59,7 +61,9 @@ window.ZG = window.ZG || {};
     폼.appendChild(참조.경고칸);
     폼.appendChild(특성칸());
 
-    return [폼, ZG.입고내역.내역카드(), ZG.사진수집.대기카드()];
+    // 🔴 대기 카드는 이제 「작업중」 속탭이다 — 여기서 뺐다 (2026-09-14).
+    //    입고내역(최근 저장분)은 남긴다. 저장 직후 바로 보이셔야 한다.
+    return [폼, ZG.입고내역.내역카드()];
   }
 
   /* ── 폰 배치 ── */
@@ -70,7 +74,7 @@ window.ZG = window.ZG || {};
     var 코드칸 = 만들기('input', { class: 'inp code', readonly: 'readonly', 'aria-readonly': 'true', value: 상태.코드 });
     참조.코드 = 코드칸;
 
-    var 저장 = 만들기('button', { class: 'ph-save', type: 'button', text: '저장하고 다음 것 입력' });
+    var 저장 = 만들기('button', { class: 'ph-save', type: 'button', text: '저장' });
     저장.style.marginTop = '0';   // 아래에 입고 내역이 이어지므로 바닥으로 밀지 않는다
     저장.addEventListener('click', function () { ZG.입고.단추('계속'); });
     참조.저장단추들 = [저장];
@@ -96,8 +100,8 @@ window.ZG = window.ZG || {};
       참조.경고칸,
       특성칸(),
       저장,
-      참조.내역칸,
-      ZG.사진수집.대기카드()
+      참조.내역칸
+      // 🔴 대기 카드는 이제 「작업중」 속탭이다 — 여기서 뺐다 (2026-09-14)
     ];
   }
 
