@@ -110,3 +110,12 @@
                border-right:1px solid var(--color-border-faint); background:var(--color-bg) }
   .말풍선{ max-width:70% }
 }
+
+/* 알림 켜기 — 아직 안 켜신 동안만 보인다 */
+.지시-알림{
+  flex:none; padding:5px 11px; border-radius:14px;
+  border:1px solid var(--color-accent-border); background:var(--color-accent-bg);
+  color:var(--color-accent-dark); font-size:var(--font-xs); font-weight:600;
+  font-family:var(--font-family); cursor:pointer;
+}
+.지시-알림:disabled{ opacity:.5; cursor:default }

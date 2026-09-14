@@ -15,7 +15,7 @@ window.ZG = window.ZG || {};
   var 최대줄 = 200;
 
   var u, 만들기;
-  var 뿌리, 흐름칸, 입력칸, 보냄단추, 상태칸;
+  var 뿌리, 흐름칸, 입력칸, 보냄단추, 상태칸, 알림단추;
   var 담긴것 = [];          // [{id, 내용}] — id 오름차순이 곧 시간순
   var 첫판 = true, 타이머 = null, 읽는중 = false;
 
@@ -47,13 +47,74 @@ window.ZG = window.ZG || {};
     return s.slice(0, n);
   }
 
+  /* ══════════════ 알림 (16단계) ══════════════
+     🔴 구독은 이 표에 `갈래:'구독'` 으로 얹는다. 표를 하나 더 만들지 않으려고 그렇게 했다 —
+        SQL 을 또 돌리시게 하는 것보다 낫다. 흐름은 이 줄을 안 그린다.
+     🔴 아이폰은 **홈 화면에 추가한 앱**에서만 알림이 된다. 사파리 탭이면 단추를 아예 숨긴다. */
+  var 공개키 = 'BMaAIVV9hA3EIHSbv4wVEVF8rVguS4qyoBc_ewSKpgHvZi0lV8YfmAHJYcQCNC-dJSGf_UjGStfmDPukLv4DgC0';
+
+  function 바이트로(b) {
+    var s = (b + '='.repeat((4 - b.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+    var 살 = atob(s), 통 = new Uint8Array(살.length);
+    for (var i = 0; i < 살.length; i++) 통[i] = 살.charCodeAt(i);
+    return 통;
+  }
+  function b64로(버퍼) {
+    var 통 = new Uint8Array(버퍼), s = '';
+    for (var i = 0; i < 통.length; i++) s += String.fromCharCode(통[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function 알림될까() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return false;
+    var 아이폰 = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var 홈앱 = window.navigator.standalone === true ||
+               (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    return !아이폰 || 홈앱;      // 사파리 탭에서는 눌러도 안 되니 보여 주지 않는다
+  }
+
+  function 지금구독() {
+    if (!알림될까()) return Promise.resolve(null);
+    return navigator.serviceWorker.ready.then(function (등록) {
+      return 등록.pushManager.getSubscription();
+    }).catch(function () { return null; });
+  }
+
+  function 알림켜기() {
+    return Notification.requestPermission().then(function (답) {
+      if (답 !== 'granted') throw new Error('알림이 허용되지 않았습니다');
+      return navigator.serviceWorker.ready;
+    }).then(function (등록) {
+      return 등록.pushManager.getSubscription().then(function (있는것) {
+        return 있는것 || 등록.pushManager.subscribe(
+          { userVisibleOnly: true, applicationServerKey: 바이트로(공개키) });
+      });
+    }).then(function (구독) {
+      var j = (구독.toJSON && 구독.toJSON()) || {}, 열쇠 = j.keys || {};
+      var t = 통();
+      if (!t) throw new Error('오프라인');
+      // 끝주소 꼬리로 id 를 삼는다 — 같은 기기를 두 번 켜도 줄이 하나다
+      var 아이디 = '구독:' + 구독.endpoint.slice(-36).replace(/[^A-Za-z0-9_-]/g, '');
+      return 제때(t.upsert([{ id: 아이디, 삭제됨: false, 내용: {
+        갈래: '구독', 끝주소: 구독.endpoint,
+        p256dh: 열쇠.p256dh || b64로(구독.getKey('p256dh')),
+        auth: 열쇠.auth || b64로(구독.getKey('auth')),
+        기기: navigator.userAgent.slice(0, 80), 켠때: Date.now()
+      } }], { onConflict: 'id' })).then(function (답) {
+        if (답 && 답.error) throw 답.error;
+        return true;
+      });
+    });
+  }
+
   function 불러오기() {
     var t = 통();
     if (!t) return Promise.reject(new Error('오프라인'));
     return 제때(t.select('id,내용,삭제됨').order('id', { ascending: false }).limit(최대줄))
       .then(function (답) {
         if (답 && 답.error) throw 답.error;
-        return ((답 && 답.data) || []).filter(function (r) { return !r.삭제됨; })
+        return ((답 && 답.data) || [])
+          .filter(function (r) { return !r.삭제됨 && (r.내용 || {}).갈래 !== '구독'; })
           .map(function (r) { return { id: r.id, 내용: r.내용 || {} }; })
           .reverse();                       // 화면은 오래된 것이 위다
       });
@@ -193,8 +254,22 @@ window.ZG = window.ZG || {};
     상태칸 = 만들기('span', { class: '상태' });
     var 뒤 = 만들기('button', { class: '지시-뒤', type: 'button', text: '‹', 'aria-label': '뒤로' });
     뒤.addEventListener('click', function () { location.href = 'index.html'; });
+    알림단추 = 만들기('button', { class: '지시-알림', type: 'button', text: '알림 켜기',
+                                  style: 'display:none' });
+    알림단추.addEventListener('click', function () {
+      알림단추.disabled = true;
+      알림켜기().then(function () {
+        알림단추.style.display = 'none';
+        if (u.토스트) u.토스트('알림을 켰습니다 — 일이 끝나면 폰에 뜹니다');
+      }).catch(function (e) {
+        알림단추.disabled = false;
+        var m = (e && e.message) || '';
+        if (u.토스트) u.토스트(/허용/.test(m) ? '폰 설정에서 알림을 허용해 주십시오' : '알림을 못 켰습니다 — ' + m);
+      });
+    });
+
     var 머리 = 만들기('div', { class: '지시-머리' }, [
-      뒤, 만들기('h1', { text: '지시함' }), 상태칸
+      뒤, 만들기('h1', { text: '지시함' }), 알림단추, 상태칸
     ]);
 
     흐름칸 = 만들기('div', { class: '지시-흐름' });
@@ -228,6 +303,10 @@ window.ZG = window.ZG || {};
     흐름그리기();
     상태쓰기('불러오는 중…');
     새로고침(true);
+    // 아직 알림을 안 켜셨으면 단추를 보여 준다. 이미 켜셨으면 조용히 숨긴다
+    지금구독().then(function (있나) {
+      if (!있나 && 알림될까()) 알림단추.style.display = '';
+    }).catch(function () {});
     // 🔴 서버가 늦게 켜지거나(로그인) 답장이 늦게 와도 이 한 줄이 다 받는다
     타이머 = setInterval(function () {
       if (!document.hidden) 새로고침(false);

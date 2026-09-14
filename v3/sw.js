@@ -95,3 +95,33 @@ self.addEventListener('fetch', function (e) {
   }
   /* 아이콘·폰트·manifest 는 브라우저에 맡긴다 — 거의 안 바뀌고 수도 적다 */
 });
+
+/* ── 알림 (16단계 지시함) ───────────────────────────────────────────────
+   맥이 일을 끝내면 여기로 온다. 앱을 안 열어 두셔도 뜬다.
+   🔴 짐은 봉해져서 온다(RFC 8291) — 브라우저가 풀어 주므로 여기선 그냥 읽으면 된다.
+   🔴 짐이 없을 수도 있다(푸시 서버가 흘린 경우). 그때도 빈 알림을 띄우지 않는다. */
+self.addEventListener('push', function (e) {
+  var 것 = { 제목: '제로가드닝', 글: '', 갈곳: '지시.html' };
+  try { if (e.data) { var j = e.data.json(); 것.제목 = j.제목 || 것.제목; 것.글 = j.글 || ''; 것.갈곳 = j.갈곳 || 것.갈곳; } }
+  catch (err) { try { 것.글 = e.data ? e.data.text() : ''; } catch (e2) {} }
+  if (!것.글) return;                                  // 할 말이 없으면 안 띄운다
+  e.waitUntil(self.registration.showNotification(것.제목, {
+    body: 것.글,
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    tag: 'zg-지시',            // 같은 태그는 덮어쓴다 — 알림이 쌓여 지저분해지지 않는다
+    data: { 갈곳: 것.갈곳 }
+  }));
+});
+
+/* 알림을 누르면 지시함으로 간다. 이미 열려 있으면 그 창을 앞으로 가져온다 */
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var 갈곳 = (e.notification.data && e.notification.data.갈곳) || '지시.html';
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (창들) {
+    for (var i = 0; i < 창들.length; i++) {
+      if (창들[i].url.indexOf(갈곳) !== -1 && 'focus' in 창들[i]) return 창들[i].focus();
+    }
+    return clients.openWindow ? clients.openWindow(갈곳) : null;
+  }));
+});
