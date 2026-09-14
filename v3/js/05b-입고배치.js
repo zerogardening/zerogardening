@@ -35,7 +35,9 @@ window.ZG = window.ZG || {};
       만들기('div', { style: 'width:330px' }), 참조.자동완성칸
     ]));
     폼.appendChild(만들기('div', { class: 'row' }, [
-      내.필드('규격 <span class="req">*</span>', 내.규격칸(), 'flex:1')
+      내.필드('규격 <span class="req">*</span>', 내.규격칸(), 'flex:1'),
+      내.필드('판매단위', 단위칸(), 'width:104px'),
+      내.필드('쿠팡 판매단위', 쿠팡칸(), 'width:150px')
     ]));
     폼.appendChild(만들기('div', { class: 'row bottom' }, [
       내.필드('수량 <span class="req">*</span>', 내.숫자칸('수량'), 'width:118px', '수량'),
@@ -87,6 +89,10 @@ window.ZG = window.ZG || {};
       내.필드('학명', 학명칸(), null, '학명'),
       내.필드('규격 <span class="req">*</span> <span class="auto">「치」로 들어와도 cm로 저장합니다</span>', 내.규격칸()),
       만들기('div', { class: 'pair' }, [
+        내.필드('판매단위', 단위칸()),
+        내.필드('쿠팡 판매단위', 쿠팡칸())
+      ]),
+      만들기('div', { class: 'pair' }, [
         내.필드('수량 <span class="req">*</span>', 내.숫자칸('수량'), null, '수량'),
         내.필드('매입단가 <span class="req">*</span>', 내.숫자칸('매입단가'), null, '매입단가')
       ]),
@@ -100,6 +106,11 @@ window.ZG = window.ZG || {};
       저장
     ];
   }
+
+  /* 판매단위 — 한 번에 파는 수(구근 5구 한 묶음 등). 기본 1
+     쿠팡 판매단위 — 쿠팡 수량옵션. 비우면 지금처럼 규격으로 고른다 (2026-09-15 우람님) */
+  function 단위칸() { return 내.입력칸('판매단위', { class: 'inp num', inputmode: 'numeric' }); }
+  function 쿠팡칸() { return 내.입력칸('쿠팡단위', { placeholder: '1,2,4,6,9' }); }
 
   function 코드필드(코드칸, 스타일) {
     var f = 만들기('div', { class: 'field', style: 스타일 || null });
