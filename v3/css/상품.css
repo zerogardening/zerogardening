@@ -200,3 +200,7 @@ td.뺌칸{text-align:right}
   .사진판{grid-template-columns:1fr 1fr; gap:var(--space-md)}
   .사진창 .btnrow .btn{flex:1; min-height:46px}
 }
+
+/* 작업중 / 완료 갈래 칩 (2026-09-14 우람님 「한 탭 안에서 갈라보기」) */
+.갈래칩{display:flex; gap:var(--space-sm); padding:0 var(--space-sm) var(--space-md)}
+.갈래칩 .fchip{flex:1; justify-content:center}

@@ -155,29 +155,38 @@ window.ZG = window.ZG || {};
     });
   }
 
-  /* 🔴 완료·불필요는 우람님이 손으로 뺀다. 제작요청 기록으로는 판정할 수 없다 —
-     9/4 입고 11품목은 요청을 안 거치고 상세페이지가 끝나 기록이 아예 없다 (2026-09-14) */
-  var 뺀것보기 = false;
+  /* 🔴 완료는 우람님이 손으로 누르신다. 제작요청 기록으로는 판정할 수 없다 —
+     9/4 입고 11품목은 요청을 안 거치고 상세페이지가 끝나 기록이 아예 없다 (2026-09-14)
+     🔴 데이터 열쇠는 `사진뺌` 그대로다. 뜻만 「완료」로 바뀌었다 —
+     이름을 갈면 이미 빼 두신 품목이 통째로 작업중으로 되돌아온다 (2026-09-14 우람님) */
+  var 완료보기 = false;
 
-  function 빼기(p) {
-    var 뺄까 = !뺀것보기;
-    ZG.저장소.바꾸기(ZG.저장소.키.품목, p.품목코드, { 사진뺌: 뺄까, 수정일시: Date.now() });
-    u.토스트((뺄까 ? '뺐습니다 — ' : '되돌렸습니다 — ') + p.품목코드);
+  function 완료누름(p) {
+    var 끝낼까 = !완료보기;
+    ZG.저장소.바꾸기(ZG.저장소.키.품목, p.품목코드, { 사진뺌: 끝낼까, 수정일시: Date.now() });
+    u.토스트((끝낼까 ? '완료했습니다 — ' : '작업중으로 되돌렸습니다 — ') + p.품목코드);
     칠하기();
   }
 
   function 뺌단추(p) {
-    var b = 만들기('button', { class: '뺌', type: 'button', text: 뺀것보기 ? '↺' : '✕',
-                               title: 뺀것보기 ? '대기로 되돌리기' : '대기에서 빼기' });
-    b.addEventListener('click', function (e) { e.stopPropagation(); 빼기(p); });   // 줄을 누르면 사진창이 열린다
+    var b = 만들기('button', { class: '뺌', type: 'button', text: 완료보기 ? '↺' : '✓',
+                               title: 완료보기 ? '작업중으로 되돌리기' : '완료로 보내기' });
+    b.addEventListener('click', function (e) { e.stopPropagation(); 완료누름(p); });   // 줄을 누르면 사진창이 열린다
     return b;
   }
 
-  function 토글단추(뺀수) {
-    var b = 만들기('button', { class: '뺌보기', type: 'button',
-                               text: 뺀것보기 ? '← 대기로' : '뺀 것 ' + 뺀수 + '개' });
-    b.addEventListener('click', function () { 뺀것보기 = !뺀것보기; 칠하기(); });
-    return b;
+  /* 🔴 우람님 확정 — 「한 탭 안에서 갈라보기」. 칩 둘로 오간다 (2026-09-14) */
+  function 갈래칩(작업수, 완료수) {
+    var 줄 = 만들기('div', { class: '갈래칩' });
+    [['작업중', false, 작업수], ['완료', true, 완료수]].forEach(function (것) {
+      var b = 만들기('button', {
+        type: 'button', class: 'fchip' + (완료보기 === 것[1] ? ' on' : ''),
+        html: 것[0] + ' <span class="n">' + 것[2] + '</span>'
+      });
+      b.addEventListener('click', function () { 완료보기 = 것[1]; 칠하기(); });
+      줄.appendChild(b);
+    });
+    return 줄;
   }
 
   function 칩달기(칩, 코드, 상태) {
@@ -251,13 +260,13 @@ window.ZG = window.ZG || {};
   }
 
   function 민카드(칸, p) {
-    var 싼것 = 만들기('div', { class: '민칸' + (뺀것보기 ? ' 되돌리기' : '') });
+    var 싼것 = 만들기('div', { class: '민칸' + (완료보기 ? ' 되돌리기' : '') });
     var 뒷 = 만들기('button', { type: 'button', class: '뒷단추',
-      html: 뺀것보기 ? '↺<span>되돌리기</span>' : '✕<span>빼기</span>' });
+      html: 완료보기 ? '↺<span>작업</span>' : '✓<span>완료</span>' });
     뒷.addEventListener('click', function (e) {
       e.stopPropagation();
       열린칸 = null;
-      빼기(p);
+      완료누름(p);
     });
     싼것.appendChild(뒷);
     싼것.appendChild(칸);
@@ -265,7 +274,7 @@ window.ZG = window.ZG || {};
     return 싼것;
   }
 
-  function 폰목록(목록, 뺀수) {
+  function 폰목록(목록) {
     var 상 = 상태표();
     var 목 = 만들기('div', { class: 'ph-list' });
     목록.forEach(function (p) {
@@ -280,20 +289,17 @@ window.ZG = window.ZG || {};
       목.appendChild(민카드(칸, p));
     });
     u.목록등장(목.children);
-    var 머리 = 만들기('div', { class: 'ph-sec',
-      html: (뺀것보기 ? '뺀 것' : '상세페이지 작업 대기') + ' <span class="r">' + 목록.length + '종</span>' });
-    if (뺀수 || 뺀것보기) 머리.appendChild(토글단추(뺀수));
-    return 만들기('div', { class: 'stack' }, [머리, 목]);
+    // 🔴 머리줄을 안 단다 — 위 요약줄과 갈래칩이 이미 같은 말을 하고 있다 (2026-09-14)
+    return 만들기('div', { class: 'stack' }, [목]);
   }
 
   /* PC — 05d 의 내역카드() 와 같은 결(.card.table-card > .tablewrap > table) */
-  function PC목록(목록, 뺀수) {
+  function PC목록(목록) {
     var 상 = 상태표();
     var 카드 = 만들기('div', { class: 'card table-card' });
     var 머리 = 만들기('div', { class: '사진머리' }, [
-      만들기('h3', { text: 뺀것보기 ? '뺀 것' : '상세페이지 작업 대기' })
+      만들기('h3', { text: 완료보기 ? '완료' : '작업중' })
     ]);
-    if (뺀수 || 뺀것보기) 머리.appendChild(토글단추(뺀수));
     카드.appendChild(머리);
     var 표 = 만들기('table');
     표.innerHTML =
@@ -324,15 +330,20 @@ window.ZG = window.ZG || {};
 
   function 칠하기() {
     if (!대기칸) return;
-    if (뺀것보기 && !대기품목(true).length) 뺀것보기 = false;   // 마지막 하나를 되돌리면 대기로 돌아온다
     대기칸.innerHTML = '';
-    var 목록 = 대기품목(뺀것보기), 뺀수 = 대기품목(true).length;
-    if (!목록.length && !뺀수) return;     // 빈 날이 대부분이다 — 설명문을 두지 않는다
-    대기칸.appendChild(u.폰인가() ? 폰목록(목록, 뺀수) : PC목록(목록, 뺀수));
+    var 작업수 = 대기품목(false).length, 완료수 = 대기품목(true).length;
+    var 목록 = 대기품목(완료보기);
+    if (!작업수 && !완료수) {              // 아직 아무것도 없다
+      대기칸.appendChild(만들기('div', { class: '지시-빈', style: 'padding:var(--space-4xl) 0',
+        html: '사진이 다 차면 여기에 쌓입니다.' }));
+      return;
+    }
+    대기칸.appendChild(갈래칩(작업수, 완료수));
+    대기칸.appendChild(u.폰인가() ? 폰목록(목록) : PC목록(목록));
   }
 
   function 대기카드() {
-    뺀것보기 = false;                      // 화면을 새로 그리면 「뺀 것」이 아니라 대기부터 보인다
+    완료보기 = false;                      // 화면을 새로 그리면 「완료」가 아니라 작업중부터 보인다
     대기칸 = 만들기('div');
     칠하기();
     return 대기칸;
@@ -597,10 +608,8 @@ window.ZG = window.ZG || {};
       본문.appendChild(대기카드());
     },
     머리: function () {
-      var 목록 = 대기품목();
-      var 찬것 = 0;
       return { 제목: '작업중', 뒤로: null,
-               왼: '상세페이지 대기 <b>' + 목록.length + '</b>종', 오: '' };
+               왼: '사진이 다 차면 상세페이지가 자동으로 걸립니다', 오: '' };
     },
     다시: 대기다시
   };
