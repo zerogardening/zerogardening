@@ -73,12 +73,17 @@ window.ZG = window.ZG || {};
     찾기.style.width = '264px'; 찾기.style.height = 'var(--h-btn)';
     칩줄.appendChild(찾기);
     조건.appendChild(칩줄);
-    조건.appendChild(목.입고거르개(전부, 다시));
+    조건.appendChild(목.업체칩들(전부, 다시));
     조건.appendChild(목.선택바());
     카드.appendChild(조건);
 
     참조.목록칸 = 만들기('div');
-    PC목록속(걸러진).forEach(function (c) { 참조.목록칸.appendChild(c); });
+    if (상태.필터 === '일자별') {
+      참조.목록칸.appendChild(목.일자줄(다시));
+      참조.목록칸.appendChild(일자목록(false));
+    } else {
+      PC목록속(걸러진).forEach(function (c) { 참조.목록칸.appendChild(c); });
+    }
     카드.appendChild(참조.목록칸);
 
     감쌈.appendChild(카드);
@@ -86,23 +91,60 @@ window.ZG = window.ZG || {};
     뿌리.appendChild(감쌈);
   }
 
+  /* ── 일자별 목록 (2026-09-14) ──
+     품목이 아니라 입고 기록 하나가 한 줄이다. 날짜가 바뀌면 사이에 날 머리를 끼운다
+     (기간으로 보실 때 여러 날이 섞이므로). */
+  function 일자목록(폰) {
+    var 것들 = 목.그날입고();
+    var 통 = 만들기('div', { class: 'stack' });
+    if (!것들.length) {
+      통.appendChild(만들기('div', { class: 폰 ? 'ph-card' : 'card', style: 'text-align:center; color:var(--color-text-muted)',
+                                    text: '이 날에 들어온 입고가 없습니다' }));
+      return 통;
+    }
+    var 총주 = 것들.reduce(function (s, r) { return s + (Number(r.수량) || 0); }, 0);
+    통.appendChild(만들기('div', { class: 'ph-sec',
+      html: '입고 <b>' + 것들.length + '</b>건 <span class="r">' + u.콤마(총주) + '주</span>' }));
+
+    var 목록 = 만들기('div', { class: 폰 ? 'ph-list' : 'stack' });
+    var 지난날 = '';
+    것들.forEach(function (r) {
+      if (r.입고일 !== 지난날) {
+        지난날 = r.입고일;
+        if (상태.일자범위) 목록.appendChild(만들기('div', { class: '날머리', text: r.입고일 }));
+      }
+      var 칸 = 만들기('div', { class: 'ph-card' });
+      칸.innerHTML =
+        '<div class="r1"><div class="nm">' + u.안전(r.유통명) + '</div>' +
+        '<div class="cd">' + u.안전(r.품목코드) + '</div></div>' +
+        '<div class="sci">' + u.안전(r.학명 || '') + '</div>' +
+        '<div class="r2">' + u.안전(r.규격 || '') +
+        ' <span class="hint">' + u.안전((r.입고업체 || '').trim()) + '</span>' +
+        '<span class="amt"><b>' + u.콤마(r.수량) + '</b>주 · ' + u.콤마(r.단가) + '원</span></div>';
+      목록.appendChild(칸);
+    });
+    통.appendChild(목록);
+    u.목록등장(목록.children);
+    return 통;
+  }
+
   function 폰목록(뿌리) {
     var 전부 = 목.전부요약();
     var 걸러진 = 목.거르기(전부);
     참조.목록칸 = null;
 
-    // 고르는 중에는 재입고 칸을 감춘다 — 같은 품목이 두 곳에 나와 체크가 어긋난다
-    if (!상태.선택모드) {
-      var 급 = 목.급한카드들(전부, true);
-      if (급) 뿌리.appendChild(급);
-    }
-
+    // 🔴 「3주 내 소진」 카드를 안 낸다 — 우람님이 그 갈래를 통째로 빼셨다 (2026-09-14)
     뿌리.appendChild(만들기('div', { class: 'field' }, [목.검색칸(목록다시)]));
     뿌리.appendChild(목.필터칩들(전부, 다시));
-    뿌리.appendChild(목.입고거르개(전부, 다시));
+    뿌리.appendChild(목.업체칩들(전부, 다시));
 
     참조.목록칸 = 만들기('div', { class: 'stack' });
-    폰목록속(걸러진).forEach(function (c) { 참조.목록칸.appendChild(c); });
+    if (상태.필터 === '일자별') {
+      참조.목록칸.appendChild(목.일자줄(다시));
+      참조.목록칸.appendChild(일자목록(true));
+    } else {
+      폰목록속(걸러진).forEach(function (c) { 참조.목록칸.appendChild(c); });
+    }
     뿌리.appendChild(참조.목록칸);
   }
 

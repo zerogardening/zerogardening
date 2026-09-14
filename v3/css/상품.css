@@ -204,3 +204,50 @@ td.뺌칸{text-align:right}
 /* 작업중 / 완료 갈래 칩 (2026-09-14 우람님 「한 탭 안에서 갈라보기」) */
 .갈래칩{display:flex; gap:var(--space-sm); padding:0 var(--space-sm) var(--space-md)}
 .갈래칩 .fchip{flex:1; justify-content:center}
+
+/* ── 일자별 (2026-09-14 우람님) ─────────────────────────────────────
+   좌우 화살표로 앞뒤 날, 가운데를 누르면 기간을 지정하는 창이 뜬다. */
+.일자줄{
+  display:flex; align-items:center; gap:var(--space-sm);
+  padding:var(--space-md) var(--space-sm) var(--space-lg);
+}
+.일자줄 .화살{
+  flex:none; width:40px; height:40px; padding:0;
+  border:1px solid var(--color-border); border-radius:var(--radius-pill);
+  background:var(--color-surface); color:var(--color-text);
+  font-size:22px; line-height:1; cursor:pointer;
+}
+.일자줄 .화살:disabled{ opacity:.3; cursor:default }
+.일자줄 .일자{
+  flex:1; height:40px; padding:0 var(--space-md);
+  border:1px solid var(--color-border); border-radius:var(--radius-pill);
+  background:var(--color-surface); color:var(--color-text);
+  font-family:inherit; font-size:var(--font-lg); font-weight:var(--weight-semibold);
+  cursor:pointer;
+}
+.일자줄 .일자:hover{ background:var(--color-btn-bg-hover) }
+.날머리{
+  padding:var(--space-lg) var(--space-sm) var(--space-xs);
+  font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold);
+}
+
+/* 업체 칩 — 곳이 많아 한 줄로 눕히고 옆으로 민다 */
+.fchips.업체칩{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:var(--space-2xs) }
+.fchips.업체칩::-webkit-scrollbar{ height:0 }
+.fchips.업체칩 .fchip{ flex:none }
+
+/* 기간 고르는 창 */
+.기간덮개{
+  position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.34);
+  display:flex; align-items:center; justify-content:center; padding:var(--space-2xl);
+}
+.기간창{
+  width:min(360px,100%); background:var(--color-surface);
+  border-radius:var(--radius-lg); padding:var(--space-3xl);
+  box-shadow:0 22px 54px rgba(0,0,0,.22);
+}
+.기간창 .ttl{ font-size:var(--font-3xl); font-weight:var(--weight-semibold); margin-bottom:var(--space-2xl) }
+.기간창 label{ display:block; font-size:var(--font-sm); color:var(--color-text-sub); margin:var(--space-lg) 0 var(--space-xs) }
+.기간창 .inp{ width:100% }
+.기간창 .단추줄{ display:flex; gap:var(--space-sm); margin-top:var(--space-3xl) }
+.기간창 .단추줄 .btn{ flex:1 }

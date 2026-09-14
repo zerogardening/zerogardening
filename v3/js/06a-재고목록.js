@@ -9,8 +9,10 @@ window.ZG = window.ZG || {};
   /* 급열림: 재입고 요청 접기칸. 앱을 새로 열면 늘 접힌 채로 시작하고(밭에서는 목록이 먼저다),
      한 번 펼치면 그 세션 동안은 다시 그려도 펼친 채로 둔다. */
   var 상태 = {
-    필터: '전체', 소진만: false, 검색: '', 쪽: 1, 폰보임: 15, 상세코드: null, 스크롤: 0, 급열림: false,
-    업체: '', 입고부터: '', 입고까지: '',   // 입고 기준 거르개 (8/19)
+    필터: '전체', 검색: '', 쪽: 1, 폰보임: 15, 상세코드: null, 스크롤: 0, 급열림: false,
+    업체: '',                              // 입고업체 칩 (8/19 · 2026-09-14 칩으로)
+    일자: '',                              // 일자별이 보는 날. 빈 값이면 오늘 (2026-09-14)
+    일자범위: null,                        // [시작, 끝] — 가운데 날짜를 눌러 지정하면 채워진다
     선택: {},        // 품목코드 → true. 골라 놓은 것 (8/6 선택 삭제)
     선택모드: false  // 폰에서만 쓴다 — 「선택」을 눌러야 동그라미가 나온다
   };
@@ -63,17 +65,10 @@ window.ZG = window.ZG || {};
     var 열쇠 = 상태.검색.toLowerCase().replace(/\s/g, '');
     return 전부.filter(function (요) {
       var p = 요.품목;
-      if (상태.필터 !== '전체' && p.상태 !== 상태.필터) return false;
-      if (상태.소진만 && !요.재입고) return false;
-      // 날짜와 업체는 같은 입고 기록 하나에서 동시에 맞아야 한다 (8/5에 한아름에서 들어온 것)
-      if (상태.업체 || 상태.입고부터 || 상태.입고까지) {
-        var 맞는입고 = (요.입고들 || []).some(function (i) {
-          if ((상태.입고부터 || 상태.입고까지) && !i.날짜) return false;
-          if (상태.입고부터 && i.날짜 < 상태.입고부터) return false;
-          if (상태.입고까지 && i.날짜 > 상태.입고까지) return false;
-          if (상태.업체 && i.업체 !== 상태.업체) return false;
-          return true;
-        });
+      // 「일자별」은 품목이 아니라 입고 기록을 보는 갈래다 — 여기서 거르지 않는다
+      if (상태.필터 !== '전체' && 상태.필터 !== '일자별' && p.상태 !== 상태.필터) return false;
+      if (상태.업체) {
+        var 맞는입고 = (요.입고들 || []).some(function (i) { return i.업체 === 상태.업체; });
         if (!맞는입고) return false;
       }
       if (열쇠) {
@@ -96,59 +91,134 @@ window.ZG = window.ZG || {};
     var 셈 = function (이름) {
       return 이름 === '전체' ? 전부.length : 전부.filter(function (요) { return 요.품목.상태 === 이름; }).length;
     };
-    ['전체', '판매중', '품절'].forEach(function (이름) {
+    /* 🔴 2026-09-14 우람님 — 「3주 내 소진은 뺀다」. 「일자별」은 품목이 아니라
+       그날 들어온 **입고 기록**을 보는 갈래라 개수를 세지 않는다. */
+    ['전체', '판매중', '품절', '일자별'].forEach(function (이름) {
+      var 날 = 이름 === '일자별';
       var b = 만들기('button', {
         class: 'fchip' + (상태.필터 === 이름 ? ' on' : ''), type: 'button',
-        html: u.안전(이름) + ' <span class="n">' + 셈(이름) + '</span>'
+        html: u.안전(이름) + (날 ? '' : ' <span class="n">' + 셈(이름) + '</span>')
       });
-      b.addEventListener('click', function () { 상태.필터 = 이름; 상태.쪽 = 1; 다시(); });
+      b.addEventListener('click', function () {
+        상태.필터 = 이름; 상태.쪽 = 1;
+        if (날 && !상태.일자) 상태.일자 = u.오늘문자();   // 처음 누르면 오늘부터
+        다시();
+      });
       상자.appendChild(b);
     });
-    var 급함 = 전부.filter(function (요) { return 요.재입고; }).length;
-    var 급 = 만들기('button', {
-      class: 'fchip alert' + (상태.소진만 ? ' on' : ''), type: 'button',
-      style: 'margin-left:var(--space-md)',
-      html: '3주 내 소진 <span class="n">' + 급함 + '</span>'
-    });
-    급.addEventListener('click', function () { 상태.소진만 = !상태.소진만; 상태.쪽 = 1; 다시(); });
-    상자.appendChild(급);
     return 상자;
   }
 
-  /* ── 입고 기준 거르개 (입고일 범위 · 입고업체) ──
-     부품·배치는 05d 입고내역 검색줄과 같다. 업체 목록은 업체관리가 아니라
-     실제 입고 기록에서 뽑는다 — 등록 안 된 이름으로 들어온 입고도 골라야 한다. */
-  function 입고거르개(전부, 다시) {
-    var 필드 = ZG.입고내부.필드;   // 05d 입고내역도 같은 것을 쓴다
-    var 이름들 = {};
-    전부.forEach(function (요) {
-      (요.입고들 || []).forEach(function (i) { if (i.업체) 이름들[i.업체] = true; });
-    });
+  /* ── 일자별 (2026-09-14 우람님) ──
+     품목이 아니라 **그날 들어온 입고 기록**을 본다. 기본은 오늘,
+     좌우 화살표로 앞뒤 날, 가운데 날짜를 누르면 시작일~종료일을 지정하는 창이 뜬다. */
+  function 날짜더하기(날, 일수) {
+    var d = new Date(날 + 'T00:00:00');
+    d.setDate(d.getDate() + 일수);
+    return ZG.계산.날짜문자(d);
+  }
 
-    var 업체 = 만들기('select', { class: 'inp', 'aria-label': '입고업체' });
-    업체.innerHTML = '<option value="">전체 업체</option>' +
-      Object.keys(이름들).sort().map(function (n) { return '<option>' + u.안전(n) + '</option>'; }).join('');
-    업체.value = 상태.업체;
-    업체.addEventListener('change', function () { 상태.업체 = 업체.value; 상태.쪽 = 1; 다시(); });
+  function 날글(날) {
+    var d = new Date(날 + 'T00:00:00');
+    return d.getFullYear() + '. ' + (d.getMonth() + 1) + '. ' + d.getDate() +
+           ' (' + '일월화수목금토'[d.getDay()] + ')';
+  }
 
-    var 날짜칸 = function (어느) {
-      var e = 만들기('input', { class: 'inp', type: 'date', value: 상태[어느] });
-      e.addEventListener('change', function () { 상태[어느] = e.value; 상태.쪽 = 1; 다시(); });
-      return e;
-    };
+  function 일자줄(다시) {
+    var 범위 = 상태.일자범위;
+    var 줄 = 만들기('div', { class: '일자줄' });
 
-    var 초기화 = 만들기('button', { class: 'btn', type: 'button', text: '조건 초기화' });
-    초기화.addEventListener('click', function () {
-      상태.업체 = ''; 상태.입고부터 = ''; 상태.입고까지 = ''; 상태.쪽 = 1; 다시();
-    });
+    var 앞 = 만들기('button', { class: '화살', type: 'button', text: '‹', 'aria-label': '앞날' });
+    var 뒤 = 만들기('button', { class: '화살', type: 'button', text: '›', 'aria-label': '뒷날' });
+    앞.disabled = 뒤.disabled = !!범위;       // 기간을 지정하셨으면 화살표는 쉰다
+    앞.addEventListener('click', function () { 상태.일자 = 날짜더하기(상태.일자, -1); 다시(); });
+    뒤.addEventListener('click', function () { 상태.일자 = 날짜더하기(상태.일자, 1); 다시(); });
 
-    return 만들기('div', { class: 'qbar 입고거르개' }, [
-      필드('입고업체', 업체, 'width:168px'),
-      필드('입고일 시작', 날짜칸('입고부터'), 'width:150px'),
-      만들기('div', { class: 'dash', text: '~' }),
-      필드('입고일 종료', 날짜칸('입고까지'), 'width:150px'),
-      초기화
+    var 가운데 = 만들기('button', { class: '일자', type: 'button',
+      text: 범위 ? (날글(범위[0]) + '  ~  ' + 날글(범위[1])) : 날글(상태.일자) });
+    가운데.addEventListener('click', function () { 기간창(다시); });
+
+    줄.appendChild(앞); 줄.appendChild(가운데); 줄.appendChild(뒤);
+    return 줄;
+  }
+
+  /* 가운데 날짜를 누르면 뜨는 창 — 시작일·종료일을 직접 고른다 */
+  function 기간창(다시) {
+    var 범위 = 상태.일자범위 || [상태.일자, 상태.일자];
+    var 칸 = function (값) { return 만들기('input', { class: 'inp', type: 'date', value: 값 }); };
+    var 부터 = 칸(범위[0]), 까지 = 칸(범위[1]);
+
+    var 속 = 만들기('div', { class: '기간창' }, [
+      만들기('div', { class: 'ttl', text: '기간으로 보기' }),
+      만들기('label', { text: '시작일' }), 부터,
+      만들기('label', { text: '종료일' }), 까지
     ]);
+    var 덮개 = 만들기('div', { class: '기간덮개' }, [속]);
+    var 닫기 = function () { if (덮개.parentNode) 덮개.parentNode.removeChild(덮개); };
+
+    var 하루 = 만들기('button', { class: 'btn', type: 'button', text: '하루만 보기' });
+    하루.addEventListener('click', function () {
+      상태.일자범위 = null; 상태.일자 = 부터.value || u.오늘문자(); 닫기(); 다시();
+    });
+    var 보기 = 만들기('button', { class: 'btn main', type: 'button', text: '이 기간 보기' });
+    보기.addEventListener('click', function () {
+      var a = 부터.value, b = 까지.value;
+      if (!a || !b) { u.토스트('시작일과 종료일을 고르세요'); return; }
+      if (a > b) { var x = a; a = b; b = x; }          // 거꾸로 고르셔도 알아서 바꾼다
+      상태.일자범위 = (a === b) ? null : [a, b];
+      상태.일자 = a;
+      닫기(); 다시();
+    });
+    속.appendChild(만들기('div', { class: '단추줄' }, [하루, 보기]));
+
+    덮개.addEventListener('click', function (e) { if (e.target === 덮개) 닫기(); });
+    document.body.appendChild(덮개);
+    return 덮개;
+  }
+
+  /* 그 날(또는 그 기간)에 들어온 입고 기록. 업체 칩도 같이 먹는다 */
+  function 그날입고() {
+    var 범위 = 상태.일자범위 || [상태.일자, 상태.일자];
+    var 열쇠 = (상태.검색 || '').toLowerCase().replace(/\s/g, '');
+    return ZG.저장소.읽기(ZG.저장소.키.입고).filter(function (r) {
+      if (!r.입고일 || r.입고일 < 범위[0] || r.입고일 > 범위[1]) return false;
+      if (상태.업체 && (r.입고업체 || '').trim() !== 상태.업체) return false;
+      if (열쇠) {
+        var 밭 = (r.유통명 + r.학명 + r.품목코드 + (r.입고업체 || '') + (r.메모 || ''))
+                   .toLowerCase().replace(/\s/g, '');
+        if (밭.indexOf(열쇠) < 0) return false;
+      }
+      return true;
+    }).sort(function (a, b) {
+      return a.입고일 === b.입고일 ? (b.등록일시 || 0) - (a.등록일시 || 0)
+                                   : (a.입고일 < b.입고일 ? 1 : -1);
+    });
+  }
+
+  /* ── 입고업체 칩 (2026-09-14 우람님 「업체별 탭은 항상 띄운다 · 항상 떠 있는
+     입고 시작일·종료일은 없앤다」) ──
+     업체 목록은 업체관리가 아니라 **실제 입고 기록**에서 뽑는다 —
+     등록 안 된 이름으로 들어온 입고도 골라야 한다. */
+  function 업체칩들(전부, 다시) {
+    var 셈 = {};
+    전부.forEach(function (요) {
+      (요.입고들 || []).forEach(function (i) { if (i.업체) 셈[i.업체] = (셈[i.업체] || 0) + 1; });
+    });
+    var 이름들 = Object.keys(셈).sort(function (a, b) { return 셈[b] - 셈[a]; });
+    if (!이름들.length) return 만들기('div');
+
+    var 상자 = 만들기('div', { class: 'fchips 업체칩' });
+    var 만들단추 = function (값, 글, 수) {
+      var b = 만들기('button', {
+        class: 'fchip' + (상태.업체 === 값 ? ' on' : ''), type: 'button',
+        html: u.안전(글) + (수 == null ? '' : ' <span class="n">' + 수 + '</span>')
+      });
+      b.addEventListener('click', function () { 상태.업체 = 값; 상태.쪽 = 1; 다시(); });
+      return b;
+    };
+    상자.appendChild(만들단추('', '전체 업체', null));
+    이름들.forEach(function (n) { 상자.appendChild(만들단추(n, n, 셈[n])); });
+    return 상자;
   }
 
   /* 이 칸은 목록을 다시 그려도 DOM 이 살아남아야 한다 — 06b 목록다시() 참고.
@@ -205,9 +275,6 @@ window.ZG = window.ZG || {};
       u.목록등장(판.children);
     }
 
-    var 전체보기 = 만들기('button', { class: 'btn sm', type: 'button', text: 폰 ? '전체 ›' : '3주 내 소진만 보기' });
-    전체보기.addEventListener('click', function () { 상태.소진만 = true; 상태.쪽 = 1; ZG.재고.그리기(참조.뿌리); });
-    속.appendChild(만들기('div', { class: '재입고끝' }, [전체보기]));
     return 상자;
   }
 
@@ -400,7 +467,7 @@ window.ZG = window.ZG || {};
 
   ZG.재고목록 = {
     상태: 상태, 참조: 참조, 전부요약: 전부요약, 거르기: 거르기, 요약글: 요약글,
-    필터칩들: 필터칩들, 입고거르개: 입고거르개, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
+    필터칩들: 필터칩들, 업체칩들: 업체칩들, 일자줄: 일자줄, 그날입고: 그날입고, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
     표그리기: 표그리기, 쪽번호: 쪽번호, 배지: 배지,
     고른것들: 고른것들, 선택비우기: 선택비우기, 선택바갱신: 선택바갱신,
     선택바: 선택바, 선택단추: 선택단추, 폰작업막대: 폰작업막대
