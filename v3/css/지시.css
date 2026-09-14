@@ -1,0 +1,112 @@
+/* 지시함 — 채팅 화면 (16단계).
+   흔한 메신저 결을 따른다 — 내 말은 오른쪽 초록, 맥 답장은 왼쪽 흰 말풍선.
+   색·간격은 공통.css 의 :root 를 그대로 쓴다. 여기서 새 색을 만들지 않는다. */
+
+.지시-shell{
+  display:flex; flex-direction:column;
+  height:100dvh; background:var(--color-ios-bg);
+}
+
+/* ── 머리 ── */
+.지시-머리{
+  flex:none; display:flex; align-items:center; gap:var(--space-sm);
+  padding:calc(env(safe-area-inset-top) + var(--space-md)) var(--space-lg) var(--space-md);
+  background:var(--color-ios-bar); backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--color-border-faint);
+}
+.지시-머리 h1{ margin:0; font-size:var(--font-2xl); font-weight:600; flex:1 }
+.지시-머리 .상태{ font-size:var(--font-xs); color:var(--color-text-muted); font-weight:400 }
+.지시-뒤{
+  flex:none; width:32px; height:32px; padding:0; border:0; background:none;
+  font-size:24px; line-height:1; color:var(--color-accent); cursor:pointer;
+}
+
+/* ── 흐름 ── */
+.지시-흐름{
+  flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:var(--space-2xl) var(--space-lg);
+  display:flex; flex-direction:column; gap:var(--space-md);
+}
+.지시-빈{
+  margin:auto; text-align:center; color:var(--color-text-hint);
+  font-size:var(--font-md); line-height:1.7;
+}
+
+.지시-날{
+  align-self:center; margin:var(--space-md) 0 var(--space-2xs);
+  padding:3px 12px; border-radius:11px;
+  background:rgba(0,0,0,.06); color:var(--color-text-sub);
+  font-size:var(--font-2xs);
+}
+
+.줄{ display:flex; align-items:flex-end; gap:var(--space-2xs) }
+.줄.나{ justify-content:flex-end }
+.줄.맥{ justify-content:flex-start }
+
+.말풍선{
+  max-width:76%; padding:9px 13px; border-radius:18px;
+  font-size:var(--font-lg); line-height:1.5;
+  white-space:pre-wrap; word-break:break-word;
+}
+.말풍선.나{
+  background:var(--color-accent); color:var(--color-on-accent);
+  border-bottom-right-radius:5px;
+}
+.말풍선.맥{
+  background:var(--color-surface); color:var(--color-text);
+  border:1px solid var(--color-border-faint); border-bottom-left-radius:5px;
+}
+.말풍선.탈{
+  background:var(--color-danger-bg); color:var(--color-danger);
+  border-color:var(--color-danger-border);
+}
+.말풍선.시스템{
+  background:var(--color-accent-bg); color:var(--color-accent-dark);
+  border:1px solid var(--color-accent-border);
+}
+
+.때{ flex:none; font-size:var(--font-3xs); color:var(--color-text-hint); padding-bottom:2px }
+
+/* 커밋 자국 — 되돌리실 때 쓰시는 표 */
+.자국{
+  margin-top:var(--space-2xs); padding-top:var(--space-2xs);
+  border-top:1px solid var(--color-border-faint);
+  font-family:var(--font-mono); font-size:var(--font-3xs); color:var(--color-text-muted);
+}
+
+/* ── 하는 중 점 셋 ── */
+.하는중{ display:flex; gap:4px; align-items:center; padding:12px 15px }
+.하는중 i{
+  width:7px; height:7px; border-radius:50%; background:var(--color-text-faint);
+  animation:지시콩 1.3s infinite ease-in-out;
+}
+.하는중 i:nth-child(2){ animation-delay:.18s }
+.하는중 i:nth-child(3){ animation-delay:.36s }
+@keyframes 지시콩{ 0%,60%,100%{ opacity:.3; transform:translateY(0) } 30%{ opacity:1; transform:translateY(-4px) } }
+
+/* ── 입력 ── */
+.지시-입력{
+  flex:none; display:flex; align-items:flex-end; gap:var(--space-sm);
+  padding:var(--space-md) var(--space-lg) calc(env(safe-area-inset-bottom) + var(--space-md));
+  background:var(--color-ios-bar); border-top:1px solid var(--color-border-faint);
+}
+.지시-입력 textarea{
+  flex:1; min-height:38px; max-height:140px; resize:none;
+  padding:9px 14px; border:1px solid var(--color-border); border-radius:19px;
+  background:var(--color-surface); color:var(--color-text);
+  font-family:var(--font-family); font-size:var(--font-lg); line-height:1.4;
+}
+.지시-입력 textarea:focus{ outline:none; border-color:var(--color-accent) }
+.지시-보내기{
+  flex:none; width:38px; height:38px; padding:0; border:0; border-radius:50%;
+  background:var(--color-accent); color:var(--color-on-accent);
+  font-size:19px; line-height:1; cursor:pointer;
+}
+.지시-보내기:disabled{ background:var(--color-text-faint); cursor:default }
+
+/* ── PC — 가운데로 모은다. 채팅은 넓어져 봐야 읽기 나쁘다 ── */
+@media (min-width:900px){
+  .지시-shell{ max-width:720px; margin:0 auto; border-left:1px solid var(--color-border-faint);
+               border-right:1px solid var(--color-border-faint); background:var(--color-bg) }
+  .말풍선{ max-width:70% }
+}

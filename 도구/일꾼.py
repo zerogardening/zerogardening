@@ -21,9 +21,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# 🔴 순서가 곧 급한 정도다. 지시함이 맨 뒤인 까닭 —
+#    한 건에 최대 30분이 걸릴 수 있고, 그동안 launchd 는 다음 바퀴를 안 띄운다(같은 Label).
+#    앞의 둘은 몇 초짜리라 먼저 털고 간다.
 갈래들 = [
     ('제작요청', '제작요청', '받기', ()),
     ('사진받기', '사진받기', '받기', (False,)),
+    ('지시함', '지시함', '한건', ()),
 ]
 
 
@@ -41,7 +45,7 @@ def 한갈래(이름, 모듈명, 함수명, 인자):
     except Exception:
         return ['❌ %s — %s' % (이름, traceback.format_exc().strip().split('\n')[-1])]
     # ✅ 나 ⚠️ 로 시작하는 줄만 「무슨 일이 있었다」는 뜻이다. 나머지 마무리 줄은 늘 찍힌다
-    한것 = [t for t in 줄들 if t.strip()[:1] in ('✅', '⚠️', '🛠')]
+    한것 = [t for t in 줄들 if t.strip()[:1] in ('✅', '⚠️', '🛠', '❌')]
     return ['── %s' % 이름] + 한것 if 한것 else None
 
 
