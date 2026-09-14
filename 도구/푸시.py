@@ -109,7 +109,7 @@ def 구독지우기(줄id):
         주소 + urllib.parse.quote(표('v3_지시')) + '?id=eq.' + urllib.parse.quote(줄id),
         method='DELETE', headers={'apikey': k, 'Authorization': 'Bearer ' + k})
     try:
-        urllib.request.urlopen(req).read()
+        urllib.request.urlopen(req, timeout=30).read()
     except urllib.error.HTTPError:
         pass
 

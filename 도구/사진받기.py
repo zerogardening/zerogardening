@@ -31,7 +31,7 @@ def 창고부르기(길, 몸=None):
         창고 + 길, method='POST' if 몸 is not None else 'GET',
         data=json.dumps(몸).encode() if 몸 is not None else None,
         headers={'apikey': k, 'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req) as r:
+    with urllib.request.urlopen(req, timeout=30) as r:
         return json.loads(r.read() or b'null')
 
 
@@ -61,7 +61,7 @@ def 내려받기(길):
     k = 키()
     req = urllib.request.Request(창고 + 'object/' + 버킷 + '/' + urllib.parse.quote(길),
                                  headers={'apikey': k, 'Authorization': 'Bearer ' + k})
-    with urllib.request.urlopen(req) as r:
+    with urllib.request.urlopen(req, timeout=30) as r:
         return r.read()
 
 

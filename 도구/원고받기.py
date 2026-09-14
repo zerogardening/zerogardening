@@ -40,7 +40,7 @@ def 올리기(행들):
         method='POST', data=json.dumps(행들, ensure_ascii=False).encode(),
         headers={'apikey': k, 'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json',
                  'Prefer': 'resolution=merge-duplicates,return=minimal'})
-    urllib.request.urlopen(req).read()
+    urllib.request.urlopen(req, timeout=30).read()
 
 
 def 원고줄들():
@@ -69,7 +69,7 @@ def 창고올리기(길, 자료):
         창고 + 'object/' + 버킷 + '/' + urllib.parse.quote(길), method='POST', data=자료,
         headers={'apikey': k, 'Authorization': 'Bearer ' + k,
                  'Content-Type': 'image/jpeg', 'x-upsert': 'true'})
-    urllib.request.urlopen(req).read()
+    urllib.request.urlopen(req, timeout=30).read()
 
 
 # ══════════════════════════════════════════════ 주고받기

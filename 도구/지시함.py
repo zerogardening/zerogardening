@@ -7,9 +7,13 @@
 주고받는 자리는 Supabase `v3_지시` 표다. 줄 하나가 「지시 + 그 답장」이다 (16단계-지시함.sql).
 🔴 열쇠·REST 호출은 제작요청.py 것을 그대로 쓴다 — 규칙이 갈리면 표가 둘로 갈린다.
 
-🔴 위험한 일을 거르는 로직이 여기 없다. **연장을 안 줘서** 막는다 —
-   `--allowedTools` 에 Bash 가 없으면 지우기·push·결제가 **애초에 불가능하다.**
-   글로 거르면 우회당한다. 연장이 없으면 우회할 것이 없다. (2026-09-14 시험으로 확인)
+🔴 위험한 일을 거르는 로직이 여기 없다. **연장으로 막는다**(`도구들`·`막을것`) —
+   글로 거르면 우회당한다. Bash 는 열되 없애기·push·sudo·설치는 콕 집어 막는다.
+   🔴 완벽하지 않다(`python3` 안에서는 뚫린다). 진짜 안전망은 `[야간]` 커밋 + `야간되돌리기.sh` 다.
+
+🔴 바깥을 부르는 자리엔 **반드시 `timeout` 을 준다.** 없으면 서버가 대답을 안 할 때
+   영영 매달린다 — `원고받기` 가 실제로 15시간 멈춰 서서 원고 탭이 통째로 비어 있었다
+   (2026-09-14 · launchd 는 이전 인스턴스가 살아 있으면 새로 안 띄운다).
 
 🔴 커밋·push 는 Claude 가 아니라 **이 스크립트가** 한다. 무엇이 올라가는지 여기서 다 보인다.
    그리고 **Claude 가 만진 파일만** 올린다 — 돌리기 전후의 `git status` 를 견줘서 고른다.
@@ -93,7 +97,7 @@ def 올리기(행들):
         data=json.dumps(행들, ensure_ascii=False).encode(),
         headers={'apikey': k, 'Authorization': 'Bearer ' + k, 'Content-Type': 'application/json',
                  'Prefer': 'resolution=merge-duplicates,return=minimal'})
-    urllib.request.urlopen(req).read()
+    urllib.request.urlopen(req, timeout=30).read()
 
 
 def 줄들():
