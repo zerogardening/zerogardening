@@ -1,0 +1,71 @@
+<meta charset="utf-8"><title>심폴채우기 시험</title>
+<body style="font:15px/1.7 -apple-system,'Apple SD Gothic Neo',sans-serif;padding:24px">
+<h3>심폴채우기 시험</h3><pre id="결과">도는 중…</pre>
+<div id="판" hidden></div>
+<script>
+var 줄 = [], 실패 = 0;
+function 확인(이름, 본, 바람) {
+  var 됨 = String(본) === String(바람);
+  if (!됨) 실패++;
+  줄.push((됨 ? '✅' : '❌') + ' ' + 이름 + '  →  ' + 본 + (됨 ? '' : '   (바란 값: ' + 바람 + ')'));
+}
+
+/* 심폴 상품등록 화면과 같은 꼴 — 라벨 칸 + 입력 칸 두 줄짜리 표 */
+function 판만들기(판매가격있나) {
+  var 행 = function (라벨, 속) { return '<tr><td>' + 라벨 + '</td><td>' + 속 + '</td></tr>'; };
+  document.getElementById('판').innerHTML =
+    '<table>' +
+    행('최근 등록한 카테고리', '<select></select>') +
+    행('✔ 카테고리', '<select></select>') +
+    행('✔ 상품명', '<input type="text" id="이름" value="">') +
+    (판매가격있나 ? 행('✔ 판매가격', '<input type="text" id="판매" value="">') : '') +
+    행('소비자가격', '<input type="text" id="소비" value="0"> * 0 입력시 표시하지 않습니다') +
+    행('수량', '<input type="radio" name="q"><input type="radio" name="q">' +
+              '<input type="radio" name="q" checked><input type="text" id="수량" value="1"> 개') +
+    행('검색태그', '대분류 카테고리를 선택해 주세요.') +
+    '</table>';
+}
+
+var 말 = '';
+window.alert = function (m) { 말 = m; };
+window.prompt = function () { return '16,000'; };
+
+function 돌리기(그다음) {
+  var s = document.createElement('script');
+  s.src = '심폴채우기.js?' + Math.random();
+  s.onload = 그다음;
+  document.body.appendChild(s);
+}
+
+판만들기(true);
+돌리기(function () {
+  확인('판매가격 = 매입 16,000 × 2', document.getElementById('판매').value, 32000);
+  확인('수량은 100으로', document.getElementById('수량').value, 100);
+  확인('🔴 소비자가격은 안 건드린다', document.getElementById('소비').value, 0);
+  확인('🔴 상품명은 안 건드린다', document.getElementById('이름').value, '');
+
+  /* 100원 반올림 — 매입 1,650 → 3,300 */
+  판만들기(true);
+  window.prompt = function () { return '1650'; };
+  돌리기(function () {
+    확인('매입 1,650 → 3,300 (100원 반올림)', document.getElementById('판매').value, 3300);
+
+    /* 엉뚱한 화면이면 아무 것도 안 채우고 알린다 */
+    판만들기(false);
+    말 = '';
+    돌리기(function () {
+      확인('판매가격 칸이 없으면 알린다', /못 찾았습니다/.test(말), true);
+      확인('그때 소비자가격도 안 건드린다', document.getElementById('소비').value, 0);
+
+      /* 매입가를 안 넣으면 아무 것도 안 한다 */
+      판만들기(true);
+      window.prompt = function () { return ''; };
+      돌리기(function () {
+        확인('매입가를 비우면 안 채운다', document.getElementById('판매').value, '');
+        document.getElementById('결과').textContent =
+          줄.join('\n') + '\n\n' + (실패 ? '❌ 실패 ' + 실패 + '건' : '✅ ' + 줄.length + '건 전부 통과');
+      });
+    });
+  });
+});
+</script>
