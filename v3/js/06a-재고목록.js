@@ -96,7 +96,7 @@ window.ZG = window.ZG || {};
     var 셈 = function (이름) {
       return 이름 === '전체' ? 전부.length : 전부.filter(function (요) { return 요.품목.상태 === 이름; }).length;
     };
-    ['전체', '판매중', '품절', '일시중지'].forEach(function (이름) {
+    ['전체', '판매중', '품절'].forEach(function (이름) {
       var b = 만들기('button', {
         class: 'fchip' + (상태.필터 === 이름 ? ' on' : ''), type: 'button',
         html: u.안전(이름) + ' <span class="n">' + 셈(이름) + '</span>'
@@ -372,7 +372,7 @@ window.ZG = window.ZG || {};
   function 배지(요) {
     var p = 요.품목;
     if (요.재입고) return '<span class="chip out">재입고 필요</span>';
-    if (p.상태 === '품절' || p.상태 === '일시중지') return '<span class="chip warn">' + u.안전(p.상태) + '</span>';
+    if (p.상태 === '품절') return '<span class="chip warn">' + u.안전(p.상태) + '</span>';
     return '<span class="chip">판매중</span>';
   }
 

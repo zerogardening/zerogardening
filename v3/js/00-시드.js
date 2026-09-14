@@ -19,7 +19,7 @@ window.ZG = window.ZG || {};
     ['PER03-15', "수크령 '레드헤드'",         "Pennisetum alopecuroides 'Red Head'",           15,  2800, '판매중', 122,  40],
     ['FES01-10', '털수염풀',                  'Festuca glauca',                                10,  1400, '판매중',  88,  22],
     ['COT01-21', '자엽안개나무',              'Cotinus coggygria',                             21,  6800, '판매중',  44,   4],
-    ['MIR02-27', "억새 '레드치프'",           "Miscanthus sinensis 'Red Chief'",               27,  5200, '일시중지', 12,   3],
+    ['MIR02-27', "억새 '레드치프'",           "Miscanthus sinensis 'Red Chief'",               27,  5200, '품절',    12,   3],
     ['COR01-27', "자엽안개나무 '로얄퍼플'",   "Cotinus coggygria 'Royal Purple'",              27, 16500, '판매중',  40,   0],
     ['HAA01-15', "하코네클로아 '아우레올라'", "Hakonechloa macra 'Aureola'",                   15,  2600, '판매중', 150,   0],
     ['PEL01-15', "수크령 '리틀버니'",         "Pennisetum alopecuroides 'Little Bunny'",       15,  2600, '판매중',  30,   0],

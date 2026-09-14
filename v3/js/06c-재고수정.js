@@ -51,8 +51,7 @@ window.ZG = window.ZG || {};
     var 가짜 = Object.assign({}, 열림.품목, { 상태: 열림.값.상태 });
     var 월 = 열림.요약.월출고;
     var 결과;
-    if (가짜.상태 === '일시중지') 결과 = { 종류: '판정안함', 표시: '판정 안 함' };
-    else if (열림.값.현재고 <= 0) 결과 = { 종류: '소진', 표시: '소진' };
+    if (열림.값.현재고 <= 0) 결과 = { 종류: '소진', 표시: '소진' };
     else if (월 <= 0) 결과 = { 종류: '출고없음', 표시: '—' };
     else 결과 = { 종류: '일수', 일수: Math.floor(열림.값.현재고 / (월 / 30)), 표시: Math.floor(열림.값.현재고 / (월 / 30)) + '일' };
     if (열림.소진칸) 열림.소진칸.value = 결과.표시;
@@ -95,7 +94,8 @@ window.ZG = window.ZG || {};
     단가.addEventListener('blur', function () { 단가.value = u.콤마(값.매입단가); });
 
     var 상태칸 = 만들기('div', { class: 'seg' });
-    ['판매중', '품절', '일시중지'].forEach(function (이름) {
+    /* 🔴 2026-09-14 우람님 — 「일시중지는 필요없는 표현. 있다>판매중, 없다>품절 둘만」 */
+    ['판매중', '품절'].forEach(function (이름) {
       var b = 만들기('button', { type: 'button', text: 이름, class: 값.상태 === 이름 ? 'on' : '' });
       b.addEventListener('click', function () {
         값.상태 = 이름;

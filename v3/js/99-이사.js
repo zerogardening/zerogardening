@@ -29,7 +29,7 @@ window.ZG = window.ZG || {};
     return m ? Number(m[1]) : 0;
   }
 
-  var 상태표 = { selling: '판매중', soldout: '품절', paused: '일시중지' };
+  var 상태표 = { selling: '판매중', soldout: '품절', paused: '품절' };   // 🔴 일시중지 폐지 (2026-09-14)
   var 업체구분표 = {
     supplier: '공급업체', customer: '판매처', logistics: '운송·택배',
     other: '기타 협력사', 기타: '기타 협력사'
@@ -181,7 +181,7 @@ window.ZG = window.ZG || {};
         학명키: (ZG.품목코드 && 학명) ? ZG.품목코드.학명키(학명) : '',
         매입단가: Number(최근입고 && 최근입고.purchasePrice) || 0,
         과세구분: 과세,
-        상태: 상태표[상태원] || '일시중지',
+        상태: 상태표[상태원] || '품절',
         특성: 특성만들기(sku),
         등록일시: (최근입고 && 최근입고.createdAt) || 지금,
         수정일시: (최근입고 && 최근입고.createdAt) || 지금
