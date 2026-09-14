@@ -133,9 +133,18 @@ def 답장뽑기(찍힌것):
 # ══════════════════════════════════════════════ 커밋 — Claude 가 만진 것만
 
 def 손댄것():
-    r = subprocess.run(['git', 'status', '--porcelain'], cwd=str(뿌리),
+    """지금 손탄 파일의 경로 집합.
+    🔴 `-z` 를 반드시 쓴다. 그냥 `--porcelain` 은 한글 파일명을 `"\354\213\234…"` 로
+       감싸 escape 해서 준다 — 그대로 `git add` 에 넘기면 「did not match any files」다.
+       이 집은 파일 이름이 죄다 한글이라 이것 없이는 커밋이 통째로 안 된다 (2026-09-14 통합시험에서 잡았다)."""
+    r = subprocess.run(['git', 'status', '--porcelain', '-z'], cwd=str(뿌리),
                        capture_output=True, text=True)
-    return {t[3:] for t in r.stdout.split('\n') if t.strip()}
+    조각 = [x for x in r.stdout.split('\0') if x]
+    길들, i = set(), 0
+    while i < len(조각):
+        길들.add(조각[i][3:])
+        i += 2 if 조각[i][:1] in ('R', 'C') else 1   # 이름바꿈·복사는 옛 경로가 뒤따라온다
+    return 길들
 
 
 def 커밋(전, 글):

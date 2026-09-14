@@ -9,7 +9,8 @@
 #    되돌린 것을 또 되돌리면 원래대로 돌아온다.
 # 🔴 bash 는 한글 변수명을 못 쓴다. 그래서 여기만 영문이다 (파이썬 도구들은 한글 그대로).
 set -e
-ROOT=/Users/zerogardening/claude-projects/제로가드닝
+# 🔴 bash 는 한글 변수명을 못 쓴다 — 이 파일만 영문이다 (파이썬 도구들은 한글 그대로)
+ROOT=${ZG_ROOT:-/Users/zerogardening/claude-projects/제로가드닝}
 cd "$ROOT"
 
 if [ -z "$1" ]; then
