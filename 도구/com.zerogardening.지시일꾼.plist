@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 60초마다 지시함.py 를 돌려 쌓인 지시를 한 건씩 처리한다 (16단계).
+     🔴 `일꾼` 과 갈라 둔 까닭 — 상세페이지 한 장이 세 시간 걸린다. 한 예약에 같이 두면
+        그동안 launchd 가 다음 바퀴를 안 띄워(같은 Label) 사진받기가 통째로 멈춘다.
+        일꾼 = 몇 초짜리(사진·일감 받기) · 지시일꾼 = 오래 걸리는 것(Claude 를 부른다).
+     넣는 법:  cp 통합관리/도구/com.zerogardening.지시일꾼.plist ~/Library/LaunchAgents/
+               launchctl load ~/Library/LaunchAgents/com.zerogardening.지시일꾼.plist
+     보는 법:  tail -f /tmp/zg-지시일꾼.log    ·   자세히: /tmp/zg-지시기록/{id}.jsonl -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.zerogardening.지시일꾼</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/zerogardening/claude-projects/제로가드닝/통합관리/도구/지시함.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>60</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/zg-지시일꾼.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/zg-지시일꾼.log</string>
+</dict>
+</plist>
