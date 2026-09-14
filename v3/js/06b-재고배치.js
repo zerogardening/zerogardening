@@ -12,6 +12,12 @@ window.ZG = window.ZG || {};
      화면을 통째로 다시 그리면 검색 입력칸 DOM 이 사라져 한글 조합이 끊긴다. */
   function 목록다시() {
     if (!참조.목록칸) return 다시();
+    if (상태.필터 === '일자별') {          // 일자별은 품목이 아니라 입고 기록이다 — 제 목록을 다시 그린다
+      u.비우기(참조.목록칸);
+      참조.목록칸.appendChild(목.일자줄(다시));
+      참조.목록칸.appendChild(일자목록(u.폰인가()));
+      return;
+    }
     var 걸러진 = 목.거르기(목.전부요약());
     u.비우기(참조.목록칸);
     (u.폰인가() ? 폰목록속(걸러진) : PC목록속(걸러진)).forEach(function (c) {
@@ -113,7 +119,7 @@ window.ZG = window.ZG || {};
         지난날 = r.입고일;
         if (상태.일자범위) 목록.appendChild(만들기('div', { class: '날머리', text: r.입고일 }));
       }
-      var 칸 = 만들기('div', { class: 'ph-card' });
+      var 칸 = 만들기('button', { class: 'ph-card', type: 'button' });
       칸.innerHTML =
         '<div class="r1"><div class="nm">' + u.안전(r.유통명) + '</div>' +
         '<div class="cd">' + u.안전(r.품목코드) + '</div></div>' +
@@ -121,6 +127,8 @@ window.ZG = window.ZG || {};
         '<div class="r2">' + u.안전(r.규격 || '') +
         ' <span class="hint">' + u.안전((r.입고업체 || '').trim()) + '</span>' +
         '<span class="amt"><b>' + u.콤마(r.수량) + '</b>주 · ' + u.콤마(r.단가) + '원</span></div>';
+      // 누르면 그 입고 한 건을 고친다 — 품목이 아니라 기록이라 입고 수정(05e)으로 간다
+      칸.addEventListener('click', function () { ZG.입고수정.열기(r.id, 칸, 칸); });
       목록.appendChild(칸);
     });
     통.appendChild(목록);
@@ -153,6 +161,7 @@ window.ZG = window.ZG || {};
     참조.목록칸 = null; 참조.검색 = null;
     u.비우기(뿌리);
     if (u.폰인가()) {
+      if (ZG.입고내부.상태.수정id) { ZG.입고수정.폰상세그리기(뿌리); return; }   // 일자별에서 연 입고 수정
       if (상태.상세코드) { ZG.재고수정.폰상세그리기(뿌리); return; }
       폰목록(뿌리);
     } else {
@@ -162,10 +171,21 @@ window.ZG = window.ZG || {};
   }
 
   function 머리() {
+    if (u.폰인가() && ZG.입고내부.상태.수정id) {
+      var 입 = ZG.입고수정.폰상세머리();
+      입.뒤로글 = '‹ 재고';          // 입고 내역이 아니라 여기서 열었다
+      return 입;
+    }
     if (u.폰인가() && 상태.상세코드) return ZG.재고수정.폰상세머리();
     var 요 = 목.요약글();
     return { 제목: '재고', 뒤로: null, 왼: 요.왼, 오: 요.오 };
   }
 
-  ZG.재고 = { 그리기: 그리기, 다시: 다시, 목록다시: 목록다시, 머리: 머리 };
+  /* 입고 수정(05e)에서 저장·삭제 뒤 부른다 — 일자별을 보고 있을 때만 갈아끼운다 */
+  function 일자다시() {
+    if (상태.필터 !== '일자별' || !참조.목록칸 || !참조.목록칸.isConnected) return;
+    목록다시();
+  }
+
+  ZG.재고 = { 그리기: 그리기, 다시: 다시, 목록다시: 목록다시, 일자다시: 일자다시, 머리: 머리 };
 })(window.ZG);

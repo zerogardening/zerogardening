@@ -715,6 +715,9 @@ tr.골랐다{background:var(--color-accent-bg)}
 
 /* PC 개별 수정 — 오른쪽에서 들어오는 시트 */
 .editwrap{position:relative}
+/* 🔴 시트는 감쌈 높이에 갇힌다 — 목록이 짧으면(재고 일자별 하루치 등) 저장 단추까지 잘린다.
+   열려 있는 동안만 카드에 키를 준다 (2026-09-15) */
+.editwrap:has(> .editpanel){min-height:min(870px, calc(100vh - 120px))}
 .editscrim{
   position:absolute; inset:0; background:rgba(0,0,0,.28); border-radius:var(--radius-lg); z-index:1;
   border:none; width:100%; cursor:pointer;

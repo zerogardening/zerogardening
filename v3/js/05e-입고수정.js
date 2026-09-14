@@ -182,6 +182,7 @@ window.ZG = window.ZG || {};
 
   function 다시그리기() {
     ZG.입고내역.내역다시();
+    ZG.재고 && ZG.재고.일자다시 && ZG.재고.일자다시();   // 재고 일자별에서 열었을 때 (2026-09-15)
     ZG.앱 && ZG.앱.요약다시();
   }
 
@@ -215,7 +216,10 @@ window.ZG = window.ZG || {};
     패널.appendChild(만들기('div', { class: 'btnrow' }, [삭제, 취소, 저장단추]));
 
     열림.패널 = 패널; 열림.스크림 = 스크림;
+    /* 붙일 곳 — 입고 화면이면 제 감쌈, 재고 일자별에서 열었으면 지금 떠 있는 화면의 editwrap.
+       입고 화면의 감쌈은 탭을 옮기면 화면에서 떨어져 나가 그대로 쓰면 창이 안 보인다 (2026-09-15) */
     var 감쌈 = 내.참조.감쌈;
+    if (!감쌈 || !감쌈.isConnected) 감쌈 = document.querySelector('.editwrap');
     if (!감쌈) return;
     감쌈.appendChild(스크림);
     감쌈.appendChild(패널);
