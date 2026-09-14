@@ -153,6 +153,61 @@ window.ZG = window.ZG || {};
     return 단;
   }
 
+  /* ── 카페24에 올리기 (2026-09-14 우람님 「상세페이지 내가 확인하고 상품 올리기 버튼 누르면
+     너가 카페24에 올리는 거야」) ──
+     🔴 여기서 카페24를 직접 부르지 않는다. **지시함에 한 줄 쌓기만 한다** —
+        맥이 집어 `카페24-등록-메모.md` 의 대응표대로 등록한다(8/19에 7종을 그 길로 올렸다).
+        화면이 API 를 직접 부르면 열쇠가 브라우저에 들어가야 한다. 그건 안 된다. */
+  function 올리기단추(창) {
+    var s = 상태(창);
+    var 올림 = s.머리.카페24번호;
+    var 보냄 = (s.머리.올리기요청 || 0) > (s.머리.올린때 || 0);
+    var 단 = 만들기('button', {
+      class: 'btn' + (올림 ? '' : ' main'), type: 'button',
+      text: 올림 ? ('카페24 ' + 올림 + '번') : (보냄 ? '올리는 중…' : '카페24에 올리기')
+    });
+    if (올림 || 보냄) { 단.disabled = true; return 단; }
+
+    단.addEventListener('click', function () {
+      u.확인({
+        제목: '카페24에 올릴까요?',
+        본문: '미진열·판매안함으로 올라갑니다. 진열은 확인하시고 켜시면 됩니다.<br>' +
+              '<b>대표이미지 1장은 관리자에서 직접 올리셔야 합니다</b> — API 가 막혀 있습니다.',
+        확인글: '올린다'
+      }, function (예) {
+        if (!예) return;
+        단.disabled = true; 단.textContent = '보내는 중…';
+        올리기보내기(창).then(function () {
+          단.textContent = '올리는 중…';
+          u.토스트('맥이 받아 갔습니다 — 끝나면 지시함에 답장이 옵니다');
+          기다리기(창);
+        }).catch(function (e) {
+          단.disabled = false; 단.textContent = '카페24에 올리기';
+          u.토스트(자료().말썽(e));
+        });
+      });
+    });
+    return 단;
+  }
+
+  /* 지시함 표에 시스템 줄 하나. `갈래` 가 아는 값이라 맥이 박아 둔 절차대로 한다 */
+  function 올리기보내기(창) {
+    var 서 = ZG.서버;
+    var t = 서 && 서.켜짐 && 서.클라이언트 ? 서.클라이언트.from('v3_지시') : null;
+    if (!t) return Promise.reject(new Error('오프라인'));
+    var 이제 = Date.now();
+    var 이름 = (창.품목 && (창.품목.유통명 || 창.품목.품목코드)) || 창.코드;
+    return Promise.resolve(t.upsert([{
+      id: 이제 + '-' + 창.코드.slice(0, 8), 삭제됨: false,
+      내용: { 누가: '시스템', 보낸때: 이제, 상태: '대기', 갈래: '카페24올리기',
+              품목코드: 창.코드, 폴더: 창.폴더 || 이름,
+              글: 이름 + ' — 상세페이지를 확인하셨습니다. 카페24에 올립니다.' }
+    }], { onConflict: 'id' })).then(function (답) {
+      if (답 && 답.error) throw 답.error;
+      return 자료().머리쓰기(창.코드, { 올리기요청: 이제 });
+    });
+  }
+
   function 내려받기단추(창) {
     var s = 상태(창);
     var 단 = 만들기('button', { class: 'btn sm', type: 'button', text: '내려받기' });
@@ -209,6 +264,7 @@ window.ZG = window.ZG || {};
     줄.appendChild(만들기('div', { class: 'spacer' }));
     if (장수 && !u.폰인가()) 줄.appendChild(내려받기단추(창));
     줄.appendChild(만들기단추(창));
+    if (장수) 줄.appendChild(올리기단추(창));    // 뽑아 놓은 것이 있어야 올릴 수 있다
     판.appendChild(줄);
 
     if (!장수) 판.appendChild(준비칩들(창));
