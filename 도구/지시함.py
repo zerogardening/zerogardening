@@ -227,8 +227,10 @@ def 손댄것():
     """지금 손탄 파일의 경로 집합.
     🔴 `-z` 를 반드시 쓴다. 그냥 `--porcelain` 은 한글 파일명을 `"\354\213\234…"` 로
        감싸 escape 해서 준다 — 그대로 `git add` 에 넘기면 「did not match any files」다.
-       이 집은 파일 이름이 죄다 한글이라 이것 없이는 커밋이 통째로 안 된다 (2026-09-14 통합시험에서 잡았다)."""
-    r = subprocess.run(['git', 'status', '--porcelain', '-z'], cwd=str(뿌리),
+       이 집은 파일 이름이 죄다 한글이라 이것 없이는 커밋이 통째로 안 된다 (2026-09-14 통합시험에서 잡았다).
+    🔴 `-uall` 도 반드시 쓴다. 없으면 아직 git 에 없는 폴더를 `?? 그폴더/` 한 줄로 뭉쳐 준다 —
+       안의 파일이 아무리 바뀌어도 목록이 그대로라 못 알아챈다 (2026-09-14 구근 작업에서 놓쳤다)."""
+    r = subprocess.run(['git', 'status', '--porcelain', '-z', '-uall'], cwd=str(뿌리),
                        capture_output=True, text=True)
     조각 = [x for x in r.stdout.split('\0') if x]
     길들, i = set(), 0
@@ -238,9 +240,26 @@ def 손댄것():
     return 길들
 
 
-def 커밋(전, 글):
+def 새로만진것(잰때):
+    """일을 시작한 뒤에 **실제로 바뀐** 파일만.
+    🔴 처음엔 「일 전후 목록의 차집합」으로 골랐는데 그걸로는 못 잡는다 —
+       이미 손타 있던 파일을 또 고치면 목록이 그대로라 차집합이 빈다.
+       구근 작업에서 미리보기.html·사진넣기.py·제작대기.md 셋을 이렇게 통째로 놓쳤다.
+       그래서 「언제 바뀌었나」로 고른다. 2초는 시계 어긋남 여유다."""
+    것들 = set()
+    for 길 in 손댄것():
+        p = 뿌리 / 길
+        try:
+            if p.is_file() and p.stat().st_mtime >= 잰때 - 2:
+                것들.add(길)
+        except OSError:
+            continue
+    return 것들
+
+
+def 커밋(잰때, 글):
     """Claude 가 새로 만지거나 만든 것만 올린다. ops 저장소는 결과물이라 push 까지 간다"""
-    새것 = sorted(손댄것() - 전)
+    새것 = sorted(새로만진것(잰때))
     if not 새것:
         return ''
     subprocess.run(['git', 'add', '--'] + 새것, cwd=str(뿌리), check=True)
@@ -276,7 +295,6 @@ def 한건():
     print('🛠  %s — %s' % (줄id, 글[:60]))
     sys.stdout.flush()
 
-    전 = 손댄것()
     잰때 = time.time()
     try:
         됐나, 기록 = 부르기클로드(글, 줄id)
@@ -294,7 +312,7 @@ def 한건():
                  '\n'.join('· ' + t for t in 자취[-5:]) or '· (아무 자취도 없습니다)'))[:답장상한]
     자국 = ''
     try:
-        자국 = 커밋(전, 글)
+        자국 = 커밋(잰때, 글)
     except Exception as e:
         답 += '\n(커밋은 못 했습니다 — %s)' % e
 
@@ -332,6 +350,24 @@ def 점검():
     assert '사진넣기' in 빈손, '끊겼을 때 마지막에 하던 것이 답장에 담겨야 한다'
     답, 자취 = 기록읽기(Path('/그런/파일/없다.jsonl'))
     assert (답, 자취) == ('', []), '기록이 없어도 넘어져선 안 된다'
+    # 🔴 「이미 손타 있던 파일을 또 고친 것」을 잡아야 한다 — 구근 작업에서 셋을 통째로 놓쳤다
+    import tempfile
+    with tempfile.TemporaryDirectory() as 방:
+        옛뿌리 = globals()['뿌리']
+        try:
+            globals()['뿌리'] = Path(방)
+            subprocess.run(['git', 'init', '-q'], cwd=방, check=True)
+            오래된 = Path(방) / '오래전에.txt'
+            오래된.write_text('전', encoding='utf-8')
+            os.utime(오래된, (1, 1))                      # 아주 옛날에 바뀐 것으로 둔다
+            잰때 = time.time()
+            방금 = Path(방) / '방금.txt'
+            방금.write_text('후', encoding='utf-8')
+            골라진것 = 새로만진것(잰때)
+            assert '방금.txt' in 골라진것, '지금 바뀐 것을 골라야 한다'
+            assert '오래전에.txt' not in 골라진것, '안 바뀐 것까지 담으면 안 된다'
+        finally:
+            globals()['뿌리'] = 옛뿌리
     이제 = time.time() * 1000
     모 = {'1-a': {'상태': '됨'}, '3-c': {'상태': '대기'}, '2-b': {'상태': '대기'}}
     assert 집을것(모)[0] == '2-b', '오래된 것부터 집어야 한다'
@@ -339,7 +375,11 @@ def 점검():
     assert 집을것(모) is None, '살아있는 하는중이 있으면 안 집는다'
     모['9-z']['집은때'] = 이제 - (버림초 + 60) * 1000
     assert 집을것(모)[0] == '9-z', '버려진 하는중은 다시 집는다'
-    assert 'Bash' not in 도구들, '🔴 Bash 가 끼면 지우기·push 가 뚫린다'
+    # 🔴 Bash 는 있어야 한다 — 없으면 `사진넣기.py` 같은 도구를 못 돌려 일이 통째로 막힌다.
+    #    대신 되돌릴 수 없는 것이 막을것에 빠지면 안 된다.
+    assert 'Bash' in 도구들, 'Bash 가 빠지면 도구를 돌려야 하는 일이 애초에 불가능해진다'
+    for 위험 in ('Bash(rm:', 'Bash(sudo:', 'Bash(git push:', 'Bash(git reset:'):
+        assert 위험 in 막을것, '🔴 %s…) 가 막을것에서 빠졌다' % 위험
     # 🔴 예약이 주는 최소 PATH 로도 claude 를 찾아야 한다
     민환경 = {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin'}
     민환경['PATH'] = 돌릴환경()['PATH']
