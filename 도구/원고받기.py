@@ -134,7 +134,10 @@ def 뽑기(코드, 방):
                         str(png), '--out', str(jpg)], capture_output=True)
         if jpg.exists():
             shutil.copy2(jpg, 갈곳 / ('%s.jpg' % i))
-            창고올리기('%s/발행/%s.jpg' % (코드, i), jpg.read_bytes())
+            # 🔴 `발행` 이 아니라 `pub` 이다 — Supabase Storage 는 키에 한글을 못 쓴다
+            #    (`InvalidKey`). 설계는 `발행/` 이었는데 신규 입고가 0건이라
+            #    한 번도 안 올려 봐서 2026-09-14 까지 아무도 몰랐다.
+            창고올리기('%s/pub/%s.jpg' % (코드, i), jpg.read_bytes())
             뽑은것.append(i)
     return 뽑은것, ' · '.join(지적)
 
