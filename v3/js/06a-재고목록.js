@@ -195,11 +195,12 @@ window.ZG = window.ZG || {};
     });
   }
 
-  /* ── 입고업체 칩 (2026-09-14 우람님 「업체별 탭은 항상 띄운다 · 항상 떠 있는
-     입고 시작일·종료일은 없앤다」) ──
-     업체 목록은 업체관리가 아니라 **실제 입고 기록**에서 뽑는다 —
-     등록 안 된 이름으로 들어온 입고도 골라야 한다. */
-  function 업체칩들(전부, 다시) {
+  /* ── 입고업체 찾기 (2026-09-14 우람님 「업체별은 검색&자동완성으로 보여준다」) ──
+     처음엔 칩 줄이었는데 곳이 열둘이라 옆으로 밀어야 했다. 쳐서 고르는 쪽이 빠르다.
+     🔴 업체 목록은 업체관리가 아니라 **실제 입고 기록**에서 뽑는다 —
+        등록 안 된 이름으로 들어온 입고도 골라야 한다.
+     🔴 `datalist` 를 쓴다 — 입고 화면 업체칸(05b)과 같은 결이고, 폰에서도 제 키보드가 뜬다. */
+  function 업체찾기(전부, 다시) {
     var 셈 = {};
     전부.forEach(function (요) {
       (요.입고들 || []).forEach(function (i) { if (i.업체) 셈[i.업체] = (셈[i.업체] || 0) + 1; });
@@ -207,18 +208,34 @@ window.ZG = window.ZG || {};
     var 이름들 = Object.keys(셈).sort(function (a, b) { return 셈[b] - 셈[a]; });
     if (!이름들.length) return 만들기('div');
 
-    var 상자 = 만들기('div', { class: 'fchips 업체칩' });
-    var 만들단추 = function (값, 글, 수) {
-      var b = 만들기('button', {
-        class: 'fchip' + (상태.업체 === 값 ? ' on' : ''), type: 'button',
-        html: u.안전(글) + (수 == null ? '' : ' <span class="n">' + 수 + '</span>')
-      });
-      b.addEventListener('click', function () { 상태.업체 = 값; 상태.쪽 = 1; 다시(); });
-      return b;
+    var 칸 = 만들기('input', {
+      class: 'inp 업체찾기', type: 'search', list: 'zg-입고업체목록',
+      placeholder: '업체로 거르기', value: 상태.업체, 'aria-label': '입고업체로 거르기'
+    });
+    var 목록 = 만들기('datalist', { id: 'zg-입고업체목록' });
+    목록.innerHTML = 이름들.map(function (n) {
+      return '<option value="' + u.안전(n) + '">' + 셈[n] + '건</option>';
+    }).join('');
+
+    var 고름 = function () {
+      var 값 = (칸.value || '').trim();
+      // 🔴 목록에 없는 글자는 무시한다 — 반쯤 치다 만 것으로 목록이 비면 고장으로 보인다
+      if (값 && 이름들.indexOf(값) < 0) return;
+      if (값 === 상태.업체) return;
+      상태.업체 = 값; 상태.쪽 = 1; 다시();
     };
-    상자.appendChild(만들단추('', '전체 업체', null));
-    이름들.forEach(function (n) { 상자.appendChild(만들단추(n, n, 셈[n])); });
-    return 상자;
+    칸.addEventListener('change', 고름);
+    칸.addEventListener('search', 고름);      // 폰에서 ✕ 를 눌러 지웠을 때
+    칸.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); 고름(); } });
+
+    var 통 = 만들기('div', { class: '업체줄' }, [칸, 목록]);
+    if (상태.업체) {
+      // 🔴 업체 이름은 칸에 이미 적혀 있다 — 단추에 또 쓰지 않는다
+      var 지움 = 만들기('button', { class: '업체지움', type: 'button', text: '✕', 'aria-label': '업체 거르기 끄기' });
+      지움.addEventListener('click', function () { 상태.업체 = ''; 상태.쪽 = 1; 다시(); });
+      통.appendChild(지움);
+    }
+    return 통;
   }
 
   /* 이 칸은 목록을 다시 그려도 DOM 이 살아남아야 한다 — 06b 목록다시() 참고.
@@ -467,7 +484,7 @@ window.ZG = window.ZG || {};
 
   ZG.재고목록 = {
     상태: 상태, 참조: 참조, 전부요약: 전부요약, 거르기: 거르기, 요약글: 요약글,
-    필터칩들: 필터칩들, 업체칩들: 업체칩들, 일자줄: 일자줄, 그날입고: 그날입고, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
+    필터칩들: 필터칩들, 업체찾기: 업체찾기, 일자줄: 일자줄, 그날입고: 그날입고, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
     표그리기: 표그리기, 쪽번호: 쪽번호, 배지: 배지,
     고른것들: 고른것들, 선택비우기: 선택비우기, 선택바갱신: 선택바갱신,
     선택바: 선택바, 선택단추: 선택단추, 폰작업막대: 폰작업막대
