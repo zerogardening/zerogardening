@@ -16,7 +16,9 @@
    `git add -A` 를 쓰지 않는다. 다른 창 작업이 딸려 나간 적이 있다.
 """
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -113,11 +115,30 @@ def 집을것(모두):
 """
 
 
+def 돌릴환경():
+    """🔴 예약(launchd)이 주는 PATH 는 `/usr/bin:/bin:/usr/sbin:/sbin` 뿐이다.
+       `claude` 는 `~/.local/bin` 에 있어 그대로 두면 예약으로 돌 때만 못 찾는다 —
+       손으로 돌리면 되고 밤에만 조용히 실패하는 종류다 (2026-09-14 실전 시험에서 잡았다).
+       claude 가 부르는 하위 프로그램도 이 PATH 를 물려받는다."""
+    환경 = dict(os.environ)
+    앞에 = [str(Path.home() / '.local' / 'bin'), '/opt/homebrew/bin', '/usr/local/bin']
+    환경['PATH'] = ':'.join(앞에 + [환경.get('PATH', '/usr/bin:/bin')])
+    return 환경
+
+
+def 클로드길(환경):
+    길 = shutil.which('claude', path=환경['PATH'])
+    if not 길:
+        raise RuntimeError('claude 를 못 찾았습니다 — PATH: ' + 환경['PATH'])
+    return 길
+
+
 def 부르기클로드(글):
     """(성공?, 화면에 찍힌 것) — 시간이 넘으면 끊는다"""
+    환경 = 돌릴환경()
     r = subprocess.run(
-        ['claude', '-p', 머리말 % 글, '--allowedTools', 도구들],
-        capture_output=True, text=True, cwd=str(뿌리), timeout=상한초)
+        [클로드길(환경), '-p', 머리말 % 글, '--allowedTools', 도구들],
+        capture_output=True, text=True, cwd=str(뿌리), timeout=상한초, env=환경)
     return r.returncode == 0, (r.stdout or '') + (('\n' + r.stderr) if r.stderr.strip() else '')
 
 
@@ -243,6 +264,10 @@ def 점검():
     모['9-z']['집은때'] = 이제 - (버림초 + 60) * 1000
     assert 집을것(모)[0] == '9-z', '버려진 하는중은 다시 집는다'
     assert 'Bash' not in 도구들, '🔴 Bash 가 끼면 지우기·push 가 뚫린다'
+    # 🔴 예약이 주는 최소 PATH 로도 claude 를 찾아야 한다
+    민환경 = {'PATH': '/usr/bin:/bin:/usr/sbin:/sbin'}
+    민환경['PATH'] = 돌릴환경()['PATH']
+    assert 클로드길(민환경), 'claude 를 못 찾는다'
     assert 유휴초() >= 0
     print('✅ 점검 통과 — 답장뽑기 4 · 집을것 3 · 연장목록 1')
 
