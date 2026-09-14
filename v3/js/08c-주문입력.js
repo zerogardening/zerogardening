@@ -317,7 +317,7 @@ window.ZG = window.ZG || {};
     if (!st.서비스 && st.원코드 !== 코드) 단가 = p ? Math.round((Number(p.매입단가) || 0) * 1.7) : 단가;
     return {
       품목코드: 코드,
-      규격: p ? p.규격 : st.cm + 'cm 포트',
+      규격: p ? p.규격 : ZG.품목코드.규격이름(st.cm),
       단가: 단가
     };
   }

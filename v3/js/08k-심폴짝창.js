@@ -69,7 +69,7 @@ window.ZG = window.ZG || {};
     var 저 = ZG.저장소, 이제 = Date.now();
     저.덧붙이기(저.키.품목, {
       품목코드: 코드, 접두: 코드.slice(0, 5), 학명3: 코드.slice(0, 3), 일련번호: 코드.slice(3, 5),
-      규격cm: 값.규격cm, 규격: 값.규격cm + 'cm 포트',
+      규격cm: 값.규격cm, 규격: ZG.품목코드.규격이름(값.규격cm),
       유통명: 값.유통명, 학명: 값.학명, 학명키: ZG.품목코드.학명키(값.학명),
       매입단가: 값.매입단가, 과세구분: '면세', 상태: '판매중',
       특성: 값.특성, 등록일시: 이제, 수정일시: 이제
@@ -84,7 +84,7 @@ window.ZG = window.ZG || {};
   function 새등록칸(것, 옵션) {
     var 유통 = 만들기('input', { class: 'inp', type: 'text', placeholder: '예: 추명국 휠윈드핑크' });
     var 학명 = 만들기('input', { class: 'inp sci', type: 'text', placeholder: '예: Anemone hupehensis' });
-    var 규격 = 만들기('input', { class: 'inp num', type: 'number', min: '1', placeholder: 'cm' });
+    var 규격 = 만들기('input', { class: 'inp num', type: 'number', min: '0', placeholder: 'cm · 규격 외는 0' });
     var 단가 = 만들기('input', { class: 'inp num', type: 'number', min: '0', placeholder: '원 · 비워 두셔도 됩니다' });
     유통.value = 것.상품명 || '';
     var 특 = ZG.특성.접기(null, { 접어두기: true });
@@ -93,11 +93,12 @@ window.ZG = window.ZG || {};
     function 값읽기() {
       var v = {
         유통명: 유통.value.trim(), 학명: 학명.value.trim(),
-        규격cm: Number(규격.value), 매입단가: Number(단가.value) || 0, 특성: 특.읽기()
+        규격cm: 규격.value.trim() === '' ? NaN : Number(규격.value),
+        매입단가: Number(단가.value) || 0, 특성: 특.읽기()
       };
       if (!v.유통명) { u.토스트('유통명을 넣어 주세요.'); return null; }
       if (!v.학명) { u.토스트('학명을 넣어야 품목코드가 만들어집니다.'); return null; }
-      if (!(v.규격cm >= 1)) { u.토스트('규격(포트 cm)을 넣어 주세요.'); return null; }
+      if (!(v.규격cm >= 0)) { u.토스트('규격을 넣어 주세요 — 규격 외는 0.'); return null; }
       return v;
     }
 

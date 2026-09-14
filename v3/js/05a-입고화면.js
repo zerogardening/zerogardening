@@ -74,7 +74,8 @@ window.ZG = window.ZG || {};
       var 직접켜짐 = b.dataset.cm === '직접' && 상태.규격cm != null &&
         !규격목록.some(function (쌍) { return 쌍[0] === 상태.규격cm; });
       b.classList.toggle('on', 기본 || 직접켜짐);
-      if (직접켜짐) b.innerHTML = 상태.규격cm + 'cm<i>직접입력</i>';
+      // 「화분묘 아님」은 그대로, 숫자 규격은 단추가 좁아 「15cm」로 줄여 쓴다
+      if (직접켜짐) b.innerHTML = ZG.품목코드.규격이름(상태.규격cm).replace(/cm 포트$/, 'cm') + '<i>직접입력</i>';
       else if (b.dataset.cm === '직접') b.innerHTML = '직접입력<i>그 밖의 규격</i>';
     });
   }
