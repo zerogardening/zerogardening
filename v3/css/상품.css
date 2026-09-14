@@ -105,9 +105,33 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 }
 .뺌:hover{background:var(--color-btn-bg-hover); color:var(--color-text)}
 td.뺌칸{text-align:right}
-/* 폰 카드는 통째로 누르면 사진창이 열린다 — 빼기는 모서리에 따로 앉힌다 */
+/* 폰 — 카드를 왼쪽으로 밀면 빼기가 나온다 (2026-09-14 우람님 「✕ 가 작아 불편하다」).
+   🔴 카드를 통째로 누르면 사진창이 열린다. 그래서 미는 것과 누르는 것을 갈라야 한다 —
+      가로로 8px 넘게 움직인 뒤에야 밀기로 보고, 그때부터 누름을 죽인다. */
+.민칸{position:relative; overflow:hidden; border-radius:var(--radius-xl)}
+/*        🔴 radius 는 .ph-card 와 **같아야 한다**(--radius-xl) —
+          다르면 안 민 카드 모서리로 빨간 단추가 삐져나와 보인다 */
+.민칸 .ph-card{
+  position:relative; margin:0; background:var(--color-surface);
+  transition:transform .22s cubic-bezier(.22,.61,.36,1);
+  touch-action:pan-y;                 /* 세로 스크롤은 그대로 살린다 */
+  will-change:transform;
+}
+.민칸.끄는중 .ph-card{transition:none}
+.민칸 .뒷단추{
+  position:absolute; top:0; right:0; bottom:0; width:88px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  border:none; cursor:pointer; font-family:inherit;
+  font-size:var(--font-xl); font-weight:var(--weight-semibold);
+  background:var(--color-danger); color:#fff;
+}
+.민칸.되돌리기 .뒷단추{background:var(--color-text-muted)}
+.민칸 .뒷단추 span{font-size:var(--font-2xs); font-weight:var(--weight-medium); opacity:.92}
+
+/* PC·태블릿은 밀 일이 없다 — ✕ 를 그대로 쓴다 */
 .ph-card{position:relative}
-.ph-card .뺌{position:absolute; top:var(--space-sm); right:var(--space-sm)}
+.ph-card > .뺌{position:absolute; top:var(--space-sm); right:var(--space-sm)}
+.민칸 .ph-card > .뺌{display:none}
 
 .사진덮개{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.34); display:flex; align-items:flex-start; justify-content:center; overflow:auto}
 .사진창{

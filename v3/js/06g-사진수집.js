@@ -192,6 +192,79 @@ window.ZG = window.ZG || {};
   }
 
   /* 폰 — 05d 의 폰내역() 카드와 같은 결(.ph-list > .ph-card) */
+  /* 🔴 폰에서 카드를 왼쪽으로 밀면 빼기가 나온다 (2026-09-14 우람님 「✕ 가 작아 불편하다」).
+     어려운 점은 **미는 것과 누르는 것이 같은 손짓**이라는 것이다 — 카드를 누르면 사진창이 열린다.
+     그래서 가로로 8px 넘게 움직인 뒤에야 밀기로 보고, 그때부터 누름을 죽인다.
+     세로로 먼저 움직이면 아예 손을 뗀다 — 목록 스크롤을 뺏으면 안 된다. */
+  var 열린칸 = null;                    // 한 번에 하나만 열어 둔다
+  var 단추폭 = 88;
+
+  function 밀기붙이기(싼것, 칸, p) {
+    var 시작X = 0, 시작Y = 0, 미는중 = false, 정했나 = false, 열림 = false, 지금 = 0;
+
+    function 옮기기(px, 부드럽게) {
+      지금 = px;
+      싼것.classList.toggle('끄는중', !부드럽게);
+      칸.style.transform = px ? 'translateX(' + px + 'px)' : '';
+    }
+    function 닫기() { 열림 = false; 옮기기(0, true); if (열린칸 === 싼것) 열린칸 = null; }
+    function 열기단추() {
+      열림 = true; 옮기기(-단추폭, true);
+      if (열린칸 && 열린칸 !== 싼것) 열린칸.__닫기();
+      열린칸 = 싼것;
+    }
+    싼것.__닫기 = 닫기;
+
+    칸.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) return;
+      시작X = e.touches[0].clientX; 시작Y = e.touches[0].clientY;
+      미는중 = true; 정했나 = false;
+    }, { passive: true });
+
+    칸.addEventListener('touchmove', function (e) {
+      if (!미는중) return;
+      var dx = e.touches[0].clientX - 시작X, dy = e.touches[0].clientY - 시작Y;
+      if (!정했나) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;    // 아직 무엇인지 모른다
+        정했나 = true;
+        if (Math.abs(dy) > Math.abs(dx)) { 미는중 = false; return; }   // 세로다 — 스크롤에 넘긴다
+      }
+      var 밑 = 열림 ? -단추폭 : 0;
+      var px = Math.max(-단추폭 - 18, Math.min(0, 밑 + dx));   // 오른쪽으로는 안 넘어간다
+      옮기기(px, false);
+    }, { passive: true });
+
+    function 끝(e) {
+      if (!미는중) return;
+      미는중 = false;
+      if (!정했나) return;                      // 그냥 누른 것이다 — click 이 알아서 연다
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      if (지금 < -단추폭 / 2) 열기단추(); else 닫기();
+    }
+    칸.addEventListener('touchend', 끝);
+    칸.addEventListener('touchcancel', 끝);
+
+    // 🔴 민 직후의 click 을 죽인다 — 안 그러면 손을 떼는 순간 사진창이 같이 열린다
+    칸.addEventListener('click', function (e) {
+      if (정했나 || 열림) { e.preventDefault(); e.stopPropagation(); if (열림) return; }
+    }, true);
+  }
+
+  function 민카드(칸, p) {
+    var 싼것 = 만들기('div', { class: '민칸' + (뺀것보기 ? ' 되돌리기' : '') });
+    var 뒷 = 만들기('button', { type: 'button', class: '뒷단추',
+      html: 뺀것보기 ? '↺<span>되돌리기</span>' : '✕<span>빼기</span>' });
+    뒷.addEventListener('click', function (e) {
+      e.stopPropagation();
+      열린칸 = null;
+      빼기(p);
+    });
+    싼것.appendChild(뒷);
+    싼것.appendChild(칸);
+    밀기붙이기(싼것, 칸, p);
+    return 싼것;
+  }
+
   function 폰목록(목록, 뺀수) {
     var 상 = 상태표();
     var 목 = 만들기('div', { class: 'ph-list' });
@@ -203,8 +276,8 @@ window.ZG = window.ZG || {};
         '<div class="r2">' + u.안전(p.규격) + '<span class="amt"><span class="chip 사진">…</span></span></div>';
       칩달기(칸.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
       칸.addEventListener('click', function () { 열기(p); });
-      칸.appendChild(뺌단추(p));
-      목.appendChild(칸);
+      칸.appendChild(뺌단추(p));            // 밀기가 안 되는 기기를 위해 남겨 둔다(폰에선 CSS 로 감춘다)
+      목.appendChild(민카드(칸, p));
     });
     u.목록등장(목.children);
     var 머리 = 만들기('div', { class: 'ph-sec',
