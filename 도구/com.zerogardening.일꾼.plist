@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 맥이 켜지면 곧바로, 그 뒤 60초마다 일꾼.py 를 돌린다 (2026-09-14).
+     폰·웹에서 쌓아 두신 일감(제작요청·사진)을 맥이 알아서 가져간다.
+     이게 꺼져 있으면 「상세페이지」를 누르셔도, 사진을 올리셔도 맥에선 아무 일도 안 일어난다.
+     넣는 법:  cp 통합관리/도구/com.zerogardening.일꾼.plist ~/Library/LaunchAgents/
+               launchctl load ~/Library/LaunchAgents/com.zerogardening.일꾼.plist
+     보는 법:  tail -f /tmp/zg-일꾼.log
+     🔴 service_role 키(~/.zg_supabase_key)가 있어야 돈다. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.zerogardening.일꾼</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/zerogardening/claude-projects/제로가드닝/통합관리/도구/일꾼.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>60</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/zg-일꾼.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/zg-일꾼.log</string>
+</dict>
+</plist>
