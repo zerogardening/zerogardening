@@ -167,7 +167,7 @@ window.ZG = window.ZG || {};
     var 보냄 = (s.머리.올리기요청 || 0) > (s.머리.올린때 || 0);
     var 단 = 만들기('button', {
       class: 'btn' + (올림 ? '' : ' main'), type: 'button',
-      text: 올림 ? ('카페24 ' + 올림 + '번') : (보냄 ? '올리는 중…' : '카페24에 올리기')
+      text: 올림 ? ('카페24 ' + 올림 + '번') : (보냄 ? '올리는 중…' : '상품 업로드')
     });
     if (올림 || 보냄) { 단.disabled = true; return 단; }
 
@@ -185,7 +185,7 @@ window.ZG = window.ZG || {};
           u.토스트('맥이 받아 갔습니다 — 끝나면 지시함에 답장이 옵니다');
           기다리기(창);
         }).catch(function (e) {
-          단.disabled = false; 단.textContent = '카페24에 올리기';
+          단.disabled = false; 단.textContent = '상품 업로드';
           u.토스트(자료().말썽(e));
         });
       });
