@@ -33,12 +33,29 @@ from 제작요청 import 키, 부르기, 표                     # noqa: E402
 뿌리 = Path(__file__).resolve().parents[2]              # 제로가드닝/ — ops 저장소이자 Claude 가 일할 창
 주소 = 'https://vjqfhwrgrocapcyndgtx.supabase.co/rest/v1/'
 
-# 🔴 Bash 가 없다. 이 한 줄이 「지우기·push·돈 나가는 일 금지」의 전부다
-도구들 = 'Read,Write,Edit,Glob,Grep,WebSearch,WebFetch,TodoWrite'
+# 🔴 2026-09-14 고쳤다 — 처음엔 Bash 를 통째로 안 줬다. 그랬더니 「구근 사진 넣어라」처럼
+#    `사진넣기.py` 를 돌려야 하는 일이 **애초에 불가능**해져 30분을 헤매다 끊겼다.
+#    이제 Bash 를 열고 **되돌릴 수 없는 것만 콕 집어 막는다**(막을것).
+#    🔴 완벽하지 않다 — `python3` 를 열면 그 안에서 파일을 없앨 길은 남는다.
+#       진짜 안전망은 `[야간]` 커밋 + `야간되돌리기.sh` 다.
+도구들 = 'Read,Write,Edit,Glob,Grep,Bash,WebSearch,WebFetch,TodoWrite'
+막을것 = ','.join([
+    'Bash(rm:*)', 'Bash(rmdir:*)', 'Bash(dd:*)', 'Bash(sudo:*)',                # 없애기
+    'Bash(git push:*)', 'Bash(git reset:*)', 'Bash(git clean:*)',               # 되돌릴 수 없는 git
+    'Bash(git checkout:*)', 'Bash(git rebase:*)',
+    'Bash(curl:*)', 'Bash(wget:*)', 'Bash(ssh:*)', 'Bash(scp:*)',               # 바깥으로 나가기
+    'Bash(chmod:*)', 'Bash(chown:*)', 'Bash(launchctl:*)', 'Bash(crontab:*)',   # 이 맥 설정
+    'Bash(pip:*)', 'Bash(pip3:*)', 'Bash(npm:*)', 'Bash(brew:*)',               # 설치
+])
 상한초 = 30 * 60          # 한 건에 30분. 넘으면 끊고 '실패' 로 적는다
 버림초 = 45 * 60          # '하는중' 인데 이만큼 지났으면 맥이 꺼졌던 것이다 — 다시 집는다
 쉴유휴초 = 60             # 우람님이 이 안에 무언가 입력하셨으면 이번 바퀴는 건너뛴다
 답장상한 = 1500           # 폰 채팅에 뜨는 글이다. 길면 못 읽는다
+기록방 = Path('/tmp/zg-지시기록')
+#    🔴 2026-09-14 — 끊겼을 때 그때까지 무엇을 했는지가 여기 남는다.
+#    처음엔 화면에 찍힌 것을 받아 뒀다가 시간이 넘으면 통째로 버렸다. 그래서
+#    30분을 헤매고도 「일이 너무 컸거나 막혔습니다」라는 쓸모없는 답장만 남았다.
+#    이제 `--output-format stream-json` 을 이 폴더의 파일로 흘린다 — 끊겨도 파일은 남는다.
 
 
 # ══════════════════════════════════════════════ 우람님이 쓰고 계신가
@@ -105,10 +122,15 @@ def 집을것(모두):
 
 머리말 = """아래는 우람님이 폰이나 웹에서 남기신 지시다. 그대로 수행해라.
 
-🔴 이 창은 사람이 보고 있지 않다. 되물을 수 없으니 막히면 막힌 대로 답해라.
-🔴 git·push·삭제·결제는 네가 하지 않는다 — 연장 자체가 없다. 커밋은 끝난 뒤 스크립트가 한다.
-🔴 다 끝나면 **마지막 줄에 `답장:` 으로 시작하는 한두 문장**을 적어라.
-   우람님 폰 채팅에 그대로 뜬다. 무엇을 했고 어디를 보시면 되는지만 적는다.
+🔴 이 창은 사람이 보고 있지 않다. **되물을 수 없다.**
+🔴 **못 하는 일이면 붙들고 있지 마라.** 「이건 못 합니다 — (까닭)」 한 줄로 곧바로 끝내라.
+   30분이 지나면 통째로 끊긴다. 헤매다 끊기면 우람님은 아무것도 못 받으신다.
+   무엇을 어디서 찾아야 할지 모르겠으면 **그 말을 그대로 적고 끝내라.** 그게 훨씬 낫다.
+🔴 쓸 수 있는 연장 — 파일 읽기·쓰기·고치기 · 찾기 · 셸 명령(`python3` 포함) · 웹 검색
+   **막혀 있는 것** — 파일 없애기 · `git push` · `sudo` · 설치(pip/npm/brew) · 바깥 접속(curl/ssh)
+   그 막힌 것이 꼭 필요한 일이면 **하지 말고 그렇게 답해라.**
+🔴 `git` 커밋은 네가 하지 않는다. 끝난 뒤 스크립트가 알아서 한다.
+🔴 다 끝나면 **무엇을 했고 어디를 보시면 되는지** 한두 문장으로 적어라. 폰 채팅에 그대로 뜬다.
 
 ── 지시 ──
 %s
@@ -133,22 +155,70 @@ def 클로드길(환경):
     return 길
 
 
-def 부르기클로드(글):
-    """(성공?, 화면에 찍힌 것) — 시간이 넘으면 끊는다"""
+def 부르기클로드(글, 줄id):
+    """(끝났나, 기록파일). 끝났나 = True 성공 · False 실패 · None 시간초과.
+    🔴 화면에 찍힌 것을 손에 들고 있지 않는다. **파일로 흘린다** —
+       시간이 넘어 끊겨도 그때까지 무엇을 했는지가 파일에 남아 있어야 한다."""
     환경 = 돌릴환경()
-    r = subprocess.run(
-        [클로드길(환경), '-p', 머리말 % 글, '--allowedTools', 도구들],
-        capture_output=True, text=True, cwd=str(뿌리), timeout=상한초, env=환경)
-    return r.returncode == 0, (r.stdout or '') + (('\n' + r.stderr) if r.stderr.strip() else '')
+    기록방.mkdir(parents=True, exist_ok=True)
+    기록 = 기록방 / ('%s.jsonl' % 줄id)
+    with open(기록, 'w', encoding='utf-8') as 흐름, open(os.devnull) as 빈:
+        try:
+            r = subprocess.run(
+                [클로드길(환경), '-p', 머리말 % 글,
+                 '--allowedTools', 도구들, '--disallowedTools', 막을것,
+                 '--output-format', 'stream-json', '--verbose'],
+                stdin=빈, stdout=흐름, stderr=subprocess.STDOUT,
+                text=True, cwd=str(뿌리), timeout=상한초, env=환경)
+            return r.returncode == 0, 기록
+        except subprocess.TimeoutExpired:
+            return None, 기록
 
 
-def 답장뽑기(찍힌것):
-    """`답장:` 줄이 있으면 그것. 없으면 마지막 몇 줄"""
-    줄 = [t.strip() for t in (찍힌것 or '').split('\n') if t.strip()]
-    for t in reversed(줄):
-        if t.startswith('답장:'):
-            return t[3:].strip()[:답장상한]
-    return ('\n'.join(줄[-6:]) if 줄 else '아무 말도 없이 끝났습니다')[:답장상한]
+def 짧게(값, n=70):
+    t = str(값 if not isinstance(값, dict) else (값.get('command') or 값.get('file_path')
+                                                or 값.get('pattern') or 값))
+    return ' '.join(t.split())[:n]
+
+
+def 기록읽기(기록):
+    """(최종답, 자취) — 자취는 무엇을 했는지 한 줄씩. 끊겼을 때 이게 유일한 단서다"""
+    답, 자취 = '', []
+    try:
+        줄들 = 기록.read_text(encoding='utf-8', errors='replace').split('\n')
+    except OSError:
+        return '', []
+    for L in 줄들:
+        L = L.strip()
+        if not L:
+            continue
+        try:
+            o = json.loads(L)
+        except ValueError:
+            continue                      # JSON 이 아닌 줄(경고 등)은 흘린다
+        갈래 = o.get('type')
+        if 갈래 == 'result':
+            답 = str(o.get('result') or '')
+        elif 갈래 == 'assistant':
+            for c in (o.get('message') or {}).get('content') or []:
+                if c.get('type') == 'tool_use':
+                    자취.append('%s %s' % (c.get('name'), 짧게(c.get('input'))))
+                elif c.get('type') == 'text' and (c.get('text') or '').strip():
+                    자취.append('말: ' + ' '.join(c['text'].split())[:70])
+    return 답, 자취
+
+
+def 답장뽑기(답, 자취):
+    """최종답이 있으면 그것. 없으면 마지막에 하던 것이라도 보여 준다 — 빈손으로 안 돌려보낸다"""
+    답 = (답 or '').strip()
+    if 답.startswith('답장:'):
+        답 = 답[3:].strip()
+    if 답:
+        return 답[:답장상한]
+    if 자취:
+        return ('아무 말 없이 끝났습니다. 마지막에 하던 것 —\n'
+                + '\n'.join('· ' + t for t in 자취[-5:]))[:답장상한]
+    return '아무 말도 없이 끝났습니다'
 
 
 # ══════════════════════════════════════════════ 커밋 — Claude 가 만진 것만
@@ -209,18 +279,19 @@ def 한건():
     전 = 손댄것()
     잰때 = time.time()
     try:
-        됐나, 찍힌것 = 부르기클로드(글)
-    except subprocess.TimeoutExpired:
-        적기(줄id, 내용, 상태='실패', 답한때=int(time.time() * 1000),
-             걸린초=int(time.time() - 잰때),
-             답장='%d분이 넘어 끊었습니다. 일이 너무 컸거나 막혔습니다.' % (상한초 // 60))
-        print('❌ %s — 시간 초과' % 줄id); return '시간초과'
+        됐나, 기록 = 부르기클로드(글, 줄id)
     except Exception as e:
         적기(줄id, 내용, 상태='실패', 답한때=int(time.time() * 1000),
              걸린초=int(time.time() - 잰때), 답장='Claude 를 부르지 못했습니다 — %s' % e)
         print('❌ %s — %s' % (줄id, e)); return '실패'
 
-    답 = 답장뽑기(찍힌것)
+    답원문, 자취 = 기록읽기(기록)
+    답 = 답장뽑기(답원문, 자취)
+    if 됐나 is None:
+        # 🔴 끊겼어도 빈손으로 안 돌려보낸다. 무엇을 하다 막혔는지가 유일한 단서다
+        답 = ('%d분이 넘어 끊었습니다. 마지막에 하던 것 —\n%s'
+              % (상한초 // 60,
+                 '\n'.join('· ' + t for t in 자취[-5:]) or '· (아무 자취도 없습니다)'))[:답장상한]
     자국 = ''
     try:
         자국 = 커밋(전, 글)
@@ -252,10 +323,15 @@ def 보기():
 
 def 점검():
     """표 없이 되는 곳만 스스로 확인한다. 고치고 나면 이것부터 돌린다"""
-    assert 답장뽑기('이것저것\n답장: 끝냈습니다') == '끝냈습니다'
-    assert 답장뽑기('답장 줄이 없다') == '답장 줄이 없다'
-    assert 답장뽑기('') == '아무 말도 없이 끝났습니다'
-    assert len(답장뽑기('답장: ' + 'ㄱ' * 3000)) == 답장상한
+    assert 답장뽑기('답장: 끝냈습니다', []) == '끝냈습니다'
+    assert 답장뽑기('끝냈습니다', []) == '끝냈습니다'
+    assert 답장뽑기('', []) == '아무 말도 없이 끝났습니다'
+    assert len(답장뽑기('ㄱ' * 3000, [])) == 답장상한
+    # 🔴 최종답이 없어도 빈손으로 안 돌려보낸다 — 30분 헤매고 아무것도 못 받은 적이 있다
+    빈손 = 답장뽑기('', ['Read 상품/x.md', 'Bash python3 사진넣기.py'])
+    assert '사진넣기' in 빈손, '끊겼을 때 마지막에 하던 것이 답장에 담겨야 한다'
+    답, 자취 = 기록읽기(Path('/그런/파일/없다.jsonl'))
+    assert (답, 자취) == ('', []), '기록이 없어도 넘어져선 안 된다'
     이제 = time.time() * 1000
     모 = {'1-a': {'상태': '됨'}, '3-c': {'상태': '대기'}, '2-b': {'상태': '대기'}}
     assert 집을것(모)[0] == '2-b', '오래된 것부터 집어야 한다'
