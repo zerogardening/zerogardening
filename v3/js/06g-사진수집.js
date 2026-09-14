@@ -145,14 +145,39 @@ window.ZG = window.ZG || {};
 
   /* 요청이 걸려도 목록에서 빼지 않는다 — 그 뒤에도 사진을 바꿔야 한다.
      완료(끝)는 흐리게 해서 맨 아래로 내린다 */
-  function 대기품목() {
+  function 대기품목(뺀것) {
     var 상 = 상태표();
     return ZG.저장소.품목들().filter(function (p) {
-      return (p.등록일시 || 0) >= 경계;
+      return (p.등록일시 || 0) >= 경계 && (뺀것 ? !!p.사진뺌 : !p.사진뺌);
     }).sort(function (a, b) {
       var x = 상[a.품목코드] === '끝' ? 1 : 0, y = 상[b.품목코드] === '끝' ? 1 : 0;
       return x !== y ? x - y : (b.등록일시 || 0) - (a.등록일시 || 0);
     });
+  }
+
+  /* 🔴 완료·불필요는 우람님이 손으로 뺀다. 제작요청 기록으로는 판정할 수 없다 —
+     9/4 입고 11품목은 요청을 안 거치고 상세페이지가 끝나 기록이 아예 없다 (2026-09-14) */
+  var 뺀것보기 = false;
+
+  function 빼기(p) {
+    var 뺄까 = !뺀것보기;
+    ZG.저장소.바꾸기(ZG.저장소.키.품목, p.품목코드, { 사진뺌: 뺄까, 수정일시: Date.now() });
+    u.토스트((뺄까 ? '뺐습니다 — ' : '되돌렸습니다 — ') + p.품목코드);
+    칠하기();
+  }
+
+  function 뺌단추(p) {
+    var b = 만들기('button', { class: '뺌', type: 'button', text: 뺀것보기 ? '↺' : '✕',
+                               title: 뺀것보기 ? '대기로 되돌리기' : '대기에서 빼기' });
+    b.addEventListener('click', function (e) { e.stopPropagation(); 빼기(p); });   // 줄을 누르면 사진창이 열린다
+    return b;
+  }
+
+  function 토글단추(뺀수) {
+    var b = 만들기('button', { class: '뺌보기', type: 'button',
+                               text: 뺀것보기 ? '← 대기로' : '뺀 것 ' + 뺀수 + '개' });
+    b.addEventListener('click', function () { 뺀것보기 = !뺀것보기; 칠하기(); });
+    return b;
   }
 
   function 칩달기(칩, 코드, 상태) {
@@ -167,7 +192,7 @@ window.ZG = window.ZG || {};
   }
 
   /* 폰 — 05d 의 폰내역() 카드와 같은 결(.ph-list > .ph-card) */
-  function 폰목록(목록) {
+  function 폰목록(목록, 뺀수) {
     var 상 = 상태표();
     var 목 = 만들기('div', { class: 'ph-list' });
     목록.forEach(function (p) {
@@ -178,24 +203,29 @@ window.ZG = window.ZG || {};
         '<div class="r2">' + u.안전(p.규격) + '<span class="amt"><span class="chip 사진">…</span></span></div>';
       칩달기(칸.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
       칸.addEventListener('click', function () { 열기(p); });
+      칸.appendChild(뺌단추(p));
       목.appendChild(칸);
     });
     u.목록등장(목.children);
-    return 만들기('div', { class: 'stack' }, [
-      만들기('div', { class: 'ph-sec', html: '상세페이지 작업 대기 <span class="r">' + 목록.length + '종</span>' }),
-      목
-    ]);
+    var 머리 = 만들기('div', { class: 'ph-sec',
+      html: (뺀것보기 ? '뺀 것' : '상세페이지 작업 대기') + ' <span class="r">' + 목록.length + '종</span>' });
+    if (뺀수 || 뺀것보기) 머리.appendChild(토글단추(뺀수));
+    return 만들기('div', { class: 'stack' }, [머리, 목]);
   }
 
   /* PC — 05d 의 내역카드() 와 같은 결(.card.table-card > .tablewrap > table) */
-  function PC목록(목록) {
+  function PC목록(목록, 뺀수) {
     var 상 = 상태표();
     var 카드 = 만들기('div', { class: 'card table-card' });
-    카드.appendChild(만들기('h3', { style: 'padding:0 var(--space-sm)', text: '상세페이지 작업 대기' }));
+    var 머리 = 만들기('div', { class: '사진머리' }, [
+      만들기('h3', { text: 뺀것보기 ? '뺀 것' : '상세페이지 작업 대기' })
+    ]);
+    if (뺀수 || 뺀것보기) 머리.appendChild(토글단추(뺀수));
+    카드.appendChild(머리);
     var 표 = 만들기('table');
     표.innerHTML =
-      '<colgroup><col style="width:110px"><col><col style="width:110px"><col style="width:120px"></colgroup>' +
-      '<thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th>사진</th></tr></thead>';
+      '<colgroup><col style="width:110px"><col><col style="width:110px"><col style="width:120px"><col style="width:56px"></colgroup>' +
+      '<thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th>사진</th><th></th></tr></thead>';
     var 몸 = 만들기('tbody');
     목록.forEach(function (p) {
       var 줄 = 만들기('tr', { class: 상[p.품목코드] === '끝' ? '끝남' : '', style: 'cursor:pointer' });
@@ -203,8 +233,10 @@ window.ZG = window.ZG || {};
         '<td class="code">' + u.안전(p.품목코드) + '</td>' +
         '<td>' + u.안전(p.유통명) + '<div class="sci">' + u.안전(p.학명) + '</div></td>' +
         '<td class="dim">' + u.안전(p.규격) + '</td>' +
-        '<td><span class="chip 사진">…</span></td>';
+        '<td><span class="chip 사진">…</span></td>' +
+        '<td class="뺌칸"></td>';
       칩달기(줄.querySelector('.chip'), p.품목코드, 상[p.품목코드]);
+      줄.querySelector('.뺌칸').appendChild(뺌단추(p));
       줄.addEventListener('click', function () { 열기(p); });
       몸.appendChild(줄);
     });
@@ -219,13 +251,15 @@ window.ZG = window.ZG || {};
 
   function 칠하기() {
     if (!대기칸) return;
+    if (뺀것보기 && !대기품목(true).length) 뺀것보기 = false;   // 마지막 하나를 되돌리면 대기로 돌아온다
     대기칸.innerHTML = '';
-    var 목록 = 대기품목();
-    if (!목록.length) return;              // 빈 날이 대부분이다 — 설명문을 두지 않는다
-    대기칸.appendChild(u.폰인가() ? 폰목록(목록) : PC목록(목록));
+    var 목록 = 대기품목(뺀것보기), 뺀수 = 대기품목(true).length;
+    if (!목록.length && !뺀수) return;     // 빈 날이 대부분이다 — 설명문을 두지 않는다
+    대기칸.appendChild(u.폰인가() ? 폰목록(목록, 뺀수) : PC목록(목록, 뺀수));
   }
 
   function 대기카드() {
+    뺀것보기 = false;                      // 화면을 새로 그리면 「뺀 것」이 아니라 대기부터 보인다
     대기칸 = 만들기('div');
     칠하기();
     return 대기칸;

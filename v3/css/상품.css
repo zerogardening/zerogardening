@@ -89,6 +89,26 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 .chip.사진.일부{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
 .chip.사진.완{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
 
+/* 상세페이지 작업 대기 — 끝났거나 할 필요 없는 것을 손으로 뺀다 (2026-09-14 우람님) */
+.사진머리{display:flex; align-items:center; gap:var(--space-sm); padding:0 var(--space-sm)}
+.사진머리 h3{margin:0}
+.뺌보기{
+  margin-left:auto; background:none; border:none; cursor:pointer;
+  font-family:inherit; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  color:var(--color-text-muted); padding:var(--space-xs) var(--space-sm); border-radius:var(--radius-pill);
+}
+.뺌보기:hover{background:var(--color-btn-bg-hover); color:var(--color-text)}
+.ph-sec .뺌보기{margin-left:var(--space-xs)}
+.뺌{
+  background:none; border:none; cursor:pointer; color:var(--color-text-faint);
+  font-size:var(--font-sm); line-height:1; padding:var(--space-xs); border-radius:var(--radius-pill);
+}
+.뺌:hover{background:var(--color-btn-bg-hover); color:var(--color-text)}
+td.뺌칸{text-align:right}
+/* 폰 카드는 통째로 누르면 사진창이 열린다 — 빼기는 모서리에 따로 앉힌다 */
+.ph-card{position:relative}
+.ph-card .뺌{position:absolute; top:var(--space-sm); right:var(--space-sm)}
+
 .사진덮개{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.34); display:flex; align-items:flex-start; justify-content:center; overflow:auto}
 .사진창{
   width:min(780px,94%); margin:4vh 0; background:var(--color-bg); border-radius:var(--radius-lg);
