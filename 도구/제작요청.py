@@ -12,7 +12,7 @@
 🔴 service_role 키가 있어야 한다 — 자동백업.sh 와 같은 파일을 쓴다:
      echo '키내용' > ~/.zg_supabase_key && chmod 600 ~/.zg_supabase_key
 """
-import json, sys, urllib.request, urllib.parse
+import json, re, sys, urllib.request, urllib.parse
 from datetime import datetime
 from pathlib import Path
 
@@ -119,6 +119,62 @@ def 기본정보표(특성):
     return '\n'.join(줄)
 
 
+def 있는규격들(본문):
+    """입력.md 「화분 규격」 칸에 적힌 규격 — `**10cm화분 · 15cm화분**` → ['10', '15']"""
+    m = re.search(r'^\|\s*화분 규격\s*\|(.+?)\|\s*$', 본문, re.M)
+    return re.findall(r'(\d+)\s*cm화분', m.group(1)) if m else []
+
+
+def 발행가르기(방, 옛규격, 새규격):
+    """발행이미지가 한 벌뿐인데 규격이 둘이 됐다 — 규격 폴더로 갈라 둔다 (2026-09-14).
+    🔴 옛 것을 **옮긴다**(복사가 아니다). 뿌리에 남겨 두면 `편집.py 있는품목()` 이
+       규격 폴더만 세어 옛 작업본이 편집기 목록에서 통째로 사라진다.
+    🔴 사진은 건드리지 않는다 — 제작.html 이 `file://…/사진/10.jpg` 를 물고 있어
+       이름을 바꾸면 조판이 깨진다. 검수는 꼬리표 없는 옛 이름도 받는다."""
+    발행 = 방 / '발행이미지'
+    옮긴것 = []
+    if 옛규격 and (발행 / '제작.html').exists():
+        (발행 / 옛규격).mkdir(parents=True, exist_ok=True)
+        for f in sorted(발행.iterdir()):
+            if f.is_file():
+                f.replace(발행 / 옛규격 / f.name)
+                옮긴것.append(f.name)
+    (발행 / 새규격).mkdir(parents=True, exist_ok=True)
+    return 옮긴것
+
+
+def 규격보태기(파일, 방, 폴더, 내, 오늘):
+    """같은 식물에 다른 규격이 왔다 — **버리지 않고 보탠다** (2026-09-14).
+    🔴 예전엔 「입력.md 가 이미 있어 그대로 뒀다」로 조용히 버렸다. 그래서 향등골나물 '알바'
+       `EUA01-10` 이 15cm 상세페이지를 그대로 써서, 10cm 화분 사진에 「지름 15cm」가 찍혀 나갔다.
+    돌려주는 값 = 이 규격을 가리키는 이름(`향등골나물-알바/10`). 보탤 것이 없으면 None."""
+    본문 = 파일.read_text(encoding='utf-8')
+    새규격 = str(내.get('규격cm', '')).strip()
+    옛규격들 = 있는규격들(본문)
+    if not 새규격 or 새규격 in 옛규격들:
+        return None
+    유통명, 코드 = 내.get('유통명', ''), 내.get('품목코드', '')
+    끼우기 = lambda 칸, 덧: re.sub(r'^(\|\s*' + 칸 + r'\s*\|\s*)(.+?)(\s*\|)$',
+                                lambda m: m.group(1) + m.group(2) + 덧 + m.group(3),
+                                본문, count=1, flags=re.M)
+    본문 = 끼우기('화분 규격', f' · **{새규격}cm화분**')
+    본문 = 끼우기('상품명', f' · `{유통명} {새규격}cm화분`')
+    옮긴것 = 발행가르기(방, 옛규격들[0] if 옛규격들 else '', 새규격)
+    본문 = 본문.rstrip('\n') + (
+        f'\n\n통합관리 재고 탭에서 {오늘} 요청 · 품목코드 `{코드}` ({새규격}cm)\n'
+        f'\n> 🔴 **규격이 둘이다 — 상세페이지도 두 벌이다.**\n'
+        f'> 원고·SEO·리서치·사진 1~5 는 한 벌을 나눠 쓰고, **규격이 박히는 5·6구역만 갈라 뽑는다.**\n'
+        f'> 조판은 `발행이미지/{{규격}}/제작.html` · 도구는 `{폴더}/{{규격}}` 으로 부른다 —\n'
+        f'> `검수.py {폴더}/{새규격}` · `상세설명-올리기.py {{상품번호}} {폴더}/{새규격}`.\n'
+        f'> 실촬영을 규격마다 새로 올리실 때는 `사진/10-{새규격}.jpg`·`11-{새규격}.jpg` 로 넣는다.\n')
+    파일.write_text(본문, encoding='utf-8')
+    print(f'  🔴 {폴더} — 규격 {새규격}cm 를 보탰다 (이미 {"·".join(옛규격들)}cm 가 있었다)')
+    if 옮긴것:
+        print(f'     옛 작업본을 발행이미지/{옛규격들[0]}/ 로 옮겼다 — {", ".join(옮긴것)}')
+    print(f'     🔴 {새규격}cm 조판은 아직 없다 — 편집기에서 「{폴더}/{새규격}」 을 새로 짠다')
+    return f'{폴더}/{새규격}'
+
+
 def 상세페이지받기(행, 오늘, 특성=None):
     내 = 행['내용']
     폴더 = 폴더명(내.get('유통명'))
@@ -127,17 +183,23 @@ def 상세페이지받기(행, 오늘, 특성=None):
         return None
     방 = 품목방 / 폴더
     파일 = 방 / '입력.md'
+    이름 = 폴더
     if 파일.exists():
-        # 덮지는 않되 품목코드 줄만은 없으면 덧붙인다 (2026-08-21 우람님) —
-        # 이 줄이 없으면 uploader 가 카페24 자체상품코드를 못 채워 재고와 짝이 안 맞는다
-        본문 = 파일.read_text(encoding='utf-8')
-        코드 = 내.get('품목코드', '')
-        if 코드 and '품목코드' not in 본문:
-            파일.write_text(본문.rstrip('\n') + '\n\n품목코드 `{}`  ← 카페24 `custom_product_code`\n'.format(코드),
-                            encoding='utf-8')
-            print('  ·', 폴더, '— 입력.md 는 그대로 두고 품목코드', 코드, '만 덧붙였다')
+        # 🔴 규격이 다르면 보탠다 (2026-09-14). 예전엔 여기서 통째로 버려 사고가 났다
+        보탠이름 = 규격보태기(파일, 방, 폴더, 내, 오늘)
+        if 보탠이름:
+            이름 = 보탠이름
         else:
-            print('  ·', 폴더, '— 입력.md 가 이미 있어 그대로 뒀다')
+            # 덮지는 않되 품목코드 줄만은 없으면 덧붙인다 (2026-08-21 우람님) —
+            # 이 줄이 없으면 uploader 가 카페24 자체상품코드를 못 채워 재고와 짝이 안 맞는다
+            본문 = 파일.read_text(encoding='utf-8')
+            코드 = 내.get('품목코드', '')
+            if 코드 and '품목코드' not in 본문:
+                파일.write_text(본문.rstrip('\n') + '\n\n품목코드 `{}`  ← 카페24 `custom_product_code`\n'.format(코드),
+                                encoding='utf-8')
+                print('  ·', 폴더, '— 입력.md 는 그대로 두고 품목코드', 코드, '만 덧붙였다')
+            else:
+                print('  ·', 폴더, '— 입력.md 가 이미 있어 그대로 뒀다')
     else:
         방.mkdir(parents=True, exist_ok=True)
         파일.write_text(입력틀.format(
@@ -162,7 +224,7 @@ def 상세페이지받기(행, 오늘, 특성=None):
     없는것 = [n for n in ('1', '2', '3', '4', '10', '11') if n not in 있는것]
     if 없는것:
         print('     📷 사진 없음:', ' · '.join(없는것), '— researcher 는 돌 수 있지만 assembler 는 못 간다')
-    return 폴더
+    return 이름
 
 
 def 대기줄넣기(줄들):
@@ -222,9 +284,9 @@ def 받기():
         품목 = {r['id']: (r.get('내용') or {}) for r in (부르기(표('v3_품목') + '?select=id,내용') or [])}
         줄들 = []
         for 행 in 상세:
-            폴더 = 상세페이지받기(행, 오늘, 품목.get(행['내용'].get('품목코드'), {}).get('특성'))
-            if 폴더:
-                줄들.append('- [ ] {} — {}cm화분 · 요청 {}'.format(폴더, 행['내용'].get('규격cm', ''), 오늘))
+            이름 = 상세페이지받기(행, 오늘, 품목.get(행['내용'].get('품목코드'), {}).get('특성'))
+            if 이름:
+                줄들.append('- [ ] {} — {}cm화분 · 요청 {}'.format(이름, 행['내용'].get('규격cm', ''), 오늘))
         대기줄넣기(줄들)
     if 정보:
         print('🌱 식물정보', len(정보), '종')
