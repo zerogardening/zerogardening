@@ -18,9 +18,12 @@ window.ZG = window.ZG || {};
   function 열기(옵션) {
     if (창) return;
     상태 = {
-      짝들: (옵션.짝들 || []).slice(), 심폴수: Number(옵션.심폴수) || 0,
+      짝들: (옵션.짝들 || []).slice(), 심폴짝들: (옵션.심폴짝들 || []).slice(),
       단계: 'A', 바쁨: false, 진행글: '', 요약: '', 그다음: 옵션.그다음
     };
+    /* 카페24 대상이 하나도 없으면 미리보기할 것이 없다 — 심폴만 있는 날은 바로 B 로 간다.
+       🔴 심폴은 미리보기가 없다(우람님 확정). 대신 확인창을 한 번 더 받는다 */
+    if (!상태.짝들.length) 상태.단계 = 'B';
     u.탈출풀기();
     /* 결과창 위에 겹쳐 뜨면 아래로 삐져나와 두 창이 한 덩어리로 보인다 — 뒤엣것은 잠시 감춘다 */
     앞창 = document.querySelector('.pcsheet.dlv');
@@ -73,9 +76,17 @@ window.ZG = window.ZG || {};
   }
   function 실패수() { return 실패줄들().length; }
 
+  function 심폴실패줄들() {
+    return 상태.심폴짝들.filter(function (p) { return p.결과 && !p.결과.됨; });
+  }
+  /* 아직 안 보낸 심폴 줄. 🔴 성공한 줄은 다시 못 켠다 — 두 번 보내면 문자가 두 번 나간다 */
+  function 심폴보낼() {
+    return 상태.심폴짝들.filter(function (p) { return p.켬 && !(p.결과 && p.결과.됨); });
+  }
+
   function 닫기물음() {
     if (!상태 || 상태.바쁨) return;
-    var m = 실패수();
+    var m = 실패수() + 심폴실패줄들().length;
     if (!m) { 진짜닫기(); return; }
     u.탈출풀기();
     u.확인({
@@ -105,7 +116,15 @@ window.ZG = window.ZG || {};
     return p.처음사유 || '';
   }
 
-  function 표만들기() {
+  function 심폴결과글(p) {
+    if (p.결과) {
+      return (p.결과.됨 ? '✅ 심폴 발송처리됨'
+                       : '❌ ' + (p.결과.판정 || '실패') + (p.결과.사유 ? ' — ' + p.결과.사유 : '')).slice(0, 170);
+    }
+    return p.처음사유 || '';
+  }
+
+  function 표만들기(짝들, 심폴) {
     var 몸통 = 만들기('table', {}, [
       만들기('colgroup', {}, [
         만들기('col', { style: 'width:38px' }), 만들기('col', { style: 'width:104px' }),
@@ -117,21 +136,24 @@ window.ZG = window.ZG || {};
       ])
     ]);
 
-    상태.짝들.forEach(function (p) {
+    짝들.forEach(function (p) {
       var 체크 = 만들기('input', { type: 'checkbox', 'aria-label': p.주문번호 + ' 올리기' });
       체크.checked = !!p.켬;
-      /* 이미 올라간 줄은 다시 켤 수 없다 — 같은 송장을 두 번 보내면 카페24에서 덮어써진다 */
-      체크.disabled = 상태.바쁨 || 끝난줄(p);
+      /* 이미 올라간 줄은 다시 켤 수 없다 — 같은 송장을 두 번 보내면 카페24에서 덮어써진다.
+         🔴 심폴은 L1 으로 걸러진 줄(잠금)도 못 켠다 — 문자가 두 번 나간다 */
+      체크.disabled = 상태.바쁨 || (심폴 ? (p.잠금 || (p.결과 && p.결과.됨)) : 끝난줄(p));
       체크.addEventListener('change', function () { p.켬 = 체크.checked; 발새로(); });
 
+      var 끝 = 심폴 ? !!(p.결과 && p.결과.됨) : 끝난줄(p);
+      var 답함 = 심폴 ? !!p.결과 : !!답(p);
       몸통.appendChild(만들기('tr', {}, [
         만들기('td', {}, [체크]),
         만들기('td', { class: 'code', text: p.주문번호 }),
         만들기('td', { text: p.수하인 || '(이름 없음)' }),
         만들기('td', { class: 'code', text: p.운송장번호 }),
         만들기('td', {
-          class: 'r' + (끝난줄(p) ? ' went' : (답(p) ? ' warn' : ' gone')),
-          text: 결과글(p)
+          class: 'r' + (끝 ? ' went' : (답함 ? ' warn' : ' gone')),
+          text: 심폴 ? 심폴결과글(p) : 결과글(p)
         })
       ]));
     });
@@ -140,14 +162,17 @@ window.ZG = window.ZG || {};
 
   function 몸만들기() {
     var 몸 = [];
-    몸.push(만들기('div', { class: 'needbox c24' }, [
-      만들기('h4', {}, [
-        만들기('span', { text: '☁ 카페24 발송처리' })
-      ]),
-      만들기('div', { class: 'inner' }, [표만들기()])
-    ]));
-    if (상태.심폴수) {
-      몸.push(만들기('div', { class: 'c24note', text: '심폴 ' + 상태.심폴수 + '건 제외' }));
+    if (상태.짝들.length) {
+      몸.push(만들기('div', { class: 'needbox c24' }, [
+        만들기('h4', {}, [만들기('span', { text: '☁ 카페24 발송처리' })]),
+        만들기('div', { class: 'inner' }, [표만들기(상태.짝들, false)])
+      ]));
+    }
+    if (상태.심폴짝들.length) {
+      몸.push(만들기('div', { class: 'needbox c24' }, [
+        만들기('h4', {}, [만들기('span', { text: '🌿 심폴 발송처리' })]),
+        만들기('div', { class: 'inner' }, [표만들기(상태.심폴짝들, true)])
+      ]));
     }
     if (상태.요약) 몸.push(만들기('div', { class: 'done' }, [만들기('span', { html: 상태.요약 })]));
     return 몸;
@@ -170,19 +195,27 @@ window.ZG = window.ZG || {};
 
     if (상태.단계 === 'B') {
       /* 🔴 여기가 오발사 방지의 핵심이다 — 미리보기를 통과한 줄이 하나도 없으면 진짜 버튼을 안 만든다 */
-      var 보낼 = 보낼목록();
-      /* 미리보기가 전부 막혔으면 올릴 것이 없다 — 진짜 단추 대신 다시 하는 길만 준다 */
-      if (!보낼.length) {
-        if (실패수()) 것들.push(단추('실패한 것 다시', 다시올리기, ''));
+      var 보낼 = 보낼목록(), 심 = 심폴보낼();
+      /* 미리보기가 전부 막혔고 심폴도 없으면 올릴 것이 없다 — 다시 하는 길만 준다 */
+      if (!보낼.length && !심.length) {
+        if (실패수() || 심폴실패줄들().length) 것들.push(단추('실패한 것 다시', 다시올리기, ''));
         return 것들;
       }
-      것들.push(단추('1건만 올리기', function () { 진짜물음(보낼.slice(0, 1)); }, ''));
-      것들.push(단추('올리기', function () { 진짜물음(보낼); }, 'warn'));
+      /* 「1건만」은 카페24만 태운다 — 심폴은 1건 시험을 만들지 않기로 했다(우람님 확정) */
+      if (보낼.length) 것들.push(단추('1건만 올리기', function () { 진짜물음(보낼.slice(0, 1), []); }, ''));
+      것들.push(단추('올리기', function () { 진짜물음(보낼, 심); }, 'warn'));
       return 것들;
     }
 
-    if (실패수()) 것들.push(단추('실패한 것 다시', 다시올리기, ''));
+    if (실패수() || 심폴실패줄들().length) 것들.push(단추('실패한 것 다시', 다시올리기, ''));
     return 것들;
+  }
+
+  function 건수글() {
+    var 말 = [];
+    if (상태.짝들.length) 말.push('카페24 ' + 상태.짝들.length + '건');
+    if (상태.심폴짝들.length) 말.push('심폴 ' + 상태.심폴짝들.length + '건');
+    return 말.join(' · ');
   }
 
   function 그리기() {
@@ -190,8 +223,8 @@ window.ZG = window.ZG || {};
     x.className = 'x'; x.setAttribute('aria-label', '닫기');
     var 것 = 만들기('div', { class: 'pcsheet dlv', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
-        만들기('h3', { text: '☁ 카페24 발송처리' }),
-        만들기('span', { class: 'hint', text: 상태.짝들.length + '건' }),
+        만들기('h3', { text: 상태.심폴짝들.length ? '☁ 카페24 · 🌿 심폴 발송처리' : '☁ 카페24 발송처리' }),
+        만들기('span', { class: 'hint', text: 건수글() }),
         만들기('span', { class: 'right' }, [x])
       ]),
       만들기('div', { class: 'bd' }, 몸만들기()),
@@ -230,25 +263,67 @@ window.ZG = window.ZG || {};
 
   /* ══ B → 진짜. 🔴 확인창을 통과해야만 진짜:true 가 나간다 ══ */
 
-  function 진짜물음(보낼) {
-    if (!보낼.length) return;
+  function 진짜물음(보낼, 심) {
+    심 = 심 || [];
+    if (!보낼.length && !심.length) return;
     u.탈출풀기();
+    var 말 = [];
+    if (보낼.length) 말.push('카페24 <b>' + 보낼.length + '건</b>');
+    if (심.length) 말.push('심폴 <b>' + 심.length + '건</b>');
     u.확인({
-      제목: '카페24에 발송처리 할까요',
-      본문: '<b>' + 보낼.length + '건</b> · 되돌릴 수 없습니다',
+      제목: 말.join(' · ').replace(/<\/?b>/g, '') + '을 발송처리 할까요',
+      /* 🔴 심폴은 누르는 순간 손님에게 문자·이메일이 나간다. 그 사실을 여기서 한 번 더 읽으신다 */
+      본문: 말.join(' · ') + ' · 되돌릴 수 없습니다' +
+            (심.length ? '<br>🔴 <b>심폴은 손님에게 문자·이메일이 자동으로 나갑니다. 되돌릴 수 없습니다</b>' : ''),
       확인글: '올리기', 위험: true
     }, function (예) {
       u.탈출걸기(닫기물음);
       if (!예) return;
-      진짜올리기(보낼);
+      진짜올리기(보낼, 심);
     });
   }
 
-  function 진짜올리기(보낼) {
+  /* 🔴 카페24 먼저, 끝나면 심폴. 한쪽이 실패해도 다른 쪽 결과는 그대로 남긴다 */
+  function 진짜올리기(보낼, 심) {
+    심 = 심 || [];
     상태.바쁨 = true; 상태.진행글 = '올리는 중… 0/' + 보낼.length;
     그리기();
 
-    ZG.카페24발송.보내기(보낼, true, function (한, 전) {
+    카페24올리기(보낼).then(function () {
+      if (!심.length) { 마무리(); return; }
+      상태.바쁨 = true; 상태.진행글 = '심폴에 보내는 중… 0/' + 심.length;
+      그리기();
+      /* 🔴 여기 한 곳에서만 `모드:'발송'` 이 나간다 */
+      return ZG.카페24발송.심폴보내기(심, '발송', function (한, 전) {
+        상태.진행글 = '심폴에 보내는 중… ' + 한 + '/' + 전;
+        그리기();
+      }).then(function (결과들) {
+        var 됨표 = {}, 성공 = 0;
+        결과들.forEach(function (r) {
+          r.짝.결과 = { 됨: r.됨, 판정: r.판정, 사유: r.사유 };
+          if (r.됨) { 됨표[r.짝.주문번호] = r.심폴송장 || r.짝.운송장번호; 성공++; }
+        });
+        ZG.카페24발송.심폴되쓰기(상태.심폴짝들, 됨표);
+        var 실패 = 결과들.length - 성공;
+        상태.심폴요약 = '🌿 심폴 발송처리 <b>' + 성공 + '건</b>' + (실패 ? ' · ❌ 막힘 <b>' + 실패 + '건</b>' : '');
+        마무리();
+      });
+    });
+  }
+
+  function 마무리() {
+    상태.바쁨 = false; 상태.진행글 = '';
+    if (상태.심폴요약) {
+      상태.요약 = 상태.요약 ? (상태.요약 + '<br>' + 상태.심폴요약) : 상태.심폴요약;
+      상태.심폴요약 = '';
+    }
+    if (실패수() || 심폴실패줄들().length || !보낼목록().length) 상태.단계 = 'C';
+    그리기();
+  }
+
+  function 카페24올리기(보낼) {
+    if (!보낼.length) return Promise.resolve();
+    return ZG.카페24발송.보내기(보낼, true, function (한, 전) {
       상태.진행글 = '올리는 중… ' + 한 + '/' + 전;
       그리기();
     }).then(function (결과들) {
@@ -262,12 +337,10 @@ window.ZG = window.ZG || {};
       var 이미 = 이미맞추기(결과들);   // 그 사이 카페24에서 직접 처리하신 건
 
       var 실패 = 결과들.length - 성공 - 이미;
-      상태.바쁨 = false; 상태.진행글 = '';
       상태.단계 = (실패 || !보낼목록().length) ? 'C' : 'B';   // 첫 1건만 올렸으면 남은 줄을 마저 올릴 수 있게 B로 둔다
       상태.요약 = '✅ 카페24 발송처리 <b>' + 성공 + '건</b>' + (실패 ? ' · ❌ 실패 <b>' + 실패 + '건</b>' : '') +
                   (이미 ? ' · ☑ 이미 나가 있던 <b>' + 이미 + '건</b>은 배송완료로 맞춤' : '') +
                   ' — 통합관리의 출고·재고 기록은 그대로 둡니다';
-      그리기();
       u.토스트('카페24 발송처리 ' + 성공 + '건' + (실패 ? ' · 실패 ' + 실패 + '건' : '') + '.');
     });
   }
@@ -275,12 +348,15 @@ window.ZG = window.ZG || {};
   /* ══ C — 실패한 것만 다시. A(미리보기)부터 다시 태운다 ══ */
 
   function 다시올리기() {
-    var 실패 = 실패줄들(), 남 = 실패.length;
+    var 실패 = 실패줄들(), 심실패 = 심폴실패줄들(), 남 = 실패.length + 심실패.length;
     if (!남) { u.토스트('다시 올릴 줄이 없습니다.'); return; }
     /* 🔴 이미 올라간 줄은 손대지 않는다 — 결과를 지우면 체크가 다시 켜져 같은 송장을 두 번 보낸다 */
     상태.짝들.forEach(function (p) { if (실패.indexOf(p) < 0) p.켬 = false; });
     실패.forEach(function (p) { p.켬 = true; p.미리 = null; p.결과 = null; });
-    상태.단계 = 'A'; 상태.요약 = '↻ 실패한 ' + 남 + '건만 다시 켰습니다 — 미리보기부터 다시 합니다.';
+    상태.심폴짝들.forEach(function (p) { if (심실패.indexOf(p) < 0) p.켬 = false; });
+    심실패.forEach(function (p) { p.켬 = true; p.결과 = null; });
+    상태.단계 = 상태.짝들.length ? 'A' : 'B';
+    상태.요약 = '↻ 막힌 ' + 남 + '건만 다시 켰습니다' + (상태.짝들.length ? ' — 미리보기부터 다시 합니다.' : '.');
     그리기();
   }
 

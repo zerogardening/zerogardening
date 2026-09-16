@@ -301,10 +301,36 @@ window.ZG = window.ZG || {};
       .catch(function (e) {
         u.토스트('주문수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
       })
+      /* 🔴 카페24가 실패해도 심폴은 받아온다. 함수가 나뉘어 있어 서로를 무너뜨리지 않는다 */
+      .then(function () { return 심폴수집(supa); })
       .then(function () {
         수집중 = false;
         if (단추) { 단추.disabled = false; 단추.textContent = 본디; }
         다시그리기();
+      });
+  }
+
+  /* 심폴 「배송요청」 주문. 🔴 짝(v3_심폴짝)을 못 지은 상품은 품목코드 빈칸으로 들어오고
+     그 줄이 곧 아래 짝짓기 대기열이다 — 보류용 새 화면을 따로 만들지 않는다 */
+  function 심폴수집(supa) {
+    return supa.functions.invoke('simpol-collect', { body: { 일수: 30 } })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        var d = r.data || {};
+        if (!d.ok) throw new Error(d.오류 || '알 수 없는 오류');
+        u.토스트('🌿 ' + (d.새것 ? '심폴 새 주문 ' + d.새것 + '줄을 받았습니다'
+                                : '심폴에 새로 들어온 주문이 없습니다'));
+        var 종 = (d.짝없음 || []).length;
+        if (종) u.토스트('🔗 짝 없는 심폴 상품 ' + 종 + '종 — 짝짓기에서 지정해 주세요');
+        (d.경고 || []).forEach(function (w) { u.토스트('⚠️ ' + w); });
+        if (!d.새것) return null;
+        return Promise.resolve(ZG.서버.받아오기 ? ZG.서버.받아오기() : null).then(function () {
+          var 붙 = (ZG.짝 && ZG.짝.저장된줄되붙이기) ? ZG.짝.저장된줄되붙이기() : 0;
+          if (붙) u.토스트('기억해 둔 짝으로 ' + 붙 + '줄에 품목을 붙였습니다.');
+        });
+      })
+      .catch(function (e) {
+        u.토스트('심폴 수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
       });
   }
 
