@@ -10,11 +10,13 @@
  *    🔴 `display`(진열)는 건드리지 않는다. 진열을 끄면 상품 페이지가 통째로 사라져
  *       손님이 품절인지도 모른다. 우람님 「자사몰은 품절 상태로 올라와 있었으면 좋겠다」(9/18).
  *
- * 🔴 **심폴 상품목록 화면은 UTF-8 이다** (2026-09-18 실측). 주문 쪽(order_list·order_excel)만
- *    EUC-KR 이다. edge-심폴수집/발송의 `한글로()` 를 여기 복사해 쓰면 글자가 통째로 깨진다.
+ * 🔴 **심폴은 여기서 안 한다** (우람님 2026-09-18). HTTP 로 하면 **부를 때마다 새로 로그인**해서
+ *    몇 번 부르면 심폴이 응답을 끊는다(그날 세 번 두드렸더니 로그인이 타임아웃 났다).
+ *    심폴은 맥이 `상품/_도구/심폴품절.py` 로 한다 — 전용 크롬이 **로그인한 채로 살아 있다.**
+ *    🔴 심폴을 여기에 되살리지 마라. 두 군데서 로그인하면 계정이 잠긴다.
  *
- * 🔴 오픈마켓(쿠팡·스마트스토어…)은 여기서 안 건드린다 — 마켓플러스를 따로 밀어야 한다
- *    (우람님 9/18). 그 길은 아직 안 뚫렸다. **부르는 쪽이 「오픈마켓은 아직」을 사람에게 보여준다.**
+ * 🔴 오픈마켓(쿠팡·스마트스토어…)도 여기서 안 건드린다 — 맥이 `마켓플러스품절.py` 로 민다.
+ *    그래서 **이 함수는 카페24 하나만 한다.** 즉시 나가야 하는 것이 그것뿐이라서다.
  *
  * 🔴 `order-collect`·`shipment-push`·`simpol-collect`·`simpol-ship` 은 한 바이트도 안 건드렸다.
  *    이 함수가 죽어도 주문수집·발송은 돌아야 한다.
@@ -26,8 +28,6 @@ const CID = Deno.env.get("CAFE24_CLIENT_ID")!;
 const SECRET = Deno.env.get("CAFE24_CLIENT_SECRET")!;
 const API_VER = "2026-03-01";          // 🔴 앱에 설정된 버전. 다르면 400
 
-const 심폴터 = "https://www.simpol.co.kr";   // 🔴 www 를 빼면 301 로 튄다
-
 const db = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -35,7 +35,6 @@ const db = createClient(
 
 const 글 = (v: unknown) => v == null ? "" : String(v);
 const 다듬기 = (v: unknown) => 글(v).trim();
-const 벗기기 = (v: unknown) => 글(v).replace(/\s/g, "");   // 이름 맞출 때는 띄어쓰기를 무시한다
 
 /* ══ 카페24 ══ (edge-배송등록/index.ts 의 출입증·호출기를 그대로 옮겼다. 규칙이 갈리면 표가 둘로 갈린다) */
 
@@ -114,115 +113,6 @@ async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boo
   return { 됨: true, 사유: "", 상품명, 번호: 것.product_no };
 }
 
-/* ══ 심폴 ══ 상품 API 가 없어 상점관리자 화면을 그대로 쓴다 */
-
-async function 심폴로그인(): Promise<string> {
-  const id = 다듬기(Deno.env.get("SIMPOL_ID"));
-  const pw = 글(Deno.env.get("SIMPOL_PW"));
-  if (!id || !pw) throw new Error("SIMPOL_ID·SIMPOL_PW 가 없습니다");
-
-  const res = await fetch(심폴터 + "/vender/loginproc.php", {
-    method: "POST",
-    redirect: "manual",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ id, passwd: pw }),
-  });
-  const 쿠키 = res.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
-  /* 🔴 로그인에 실패해도 200 이 온다. 그냥 진행하면 목록이 비어 「없는 상품」으로 조용히 끝난다 */
-  const 본문 = new TextDecoder("euc-kr").decode(await res.arrayBuffer());
-  if (!/main\.php/.test(본문)) throw new Error("심폴 로그인 실패 — 아이디·비밀번호를 확인해 주세요");
-  if (!쿠키) throw new Error("심폴 로그인 쿠키를 못 받았습니다");
-  return 쿠키;
-}
-
-/* 🔴 이 화면만 UTF-8 이다 (실측 2026-09-18). 주문 화면은 EUC-KR — 섞지 않는다 */
-async function 심폴목록(쿠키: string): Promise<string> {
-  const res = await fetch(심폴터 + "/vender/product_list.php", {
-    method: "POST",
-    redirect: "manual",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", "Cookie": 쿠키 },
-    body: new URLSearchParams({ paging_cnt: "500" }),
-  });
-  if (res.status >= 400) throw new Error(`심폴 상품목록 → ${res.status}`);
-  return new TextDecoder("utf-8").decode(await res.arrayBuffer());
-}
-
-/* 목록 화면에서 (상품코드, 상품명) 짝을 뽑는다.
-   🔴 상품명은 글자가 아니라 `up_productname[]` 의 value 에 들어 있다 (상품/_도구/심폴보내기.py:776) */
-function 심폴상품들(html: string): { 코드: string; 이름: string }[] {
-  const 코드들 = [...html.matchAll(/name="up_productcode\[\]"[^>]*value="([^"]*)"/g)].map((m) => m[1]);
-  const 이름들 = [...html.matchAll(/name="up_productname\[\]"[^>]*value="([^"]*)"/g)].map((m) => m[1]);
-  const 것들: { 코드: string; 이름: string }[] = [];
-  for (let i = 0; i < 코드들.length; i++) {
-    것들.push({ 코드: 다듬기(코드들[i]), 이름: 다듬기(이름들[i] ?? "") });
-  }
-  return 것들.filter((x) => x.코드);
-}
-
-/* 심폴 업체번호. 🔴 박아 두지 않고 화면에서 읽는다 — 바뀌어도 따라간다 */
-function 심폴업체(html: string): string {
-  const m = html.match(/var\s+vender\s*=\s*parseInt\(\s*['"](\d+)['"]/);
-  if (!m) throw new Error("심폴 화면에서 업체번호(vender)를 못 찾았습니다");
-  return m[1];
-}
-
-/* 품목코드 → 심폴 상품코드.
-   ① 짝표(v3_심폴짝)가 먼저다. 사람이 손으로 맺은 것이라 가장 믿을 만하다.
-      🔴 짝표에는 심폴 아닌 판매처 코드도 섞여 있다(08j-심폴.js:5). **18자리만 심폴이다** —
-         심폴 화면의 `change_display` 도 `code.length==18` 로 가른다.
-   ② 짝이 없으면 카페24 상품명으로 찾는다 — `상품/_도구/심폴보내기.py:790 이미있나()` 와 같은 규칙
-      (심폴 이름은 「제로가드닝 …」 + 부연설명이 붙어 카페24 이름을 **품고 있다**).
-      🔴 **정확히 하나만 걸릴 때만** 쓴다. 여럿이면 멈춘다 — 엉뚱한 상품을 품절시키면 팔리던 게 멈춘다. */
-async function 심폴코드찾기(품목코드: string, 카페24상품명: string, 것들: { 코드: string; 이름: string }[]) {
-  const { data } = await db.from("v3_심폴짝").select("id,내용,삭제됨");
-  const 짝 = (data ?? []).find((r: any) =>
-    !r.삭제됨 && 글(r.id).length === 18 && 다듬기(r.내용?.붙인품목코드) === 품목코드
-  );
-  if (짝) {
-    if (것들.some((x) => x.코드 === 짝.id)) return { 코드: 글(짝.id), 어떻게: "짝표", 사유: "" };
-    return { 코드: "", 어떻게: "", 사유: `짝표의 심폴 상품(${짝.id})이 지금 목록에 없습니다` };
-  }
-
-  const 벗 = 벗기기(카페24상품명);
-  if (!벗) return { 코드: "", 어떻게: "", 사유: "심폴 짝이 없고 카페24 상품명도 비었습니다" };
-  const 걸린 = 것들.filter((x) => 벗기기(x.이름).includes(벗));
-  if (!걸린.length) return { 코드: "", 어떻게: "", 사유: `심폴에 「${카페24상품명}」 이(가) 없습니다` };
-  if (걸린.length > 1) {
-    return { 코드: "", 어떻게: "", 사유: `심폴에 비슷한 이름이 ${걸린.length}개입니다 — 주문화면에서 짝을 지어 주세요` };
-  }
-  return { 코드: 걸린[0].코드, 어떻게: "이름", 사유: "" };
-}
-
-/* 🔴 수량 종류 — 실측 2026-09-18 (심폴 상품목록 `slt_quantity[]`)
-      F = 무제한 · C = 수량(숫자를 같이 보내야 한다) · E = 품절
-   🔴 되돌릴 때는 F(무제한)로 되돌린다. 심폴 상품은 애초에 무제한으로 올라가 있다
-      (`상품/_도구/심폴보내기.py:22` — 우람님 2026-09-14 「수량은 우선 무제한」). */
-async function 심폴밀기(품목코드: string, 카페24상품명: string, 품절: boolean, 시험: boolean) {
-  const 쿠키 = await 심폴로그인();
-  const html = await 심폴목록(쿠키);
-  const 것들 = 심폴상품들(html);
-  if (!것들.length) return { 됨: false, 사유: "심폴 상품목록을 못 읽었습니다" };
-
-  const { 코드, 어떻게, 사유 } = await 심폴코드찾기(품목코드, 카페24상품명, 것들);
-  if (!코드) return { 됨: false, 사유 };
-
-  const check = 품절 ? "E" : "F";
-  if (시험) return { 됨: true, 사유: `시험 — ${코드}(${어떻게}) 를 check=${check} 로 바꿀 참이었습니다`, 코드 };
-
-  const res = await fetch(심폴터 + "/vender/ajax_quantity_change.php", {
-    method: "POST",
-    redirect: "manual",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", "Cookie": 쿠키 },
-    body: new URLSearchParams({
-      vidx: 심폴업체(html), code: 코드, check, cnt: "", domain2: "", vender2: "", code2: "",
-    }),
-  });
-  const 답 = 다듬기(new TextDecoder("utf-8").decode(await res.arrayBuffer()));
-  /* 🔴 심폴은 실패해도 200 을 준다. 본문이 'SUCCESS' 인지로만 판정한다 */
-  if (!/SUCCESS/.test(답)) return { 됨: false, 사유: `심폴이 거절했습니다: ${답.slice(0, 100) || "빈 답"}`, 코드 };
-  return { 됨: true, 사유: "", 코드 };
-}
-
 /* ══ 들어오는 문 ══ */
 
 const 머리 = {
@@ -247,14 +137,10 @@ Deno.serve(async (req) => {
     try { 카 = await 카페24밀기(품목코드, 품절, 시험); }
     catch (e) { 카 = { 됨: false, 사유: String((e as Error).message).slice(0, 200), 상품명: "" }; }
 
-    /* 🔴 카페24가 죽어도 심폴은 민다 — 한쪽만 되는 게 둘 다 안 되는 것보다 낫다.
-       다만 이름으로 찾으려면 카페24 상품명이 필요해서, 못 읽었으면 짝표에만 기댄다 */
-    let 심 = { 됨: false, 사유: "" } as any;
-    try { 심 = await 심폴밀기(품목코드, 카.상품명 || "", 품절, 시험); }
-    catch (e) { 심 = { 됨: false, 사유: String((e as Error).message).slice(0, 200) }; }
-
+    /* 🔴 심폴·오픈마켓은 맥이 한다. 여기서 부르지 않는다 — 위 머리주석을 본다 */
     return new Response(JSON.stringify({
-      ok: true, 품목코드, 품절, 시험, 카페24: 카, 심폴: 심,
+      ok: true, 품목코드, 품절, 시험, 카페24: 카,
+      심폴: { 맥이한다: true }, 오픈마켓: { 맥이한다: true },
     }), { headers: 머리 });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, 오류: String((e as Error).message) }),
