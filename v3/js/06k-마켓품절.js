@@ -124,7 +124,9 @@ window.ZG = window.ZG || {};
     var b = u.만들기('button', {
       type: 'button',
       class: 'btn sm 품절단추 ' + (품절인가 ? 'main' : 'warn'),
-      text: 품절인가 ? '판매재개' : '품절'
+      /* 🔴 「품절」이 아니라 「품절처리」다 — 「품절」이면 **상태**로 읽혀
+         이미 품절된 상품처럼 보인다(우람님 2026-09-18). 「판매재개」와 짝이 맞는 동작 이름으로 둔다. */
+      text: 품절인가 ? '판매재개' : '품절처리'
     });
     b.addEventListener('click', function (e) {
       e.stopPropagation();
@@ -141,7 +143,7 @@ window.ZG = window.ZG || {};
       ZG.저장소.바꾸기(ZG.저장소.키.품목, 품목.품목코드,
                       { 상태: 품절로 ? '품절' : '판매중', 수정일시: Date.now() });
       품목.상태 = 품절로 ? '품절' : '판매중';       /* 손에 든 것도 맞춰 둔다 */
-      b.textContent = 품절로 ? '판매재개' : '품절';
+      b.textContent = 품절로 ? '판매재개' : '품절처리';
       b.classList.toggle('main', 품절로);
       b.classList.toggle('warn', !품절로);
       if (그린뒤) 그린뒤();
