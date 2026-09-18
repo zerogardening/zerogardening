@@ -329,7 +329,7 @@ window.ZG = window.ZG || {};
     var 칩 = ZG.제작요청.칩들(ZG.제작요청.현황(), p.품목코드);
     if (칩) 속 += '<div class="r2">' + 칩 + '</div>';
     칸.innerHTML = 속;
-    /* 품절/판매재개 단추 — 카드 오른쪽 위. 선택모드에서는 안 보인다 (06k) */
+    /* 판매중·품절 상태 단추 — 카드 오른쪽 위. 누르면 반대로 바꿀지 묻는다. 선택모드에서는 안 보인다 (06k) */
     if (!고름 && ZG.마켓품절) 칸.appendChild(ZG.마켓품절.단추(p, function () { 목.다시(); }));
     칸.addEventListener('click', function () {
       if (!상태.선택모드) { ZG.재고수정.폰상세열기(p.품목코드); return; }
