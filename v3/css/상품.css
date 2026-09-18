@@ -133,6 +133,14 @@ td.뺌칸{text-align:right}
 .ph-card > .뺌{position:absolute; top:var(--space-sm); right:var(--space-sm)}
 .민칸 .ph-card > .뺌{display:none}
 
+/* 품절 / 판매재개 단추 (우람님 2026-09-18) — 판매중이면 빨강 「품절」, 품절이면 초록 「판매재개」.
+   색은 새로 만들지 않았다 — `.btn.warn`(danger)·`.btn.main`(accent) 이 이미 그 색이다.
+   🔴 카드는 `display:block` 이라 마지막에 붙이면 아래로 간다. 오른쪽으로만 밀어 둔다.
+   🔴 절대위치로 두지 않는다 — 오른쪽 위에는 소진일(.days.big)과 화살표(.chev)가 이미 있다. */
+.ph-card > .품절단추{display:block; margin-left:auto; margin-top:var(--space-md)}
+.tablewrap td:last-child{white-space:nowrap}
+.tablewrap td:last-child .btn + .btn{margin-left:var(--space-sm)}
+
 .사진덮개{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.34); display:flex; align-items:flex-start; justify-content:center; overflow:auto}
 .사진창{
   width:min(780px,94%); margin:4vh 0; background:var(--color-bg); border-radius:var(--radius-lg);

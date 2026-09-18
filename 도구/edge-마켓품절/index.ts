@@ -2,7 +2,8 @@
  *
  * 부르는 곳 — v3 재고 상세(06c)에서 「품절」·「판매중」을 누르고 팝업에서 확인했을 때 (06k).
  *
- * 🔴 **카페24는 `selling` 으로 품절을 만든다. 수량이 아니다** (2026-09-18 실측).
+ * 🔴 **품절은 「재고 0」이다** (2026-09-18 실측 · 아래 카페24밀기 주석에 까닭이 길게 있다).
+ *    처음엔 `selling:"F"` 로 했는데, 그러면 **마켓플러스가 마켓을 되살리지 못한다.**
  *    141번(추명국 핑크터치)이 `use_inventory:"F"` · `quantity:0` 인데도 그대로 팔리고 있었다.
  *    재고관리가 꺼져 있어 카페24가 수량을 안 본다. `selling:"F"` 를 거니 자사몰에 SOLD OUT 이 떴다.
  *    🔴 재고관리(`use_inventory`)를 켜지 않는다 — `상품/카페24-등록-메모.md:46`,
@@ -90,7 +91,7 @@ async function 카페24상품(품목코드: string, token: string) {
   const d = await 카페24(
     "GET",
     `products?custom_product_code=${encodeURIComponent(품목코드)}` +
-      `&fields=product_no,product_name,custom_product_code,selling`,
+      `&fields=product_no,product_name,custom_product_code,display,selling`,
     token,
   );
   const 들 = (d.products ?? []).filter((p: any) => 다듬기(p.custom_product_code) === 품목코드);
@@ -99,18 +100,53 @@ async function 카페24상품(품목코드: string, token: string) {
   return { 것: 들[0], 사유: "" };
 }
 
+/* 🔴 **품절은 「재고 0」으로 만든다. `selling` 을 끄지 않는다** (실측 2026-09-18).
+      ① 자사몰은 `use_inventory:"T"` + `quantity:0` 이면 품절로 보인다 — 껐을 때와 똑같이 보인다.
+      ② 🔴 **`selling:"F"` 로 꺼 두면 마켓플러스가 마켓을 되살리지 못한다** —
+         「연동된 쇼핑몰상품이 '진열/판매'상태일 때만 판매중지를 해제할 수 있습니다」로 거절한다.
+         그날 쿠팡이 그렇게 막혔다. 재고 0 방식은 안 막힌다.
+      ③ 덤으로 **G마켓·11번가·스마트스토어는 카페24 재고를 그대로 따라온다**(실측).
+         🔴 쿠팡·롯데ON 은 제 재고를 따로 들고 있어 **안 따라온다** — 그 둘은 맥이 마켓플러스로 민다.
+   🔴 **옵션이 여럿이면 전부 바꾼다.** 하나라도 남으면 그것만 팔린다 (우람님 2026-09-18).
+   🔴 되살릴 때는 9999 다. 재고를 세기 시작하면 주문마다 깎이므로 넉넉히 넣는다. */
+const 되돌릴재고 = 9999;
+
 async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boolean) {
   const token = await 출입증();
   const { 것, 사유 } = await 카페24상품(품목코드, token);
   if (!것) return { 됨: false, 사유, 상품명: "" };
 
+  const 번호 = 것.product_no;
   const 상품명 = 다듬기(것.product_name);
-  const 되어야 = 품절 ? "F" : "T";
-  if (글(것.selling) === 되어야) return { 됨: true, 사유: "이미 그 상태였습니다", 상품명, 번호: 것.product_no };
-  if (시험) return { 됨: true, 사유: `시험 — ${것.product_no}번을 selling=${되어야} 로 바꿀 참이었습니다`, 상품명, 번호: 것.product_no };
+  const d = await 카페24("GET", `products/${번호}/variants`, token);
+  const 옵션들 = (d.variants ?? []).filter((v: any) => 다듬기(v.variant_code));
+  if (!옵션들.length) return { 됨: false, 사유: "카페24에서 옵션(variants)을 못 읽었습니다", 상품명, 번호 };
 
-  await 카페24("PUT", `products/${것.product_no}`, token, { request: { shop_no: 1, selling: 되어야 } });
-  return { 됨: true, 사유: "", 상품명, 번호: 것.product_no };
+  const 새수량 = 품절 ? 0 : 되돌릴재고;
+  if (시험) {
+    return { 됨: true, 상품명, 번호, 옵션수: 옵션들.length,
+             사유: `시험 — ${번호}번 옵션 ${옵션들.length}개를 재고 ${새수량} 로 바꿀 참이었습니다` };
+  }
+
+  for (const v of 옵션들) {
+    await 카페24("PUT", `products/${번호}/variants/${v.variant_code}`, token, {
+      request: {
+        shop_no: 1,
+        use_inventory: "T",          // 재고를 세게 켠다. 안 켜면 수량이 무효다
+        quantity: 새수량,
+        display_soldout: "T",        // 재고 0 일 때 자사몰에 「품절」로 보이게
+        safety_inventory: 0,
+      },
+    });
+  }
+
+  /* 🔴 되살릴 때만 `selling` 을 켠다. 꺼져 있으면 재고가 있어도 안 팔린다.
+     품절 때는 건드리지 않는다 — 껐다가는 마켓플러스가 막힌다(위 ②). */
+  if (!품절 && 글(것.selling) !== "T") {
+    await 카페24("PUT", `products/${번호}`, token, { request: { shop_no: 1, selling: "T" } });
+  }
+
+  return { 됨: true, 사유: "", 상품명, 번호, 옵션수: 옵션들.length, 재고: 새수량 };
 }
 
 /* ══ 들어오는 문 ══ */

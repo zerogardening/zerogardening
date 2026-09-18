@@ -115,5 +115,38 @@ window.ZG = window.ZG || {};
     });
   }
 
-  ZG.마켓품절 = { 물어보고밀기: 물어보고밀기, 밀기: 밀기, 맥에넘기기: 맥에넘기기 };
+  /* ── 카드·표에서 바로 누르는 단추 (우람님 2026-09-18) ──
+     판매중이면 🔴빨강 「품절」 · 품절이면 🟢초록 「판매재개」. 누르면 서로 바뀐다.
+     🔴 카드(.ph-card)가 그 자체로 button 이라 눌림이 위로 새면 상세가 열린다 —
+        `stopPropagation()` 으로 막는다 (06g 의 `뺌단추` 와 같은 수). */
+  function 단추(품목, 그린뒤) {
+    var 품절인가 = 품목.상태 === '품절';
+    var b = u.만들기('button', {
+      type: 'button',
+      class: 'btn sm 품절단추 ' + (품절인가 ? 'main' : 'warn'),
+      text: 품절인가 ? '판매재개' : '품절'
+    });
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (b.disabled) return;
+      바꾸기(품목, !품절인가, b, 그린뒤);
+    });
+    return b;
+  }
+
+  /* 눌렀을 때 — 물어보고, 예면 v3 에 적고 마켓으로 민다 */
+  function 바꾸기(품목, 품절로, b, 그린뒤) {
+    물어보고밀기(품목, 품절로, function (예) {
+      if (!예) return;
+      ZG.저장소.바꾸기(ZG.저장소.키.품목, 품목.품목코드,
+                      { 상태: 품절로 ? '품절' : '판매중', 수정일시: Date.now() });
+      품목.상태 = 품절로 ? '품절' : '판매중';       /* 손에 든 것도 맞춰 둔다 */
+      b.textContent = 품절로 ? '판매재개' : '품절';
+      b.classList.toggle('main', 품절로);
+      b.classList.toggle('warn', !품절로);
+      if (그린뒤) 그린뒤();
+    });
+  }
+
+  ZG.마켓품절 = { 물어보고밀기: 물어보고밀기, 밀기: 밀기, 맥에넘기기: 맥에넘기기, 단추: 단추 };
 })(window.ZG);
