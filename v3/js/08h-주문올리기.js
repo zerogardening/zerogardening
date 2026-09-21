@@ -52,7 +52,14 @@ window.ZG = window.ZG || {};
 
   /* 로젠으로 나갈 27칸. 머리글 순서가 흔들려도 늘 표준 순서로 세운다 */
   function 원본27(행, 자리) {
-    return 칸이름.map(function (이름) { return 칸값(행, 자리, 이름); });
+    var o = 칸이름.map(function (이름) { return 칸값(행, 자리, 이름); });
+    /* 🔴 08i-로젠파일.js 는 이 27칸을 그대로 송장에 찍는다 — '02--' 를 여기서 지우지 않으면
+       수령인전화를 아무리 잘 골라도 송장에는 '02--' 가 나간다(2026-09-21) */
+    ['수령지전화', '전화번호', '핸드폰'].forEach(function (이름) {
+      var i = 칸이름.indexOf(이름);
+      if (!쓸만한전화(o[i])) o[i] = '';
+    });
+    return o;
   }
 
   /* ══ 값 정규화 ══ */
@@ -113,10 +120,11 @@ window.ZG = window.ZG || {};
      안 채운 칸도 지역번호 기본값만 남아 '02--' 로 온다 — 빈칸이 아니라 빈 칸이다.
      비어있지 않다는 이유로 고르면 뒤 칸의 진짜 번호가 묻힌다 → 자릿수로 고른다.
      못 고르면 빈칸으로 둔다. '02--' 가 송장에 찍히는 것보다 비어 보이는 게 낫다(2026-09-21) */
+  function 쓸만한전화(v) { return String(v == null ? '' : v).replace(/\D/g, '').length >= 9; }
+
   function 연락처(행, 자리) {
     var 후보 = ['핸드폰', '전화번호', '수령지전화', '주문자핸드폰', '주문자전화번호'];
-    return 후보.map(function (n) { return 칸글(행, 자리, n); })
-      .filter(function (v) { return v.replace(/\D/g, '').length >= 9; })[0] || '';
+    return 후보.map(function (n) { return 칸글(행, 자리, n); }).filter(쓸만한전화)[0] || '';
   }
 
   function 마스터색인() {

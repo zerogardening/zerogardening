@@ -1,12 +1,18 @@
-/* 수령인전화 고르기 — osascript -l JavaScript v3/검수/전화고르기-시험.js
+/* 수령인전화 고르기 + 원본 27칸 전화칸 손질 — osascript -l JavaScript v3/검수/전화고르기-시험.js
    심폴 CSV 전화칸은 세 토막('XX-XXXX-XXXX')을 이어 보낸다. 안 채운 칸은 '02--' 로 온다 */
 var 다듬기 = function (v) { return String(v == null ? '' : v).trim(); };
-var 전화숫자 = function (v) { return 다듬기(v).replace(/\D/g, ''); };
+var 쓸만한전화 = function (v) { return 다듬기(v).replace(/\D/g, '').length >= 9; };
+
 function 전화고르기() {
-  return Array.prototype.slice.call(arguments).map(다듬기)
-    .filter(function (v) { return 전화숫자(v).length >= 9; })[0] || '';
+  return Array.prototype.slice.call(arguments).map(다듬기).filter(쓸만한전화)[0] || '';
 }
-/* 칸 순서: 핸드폰(심폴 전화번호) · 전화번호(심폴 비상전화) · 수령지전화(심폴엔 없다) · 주문자핸드폰 · 주문자전화번호 */
+/* 27칸 자리: 16 수령지전화 · 17 전화번호 · 18 핸드폰 */
+function 전화칸손질(o) {
+  [16, 17, 18].forEach(function (i) { if (!쓸만한전화(o[i])) o[i] = ''; });
+  return o;
+}
+
+/* ── 고르기: 핸드폰 · 전화번호 · 수령지전화 · 주문자핸드폰 · 주문자전화번호 ── */
 [
   [['02--', '010-1234-5678', '', '', ''], '010-1234-5678', '받는사람 첫칸이 빈 칸 — 비상전화를 쓴다'],
   [['010-1111-2222', '02--', '', '', ''], '010-1111-2222', '멀쩡하면 첫 칸'],
@@ -16,6 +22,20 @@ function 전화고르기() {
   [['', '', '', '', ''], '', '전부 비면 빈칸'],
 ].forEach(function (t) {
   var 난것 = 전화고르기.apply(null, t[0]);
-  if (난것 !== t[1]) throw new Error('걸림: ' + t[2] + ' → ' + JSON.stringify(난것));
+  if (난것 !== t[1]) throw new Error('고르기 걸림: ' + t[2] + ' → ' + JSON.stringify(난것));
 });
-console.log('전화고르기 6건 통과');
+
+/* ── 손질: 로젠 송장은 이 27칸을 그대로 찍는다 ── */
+var o = new Array(27).fill('');
+o[16] = ''; o[17] = '010-5555-6666'; o[18] = '02--';
+전화칸손질(o);
+if (o[18] !== '') throw new Error('손질 걸림: 02-- 가 원본에 남았다');
+if (o[17] !== '010-5555-6666') throw new Error('손질 걸림: 멀쩡한 번호를 지웠다');
+
+var p = new Array(27).fill('');
+p[16] = '02-333-4444'; p[17] = '031--'; p[18] = '010-1-2';
+전화칸손질(p);
+if (p[16] !== '02-333-4444') throw new Error('손질 걸림: 서울 9자리를 지웠다');
+if (p[17] !== '' || p[18] !== '') throw new Error('손질 걸림: 토막난 번호가 남았다');
+
+console.log('전화고르기 6건 + 전화칸손질 2건 통과');
