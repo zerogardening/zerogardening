@@ -120,6 +120,15 @@ function 날짜글(v: unknown): string {
   return s;
 }
 
+/* 🔴 심폴은 앞 0 을 지키려고 상품코드 말고도 `="27444 "` 꼴로 보낸다.
+   여태 상품코드만 벗겨서 **우편번호가 `="27444 "` 그대로 로젠 파일까지 나갔다**
+   (2026-09-21 우람님이 실물 엑셀 O열에서 잡으셨다) */
+const 껍데기벗기기 = (v: unknown) => {
+  const s = 다듬기(v);
+  const m = s.match(/^="([\s\S]*)"$/);
+  return m ? m[1].trim() : s;
+};
+
 /* 🔴 CSV 는 `="005017000000081207"` 꼴로 온다 — 엑셀 수식 껍데기를 벗기고 앞 0 을 살린다(18자리) */
 function 상품코드글(v: unknown): string {
   let s = 다듬기(v);
@@ -134,7 +143,7 @@ function 스물일곱(행: string[], 자리: Record<string, number>): string[] |
   if (행.every((c) => 다듬기(c) === "")) return null;
   const 값 = (이름: string) => {
     const i = 자리[이름];
-    return i == null ? "" : 다듬기(행[i]);
+    return i == null ? "" : 껍데기벗기기(행[i]);
   };
   const 코드 = 상품코드글(행[자리["상품코드"]]);
   return 지도.map((열) => {
