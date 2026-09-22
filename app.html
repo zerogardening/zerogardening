@@ -5079,6 +5079,15 @@ function renderOrderOption(option){
   return `<div class="popt">${escapeHtml(s)}</div>`;
 }
 
+/* 주문 수량 렌더 — 옵션에 (N개) 묶음 표기가 있으면 "10세트 (50개)"처럼 실제 개수를 함께 보여줌
+   (묶음 상품을 세트 수만 보고 낱개 수로 착각하는 실수 방지) */
+function renderOrderQty(o){
+  const qty = Number(o.qty) || 0;
+  const bundleSize = parseBundleSize(o.option);
+  if(bundleSize <= 1) return fmtNum(qty);
+  return `${fmtNum(qty)}세트 <span style="color:var(--muted);font-weight:500;white-space:nowrap">(${fmtNum(qty*bundleSize)}개)</span>`;
+}
+
 /* ── USDA Zone 라벨/온도 매핑 ── */
 const USDA_ZONE_INFO = {
   Zone2:  '-45.6℃',
@@ -9394,7 +9403,7 @@ function renderCsvPreviewTable(orders){
         ${renderOrderOption(o.option)}
       </td>
       <td>${codeHtml}</td>
-      <td class="num">${fmtNum(o.qty)}</td>
+      <td class="num">${renderOrderQty(o)}</td>
       <td class="num">${fmtKRW(orderRevenue(o))}</td>
       <td class="nowrap">${escapeHtml(o.recipientName||'-')}</td>
       <td class="addr-cell">${escapeHtml(o.recipientAddr||'-')}</td>
@@ -10727,7 +10736,7 @@ window.openOrderDetail = function(orderId){
         <div class="order-detail-row"><div class="k">상품명</div><div class="v">${escapeHtml(o.productName||'-')}</div></div>
         ${o.option?`<div class="order-detail-row"><div class="k">옵션</div><div class="v">${escapeHtml(o.option)}</div></div>`:''}
         <div class="order-detail-row"><div class="k">자체품목코드</div><div class="v code">${escapeHtml(o.itemCode||'-')}</div></div>
-        <div class="order-detail-row"><div class="k">수량</div><div class="v">${fmtNum(o.qty)}</div></div>
+        <div class="order-detail-row"><div class="k">수량</div><div class="v">${renderOrderQty(o)}</div></div>
         <div class="order-detail-row"><div class="k">판매가</div><div class="v price">${fmtKRW(o.unitPrice)}</div></div>
         ${o.optionExtraPrice?`<div class="order-detail-row"><div class="k">옵션추가</div><div class="v price">${fmtKRW(o.optionExtraPrice)}</div></div>`:''}
         <div class="order-detail-row"><div class="k">합계 매출</div><div class="v price" style="font-size:15px">${fmtKRW(orderRevenue(o))}</div></div>
@@ -12299,7 +12308,7 @@ function _renderOrderRows(filtered){
       <td class="order-no">${escapeHtml(o.orderNo)}</td>
       <td class="product-cell"><div class="pname">${escapeHtml(o.productName||'-')}</div>${renderOrderOption(o.option)}${plantNameTip}</td>
       <td>${codeHtml}</td>
-      <td class="num">${fmtNum(o.qty)}</td>
+      <td class="num">${renderOrderQty(o)}</td>
       <td class="num">${fmtKRW(orderRevenue(o))}</td>
       <td class="nowrap">${escapeHtml(o.recipientName||'-')}</td>
       <td class="nowrap tight">${escapeHtml(phone)}</td>
