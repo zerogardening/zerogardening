@@ -11059,11 +11059,16 @@ function renderSkuList(){
 }
 
 let _currentSkuCode = null;
+/* 🔴 모달이 열려 있는 동안 입력 중인 AI 칸 값을 모아 둔다.
+   양식을 바꾸면 화면에 없던 칸의 DOM 이 사라지는데, 저장값부터 다시 그리면
+   방금 친 글이 날아간다. 모달을 닫거나 다른 SKU 를 열면 버린다. */
+let _aiFieldDraft = {};
 window.openSkuDetail = function(barcode){
   const all = aggregateSkus();
   const s = all.find(x => x.barcode === barcode);
   if(!s){ toast('SKU를 찾을 수 없습니다','error'); return; }
   _currentSkuCode = barcode;
+  _aiFieldDraft = {};
 
   document.getElementById('sku-detail-title').innerHTML =
     `🏷️ <span class="sku-code">${escapeHtml(s.barcode)}</span> <span class="muted tight" style="margin-left:8px">${escapeHtml(s.distributionName||'-')}</span>`;
@@ -11291,7 +11296,7 @@ document.addEventListener('change', (e) => {
 function setupSkuDetailModal(){
   const modal = document.getElementById('sku-detail-modal');
   if(!modal) return;
-  const close = () => { modal.classList.add('hidden'); _currentSkuCode = null; };
+  const close = () => { modal.classList.add('hidden'); _currentSkuCode = null; _aiFieldDraft = {}; };
   document.getElementById('sku-detail-close').addEventListener('click', close);
   document.getElementById('btn-sku-detail-cancel').addEventListener('click', close);
   modal.addEventListener('click', e => { if(e.target === modal) close(); });
@@ -11363,6 +11368,9 @@ function setupSkuDetailModal(){
     // AI 글쓰기 폼: ai_<fieldId> 텍스트 영역 모두 수집
     const aiForm = document.getElementById('ai-writing-form');
     const aiFieldsCollected = {};
+    // 양식을 오가며 화면에서 사라진 칸의 미저장 입력도 함께 저장한다
+    const aiDraftTrimmed = {};
+    Object.keys(_aiFieldDraft).forEach(k => { aiDraftTrimmed[k] = String(_aiFieldDraft[k]||'').trim(); });
     if(aiForm){
       aiForm.querySelectorAll('textarea[name^="ai_"]').forEach(el => {
         const fid = el.name.slice(3);
@@ -11392,7 +11400,7 @@ function setupSkuDetailModal(){
       sunlight:  (fd.get('sunlight')||'').trim(),
       bloomStart:(fd.get('bloomStart')||'').trim(),
       bloomEnd:  (fd.get('bloomEnd')||'').trim(),
-      aiFields:  Object.assign({}, _existingMaster.aiFields || {}, aiFieldsCollected),
+      aiFields:  Object.assign({}, _existingMaster.aiFields || {}, aiDraftTrimmed, aiFieldsCollected),
       productTemplate: (fd.get('productTemplate')||'').trim(),
       aiUncertainTraits: remainingUncertain,
     };
@@ -14841,8 +14849,9 @@ document.addEventListener('change', (e) => {
     if(!area || !_currentSkuCode) return;
     const sku = (typeof aggregateSkus === 'function')
       ? (aggregateSkus().find(x => x.barcode === _currentSkuCode) || {}) : {};
-    const cur = Object.assign({}, sku.aiFields || {});
-    area.querySelectorAll('textarea[name^="ai_"]').forEach(el => { cur[el.name.slice(3)] = el.value; });
+    // 지금 화면에 있는 값을 draft 에 누적 — 양식을 여러 번 오가도 미저장 입력이 남는다
+    area.querySelectorAll('textarea[name^="ai_"]').forEach(el => { _aiFieldDraft[el.name.slice(3)] = el.value; });
+    const cur = Object.assign({}, sku.aiFields || {}, _aiFieldDraft);
     const view = Object.assign({}, sku, { aiFields: cur, productTemplate: e.target.value });
     const keepPlatform = (document.getElementById('ai-platform-select')||{}).value;
     area.innerHTML = _renderAiFieldsHtml(view);
