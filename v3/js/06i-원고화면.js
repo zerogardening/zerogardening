@@ -1,6 +1,7 @@
 /* 06i-원고화면 — 품목 창의 [원고] 갈래 (15단계 B 설계 §1·§3)
    글칸을 전부 펼쳐 세로로 둔다(아코디언 없음). 폰은 한 칸, PC 는 두 칸.
-   🔴 칸 수는 폼이 가른다 — 화분묘 7칸 · 구근 10칸(3구역이 셋 + 6구역). 06h 의 `칸들폼()` 이 목록이다.
+   🔴 칸 수는 폼이 가른다 — 06h 의 `칸들폼()` 이 목록이다.
+      화분묘 8칸(+④는 있는 품목만) · 구근 15칸. 치수·낱말은 `.subline` 한 줄로 붙는다 (15단계B §4-2).
    🔴 평소엔 글자수를 안 띄운다. 저장을 눌렀을 때 넘친 칸에만 띄운다(설계 §1 「덜어낸 넷」). */
 window.ZG = window.ZG || {};
 (function (ZG) {
@@ -94,29 +95,58 @@ window.ZG = window.ZG || {};
     return ta;
   }
 
-  function 소제목줄(창, 칸, 라벨) {
+  /* 한 줄짜리 입력. 어느 = '소제목' | '본문' */
+  function 한줄(창, 칸, 어느) {
     var s = 상태(창);
     var 값 = s.값[칸] || (s.값[칸] = { 소제목: '', 본문: '' });
     var inp = 만들기('input', { class: 'inp', type: 'text' });
-    inp.value = 값.소제목 || '';
+    inp.value = 값[어느] || '';
     if (!s.있음[칸]) inp.disabled = true;
-    else u.조합안전입력(inp, function (v) { 값.소제목 = v; 저장줄맞추기(창); });
-    return 만들기('div', { class: 'subline' }, [만들기('label', { text: 라벨 || '소제목' }), inp]);
+    else u.조합안전입력(inp, function (v) { 값[어느] = v; 저장줄맞추기(창); });
+    return inp;
+  }
+
+  function 소제목줄(창, 칸, 라벨) {
+    return 만들기('div', { class: 'subline' },
+      [만들기('label', { text: 라벨 || '소제목' }), 한줄(창, 칸, '소제목')]);
+  }
+
+  /* 🔴 상세페이지에 크게 찍히는 한 낱말·치수들 — 「12cm+」·「더블 얼리」·「10-15cm」 (15단계B §3).
+     그 품목 파일에 자리가 없으면 줄 자체를 안 그린다. 흐린 빈 칸이 늘어서면 뭐가 고장인지 안 보인다 */
+  function 값줄(창, 칸) {
+    var s = 상태(창);
+    if (!s.있음[칸]) return null;
+    var 정 = 자료().칸찾기(칸);
+    var 안 = [만들기('label', { text: 정.이름 }), 한줄(창, 칸, '본문')];
+    if (정.소제목) 안.splice(1, 0, 한줄(창, 칸, '소제목'));   // 5-규격 — `12cm+` 와 `둘레 12cm 이상`
+    var 칩 = 셈칩(창, 칸);
+    if (칩) 안.push(칩);
+    return 만들기('div', { class: 'subline' }, 안);
+  }
+
+  function 값줄들(창, 칸들) {
+    return 칸들.map(function (칸) { return 값줄(창, 칸); })
+      .filter(function (x) { return !!x; });
   }
 
   function 셈칩(창, 칸) {
     var s = 상태(창), 넘 = s.넘침[칸];
     if (!넘) return null;
-    var 정 = 자료().칸찾기(칸);
     return 만들기('span', {
       class: 'cnt over',
-      text: 자료().글자수((s.값[칸] || {}).본문) + ' / ' + 정.상한 + ' · ' + 넘 + '자 넘침'
+      text: 자료().글자수((s.값[칸] || {}).본문) + ' / ' + 자료().상한(칸, 창 && 창.품목) +
+            ' · ' + 넘 + '자 넘침'
     });
   }
 
   /* ══════════ 구역 카드 ══════════ */
 
-  function 홑구역(창, 번호, 칸) {
+  function 나쁜가(창, 칸들) {
+    var s = 상태(창);
+    return 칸들.some(function (칸) { return !!s.넘침[칸]; });
+  }
+
+  function 홑구역(창, 번호, 칸, 덧칸들) {
     var s = 상태(창);
     var 이름들 = 자료().구역이름(창 && 창.품목);   // 🔴 구근은 이름이 다르다 (2026-09-14)
     var 이름 = (칸 === '2' || 칸 === '3') ? ((s.값[칸] || {}).소제목 || 이름들[번호]) : 이름들[번호];
@@ -125,23 +155,23 @@ window.ZG = window.ZG || {};
     if (칩) 머리.appendChild(칩);
     var 몸 = 만들기('div', { class: 'zbody' });
     if (자료().칸찾기(칸).소제목) 몸.appendChild(소제목줄(창, 칸));
+    값줄들(창, 덧칸들 || []).forEach(function (줄) { 몸.appendChild(줄); });
     몸.appendChild(글칸(창, 칸));
-    return 만들기('div', { class: 'zone' + (s.넘침[칸] ? ' bad' : '') }, [머리, 몸]);
+    var 나쁨 = 나쁜가(창, [칸].concat(덧칸들 || []));
+    return 만들기('div', { class: 'zone' + (나쁨 ? ' bad' : '') }, [머리, 몸]);
   }
 
   /* 🔴 3항목 고정이다. 더하기·지우기 단추를 두지 않는다 (설계 §1)
-     4구역(How to grow)과 구근 3구역(심는 법)이 같은 꼴이라 한 함수로 그린다 */
-  function 항목구역(창, 번호, 칸들) {
-    var s = 상태(창), 나쁨 = false;
+     4구역(How to grow)과 구근 3구역(심는 법)이 같은 꼴이라 한 함수로 그린다.
+     🔴 ④는 예외다 — 아스타 3품목에만 있어 **파일에 있을 때만** 그린다 (15단계B §3-2) */
+  function 항목구역(창, 번호, 칸들, 덧칸들) {
+    var s = 상태(창);
+    var 쓸칸 = 칸들.filter(function (칸) { return 칸 !== '4-4' || s.있음['4-4']; });
     var 몸 = 만들기('div', { class: 'zbody' });
-    칸들.forEach(function (칸, i) {
-      if (s.넘침[칸]) 나쁨 = true;
-      var 값 = s.값[칸] || (s.값[칸] = { 소제목: '', 본문: '' });
-      var inp = 만들기('input', { class: 'inp', type: 'text' });
-      inp.value = 값.소제목 || '';
-      if (!s.있음[칸]) inp.disabled = true;
-      else u.조합안전입력(inp, function (v) { 값.소제목 = v; 저장줄맞추기(창); });
-      var 머리 = 만들기('div', { class: 'ihd' }, [만들기('span', { class: 'n', text: '①②③'[i] }), inp]);
+    값줄들(창, 덧칸들 || []).forEach(function (줄) { 몸.appendChild(줄); });
+    쓸칸.forEach(function (칸, i) {
+      var 머리 = 만들기('div', { class: 'ihd' },
+        [만들기('span', { class: 'n', text: '①②③④'[i] }), 한줄(창, 칸, '소제목')]);
       var 칩 = 셈칩(창, 칸);
       if (칩) 머리.appendChild(칩);
       몸.appendChild(만들기('div', { class: 'item' }, [머리, 글칸(창, 칸, 5)]));
@@ -149,9 +179,10 @@ window.ZG = window.ZG || {};
     var 머리줄 = 만들기('div', { class: 'zhd' }, [
       만들기('span', { class: 'no', text: 번호 }),
       만들기('span', { text: 자료().구역이름(창 && 창.품목)[번호] }),
-      만들기('span', { class: 'sub', text: '3항목 고정' })
+      만들기('span', { class: 'sub', text: 쓸칸.length + '항목' })
     ]);
-    return 만들기('div', { class: 'zone' + (나쁨 ? ' bad' : '') }, [머리줄, 몸]);
+    return 만들기('div', { class: 'zone' + (나쁜가(창, 쓸칸.concat(덧칸들 || [])) ? ' bad' : '') },
+      [머리줄, 몸]);
   }
 
   function 구근인가(창) {
@@ -194,7 +225,7 @@ window.ZG = window.ZG || {};
     s.넘침 = {};
     var 넘친것 = [];
     바뀜.forEach(function (칸) {
-      var 넘 = 자료().넘침(칸, (s.값[칸] || {}).본문, (s.원래[칸] || {}).본문);
+      var 넘 = 자료().넘침(칸, (s.값[칸] || {}).본문, (s.원래[칸] || {}).본문, 창 && 창.품목);
       if (넘) { s.넘침[칸] = 넘; 넘친것.push(칸); }
     });
     /* 🔴 넘친 칸이 하나라도 있으면 아무것도 안 보낸다 (설계 §3) */
@@ -240,9 +271,9 @@ window.ZG = window.ZG || {};
     if (!칸들.length) return null;
     var 고리 = 칸들.map(function (칸) {
       var 정 = 자료().칸찾기(칸);
-      var 이름 = 정.구역 + '구역' + (칸.indexOf('-') > 0 ? ' ' + 정.이름 : '');   // 3·4구역은 항목이 셋이다
+      var 이름 = 정.구역 + '구역' + (칸.indexOf('-') > 0 ? ' ' + 정.이름 : '');   // 3·4구역은 항목이 여럿이다
       return '<span class="zlink">' + u.안전(이름) + ' · ' +
-             자료().글자수((s.값[칸] || {}).본문) + ' / ' + 정.상한 + '</span>';
+             자료().글자수((s.값[칸] || {}).본문) + ' / ' + 자료().상한(칸, 창 && 창.품목) + '</span>';
     }).join('');
     var 카드 = 만들기('div', { class: 'alert' });
     카드.innerHTML =
@@ -269,12 +300,16 @@ window.ZG = window.ZG || {};
     var 경고 = 넘침카드(창);
     if (경고) 판.appendChild(경고);
 
+    var 구근 = 구근인가(창);
     var 왼 = 만들기('div', { class: 'zonelist' }, [
-      홑구역(창, '1', '1'), 홑구역(창, '2', '2'),
-      구근인가(창) ? 항목구역(창, '3', ['3-1', '3-2', '3-3']) : 홑구역(창, '3', '3'),
-      홑구역(창, '5', '5'), 여섯째구역(창)
+      홑구역(창, '1', '1'),
+      홑구역(창, '2', '2', 구근 ? ['2-계열', '2-둘레'] : []),
+      구근 ? 항목구역(창, '3', ['3-1', '3-2', '3-3'], ['3-깊이', '3-간격']) : 홑구역(창, '3', '3'),
+      홑구역(창, '5', '5', 구근 ? ['5-규격'] : ['5-간격']),
+      여섯째구역(창)
     ]);
-    var 오 = 만들기('div', { class: 'zonelist' }, [항목구역(창, '4', ['4-1', '4-2', '4-3'])]);
+    var 오 = 만들기('div', { class: 'zonelist' },
+      [항목구역(창, '4', ['4-1', '4-2', '4-3', '4-4'])]);
     판.appendChild(u.폰인가()
       ? 만들기('div', { class: 'zonelist' }, [왼, 오])
       : 만들기('div', { class: 'cols' }, [만들기('div', {}, [왼]), 만들기('div', {}, [오])]));
