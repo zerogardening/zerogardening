@@ -14,8 +14,17 @@
 import html as _html
 import re
 
-칸들 = ['1', '2', '3', '4-1', '4-2', '4-3', '5']
-소제목있는칸 = {'2', '3', '4-1', '4-2', '4-3'}
+칸들 = ['1', '2', '3', '4-1', '4-2', '4-3', '5']           # 화분묘 — 옛 이름을 그대로 둔다
+# 🔴 2026-09-23 우람님 「글 나오는 자리는 다 고칠 수 있어야 한다」 —
+#    구근은 3구역이 `.grow` 3항목(언제 심나요·깊이와 방향·어디에 심나요)이고 6구역에 `@발송설명` 글이 있다.
+#    `.desc` 하나로 보던 옛 코드는 구근 13품목의 3·6구역을 통째로 못 읽었다.
+구근칸들 = ['1', '2', '3-1', '3-2', '3-3', '4-1', '4-2', '4-3', '5', '6']
+소제목있는칸 = {'2', '3', '3-1', '3-2', '3-3', '4-1', '4-2', '4-3'}
+
+
+def 칸목록(구근=False):
+    """그 폼이 **가지고 있어야 할** 칸. 못 읽은 칸을 가리는 자(尺)다 — v3/js/06h-원고자료.js 와 같아야 한다."""
+    return list(구근칸들 if 구근 else 칸들)
 
 
 def 규격(코드):
@@ -46,8 +55,17 @@ def 원고md(품목방):
 
 # ══════════════════════════════════════════════ html ↔ 글
 
+# 🔴 굵은 글씨는 `**…**` 로 주고받는다 (2026-09-23).
+#    전엔 html→평문→html 을 돌면 `<b style="font-weight:500">둘레</b>` 의 굵기가 통째로 날아갔다 —
+#    5·6구역 첫 문장이 거기 걸려 있어 한 글자만 고쳐도 강조가 사라졌다.
+굵은틀 = r'<(b|strong)\b[^>]*>(.*?)</\1>'
+굵은표 = r'\*\*(.+?)\*\*'
+굵은html = '<b style="font-weight:500">%s</b>'
+
+
 def 글로(조각):
-    t = re.sub(r'<br\s*/?>', '\n', 조각)
+    t = re.sub(굵은틀, lambda m: '**' + m.group(2) + '**', 조각, flags=re.S)
+    t = re.sub(r'<br\s*/?>', '\n', t)
     t = t.replace('&nbsp;', ' ')
     t = re.sub(r'<[^>]+>', '', t)
     t = _html.unescape(t)
@@ -58,36 +76,89 @@ def html로(글):
     """여러 줄은 한 줄로 합친다 — .lead·.desc·p 는 조판이 알아서 흘린다.
     🔴 고친 구역의 `&nbsp;` 손질은 사라진다. 어차피 문장이 바뀌는 자리라 받아들인다(설계 §0-②)."""
     한줄 = ' '.join(t.strip() for t in str(글).split('\n') if t.strip())
-    return _html.escape(한줄, quote=False)
+    t = _html.escape(한줄, quote=False)
+    return re.sub(굵은표, lambda m: 굵은html % m.group(1), t, flags=re.S)
 
 
 def 구역조각(원문, n):
-    """`id="sN"` 부터 다음 구역 앞까지"""
-    m = re.search(r'<div class="[^"]*"\s+id="s%s"' % n, 원문)
+    """`id="sN"` 부터 다음 구역 앞까지.
+    🔴 2026-09-23 — class·id 순서를 고정하면 안 된다. 화분묘는 `class="sec" id="s1"`,
+       구근은 `id="s1" class="sec"` 로 반대라 예전 정규식이 구근 품목을 전부 못 읽었다
+       (읽은 0/7). lookahead 로 순서 무관하게 잡는다."""
+    m = re.search(r'<div\b(?=[^>]*\bid="s%s")[^>]*>' % n, 원문)
     if not m:
         return None
-    뒤 = re.search(r'<div class="[^"]*"\s+id="s\d"', 원문[m.end():])
+    뒤 = re.search(r'<div\b(?=[^>]*\bid="s\d")[^>]*>', 원문[m.end():])
     끝 = m.end() + (뒤.start() if 뒤 else len(원문) - m.end())
+    # 🔴 마지막 구역(6)은 뒤에 구역이 없어 **해설까지 통째로** 딸려 온다. 해설 머리(`znum`) 앞에서 끊는다 —
+    #    안 끊으면 해설 안의 `.desc` 를 6구역 본문으로 잘못 집을 수 있다. 끝만 줄이니 앞 자리는 안 바뀐다.
+    해설 = re.search(r'class="znum"', 원문[m.end():끝])
+    if 해설:
+        끝 = m.end() + 해설.start()
     return (m.start(), 끝)
 
 
 칸틀 = {
-    '1': r'(<div class="lead">)(.*?)(</div>)',
-    '2': r'(<div class="desc">)(.*?)(</div>)',
-    '3': r'(<div class="desc">)(.*?)(</div>)',
-    '5': r'(<div class="desc">)(.*?)(</div>)',
+    # 🔴 2026-09-23 — `[^>]*` 를 넣어 여는 태그의 다른 속성(구근 5구역의 `style="padding-top:…"`)을 허용한다.
+    #    전엔 `class="desc">` 뒤에 바로 `>` 가 와야만 잡혀 그런 품목은 조용히 못 읽혔다.
+    '1': r'(<div class="lead"[^>]*>)(.*?)(</div>)',
+    '2': r'(<div class="desc"[^>]*>)(.*?)(</div>)',
+    '3': r'(<div class="desc"[^>]*>)(.*?)(</div>)',
+    '5': r'(<div class="desc"[^>]*>)(.*?)(</div>)',
+    # 6구역은 구근에만 글이 있다(`@발송설명`). 화분묘 6구역은 `.desc` 가 아예 없어 저절로 안 잡힌다
+    '6': r'(<div class="desc"[^>]*>)(.*?)(</div>)',
 }
 머리틀 = r'<span class="(?:kr|en)">(.*?)</span>'
 항목틀 = r'(<div class="st">)(.*?)(</div>)(\s*)(<p>)(.*?)(</p>)'
+홑칸구역 = ('1', '2', '3', '5', '6')
+
+
+def 항목꼴(조각):
+    """3항목(`.grow`)으로 된 구역이냐 — 구근 3구역과 4구역이 이 꼴이다"""
+    return 'class="grow"' in 조각
+
+
+def 구근꼴(원문):
+    """폼을 **파일 생김새로** 가른다 — 3구역이 `.grow` 3항목이면 구근이다.
+    이름 목록(제작요청.구근인가)에 안 기대는 쪽이 안전하다. 읽는 것은 결국 파일이다."""
+    자리 = 구역조각(원문, '3')
+    return bool(자리) and 항목꼴(원문[자리[0]:자리[1]])
+
+
+def 항목읽기(조각, 접두, 수=3):
+    """④가 있는 품목이 4개 있다 — 앞의 셋만 쓴다"""
+    값 = {}
+    for i, m in enumerate(re.finditer(항목틀, 조각, re.S)):
+        if i >= 수:
+            break
+        값['%s-%d' % (접두, i + 1)] = {'소제목': 글로(m.group(2)), '본문': 글로(m.group(6))}
+    return 값
+
+
+def 항목박기(조각, 관련, 접두):
+    셈 = [0]
+
+    def 갈기(m):
+        셈[0] += 1
+        칸 = '%s-%d' % (접두, 셈[0])
+        if 칸 not in 관련:
+            return m.group(0)
+        return (m.group(1) + html로(관련[칸].get('소제목', '')) + m.group(3) + m.group(4) +
+                m.group(5) + html로(관련[칸]['본문']) + m.group(7))
+
+    return re.sub(항목틀, 갈기, 조각, flags=re.S)
 
 
 def html읽기(원문):
     값 = {}
-    for n in ('1', '2', '3', '5'):
+    for n in 홑칸구역:
         자리 = 구역조각(원문, n)
         if not 자리:
             continue
         조각 = 원문[자리[0]:자리[1]]
+        if n == '3' and 항목꼴(조각):        # 구근 — 「심는 법」 3항목
+            값.update(항목읽기(조각, '3'))
+            continue
         m = re.search(칸틀[n], 조각, re.S)
         if not m:
             continue
@@ -99,52 +170,42 @@ def html읽기(원문):
 
     자리 = 구역조각(원문, '4')
     if 자리:
-        조각 = 원문[자리[0]:자리[1]]
-        # ④가 있는 품목이 4개 있다 — 앞의 셋만 쓴다
-        for i, m in enumerate(re.finditer(항목틀, 조각, re.S)):
-            if i >= 3:
-                break
-            값['4-%d' % (i + 1)] = {'소제목': 글로(m.group(2)), '본문': 글로(m.group(6))}
+        값.update(항목읽기(원문[자리[0]:자리[1]], '4'))
     return 값
 
 
 def html박기(원문, 새값):
     """새값 = {칸: {소제목, 본문}} — 준 칸만 갈아 끼운다. 나머지는 바이트 그대로다"""
     글 = 원문
-    for n in ('1', '2', '3', '5'):
-        if n not in 새값:
+    for n in 홑칸구역:
+        관련 = {k: v for k, v in 새값.items() if k.split('-')[0] == n}
+        if not 관련:
             continue
         자리 = 구역조각(글, n)
         if not 자리:
             continue
         조각 = 글[자리[0]:자리[1]]
-        m = re.search(칸틀[n], 조각, re.S)
-        if not m:
-            continue
-        앞 = re.match(r'\s*(?:<br\s*/?>\s*)*', m.group(2)).group(0)   # 5구역의 앞 <br> 은 조판이다
-        새조각 = 조각[:m.start()] + m.group(1) + 앞 + html로(새값[n]['본문']) + m.group(3) + 조각[m.end():]
-        if n in ('2', '3') and 새값[n].get('소제목'):
-            새조각 = re.sub(머리틀,
-                            lambda h: h.group(0).replace(h.group(1), html로(새값[n]['소제목'])),
-                            새조각, count=1, flags=re.S)
+        if n == '3' and 항목꼴(조각):
+            새조각 = 항목박기(조각, 관련, '3')
+        else:
+            if n not in 관련:
+                continue
+            m = re.search(칸틀[n], 조각, re.S)
+            if not m:
+                continue
+            앞 = re.match(r'\s*(?:<br\s*/?>\s*)*', m.group(2)).group(0)   # 5구역의 앞 <br> 은 조판이다
+            새조각 = 조각[:m.start()] + m.group(1) + 앞 + html로(관련[n]['본문']) + m.group(3) + 조각[m.end():]
+            if n in ('2', '3') and 관련[n].get('소제목'):
+                새조각 = re.sub(머리틀,
+                                lambda h: h.group(0).replace(h.group(1), html로(관련[n]['소제목'])),
+                                새조각, count=1, flags=re.S)
         글 = 글[:자리[0]] + 새조각 + 글[자리[1]:]
 
     넷 = {k: v for k, v in 새값.items() if k.startswith('4-')}
     if 넷:
         자리 = 구역조각(글, '4')
         if 자리:
-            조각 = 글[자리[0]:자리[1]]
-            셈 = [0]
-
-            def 갈기(m):
-                셈[0] += 1
-                칸 = '4-%d' % 셈[0]
-                if 칸 not in 넷:
-                    return m.group(0)
-                return (m.group(1) + html로(넷[칸].get('소제목', '')) + m.group(3) + m.group(4) +
-                        m.group(5) + html로(넷[칸]['본문']) + m.group(7))
-
-            조각 = re.sub(항목틀, 갈기, 조각, flags=re.S)
+            조각 = 항목박기(글[자리[0]:자리[1]], 넷, '4')
             글 = 글[:자리[0]] + 조각 + 글[자리[1]:]
     return 글
 
@@ -187,19 +248,23 @@ def md4쓰기(항목):
     return '\n\n'.join('%s %s\n%s' % ('①②③④⑤'[i], 제, 본) for i, (_, 제, 본) in enumerate(항목))
 
 
-def md읽기(원문):
+def md읽기(원문, 구근=False):
+    """🔴 구근 md 의 3구역은 덩이가 **하나뿐**이다(`@자리`. 「언제 심나요」·「깊이와 방향」은 조판 고정문구).
+       세 칸 중 어느 것인지 md 만 보고는 못 가린다 — **지어내지 않고 아예 안 돌려준다**(설계 §0-③)."""
     값 = {}
     for n, (_, _, 몸) in md절들(원문).items():
         덩 = re.search(덩이틀, 몸, re.S)
         if not 덩:
             continue
         본문 = 덩.group(1).strip()
+        if n == '3' and 구근:
+            continue
         if n == '4':
             for i, (_, 제, 본) in enumerate(md4파싱(본문)):
                 if i >= 3:
                     break
                 값['4-%d' % (i + 1)] = {'소제목': 제, '본문': 본}
-        elif n in ('1', '2', '3', '5'):
+        elif n in ('1', '2', '3', '5', '6'):
             칸 = {'본문': 본문}
             if n in ('2', '3'):
                 h = re.search(r'^소제목\s*:\s*(.+)$', 몸, re.M)
@@ -225,6 +290,8 @@ def md박기(원문, 새값):
                     항목[i] = (항목[i][0], 칸.get('소제목', ''), 칸['본문'])
             새몸 = md4쓰기(항목)
         else:
+            if n not in 관련:
+                continue          # 구근 3구역 — md 는 덩이가 하나라 3-1·3-2·3-3 을 못 되박는다
             새몸 = 관련[n]['본문']
             if n in ('2', '3') and 관련[n].get('소제목'):
                 몸 = re.sub(r'^소제목\s*:\s*.+$', '소제목 : ' + 관련[n]['소제목'], 몸, count=1, flags=re.M)
@@ -236,15 +303,30 @@ def md박기(원문, 새값):
 
 # ══════════════════════════════════════════════ 바깥에서 부르는 것
 
-def 읽기(품목방, 코드=None):
-    """(값, 출처). 값 = {칸: {소제목, 본문}} — 🔴 못 읽은 칸은 아예 안 담는다"""
+def 읽기(품목방, 코드=None, 구근=None):
+    """(값, 출처). 값 = {칸: {소제목, 본문}} — 🔴 못 읽은 칸은 아예 안 담는다.
+    🔴 2026-09-23 — 폴백이 **칸 단위**다. 전엔 html 에서 한 칸이라도 읽히면 md 를 아예 안 봤다.
+       홍띠·자엽펜스테몬은 `제작.html` 에 6구역만 다시 뽑아 둔 탓에 나머지 구역이 통째로 편집 불가였다."""
+    값, 출처 = {}, ''
     h = 제작본(품목방, 코드)
     if h.exists():
-        return html읽기(h.read_text(encoding='utf-8')), '제작.html'
+        원문 = h.read_text(encoding='utf-8')
+        if 구근 is None:
+            구근 = 구근꼴(원문)
+        값 = html읽기(원문)
+        출처 = '제작.html'
     m = 원고md(품목방)
-    if m.exists():
-        return md읽기(m.read_text(encoding='utf-8')), '작성내용.md'
-    return {}, ''
+    빠진 = [k for k in 칸목록(bool(구근)) if k not in 값]
+    if 빠진 and m.exists():
+        보탬 = md읽기(m.read_text(encoding='utf-8'), bool(구근))
+        더한것 = False
+        for k in 빠진:
+            if k in 보탬:
+                값[k] = 보탬[k]
+                더한것 = True
+        if 더한것:
+            출처 = (출처 + '+작성내용.md') if 출처 else '작성내용.md'
+    return 값, 출처
 
 
 def 박기(품목방, 새값, 코드=None):
@@ -267,5 +349,5 @@ def 박기(품목방, 새값, 코드=None):
     return 바뀐것
 
 
-def 못읽은칸(값):
-    return [k for k in 칸들 if k not in 값]
+def 못읽은칸(값, 구근=False):
+    return [k for k in 칸목록(구근) if k not in 값]
