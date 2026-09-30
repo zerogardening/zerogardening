@@ -177,7 +177,11 @@ window.ZG = window.ZG || {};
     });
     var 삭제 = 만들기('button', { class: 'btn sm del', type: 'button', text: '삭제' });
     삭제.addEventListener('click', function () { 지우기(q); });
-    tr.appendChild(만들기('td', {}, [수정, 만들기('span', { text: ' ' }), 삭제]));
+    var 올리기 = 만들기('button', { class: 'btn sm', type: 'button', text: '주문올리기' });
+    올리기.addEventListener('click', function () { ZG.문자뽑기.열기(q); });
+    tr.appendChild(만들기('td', {}, [
+      올리기, 만들기('span', { text: ' ' }), 수정, 만들기('span', { text: ' ' }), 삭제
+    ]));
 
     if (상태.번쩍id === q.id) { 상태.번쩍id = ''; requestAnimationFrame(function () { u.번쩍(tr); }); }
     return tr;

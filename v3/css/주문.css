@@ -868,3 +868,6 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 
 .twobtn{display:flex; gap:var(--space-sm)}
 .twobtn .btn{flex:1; justify-content:center; text-align:center}
+
+/* PC 수동주문(견적·고객에서 채워 여는 것) — 폰 입력칸을 그대로 쓰므로 폭만 묶는다 */
+.pc-본문.pc-수동{max-width:560px; gap:var(--space-md)}
