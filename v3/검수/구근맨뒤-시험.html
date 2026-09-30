@@ -1,0 +1,87 @@
+<!doctype html><meta charset="utf-8"><title>구근 맨뒤 · 카드 빼기 시험</title>
+<body><div id=앱></div><pre id=말 style="font:13px/1.7 ui-monospace,monospace;padding:24px"></pre>
+<!-- 구근만 든 주문은 로젠 포장순 맨 뒤 · 동봉카드 안 뽑음 (우람님 9/30). 01b-서버.js 는 싣지 않는다 -->
+<script>
+window.ZG={};
+localStorage.clear();
+localStorage.setItem('zg.v3.품목', JSON.stringify([
+ {품목코드:'VER01-15',접두:'VER01',유통명:'버들마편초',규격:'15cm',규격cm:15},
+ {품목코드:'TUL01-0',접두:'TUL01',유통명:'튤립 노라',규격:'규격 외',규격cm:0},
+ {품목코드:'NAR01-0',접두:'NAR01',유통명:'수선화',규격:'규격 외',규격cm:0}
+]));
+function 원본(번,상품,코드,수,이름,우편,주소,전화){
+ return ['카페24','',번,'2026-09-30',상품,'','',코드,'무통장','','',9900,수,이름,우편,주소,전화,전화,전화,'',이름,'','','','',0,''];
+}
+function 줄(id,번,코드,이름,우편,전화){
+ return {id:id,묶음id:'260930-01',주문번호:번,주문일:'2026-09-30',판매처:'카페24',품목코드:코드,원본코드:코드,
+  유통명:코드,주문수량:1,옵션입수:1,단가:9900,수령인:이름,수령인전화:전화,수령인주소:'서울 '+이름,우편번호:우편,
+  묶음키:이름+'|'+전화,출처:'자동수집',원본:원본(번,코드,코드,1,이름,우편,'서울 '+이름,전화)};
+}
+var 줄들=[
+ 줄('a','1','TUL01-0','구근손님','01001','010-1000-0001'),                 // 구근만 — 맨 앞에 들어왔다
+ 줄('b','2','VER01-15','화분손님','01002','010-1000-0002'),
+ 줄('c','3','NAR01-0','섞은손님','01003','010-1000-0003'),
+ 줄('d','3','VER01-15','섞은손님','01003','010-1000-0003'),                // 섞인 주문 — 구근 아님
+ 줄('e','4','NAR01-0','구근둘','01004','010-1000-0004'),
+ 줄('f','4','TUL01-0','구근둘','01004','010-1000-0004')
+];
+localStorage.setItem('zg.v3.주문', JSON.stringify(줄들));
+localStorage.setItem('zg.v3.주문묶음', JSON.stringify([{id:'260930-01',올린날:'2026-09-30',회차:1,줄수:6,출처:'자동수집'}]));
+</script>
+<script src="../js/00-시드.js"></script>
+<script src="../js/01-저장소.js"></script>
+<script src="../js/01c-보내기.js"></script>
+<script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script>
+<script src="../js/04-공통UI.js"></script>
+<script src="../js/04b-특성.js"></script>
+<script src="../js/08a-주문자료.js"></script>
+<script src="../js/08b-주문목록.js"></script>
+<script src="../js/08c-주문입력.js"></script>
+<script src="../js/08d-주문파일.js"></script>
+<script src="../js/08e-서비스품목.js"></script>
+<script src="../js/08f-배송완료.js"></script>
+<script src="../js/08g-배송완료창.js"></script>
+<script src="../js/08h-주문올리기.js"></script>
+<script src="../js/08i-로젠파일.js"></script>
+<script src="../js/08j-심폴.js"></script>
+<script src="../js/08k-심폴짝창.js"></script>
+<script src="../js/08l-카페24발송.js"></script>
+<script src="../js/08m-카페24발송창.js"></script>
+<script src="../js/08n-수동배송완료.js"></script>
+<script src="../js/08o-운임손질.js"></script>
+<script src="../js/08p-운임손질창.js"></script>
+<script src="../js/09-동봉카드.js"></script>
+<script src="../js/09b-카드설정.js"></script>
+<script src="../js/15a-견적자료.js"></script>
+<script src="../js/15b-견적PC.js"></script>
+<script src="../js/15c-견적폰.js"></script>
+<script src="../js/15d-견적탭.js"></script>
+<script>
+var 결과=[], 줄 = document.getElementById('말');
+function 봐(말, 됨){ 결과.push(됨); 줄.textContent += (됨?'✅ ':'❌ ') + 말 + '\n'; }
+var 준비 = ZG.로젠파일.준비(줄들.map(function(r){return {원본:r.원본,줄:r,id:r.id};}), {묶음id:'260930-01'});
+var 차례 = 준비.그룹들.map(function(g){return g.것들[0].줄.수령인;});
+봐('포장순: '+차례.join(' → '), 차례.slice(0,2).indexOf('구근손님')<0 && 차례.slice(0,2).indexOf('구근둘')<0 && 차례.length===4);
+봐('섞은 주문은 구근이 아니다', !ZG.상세폼.구근주문인가([줄들[2],줄들[3]]));
+봐('구근만은 구근이다', ZG.상세폼.구근주문인가([줄들[4],줄들[5]]));
+봐('코드 없는 줄만이면 구근이 아니다', !ZG.상세폼.구근주문인가([{품목코드:''}]));
+/* 폰 주문탭의 「💌 동봉카드」 단추 — 구근만 든 주문은 카드로 안 넘어간다 */
+ZG.서버 = { 로그인됨:true, 클라이언트:null, 받아오기:null };   // 시드가 시험 주문을 덮지 않게
+var 넘긴 = null, 토스트 = '';
+ZG.동봉카드.열기 = function (건들) { 넘긴 = 건들; };
+var 원토스트 = ZG.ui.토스트; ZG.ui.토스트 = function (m) { 토스트 = m; 원토스트(m); };
+ZG.주문.시작();
+function 카드누르기() {
+  넘긴 = null; 토스트 = '';
+  var 단 = [].filter.call(document.querySelectorAll('button'), function (b) { return b.textContent === '💌 동봉카드'; })[0];
+  단.click();
+}
+카드누르기();
+var 이름들 = (넘긴 || []).map(function (g) { return g.수령인; });
+봐('카드로 넘어간 건: ' + 이름들.join(', '), 이름들.length === 2 && 이름들.indexOf('구근손님') < 0 && 이름들.indexOf('구근둘') < 0);
+ZG.주문.상태.글 = '구근'; ZG.주문.다시그리기();
+카드누르기();
+봐('구근 주문만 있으면 카드 창을 안 연다 — 토스트: ' + 토스트, 넘긴 === null && /구근/.test(토스트));
+document.title = 결과.every(Boolean) ? 'PASS' : 'FAIL';
+</script>
