@@ -406,7 +406,7 @@ window.ZG = window.ZG || {};
     }
 
     var 만들단추 = 만들기('button', { class: 'btn sm main', type: 'button', text: '💌 카드 만들기' });
-    만들단추.addEventListener('click', function () { ZG.주문입력.닫기창(); 그리기(건들); });
+    만들단추.addEventListener('click', function () { ZG.주문입력.닫기창(); 그리고뽑기(건들); });
     var 닫기버튼 = 만들기('button', { class: 'x', type: 'button', text: '✕', 'aria-label': '닫기' });
     닫기버튼.addEventListener('click', 닫기);
 
@@ -428,8 +428,17 @@ window.ZG = window.ZG || {};
   /* 사람이 누르는 문 — 손질할 게 있으면 손질창이 먼저 뜬다.
      🔴 짝창·특성칸이 안 실린 자리(시험용 낱장 화면)에서는 손질을 건너뛴다 */
   function 열기(건들) {
-    if (!건들 || !건들.length || !ZG.짝창 || !ZG.특성 || !ZG.주문입력) return 그리기(건들);
-    return 손질거리(건들).할것 ? 손질창(건들) : 그리기(건들);
+    if (!건들 || !건들.length || !ZG.짝창 || !ZG.특성 || !ZG.주문입력) return 그리고뽑기(건들);
+    return 손질거리(건들).할것 ? 손질창(건들) : 그리고뽑기(건들);
+  }
+
+  /* 🔴 누르면 인쇄까지 간다(우람님 9/30) — PC 는 프린터 창을 띄우고, 폰은 곧장 사무실로 보낸다.
+     카드 창은 PC 에 남겨 둔다 — 다시 뽑거나 ⚙ 로 고칠 수 있게 */
+  function 그리고뽑기(건들) {
+    if (!그리기(건들)) return false;
+    if (u.폰인가()) 사무실로(건들);
+    else setTimeout(function () { window.print(); }, 300);
+    return true;
   }
 
   ZG.동봉카드 = { 열기: 열기, 그리기: 그리기, 수동열기: 수동열기, 다시열기: 다시열기,
