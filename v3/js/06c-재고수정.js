@@ -27,10 +27,10 @@ window.ZG = window.ZG || {};
     return {
       품목: 품목, 요약: 요,
       원래: { 현재고: 요.현재고, 유통명: 품목.유통명, 학명: 품목.학명, 규격: 품목.규격, 매입단가: 품목.매입단가, 과세구분: 품목.과세구분, 상태: 품목.상태,
-              판매단위: 품목.판매단위 || 1, 쿠팡단위: 품목.쿠팡단위 || '' },
+              판매단위: 품목.판매단위 || 1, 쿠팡단위: 품목.쿠팡단위 || '', 판매단가: 품목.판매단가 || '' },
       원래특성: 특성글(품목.특성),
       값: { 현재고: 요.현재고, 유통명: 품목.유통명, 학명: 품목.학명, 규격: 품목.규격, 규격cm: 품목.규격cm, 매입단가: 품목.매입단가, 과세구분: 품목.과세구분, 상태: 품목.상태,
-            판매단위: 품목.판매단위 || 1, 쿠팡단위: 품목.쿠팡단위 || '' }
+            판매단위: 품목.판매단위 || 1, 쿠팡단위: 품목.쿠팡단위 || '', 판매단가: 품목.판매단가 || '' }
     };
   }
 
@@ -92,13 +92,25 @@ window.ZG = window.ZG || {};
     });
     var 단가 = 만들기('input', { class: 'inp num', type: 'text', inputmode: 'numeric' });
     단가.value = u.콤마(값.매입단가);
-    단가.addEventListener('input', function () { 값.매입단가 = u.숫자(단가.value); });
+    단가.addEventListener('input', function () { 값.매입단가 = u.숫자(단가.value); 판매가흐림(); });
     단가.addEventListener('blur', function () { 단가.value = u.콤마(값.매입단가); });
 
     /* 판매단위 = 한 번에 파는 수(구근 5구 한 묶음 등) · 쿠팡단위 = 쿠팡 수량옵션 (2026-09-15 우람님) */
     var 판매단위 = 글칸('판매단위', null, { class: 'inp num', inputmode: 'numeric' });
     판매단위.addEventListener('blur', function () { 값.판매단위 = u.숫자(판매단위.value) || 1; 판매단위.value = 값.판매단위; });
+    판매단위.addEventListener('input', 판매가흐림);
     var 쿠팡단위 = 글칸('쿠팡단위', null, { placeholder: '1,2,4,6,9' });
+
+    /* 판매단가 — 비우면 매입단가 × 판매단위 × 2 (2026-10-04 우람님) */
+    var 판매가 = 만들기('input', { class: 'inp num', type: 'text', inputmode: 'numeric' });
+    판매가.value = 값.판매단가 ? u.콤마(값.판매단가) : '';
+    판매가.addEventListener('input', function () { 값.판매단가 = u.숫자(판매가.value) || ''; });
+    판매가.addEventListener('blur', function () { 판매가.value = 값.판매단가 ? u.콤마(값.판매단가) : ''; });
+    function 판매가흐림() {
+      var 기본 = ZG.입고내부.기본판매가(값.매입단가, 값.판매단위);
+      판매가.placeholder = 기본 ? u.콤마(기본) : '';
+    }
+    판매가흐림();
     쿠팡단위.addEventListener('blur', function () { 값.쿠팡단위 = String(값.쿠팡단위 || '').replace(/\s/g, ''); 쿠팡단위.value = 값.쿠팡단위; });
 
     var 상태칸 = 만들기('div', { class: 'seg' });
@@ -124,6 +136,7 @@ window.ZG = window.ZG || {};
       필드('학명', 학명),
       만들기('div', { class: 'pair' }, [필드('규격', 규격), 필드('매입단가 <span class="req">*</span>', 단가)]),
       만들기('div', { class: 'pair' }, [필드('판매단위', 판매단위), 필드('쿠팡 판매단위', 쿠팡단위)]),
+      필드('판매단가', 판매가),
       현재고칸,
       필드('상태', 상태칸),
       필드('품목코드', 코드칸),
@@ -151,9 +164,10 @@ window.ZG = window.ZG || {};
     if (!(값.현재고 >= 0) || 값.현재고 !== Math.floor(값.현재고)) { u.토스트('현재고는 0 이상 정수여야 합니다'); return; }
 
     var 바뀐것 = {};
-    ['유통명', '학명', '규격', '매입단가', '과세구분', '상태', '판매단위', '쿠팡단위'].forEach(function (k) {
+    ['유통명', '학명', '규격', '매입단가', '과세구분', '상태', '판매단위', '쿠팡단위', '판매단가'].forEach(function (k) {
       if (String(값[k]) !== String(원래[k])) 바뀐것[k] = 값[k];
     });
+    if ('판매단가' in 바뀐것) 바뀐것.판매단가 = 바뀐것.판매단가 || null;   // 비우면 null = 매입 × 2
     if (열림.특성) {
       var 새특성 = 열림.특성.읽기();
       if (특성글(새특성) !== 열림.원래특성) 바뀐것.특성 = 새특성;

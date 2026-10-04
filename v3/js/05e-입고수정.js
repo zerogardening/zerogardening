@@ -23,9 +23,9 @@ window.ZG = window.ZG || {};
     return {
       기록: r, 오류: {},
       원래: { 입고일: r.입고일, 입고업체: r.입고업체, 유통명: r.유통명, 학명: r.학명, 규격: r.규격, 수량: r.수량, 매입단가: r.매입단가, 과세구분: r.과세구분, 메모: r.메모 || '',
-              판매단위: 품.판매단위 || 1, 쿠팡단위: 품.쿠팡단위 || '' },
+              판매단위: 품.판매단위 || 1, 쿠팡단위: 품.쿠팡단위 || '', 판매단가: 품.판매단가 || '' },
       값: { 입고일: r.입고일, 입고업체: r.입고업체, 유통명: r.유통명, 학명: r.학명, 규격: r.규격, 규격cm: null, 수량: r.수량, 매입단가: r.매입단가, 과세구분: r.과세구분, 메모: r.메모 || '',
-            판매단위: 품.판매단위 || 1, 쿠팡단위: 품.쿠팡단위 || '' }
+            판매단위: 품.판매단위 || 1, 쿠팡단위: 품.쿠팡단위 || '', 판매단가: 품.판매단가 || '' }
     };
   }
 
@@ -68,6 +68,10 @@ window.ZG = window.ZG || {};
 
   function 금액다시() {
     if (열림 && 열림.금액칸) 열림.금액칸.value = u.콤마((Number(열림.값.수량) || 0) * (Number(열림.값.매입단가) || 0));
+    if (열림 && 열림.판매단가칸) {
+      var 기본 = ZG.입고내부.기본판매가(열림.값.매입단가, 열림.값.판매단위);
+      열림.판매단가칸.placeholder = 기본 ? u.콤마(기본) : '';
+    }
   }
 
   function 업체칸() {
@@ -94,7 +98,7 @@ window.ZG = window.ZG || {};
   /* 판매단위 = 한 번에 파는 수(구근 5구 한 묶음 등) · 쿠팡단위 = 쿠팡 수량옵션 (2026-09-15 우람님) */
   function 단위칸() {
     var e = 만들기('input', { class: 'inp num', type: 'text', inputmode: 'numeric', value: 열림.값.판매단위 });
-    e.addEventListener('input', function () { if (열림) 열림.값.판매단위 = e.value; });
+    e.addEventListener('input', function () { if (열림) { 열림.값.판매단위 = e.value; 금액다시(); } });
     e.addEventListener('blur', function () { if (!열림) return; 열림.값.판매단위 = u.숫자(e.value) || 1; e.value = 열림.값.판매단위; });
     return e;
   }
@@ -102,6 +106,16 @@ window.ZG = window.ZG || {};
     var e = 만들기('input', { class: 'inp', type: 'text', placeholder: '1,2,4,6,9', value: 열림.값.쿠팡단위 });
     e.addEventListener('input', function () { if (열림) 열림.값.쿠팡단위 = e.value; });
     e.addEventListener('blur', function () { if (!열림) return; 열림.값.쿠팡단위 = String(열림.값.쿠팡단위 || '').replace(/\s/g, ''); e.value = 열림.값.쿠팡단위; });
+    return e;
+  }
+
+  /* 판매단가 — 비우면 매입단가 × 판매단위 × 2 (2026-10-04 우람님). 품목 것이다 */
+  function 판매단가칸() {
+    var e = 만들기('input', { class: 'inp num', type: 'text', inputmode: 'numeric',
+                             value: 열림.값.판매단가 ? u.콤마(열림.값.판매단가) : '' });
+    e.addEventListener('input', function () { if (열림) 열림.값.판매단가 = u.숫자(e.value) || ''; });
+    e.addEventListener('blur', function () { if (열림) e.value = 열림.값.판매단가 ? u.콤마(열림.값.판매단가) : ''; });
+    열림.판매단가칸 = e;
     return e;
   }
 
@@ -126,8 +140,9 @@ window.ZG = window.ZG || {};
       ]),
       만들기('div', { class: 'pair' }, [
         필드('매입단가 <span class="req">*</span>', 수칸('매입단가'), '매입단가'),
-        필드('금액 <span class="auto">자동 계산</span>', 열림.금액칸)
+        필드('판매단가', 판매단가칸())
       ]),
+      필드('금액 <span class="auto">자동 계산</span>', 열림.금액칸),
       필드('과세 · 면세', 과세칸()),
       필드('메모 <span class="auto">선택</span>', 글칸('메모', { placeholder: '예) 잎 상태 좋음' })),
       필드('품목코드 <span class="auto">🔒 못 고침</span>',
@@ -182,9 +197,11 @@ window.ZG = window.ZG || {};
 
     /* 판매단위·쿠팡단위는 품목 것이라 품목에 쓴다 — 입고 기록에는 안 남긴다 */
     var 새단위 = u.숫자(값.판매단위) || 1, 새쿠팡 = String(값.쿠팡단위 || '').replace(/\s/g, '');
-    if (String(새단위) !== String(열림.원래.판매단위) || 새쿠팡 !== String(열림.원래.쿠팡단위)) {
+    var 새판매가 = u.숫자(값.판매단가) || null;
+    if (String(새단위) !== String(열림.원래.판매단위) || 새쿠팡 !== String(열림.원래.쿠팡단위) ||
+        String(새판매가 || '') !== String(열림.원래.판매단가)) {
       ZG.저장소.바꾸기(ZG.저장소.키.품목, 열림.기록.품목코드,
-                      { 판매단위: 새단위, 쿠팡단위: 새쿠팡, 수정일시: Date.now() });
+                      { 판매단위: 새단위, 쿠팡단위: 새쿠팡, 판매단가: 새판매가, 수정일시: Date.now() });
     }
     ZG.입고.업체반영(변경.입고업체);
 

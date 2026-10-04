@@ -42,6 +42,7 @@ window.ZG = window.ZG || {};
     폼.appendChild(만들기('div', { class: 'row bottom' }, [
       내.필드('수량 <span class="req">*</span>', 내.숫자칸('수량'), 'width:118px', '수량'),
       내.필드('매입단가 <span class="req">*</span>', 내.숫자칸('매입단가'), 'width:138px', '매입단가'),
+      내.필드('판매단가', 내.숫자칸('판매단가'), 'width:138px'),
       내.필드('금액 <span class="auto">자동 계산</span>', 참조.금액, 'width:150px'),
       내.필드('과세 · 면세 <span class="req">*</span>', 내.과세칸(), 'width:186px'),
       코드필드(코드칸, 'width:178px')
@@ -96,6 +97,7 @@ window.ZG = window.ZG || {};
         내.필드('수량 <span class="req">*</span>', 내.숫자칸('수량'), null, '수량'),
         내.필드('매입단가 <span class="req">*</span>', 내.숫자칸('매입단가'), null, '매입단가')
       ]),
+      내.필드('판매단가', 내.숫자칸('판매단가')),
       만들기('div', { class: 'pair' }, [
         내.필드('과세 · 면세 <span class="req">*</span>', 내.과세칸()),
         코드필드(코드칸)
@@ -109,7 +111,11 @@ window.ZG = window.ZG || {};
 
   /* 판매단위 — 한 번에 파는 수(구근 5구 한 묶음 등). 기본 1
      쿠팡 판매단위 — 쿠팡 수량옵션. 비우면 지금처럼 규격으로 고른다 (2026-09-15 우람님) */
-  function 단위칸() { return 내.입력칸('판매단위', { class: 'inp num', inputmode: 'numeric' }); }
+  function 단위칸() {
+    var e = 내.입력칸('판매단위', { class: 'inp num', inputmode: 'numeric' });
+    e.addEventListener('input', 내.금액갱신);      // 판매단가 칸의 흐린 기본값이 따라온다
+    return e;
+  }
   function 쿠팡칸() { return 내.입력칸('쿠팡단위', { placeholder: '1,2,4,6,9' }); }
 
   function 코드필드(코드칸, 스타일) {
