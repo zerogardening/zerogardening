@@ -1,0 +1,50 @@
+<!doctype html><meta charset="utf-8"><title>구근(규격 외 · 0)을 짝짓기·주문수정 카드에서 고를 수 있나</title>
+<link rel="stylesheet" href="../css/공통.css"><link rel="stylesheet" href="../css/주문.css">
+<body style="background:#fff">
+<!-- 10/6 우람님 — 심폴 구근 주문이 「짝 지어 저장」이 안 됐다. 카드가 0cm를 빈 값으로 보고 15cm로 바꿔
+     `MUW01-15` 같은 없는 코드를 만들었다. 짝짓기·옛 구근 줄 다시 열기·화분 회귀를 같이 본다. -->
+<div id=짝칸 class="pcsheet dlv"></div>
+<div id=수정칸></div>
+<pre id=말 style="font:13px/1.7 ui-monospace,monospace;padding:16px"></pre>
+<script>
+localStorage.clear();
+localStorage.setItem('zg.v3.품목', JSON.stringify([
+  { 품목코드:'MUW01-0', 접두:'MUW01', 학명3:'MUW', 일련번호:'01', 규격cm:0, 규격:'규격 외',
+    유통명:'무스카리 화이트매직', 학명:'Muscari aucheri', 학명키:'muscari aucheri', 매입단가:350,
+    과세구분:'면세', 상태:'판매중', 특성:{} },
+  { 품목코드:'ALP02-15', 접두:'ALP02', 학명3:'ALP', 일련번호:'02', 규격cm:15, 규격:'15cm 포트',
+    유통명:'알프스민들레', 학명:'Alpina alpina', 학명키:'alpina alpina', 매입단가:1000,
+    과세구분:'면세', 상태:'판매중', 특성:{} }
+]));
+localStorage.setItem('zg.v3.심폴짝', JSON.stringify([]));
+</script>
+<script src="../js/01-저장소.js"></script>
+<script src="../js/02-품목코드.js"></script>
+<script src="../js/03-계산.js"></script>
+<script src="../js/04-공통UI.js"></script>
+<script src="../js/04b-특성.js"></script>
+<script src="../js/08a-주문자료.js"></script>
+<script src="../js/08c-주문입력.js"></script>
+<script src="../js/08j-심폴.js"></script>
+<script src="../js/08k-심폴짝창.js"></script>
+<script>
+var 결과 = [];
+function 봐(이름, 참) { 결과.push((참 ? 'OK   ' : '🔴 FAIL ') + 이름); document.getElementById('말').textContent = 결과.join('\n'); }
+function 짝그리기() {
+  var 칸 = document.getElementById('짝칸'); 칸.innerHTML = '';
+  var 줄 = { id:'y', 판매처:'심폴', 원본코드:'SP-9001', 품목코드:'', 유통명:'', 학명:'', 규격:'' };
+  var 상 = ZG.짝창.상자([{ 줄: 줄, 상품명: '무스카리 화이트매직 구근 5개' }], { 바뀌면: 짝그리기 });
+  if (상) 칸.appendChild(상);
+}
+짝그리기();
+/* 주문수정 — 이미 들어온 구근 줄을 다시 연다 */
+window.수정묶음 = ZG.주문입력.품목카드묶음([
+  { id:'r1', 품목코드:'MUW01-0', 유통명:'무스카리 화이트매직', 학명:'Muscari aucheri', 규격:'규격 외', 주문수량:2, 단가:3500 },
+  { id:'r2', 품목코드:'ALP02-15', 유통명:'알프스민들레', 학명:'Alpina alpina', 규격:'15cm 포트', 주문수량:1, 단가:1700 }
+], { 뺄수없음: true, 영수량허용: true });
+document.getElementById('수정칸').appendChild(수정묶음.요소);
+var 읽 = 수정묶음.읽기();
+봐('옛 구근 줄을 열어도 0 그대로 (MUW01-0)', 읽[0] && 읽[0].접두 + '-' + 읽[0].cm === 'MUW01-0');
+봐('화분 줄은 15 그대로 (ALP02-15)', 읽[1] && 읽[1].접두 + '-' + 읽[1].cm === 'ALP02-15');
+봐('구근 카드의 크기 칸이 「규격 외」', document.querySelectorAll('#수정칸 select')[0].selectedOptions[0].text === '규격 외');
+</script>

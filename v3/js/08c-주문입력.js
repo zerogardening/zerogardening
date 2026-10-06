@@ -5,7 +5,15 @@ window.ZG = window.ZG || {};
 
   var u = ZG.ui, 만들기 = u.만들기;
   var 경로들 = [['전화', '전화주문'], ['문자', '문자'], ['직접방문', '직접방문'], ['기타', '기타']];
-  var 사이즈들 = [10, 15, 18, 21];   // 화분은 이 넷과 「직접입력」뿐이다. 등록된 규격을 조회하지 않는다
+  var 사이즈들 = [0, 10, 15, 18, 21];   // 「규격 외」(구근 등 · 0)와 화분 넷, 「직접입력」뿐이다. 등록된 규격을 조회하지 않는다
+
+  /* 🔴 0은 「규격 외」라는 진짜 규격이다(구근 `MUW01-0`) — 「안 정함」은 NaN 으로 둔다.
+     0을 빈 값으로 보면 구근이 15cm로 바뀌어 없는 코드가 된다(10/6 짝짓기가 안 됐다) */
+  function 글cm(글) {
+    if (String(글 || '').trim() === ZG.품목코드.규격이름(0)) return 0;
+    return Number(String(글 || '').replace(/[^0-9]/g, '')) || NaN;
+  }
+  function 잡힘(st) { return !!st.접두 && st.cm >= 0; }
 
   /* ══ 수동주문 등록 ══ */
   function 수동뷰(상태) {
@@ -136,7 +144,7 @@ window.ZG = window.ZG || {};
     return {
       id: 줄.id, 접두: 코드.slice(0, 5), 유통명: 줄.유통명 || '', 학명: 줄.학명 || '',
       원본: 줄.원본코드 || '', 서비스: !!줄.서비스,
-      cm: Number(코드.split('-')[1]) || Number(String(줄.규격 || '').replace(/[^0-9]/g, '')) || 0,
+      cm: /-\d+$/.test(코드) ? Number(코드.split('-')[1]) : 글cm(줄.규격),
       // 카드가 다루는 것은 「주문수량」뿐이다 — 옵션입수(4개입)를 곱한 값을 넣으면 저장할 때 수량이 배로 뛴다 (설계 §1-2).
       // 수량 0은 「빼는 대신 0으로 둔 줄」이라 다시 열 때 1로 되살리면 안 된다 (설계 §1-5)
       수량: 줄.주문수량 == null ? 1 : (Number(줄.주문수량) || 0),
@@ -184,7 +192,7 @@ window.ZG = window.ZG || {};
       읽기: function () {
         return 목록.map(function (x) { return x.st; })
           .filter(function (st) {
-            return st.접두 && st.cm > 0 && (st.수량 > 0 || (옵션.영수량허용 && st.id && st.수량 === 0));
+            return 잡힘(st) && (st.수량 > 0 || (옵션.영수량허용 && st.id && st.수량 === 0));
           });
       }
     };
@@ -214,7 +222,9 @@ window.ZG = window.ZG || {};
 
     /* 화분 크기 — 고정 목록 */
     var 크기 = 만들기('select', { class: 'inp', 'aria-label': '화분 사이즈' });
-    사이즈들.forEach(function (cm) { 크기.appendChild(만들기('option', { value: String(cm), text: cm + 'cm' })); });
+    사이즈들.forEach(function (cm) {
+      크기.appendChild(만들기('option', { value: String(cm), text: cm ? cm + 'cm' : ZG.품목코드.규격이름(0) }));
+    });
     크기.appendChild(만들기('option', { value: '직접', text: '직접입력' }));
 
     var 직접 = 만들기('input', { class: 'inp num', type: 'number', min: '1', 'aria-label': '직접 넣는 화분 크기(cm)' });
@@ -228,7 +238,7 @@ window.ZG = window.ZG || {};
     /* 코드가 안 붙은 카드는 읽기()의 거르개를 못 넘어 저장에서 빠진다.
        올린 건의 원래 줄이면 그 줄은 지워지지 않고 원본 그대로 남으므로 그 사실을 적어 준다 (검수 🔴-1) */
     function 코드새로() {
-      var 코드 = (st.접두 && st.cm > 0) ? st.접두 + '-' + st.cm : '';
+      var 코드 = 잡힘(st) ? st.접두 + '-' + st.cm : '';
       var 미확인 = !코드 && 옵션.뺄수없음 && !!st.id;
       코드줄.classList.toggle('nocode', 미확인);
       코드줄.textContent = 코드 ? 코드 + ' · 재고 ' + ZG.계산.현재고(코드)
@@ -238,18 +248,18 @@ window.ZG = window.ZG || {};
     크기.addEventListener('change', function () {
       if (크기.value === '직접') {
         직접.style.display = '';
-        st.cm = Number(직접.value) || 0;
+        st.cm = 직접.value === '' ? NaN : Number(직접.value);
         직접.focus();
       } else {
         직접.style.display = 'none';
-        st.cm = Number(크기.value) || 0;
+        st.cm = Number(크기.value);
       }
       코드새로();
     });
     // 「직접입력」을 고른 동안에만 이 칸이 크기를 정한다
     직접.addEventListener('input', function () {
       if (크기.value !== '직접') return;
-      st.cm = Number(직접.value) || 0;
+      st.cm = 직접.value === '' ? NaN : Number(직접.value);
       코드새로();
     });
 
@@ -279,7 +289,7 @@ window.ZG = window.ZG || {};
         st.접두 = g.접두; st.유통명 = g.대표.유통명; st.학명 = g.대표.학명;
         이름칸.value = g.대표.유통명;
         학명줄.textContent = g.대표.학명;
-        var 최근 = Number(String(g.최근규격 || '').replace(/[^0-9]/g, '')) || 0;
+        var 최근 = 글cm(g.최근규격);
         if (사이즈들.indexOf(최근) >= 0) {
           st.cm = 최근; 크기.value = String(최근); 직접.value = ''; 직접.style.display = 'none';
         } else if (최근 > 0) {

@@ -81,7 +81,7 @@ window.ZG = window.ZG || {};
       모두.forEach(function (st) {
         if (걸린) return;
         if (!st.접두) 걸린 = '품목이 안 정해진 카드가 있습니다. 목록에서 골라 주세요 — 직접 쓴 이름에는 품목코드가 안 붙습니다.';
-        else if (st.cm <= 0) 걸린 = '화분 사이즈를 정해 주세요.';
+        else if (!(st.cm >= 0)) 걸린 = '화분 사이즈를 정해 주세요.';
         else if (st.수량 <= 0) 걸린 = '수량을 1 이상으로 넣어 주세요.';
       });
       if (걸린) return 걸린;
