@@ -1011,6 +1011,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .card .ac{margin-top:var(--space-sm)}
 .문자주문 .ac .it .cd{width:76px; white-space:nowrap}
 .문자주문 .card .row{margin-bottom:0}
+.문자주문 .card .row + .row{margin-top:var(--space-md)}
 .문자주문 td .sub{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
 .문자주문 td .sub.번호{font-family:var(--font-mono); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
 .문자주문 td.tm{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-sub)}
@@ -1028,7 +1029,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .속판 .항목 b{width:90px; text-align:right; font-variant-numeric:tabular-nums}
 .문자주문 .속판 .끝{display:flex; gap:var(--space-sm); align-items:center; margin-top:var(--space-xs); padding-top:var(--space-md); border-top:var(--border-width) solid var(--color-border-faint)}
 .문자주문 .속판 .끝 .spacer{flex:1}
-.문자주문 .올림판{display:grid; grid-template-columns:130px 150px 1fr; gap:var(--space-lg); align-items:end; padding:var(--space-md) var(--space-sm) 0}
+.문자주문 .올림판{display:grid; grid-template-columns:130px 150px 100px 1fr; gap:var(--space-lg); align-items:end; padding:var(--space-md) var(--space-sm) 0}
 .문자주문 .올림판 .끝단추{grid-column:1 / -1; display:flex; gap:var(--space-sm); justify-content:flex-end}
 .문자주문 .tblhd{display:flex; gap:var(--space-sm); align-items:center; margin-bottom:var(--space-lg); padding:0 var(--space-sm)}
 .문자주문 .tblhd .d{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; white-space:nowrap}

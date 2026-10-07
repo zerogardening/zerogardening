@@ -8,7 +8,7 @@ window.ZG = window.ZG || {};
   var u = ZG.ui, 만들기 = u.만들기;
   function 자() { return ZG.문자주문자료; }
 
-  /* 사본 = { 받는분, 전화, 주소 } — 셸이 들고 있다가 다시 그려도 되살린다 (§8-7) */
+  /* 사본 = { 받는분, 전화, 주소, 우편 } — 셸이 들고 있다가 다시 그려도 되살린다 (§8-7) */
   function 판(r, 사본, 폰, 닫기) {
     var 부 = ZG.문자주문새문자;
     var 이름 = 만들기('input', { class: 'inp', type: 'text', placeholder: '받는 분', value: 사본.받는분 || '' });
@@ -17,7 +17,13 @@ window.ZG = window.ZG || {};
       ? 만들기('textarea', { class: 'inp ta', rows: '2' })
       : 만들기('input', { class: 'inp', type: 'text' });
     주소.value = 사본.주소 || '';
-    주소.addEventListener('input', function () { 사본.주소 = 주소.value; });
+    var 우편 = 만들기('input', { class: 'inp', type: 'text', inputmode: 'numeric', placeholder: '우편번호', value: 사본.우편 || '' });
+    // 주소 찾기는 값만 넣고 input 을 안 쏜다 — 돌려주는 focus 와 올리기 직전에 맞춘다
+    function 곳맞추기() { 사본.주소 = 주소.value; 사본.우편 = 우편.value; }
+    주소.addEventListener('input', 곳맞추기);
+    우편.addEventListener('input', 곳맞추기);
+    주소.addEventListener('focus', 곳맞추기);
+    var 주소줄 = 부.주소묶음(주소, 우편);
 
     var 닫단추 = 만들기('button', { class: 'btn', type: 'button', text: '닫기' });
     닫단추.addEventListener('click', 닫기);
@@ -35,7 +41,7 @@ window.ZG = window.ZG || {};
 
     올림.addEventListener('click', function () {
       if (누르는중) return;
-      누르는중 = true; 판정();
+      누르는중 = true; 판정(); 곳맞추기();
       var 결과 = 자().주문올리기(r.id, 사본);
       if (결과.오류) { 누르는중 = false; 판정(); u.토스트(결과.오류); return; }
       u.토스트('주문을 올렸습니다 — ' + 결과.번호);
@@ -46,12 +52,12 @@ window.ZG = window.ZG || {};
     var 밭 = 부.밭;
     if (폰) {
       return 만들기('div', { class: '속 올림' }, [
-        밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('주소', 주소),
+        밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('주소', 주소줄), 밭('우편번호', 우편, 'width:120px'),
         만들기('div', { class: 'act', style: 'margin-top:0' }, [닫단추, 올림])
       ]);
     }
     return 만들기('div', { class: '올림판' }, [
-      밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('주소', 주소),
+      밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('우편번호', 우편), 밭('주소', 주소줄),
       만들기('div', { class: '끝단추' }, [닫단추, 올림])
     ]);
   }

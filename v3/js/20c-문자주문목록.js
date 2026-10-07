@@ -66,8 +66,8 @@ window.ZG = window.ZG || {};
   function 열기(r, 종류) {
     if (상태.열린 && 상태.열린.id === r.id && 상태.열린.종류 === 종류 && 종류 === '고침') { 상태.열린 = null; 다시(); return; }
     var 사본 = 종류 === '올림'
-      ? { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 주소: r.주소 || '' }
-      : { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 메모: r.메모 || '', 배송비: Number(r.배송비) || 0,
+      ? { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 주소: r.주소 || '', 우편: r.우편 || '' }
+      : { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 메모: r.메모 || '', 주소: r.주소 || '', 우편: r.우편 || '', 배송비: Number(r.배송비) || 0,
           품목: (r.품목 || []).map(function (p) { return Object.assign({}, p); }) };
     상태.열린 = { id: r.id, 종류: 종류, 사본: 사본 };
     다시();
@@ -151,9 +151,10 @@ window.ZG = window.ZG || {};
     var 칸 = {
       받는분: 부품.글칸(사본.받는분, '받는 분', function (v) { 사본.받는분 = v; }),
       전화: 부품.전화칸(사본.전화, function (v) { 사본.전화 = v; if (참조.문자단추) 참조.문자단추.disabled = !자().문자되나(v); }, 폰),
-      메모: 부품.글칸(사본.메모, '메모', function (v) { 사본.메모 = v; })
+      메모: 부품.글칸(사본.메모, '메모', function (v) { 사본.메모 = v; }),
+      곳: 부품.주소칸(사본.주소, 사본.우편, function (v) { 사본.주소 = v; }, function (v) { 사본.우편 = v; })
     };
-    참조.글칸들 = [칸.받는분, 칸.메모];
+    참조.글칸들 = [칸.받는분, 칸.메모, 칸.곳.주소, 칸.곳.우편];
     return 칸;
   }
   function 고침판(r, 폰) {
@@ -163,7 +164,9 @@ window.ZG = window.ZG || {};
     if (폰) {
       return 만들기('div', { class: '속' }, [
         만들기('div', { class: 'pair' }, [밭('받는 분 <span class="auto">선택</span>', 칸.받는분, 'flex:1'), 밭('전화번호', 칸.전화, 'flex:1.3')]),
-        밭('메모 <span class="auto">선택</span>', 칸.메모)
+        밭('메모 <span class="auto">선택</span>', 칸.메모),
+        밭('주소 <span class="auto">선택</span>', 칸.곳.줄),
+        밭('우편번호', 칸.곳.우편, 'width:120px')
       ].concat(항목들, [만들기('div', { class: 'act', style: 'margin-top:0; flex-wrap:wrap' }, [단.문자, 단.올림, 단.저장])]));
     }
     var 삭제 = 단추('삭제', 'sm del', function () { 지우기(r); });
@@ -171,6 +174,9 @@ window.ZG = window.ZG || {};
       만들기('div', { class: '사람줄' }, [
         밭('받는 분 <span class="auto">선택</span>', 칸.받는분, 'width:130px'), 밭('전화번호', 칸.전화, 'width:150px'),
         밭('메모 <span class="auto">선택</span>', 칸.메모, 'flex:1')
+      ]),
+      만들기('div', { class: '사람줄' }, [
+        밭('우편번호', 칸.곳.우편, 'width:130px'), 밭('주소 <span class="auto">선택</span>', 칸.곳.줄, 'flex:1')
       ])
     ].concat(항목들, [만들기('div', { class: '끝' }, [삭제, 만들기('span', { class: 'spacer' }), 단.문자, 단.올림, 단.저장])]));
   }
