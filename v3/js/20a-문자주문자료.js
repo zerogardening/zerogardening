@@ -33,11 +33,15 @@ window.ZG = window.ZG || {};
   function 거르기(날짜, 검색) {
     var 열쇠 = 납작(검색);
     if (!열쇠) return 전부().filter(function (r) { return r.날짜 === 날짜; });
-    var 숫자열쇠 = 숫자만(열쇠);
+    var 숫자열쇠 = 숫자만(열쇠), 색 = null;
     return 전부().filter(function (r) {
       var 밭 = 납작((r.받는분 || '') + (r.메모 || '') + (r.품목 || []).map(function (p) { return p.유통명; }).join(''));
       if (밭.indexOf(열쇠) >= 0) return true;
-      return 숫자열쇠.length >= 3 && 숫자열쇠 === 열쇠.replace(/-/g, '') && 숫자만(r.전화).indexOf(숫자열쇠) >= 0;
+      if (숫자열쇠.length < 3 || 숫자열쇠 !== 열쇠.replace(/-/g, '')) return false;
+      if (숫자만(r.전화).indexOf(숫자열쇠) >= 0) return true;
+      if (r.상태 !== '올림') return false;
+      색 = 색 || 발송색인();   // 검색할 때 한 번만 — 줄마다 저장소를 읽지 않는다
+      return 발송정보(r, 색).송장.some(function (s) { return 숫자만(s).indexOf(숫자열쇠) >= 0; });
     });
   }
   function 점표(달) {
@@ -116,6 +120,76 @@ window.ZG = window.ZG || {};
     location.href = 'sms:' + 숫자만(전화) + '?body=' + encodeURIComponent(글);
   }
 
+  /* ── 발송완료 (16단계-2 §2) — 저장하지 않고 주문 줄·출고에서 그때그때 판정한다 ── */
+  function 넣기(표, 열쇠, 것) { (표[열쇠] = 표[열쇠] || []).push(것); }
+  // 🔴 카드마다 저장소를 읽으면 O(n²) — 목록 한 번에 색인 하나 (08f 색인만들기와 같은 이유)
+  function 발송색인() {
+    var 색 = { 문자id별: {}, 번호별: {}, 출고별: {} };
+    저().읽기(저().키.주문).forEach(function (o) {
+      if (o.문자주문id) 넣기(색.문자id별, o.문자주문id, o);
+      var n = String(o.주문번호 || '').trim();
+      if (n && o.판매처 === '문자') 넣기(색.번호별, n, o);
+    });
+    저().읽기(저().키.출고).forEach(function (s) {
+      if (s.출처 === '주문' && s.주문id) 넣기(색.출고별, s.주문id, s);
+    });
+    return 색;
+  }
+  // 주문탭에서 나중에 더한 줄도 잡는다 — 판매처 '문자'로 같은 모양 번호의 남의 주문은 막는다
+  function 대상줄(r, 색) {
+    var 본 = {}, 줄들 = [];
+    function 담기(o) { if (o.서비스 === true || 본[o.id]) return; 본[o.id] = 1; 줄들.push(o); }
+    (색.문자id별[r.id] || []).forEach(담기);
+    var n = String(r.올린주문번호 || '').trim();
+    if (n) (색.번호별[n] || []).forEach(담기);
+    return 줄들;
+  }
+  function 겹침빼기(값들) {
+    var 본 = {};
+    return 값들.filter(function (v) { if (!v || 본[v]) return false; 본[v] = 1; return true; });
+  }
+  // 수량은 출고 수량 합 — 주문탭에서 수량을 고쳤어도 실제로 빠진 수가 나온다
+  function 나간품목짓기(r, 나간, 색) {
+    var 모음 = {}, 차례 = [];
+    나간.forEach(function (o) {
+      var 코드 = o.품목코드 || '';
+      if (!모음[코드]) { 모음[코드] = { 유통명: o.유통명 || '', 규격: o.규격 || '', 수량: 0 }; 차례.push(코드); }
+      색.출고별[o.id].forEach(function (s) { 모음[코드].수량 += Number(s.수량) || 0; });
+    });
+    var 앞 = [];
+    (r.품목 || []).forEach(function (p) {
+      var 것 = 모음[p.품목코드 || ''];
+      if (!것 || 앞.indexOf(p.품목코드 || '') >= 0) return;
+      것.유통명 = p.유통명; 것.규격 = p.규격 || '';
+      앞.push(p.품목코드 || '');
+    });
+    return 앞.concat(차례.filter(function (c) { return 앞.indexOf(c) < 0; })).map(function (c) { return 모음[c]; });
+  }
+  function 발송정보(r, 색) {
+    if (!r || r.상태 !== '올림') return null;
+    색 = 색 || 발송색인();
+    var 나간 = [], 출고들 = [];
+    대상줄(r, 색).forEach(function (o) {
+      var 출 = 색.출고별[o.id];
+      if (출 && 출.length) { 나간.push(o); 출고들 = 출고들.concat(출); }
+    });
+    출고들.sort(function (a, b) { return (a.등록일시 || 0) - (b.등록일시 || 0); });
+    var 자동 = 겹침빼기(출고들.map(function (s) { return String(s.운송장번호 || '').trim(); }));
+    var 손 = Array.isArray(r.손송장);
+    return { 됨: 나간.length > 0, 자동송장: 자동, 송장: 손 ? r.손송장.slice() : 자동, 손: 손,
+             나간품목: 나간품목짓기(r, 나간, 색) };
+  }
+  function 발송문자내용(r, 정보) {
+    정보 = 정보 || 발송정보(r);
+    var 이름 = String(r.받는분 || '').trim();
+    var 글 = '🌱 [제로가드닝]\n' + (이름 ? 이름 + ' 님 ' : '') + '주문하신 상품을 보냈습니다\n\n' +
+      정보.나간품목.map(function (p) {
+        return '· ' + p.유통명 + (p.규격 ? ' ' + p.규격 : '') + ' ' + u.콤마(p.수량) + '개';
+      }).join('\n');
+    if (정보.송장.length) 글 += '\n\n' + 정보.송장.map(function (s) { return '로젠택배 ' + s; }).join('\n');
+    return 글;
+  }
+
   /* ── 쓰기 ── */
   function 다듬기(값) {
     return {
@@ -156,6 +230,25 @@ window.ZG = window.ZG || {};
     if (!r || r.상태 === '올림') return false;
     저().지우기(키(), id);
     return true;
+  }
+
+  /* 발송문자·손송장은 올림 줄에만 — 고치기·보냄표시·지우기의 올림 거부와 따로 간다 */
+  function 발송문자표시(id) {
+    var r = 하나(id);
+    if (!r || r.상태 !== '올림') return null;
+    var 이제 = Date.now();
+    저().바꾸기(키(), id, { 발송문자보냄일시: 이제, 수정일시: 이제 });
+    return 하나(id);
+  }
+  /* 자동과 같아지면 null 로 풀어 다시 자동을 따른다 · 빈 배열은 「자동 송장을 지웠다」 (§2) */
+  function 손송장저장(id, 값들) {
+    var r = 하나(id);
+    if (!r || r.상태 !== '올림') return null;
+    var 깨끗 = 겹침빼기((값들 || []).map(숫자만));
+    var 자동 = 발송정보(r).자동송장;
+    var 같다 = 깨끗.length === 자동.length && 깨끗.every(function (v, i) { return v === 자동[i]; });
+    저().바꾸기(키(), id, { 손송장: 같다 ? null : 깨끗, 수정일시: Date.now() });
+    return 하나(id);
   }
 
   /* ── 주문올리기 (§4) ── */
@@ -212,6 +305,7 @@ window.ZG = window.ZG || {};
     전부: 전부, 하나: 하나, 거르기: 거르기, 점표: 점표, 오늘보낸수: 오늘보낸수,
     합계: 합계, 제목: 제목, 후보: 후보, 담을줄: 담을줄,
     문자내용: 문자내용, 문자열기: 문자열기,
-    새로저장: 새로저장, 고치기: 고치기, 보냄표시: 보냄표시, 지우기: 지우기, 주문올리기: 주문올리기
+    새로저장: 새로저장, 고치기: 고치기, 보냄표시: 보냄표시, 지우기: 지우기, 주문올리기: 주문올리기,
+    발송색인: 발송색인, 발송정보: 발송정보, 발송문자내용: 발송문자내용, 발송문자표시: 발송문자표시, 손송장저장: 손송장저장
   };
 })(window.ZG);

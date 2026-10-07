@@ -1035,6 +1035,26 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .tblhd .d small{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-left:var(--space-xs)}
 .문자주문 .tblhd .찾기{flex:1; height:30px; font-size:var(--font-sm)}
 
+/* 발송완료 문자 (16단계-2 · 시안 16-문자주문-발송완료-macA) — .송장·.보낸표·td.상태칸 이 맨이름으로 새면 주문 조회와 부딪친다 */
+.문자주문 .st.ship{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
+.문자주문 .st.ship::before{background:var(--overlay-strong)}
+.문자주문 .송장{display:flex; flex-direction:column; gap:3px; margin-top:var(--space-md); padding:var(--space-sm) var(--space-md); background:#F5F5F7; border-radius:var(--radius-md)}
+.문자주문 .송장 .줄{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm)}
+.문자주문 .송장 .사{color:var(--color-text-sub); font-weight:var(--weight-semibold); white-space:nowrap}
+.문자주문 .송장 .번{font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:var(--font-md); letter-spacing:.01em}
+.문자주문 .송장 .없음{color:var(--color-text-hint); font-weight:var(--weight-semibold); white-space:nowrap}
+.문자주문 .송장 .inp{flex:1; min-width:0; height:30px; font-size:var(--font-md); font-family:var(--font-mono); line-height:28px}
+.문자주문 .보낸표{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-accent-dark); white-space:nowrap; margin-right:auto}
+.문자주문 .보낸표::before{content:'✓ '; font-weight:var(--weight-bold)}
+.문자주문 .보낸표 b{font-family:var(--font-mono)}
+.문자주문 td.상태칸{vertical-align:top; padding-top:12px; padding-bottom:12px}
+.문자주문 td.상태칸 .송장{margin-top:6px; padding:5px 8px; gap:2px}
+.문자주문 td.상태칸 .송장 .줄{font-size:var(--font-2xs); gap:6px}
+.문자주문 td.상태칸 .송장 .번{font-size:var(--font-xs)}
+.문자주문 td.상태칸 .송장 .inp{height:26px; font-size:var(--font-xs); line-height:24px; padding:0 6px}
+.문자주문 td.상태칸 .btn{margin-top:6px; width:100%}
+.문자주문 td.상태칸 .보낸표{display:block; margin-top:6px; font-size:var(--font-2xs)}
+
 /* 문자주문 내역 인쇄 — 널서리 출고 이력 인쇄 그대로(body 직계로 옮기고 클래스로 나머지를 끈다) */
 .doc문자{display:none}
 @media print{

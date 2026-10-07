@@ -9,7 +9,7 @@ window.ZG = window.ZG || {};
   function 자() { return ZG.문자주문자료; }
   function 부() { return ZG.문자주문새문자; }
 
-  var 상태 = { 뷰: '새문자', 날짜: '', 달: '', 검색: '', 열린: null };   // 열린 = { id, 종류: '고침'|'올림', 사본 }
+  var 상태 = { 뷰: '새문자', 날짜: '', 달: '', 검색: '', 열린: null, 송장고침: null };   // 열린 = { id, 종류: '고침'|'올림', 사본 } · 송장고침 = { id, 값들 }
   var 참조 = {};
   var 요일 = ['일', '월', '화', '수', '목', '금', '토'];
   var 휴지통 = '<path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>';
@@ -34,20 +34,24 @@ window.ZG = window.ZG || {};
   /* ── 셸 ── */
   function 목록으로() {
     상태.뷰 = '목록'; 상태.날짜 = u.오늘문자(); 상태.달 = 상태.날짜.slice(0, 7);
-    상태.검색 = ''; 상태.열린 = null;
+    상태.검색 = ''; 상태.열린 = null; 상태.송장고침 = null;
     다시();
   }
-  function 새문자로() { 상태.뷰 = '새문자'; 상태.열린 = null; 다시(); }
+  function 새문자로() { 상태.뷰 = '새문자'; 상태.열린 = null; 상태.송장고침 = null; 다시(); }
   // 다른 탭에서 돌아오면 새 문자부터. 담던 것은 남긴다 (널서리 나가기)
-  function 나가기() { 상태.뷰 = '새문자'; 상태.열린 = null; }
+  function 나가기() { 상태.뷰 = '새문자'; 상태.열린 = null; 상태.송장고침 = null; }
   function 제목() { return '주문'; }
   function 요약() {
     if (상태.뷰 !== '목록') return { 왼: u.오늘문자(), 오: '오늘 문자 <b>' + 자().오늘보낸수() + '</b>건' };
-    var 그날 = 자().거르기(상태.날짜, '');
-    var 셈 = { 저장: 0, 보냄: 0, 올림: 0 };
-    그날.forEach(function (r) { 셈[r.상태] = (셈[r.상태] || 0) + 1; });
+    var 그날 = 자().거르기(상태.날짜, ''), 색 = 자().발송색인();
+    var 셈 = { 저장: 0, 보냄: 0, 올림: 0, 발송완료: 0 };
+    그날.forEach(function (r) {
+      var 결 = r.상태 === '올림' && 자().발송정보(r, 색).됨 ? '발송완료' : r.상태;
+      셈[결] = (셈[결] || 0) + 1;
+    });
     return { 왼: 날글(상태.날짜) + ' · <b>' + 그날.length + '</b>건',
-             오: '저장 <b>' + 셈.저장 + '</b> · 보냄 <b>' + 셈.보냄 + '</b> · 올림 <b>' + 셈.올림 + '</b>' };
+             오: ['저장', '보냄', '올림', '발송완료'].filter(function (k) { return 셈[k]; })
+               .map(function (k) { return k + ' <b>' + 셈[k] + '</b>'; }).join(' · ') };
   }
   function 그리기(본문) {
     본문.classList.add('문자주문');
@@ -76,6 +80,16 @@ window.ZG = window.ZG || {};
     u.토스트(u.폰인가() ? '문자앱을 엽니다' : '문자 내용을 복사했습니다');
     다시();
     자().문자열기(r.전화, 자().문자내용(r));
+  }
+  /* 저장이 먼저, 링크가 나중 (앞 설계 §5) — 링크를 열면 페이지가 멈출 수 있다 */
+  function 발송문자보내기(id) {
+    if (상태.송장고침 && 상태.송장고침.id === id) { 자().손송장저장(id, 상태.송장고침.값들); 상태.송장고침 = null; }
+    var r = 자().발송문자표시(id);
+    if (!r) return;
+    var 정보 = 자().발송정보(r);
+    u.토스트(u.폰인가() ? '문자앱을 엽니다' : '문자 내용을 복사했습니다');
+    다시();
+    자().문자열기(r.전화, 자().발송문자내용(r, 정보));
   }
   function 고친것저장(r) {
     부().글칸맞추기(참조.글칸들);
@@ -162,7 +176,8 @@ window.ZG = window.ZG || {};
   }
 
   /* ── 한 줄의 글 ── */
-  function 칩(r, 폰) {
+  function 칩(r, 폰, 정보) {
+    if (정보 && 정보.됨) return 만들기('span', { class: 'st ship', text: '발송완료' });
     if (r.상태 === '올림') return 만들기('span', { class: 'st done', html: '주문올림' + (폰 ? ' <span class="no">' + u.안전(r.올린주문번호 || '') + '</span>' : '') });
     if (r.상태 === '보냄') return 만들기('span', { class: 'st wait', text: '문자 보냄' });
     return 만들기('span', { class: 'st saved', text: '저장됨' });
@@ -176,20 +191,97 @@ window.ZG = window.ZG || {};
     return 전 ? '<span class="tel">' + u.안전(자().전화모양(전)) + '</span>' : '<span class="무전화">전화 없음</span>';
   }
 
+  /* ── 발송완료 — 송장칸 · 발송 단추 (16단계-2 §5) ── */
+  function 송장칸(r, 정보, 폰) {
+    var 고침 = 상태.송장고침 && 상태.송장고침.id === r.id ? 상태.송장고침 : null;
+    var 상자 = 만들기('div', { class: '송장' }), 사 = 폰 ? '로젠택배' : '로젠';
+    상자.addEventListener('click', function (e) { e.stopPropagation(); });
+    function 줄(머리, 칸) { var d = 만들기('div', { class: '줄' }, [머리, 칸]); 상자.appendChild(d); return d; }
+    function 사칸() { return 만들기('span', { class: '사', text: 사 }); }
+    function 입력(값, i) {
+      var e = 만들기('input', { class: 'inp' + (폰 ? ' num' : ''), type: 'text', inputmode: 'numeric', placeholder: '송장번호', value: 값 || '' });
+      if (폰) { e.style.textAlign = 'left'; u.손대야열림(e); }
+      // 칠 때는 값만 든다 — 다시 그리면 커서가 날아간다
+      e.addEventListener('input', function () {
+        if (!상태.송장고침 || 상태.송장고침.id !== r.id) 상태.송장고침 = { id: r.id, 값들: [''] };
+        var 값들 = 상태.송장고침.값들;
+        값들[i] = e.value;
+        if (e.value && i === 상자.querySelectorAll('input').length - 1) 줄(사칸(), 입력('', i + 1));
+      });
+      e.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); 확정(true); } });
+      if (고침 && 고침.포커스 === i) {
+        delete 고침.포커스;
+        e.readOnly = false;   // 방금 손으로 누른 칸이다
+        setTimeout(function () { e.focus(); }, 0);
+      }
+      return e;
+    }
+    function 확정(다시그림) {
+      if (!상태.송장고침 || 상태.송장고침.id !== r.id) return;
+      자().손송장저장(r.id, 상태.송장고침.값들);
+      상태.송장고침 = null;
+      if (다시그림) 다시();
+    }
+    상자.addEventListener('focusout', function () {
+      setTimeout(function () {
+        // 남의 저장으로 다시 그려져 떨어진 상자 — 고치던 값은 상태에 남겨 새 상자가 되살린다
+        if (!상자.isConnected || 상자.contains(document.activeElement)) return;
+        var 단 = 참조.발송단추 && 참조.발송단추[r.id];
+        // 그 카드의 발송 단추로 간 것이면 다시 그리지 않는다 — 단추가 갈려 클릭이 사라진다 (Safari 는 단추에 포커스를 안 줘 누름으로도 본다)
+        확정(!(단 && (document.activeElement === 단 || 참조.발송누름 === r.id)));
+      }, 0);
+    });
+    if (고침) {
+      고침.값들.forEach(function (v, i) { 줄(사칸(), 입력(v, i)); });
+      var 끝 = 고침.값들[고침.값들.length - 1];
+      if (!고침.값들.length || 끝) 줄(사칸(), 입력('', 고침.값들.length));
+      return 상자;
+    }
+    if (!정보.송장.length) { 줄(만들기('span', { class: '없음', text: '송장 없음' }), 입력('', 0)); return 상자; }
+    정보.송장.forEach(function (번) { 줄(사칸(), 만들기('span', { class: '번', text: 번 })); });
+    상자.style.cursor = 'pointer';
+    상자.addEventListener('click', function (e) {
+      var 줄들 = Array.prototype.slice.call(상자.children), 누른 = e.target.closest ? e.target.closest('.줄') : null;
+      상태.송장고침 = { id: r.id, 값들: 정보.송장.slice(), 포커스: Math.max(0, 줄들.indexOf(누른)) };
+      다시();
+    });
+    return 상자;
+  }
+  function 일시글(ms) {
+    var d = new Date(ms);
+    return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + 두자리(d.getHours()) + ':' + 두자리(d.getMinutes());
+  }
+  function 발송단추(r, 정보, 작게) {
+    var s = 작게 ? 'sm' : '', 끔 = !자().문자되나(r.전화), 줄 = [], 단;
+    var 누름 = function () { 발송문자보내기(r.id); };
+    if (r.발송문자보냄일시) {
+      줄.push(만들기('span', { class: '보낸표', html: '발송문자 보냄 <b>' + 일시글(r.발송문자보냄일시) + '</b>' }));
+      단 = 단추('다시 보내기', s, 누름, 끔);
+    } else 단 = 단추('🚚 발송완료 문자', (s + ' main').trim(), 누름, 끔);
+    단.addEventListener('pointerdown', function () { 참조.발송누름 = r.id; });
+    (참조.발송단추 = 참조.발송단추 || {})[r.id] = 단;
+    줄.push(단);
+    return 줄;
+  }
+
   /* ── 폰 ── */
   function 폰카드(r) {
     var 열린 = 상태.열린 && 상태.열린.id === r.id ? 상태.열린 : null;
     var 올림됨 = r.상태 === '올림', 셈 = 자().합계(r), t = 자().제목(r);
+    var 정보 = 올림됨 ? 자().발송정보(r, 참조.색인) : null;
     var 카드 = 만들기('div', { class: 'ph-card 문카드' + (열린 && 열린.종류 === '올림' ? ' 올리는중' : '') });
     var r1 = 만들기('div', { class: 'r1' }, [
       만들기('span', { class: 'fx', text: 올림됨 ? '' : (열린 && 열린.종류 === '고침' ? '－' : '＋') }),
-      제목칸(r), 칩(r, true), 만들기('span', { class: 'tm', text: 시각(r) })
+      제목칸(r), 칩(r, true, 정보), 만들기('span', { class: 'tm', text: 시각(r) })
     ]);
     var r2 = 만들기('div', { class: 'r2', html: (t.결 === '전화' ? '' : 전화글(r) + ' · ') + 셈.종 + '종 ' + u.콤마(셈.개) + '개' +
       '<span class="amt">' + u.콤마(셈.합) + '원</span>' });
     카드.appendChild(r1); 카드.appendChild(r2);
     if (올림됨) {
-      if (r.주소) 카드.appendChild(만들기('div', { class: '받는곳', text: r.주소 }));
+      if (정보.됨) {
+        카드.appendChild(송장칸(r, 정보, true));
+        카드.appendChild(만들기('div', { class: 'act' }, 발송단추(r, 정보, false)));
+      } else if (r.주소) 카드.appendChild(만들기('div', { class: '받는곳', text: r.주소 }));
       return 카드;
     }
     [r1, r2].forEach(function (e) {
@@ -210,7 +302,7 @@ window.ZG = window.ZG || {};
 
   function 폰목록(본문) {
     var 뒤 = 단추('‹ 새 문자', 'sm', 새문자로);
-    본문.appendChild(만들기('div', { class: '머리줄' }, [뒤, 검색칸('🔍 받는 분 · 전화 · 품목 · 메모 (모든 날짜)')]));
+    본문.appendChild(만들기('div', { class: '머리줄' }, [뒤, 검색칸('🔍 받는 분 · 전화 · 품목 · 메모 · 송장 (모든 날짜)')]));
     참조.달력칸 = 만들기('div');
     참조.목록칸 = 만들기('div', { class: 'ph-list' });
     본문.appendChild(참조.달력칸);
@@ -222,6 +314,7 @@ window.ZG = window.ZG || {};
   function PC줄(r) {
     var 열린 = 상태.열린 && 상태.열린.id === r.id ? 상태.열린 : null;
     var 올림됨 = r.상태 === '올림', 셈 = 자().합계(r), t = 자().제목(r), 전 = 자().숫자만(r.전화);
+    var 정보 = 올림됨 ? 자().발송정보(r, 참조.색인) : null, 됨 = !!(정보 && 정보.됨);
     var 사람;
     if (t.결 === '전화') 사람 = '<span class="전화제목">' + u.안전(t.글) + '</span>';
     else {
@@ -229,9 +322,10 @@ window.ZG = window.ZG || {};
       사람 = (t.결 === '메모' ? '<span class="메모제목">' + u.안전(t.글) + '</span>' : u.안전(t.글)) + 아래;
     }
     var 품목글 = (r.품목 || []).map(function (p) { return u.안전(p.유통명) + ' ' + u.콤마(p.수량); }).join(' · ');
-    var 밑 = 올림됨 && r.주소 ? u.안전(r.주소) : (셈.배송비 ? '배송비 ' + u.콤마(셈.배송비) : '배송비 없음');
-    var 상태칸 = 만들기('td', {}, [칩(r, false)]);
-    if (올림됨) 상태칸.appendChild(만들기('span', { class: 'sub 번호', text: r.올린주문번호 || '' }));
+    var 밑 = 올림됨 && !됨 && r.주소 ? u.안전(r.주소) : (셈.배송비 ? '배송비 ' + u.콤마(셈.배송비) : '배송비 없음');
+    var 상태칸 = 만들기('td', { class: '상태칸' }, [칩(r, false, 정보)]);
+    if (됨) [송장칸(r, 정보, false)].concat(발송단추(r, 정보, true)).forEach(function (e) { 상태칸.appendChild(e); });
+    else if (올림됨) 상태칸.appendChild(만들기('span', { class: 'sub 번호', text: r.올린주문번호 || '' }));
     else if (!열린) {
       if (r.상태 === '저장') 상태칸.appendChild(단추('문자', 'sm 꽉', function () { 문자보내기(r.id); }, !자().문자되나(r.전화)));
       상태칸.appendChild(단추('주문올리기', 'sm main 꽉', function () { 열기(r, '올림'); }));
@@ -257,9 +351,9 @@ window.ZG = window.ZG || {};
     var 출력 = 단추('🖨 출력', 'sm', function () {
       ZG.문자주문올리기.인쇄(자().거르기(상태.날짜, 상태.검색), 상태.검색.trim() ? '' : 상태.날짜);
     });
-    var 머리 = 만들기('div', { class: 'tblhd' }, [단추('‹ 새 문자', 'sm', 새문자로), 참조.머리글, 검색칸('🔍 이름 · 전화 · 품목 · 메모'), 출력]);
+    var 머리 = 만들기('div', { class: 'tblhd' }, [단추('‹ 새 문자', 'sm', 새문자로), 참조.머리글, 검색칸('🔍 이름 · 전화 · 품목 · 메모 · 송장'), 출력]);
     var 표 = 만들기('table', {}, [
-      만들기('colgroup', { html: '<col style="width:24px"><col style="width:48px"><col style="width:136px"><col><col style="width:66px"><col style="width:104px">' }),
+      만들기('colgroup', { html: '<col style="width:24px"><col style="width:48px"><col style="width:136px"><col><col style="width:66px"><col style="width:168px">' }),
       만들기('thead', { html: '<tr><th></th><th>시각</th><th>받는 분 · 전화</th><th>품목</th><th class="r">금액</th><th>상태</th></tr>' }),
       참조.목록칸
     ]);
@@ -273,12 +367,14 @@ window.ZG = window.ZG || {};
   /* ── 공통 — 검색 · 달력 · 목록 ── */
   function 검색칸(자리글) {
     var e = u.손대야열림(만들기('input', { class: 'inp 찾기', type: 'search', placeholder: 자리글, value: 상태.검색 }));
-    u.조합안전입력(e, function (값) { 상태.검색 = 값; 상태.열린 = null; 목록다시(); }, 150);
+    u.조합안전입력(e, function (값) { 상태.검색 = 값; 상태.열린 = null; 상태.송장고침 = null; 목록다시(); }, 150);
     return e;
   }
 
   function 목록다시() {
     var 폰 = u.폰인가(), 목록 = 자().거르기(상태.날짜, 상태.검색);
+    참조.색인 = 자().발송색인();
+    참조.발송단추 = {}; 참조.발송누름 = null;
     u.열린줄잊기();
     u.비우기(참조.달력칸);
     // 폰은 찾는 동안 달력을 걷는다 — 모든 날짜에서 찾으므로 고른 날이 뜻이 없다 (시안 ③)
@@ -303,13 +399,13 @@ window.ZG = window.ZG || {};
   }
 
   function 날짜고르기(날짜) {
-    상태.날짜 = 날짜; 상태.달 = 날짜.slice(0, 7); 상태.열린 = null;
+    상태.날짜 = 날짜; 상태.달 = 날짜.slice(0, 7); 상태.열린 = null; 상태.송장고침 = null;
     다시();   // 요약줄(폰 .ph-sub)도 그날로 바뀌어야 한다
   }
   function 달로(달) {
     상태.달 = 달;
     if (상태.날짜.slice(0, 7) !== 달) 상태.날짜 = 달 + '-01';
-    상태.열린 = null;
+    상태.열린 = null; 상태.송장고침 = null;
     다시();
   }
 

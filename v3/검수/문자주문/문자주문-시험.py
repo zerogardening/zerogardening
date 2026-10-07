@@ -98,6 +98,173 @@ def 잡기(쪽):
     # 문자열기 감싸기 — 실제 sms: 링크 대신 기록만
     쪽.evaluate("""() => { const 원 = ZG.문자주문자료.문자열기; ZG.문자주문자료.문자열기 = function(전화, 글){ window.__sms.push({전화, 글, 링크: 'sms:' + ZG.문자주문자료.숫자만(전화) + '?body=' + encodeURIComponent(글)}); }; }""")
 
+# ════════ 발송완료 문자 (16단계-2 §7) — 다른 날짜(2026-08-20)에 심어 앞 단언들의 그날 숫자를 안 바꾼다 ════════
+발송날 = '2026-08-20'
+A글 = "🌱 [제로가드닝]\n김정원 님 주문하신 상품을 보냈습니다\n\n· 휴케라 '팰리스퍼플' 15cm 포트 3개\n· 청사초 10cm 포트 2개\n\n로젠택배 12345678901"
+무명글 = "🌱 [제로가드닝]\n주문하신 상품을 보냈습니다\n\n· 휴케라 '팰리스퍼플' 15cm 포트 3개\n\n로젠택배 12345678923"
+B글 = ("🌱 [제로가드닝]\n최다온 님 주문하신 상품을 보냈습니다\n\n· 휴케라 '팰리스퍼플' 15cm 포트 6개\n· 청사초 10cm 포트 4개\n· 용담 보라 10cm 포트 4개"
+       "\n\n로젠택배 12345678901\n로젠택배 12345678912")
+비움글 = "🌱 [제로가드닝]\n주문하신 상품을 보냈습니다\n\n· 휴케라 '팰리스퍼플' 15cm 포트 3개"
+G글 = "🌱 [제로가드닝]\n일부만 님 주문하신 상품을 보냈습니다\n\n· 털수염풀 10cm 포트 1개\n\n로젠택배 12345678945"
+
+def 발송시드(쪽):
+    쪽.evaluate("""(날) => {
+      const 저 = ZG.저장소, k = 저.키, 지금 = Date.now(), 앞 = '260820';
+      const P = (c, n, 규, q) => ({품목코드: c, 유통명: n, 학명: '', 규격: 규, 수량: q, 단가: 1000});
+      const 휴 = q => P('HEP01-15', "휴케라 '팰리스퍼플'", '15cm 포트', q), 청 = q => P('CAR01-10', '청사초', '10cm 포트', q);
+      const 용 = q => P('GEN01-10', '용담 보라', '10cm 포트', q), 털 = q => P('FES01-10', '털수염풀', '10cm 포트', q);
+      [['sm_A','김정원','01023456789',[휴(3),청(2)],'01'], ['sm_B','최다온','01081002309',[휴(6),청(4),용(4)],'02'],
+       ['sm_C','','01077204411',[휴(3)],'03'], ['sm_D','이아직','01011112222',[청(1)],'04'],
+       ['sm_E','합포일','01033334444',[청(1)],'05'], ['sm_F','합포이','01055556666',[청(1)],'06'],
+       ['sm_G','일부만','01077778888',[청(2),털(1)],'07'], ['sm_H','로젠건','01099990000',[청(1)],'08']
+      ].forEach(([id, 이름, 전화, 품목, n], i) => 저.덧붙이기(k.문자주문, {id, 날짜: 날, 받는분: 이름, 전화, 메모: '', 주소: '서울시 어딘가',
+        품목, 배송비: 4500, 상태: '올림', 올린주문번호: 앞 + '-' + n, 올린일시: 지금, 등록일시: 지금 - (i + 1) * 60000, 수정일시: 지금}));
+      const 줄 = (id, smid, n, p, 판) => 저.덧붙이기(k.주문, Object.assign({id, 주문번호: 앞 + '-' + n, 주문일: 날, 판매처: 판 || '문자', 출처: '수동',
+        품목코드: p.품목코드, 유통명: p.유통명, 규격: p.규격, 주문수량: p.수량, 옵션입수: 1, 단가: 1000, 수령인: 'x', 등록일시: 지금}, smid ? {문자주문id: smid} : {}));
+      let t = 지금 - 100000;
+      const 출 = (oid, p, 송, 덧) => 저.덧붙이기(k.출고, Object.assign({id: 'sh_t_' + oid, 출고일: 날, 품목코드: p.품목코드, 수량: p.수량,
+        출처: '주문', 주문id: oid, 등록일시: t++}, 송 ? {운송장번호: 송} : {}, 덧 || {}));
+      줄('o_A1','sm_A','01',휴(3)); 줄('o_A2','sm_A','01',청(2)); 출('o_A1',휴(3),'12345678901'); 출('o_A2',청(2),'12345678901');
+      줄('o_B1','sm_B','02',휴(6)); 줄('o_B2','sm_B','02',청(4)); 줄('o_B3','sm_B','02',용(4));
+      출('o_B1',휴(6),'12345678901'); 출('o_B2',청(4),'12345678901'); 출('o_B3',용(4),'12345678901');
+      저.바꾸기(k.문자주문, 'sm_B', {손송장: ['12345678901', '12345678912']});
+      줄('o_C1','sm_C','03',휴(3)); 출('o_C1',휴(3),'',{수동: true});
+      // D — 같은 번호의 남의 주문(전화주문)이 나가도 D는 그대로
+      줄('o_D1','sm_D','04',청(1)); 줄('o_X1',null,'04',청(1),'전화주문'); 출('o_X1',청(1),'99999999999');
+      줄('o_E1','sm_E','05',청(1)); 출('o_E1',청(1),'12345678934'); 줄('o_F1','sm_F','06',청(1)); 출('o_F1',청(1),'12345678934');
+      // G — 둘 중 하나(주문탭에서 나중에 더한 줄, 문자주문id 없음)만 나감
+      줄('o_G1','sm_G','07',청(2)); 줄('o_G2',null,'07',털(1)); 출('o_G2',털(1),'12345678945');
+      줄('o_H1','sm_H','08',청(1));
+    }""", 발송날)
+
+def 발송시험(브, 폰):
+    tag = '폰' if 폰 else 'PC'
+    print('\n[발송완료 %s]' % tag)
+    ctx, 쪽 = 새쪽(브, 폰)
+    쪽.goto(밑 + '주문.html')
+    쪽.wait_for_function('!!(window.ZG && ZG.문자주문 && ZG.주문)', timeout=20000)
+    쪽.wait_for_timeout(600)
+    시드(쪽); 발송시드(쪽)
+    쪽.evaluate('ZG.주문.다시그리기()')
+    문자탭(쪽); 잡기(쪽)
+    def 그날로():
+        쪽.evaluate("(날) => { ZG.문자주문.목록으로(); const s = ZG.문자주문.상태; s.날짜 = 날; s.달 = 날.slice(0, 7); ZG.주문.다시그리기(); }", 발송날)
+        쪽.wait_for_timeout(500)
+    def 다시그림():
+        쪽.evaluate('ZG.주문.다시그리기()'); 쪽.wait_for_timeout(300)
+    그날로()
+    줄 = (lambda 이름: 쪽.locator('.문카드', has_text=이름)) if 폰 else (lambda 이름: 쪽.locator('.문자주문 tbody tr', has_text=이름))
+    번들 = lambda 이름: 줄(이름).locator('.송장 .번').all_inner_texts()
+    하나 = lambda id: json.loads(쪽.evaluate('(id) => JSON.stringify(ZG.문자주문자료.하나(id))', id))
+    글 = lambda id: 쪽.evaluate('(id) => ZG.문자주문자료.발송문자내용(ZG.문자주문자료.하나(id))', id)
+    C = '010-7720-4411'
+    재고전 = 재고표(쪽)
+    쪽.screenshot(path=str(샷 / ('%s-발송-1-목록.png' % tag)), full_page=True)
+
+    A = 줄('김정원')
+    본다(tag + ' A: 칩 발송완료 · 송장 한 줄 · 「🚚 발송완료 문자」', A.locator('.st.ship').count() == 1 and 번들('김정원') == ['12345678901']
+         and A.locator('button', has_text='🚚 발송완료 문자').count() == 1, 번들('김정원'))
+    본다(tag + ' B: 손송장 둘 → 송장 두 줄', 번들('최다온') == ['12345678901', '12345678912'], 번들('최다온'))
+    본다(tag + ' C 손처리: 「송장 없음」+입력칸', 줄(C).locator('.st.ship').count() == 1 and 줄(C).locator('.송장 .없음').count() == 1
+         and 줄(C).locator('.송장 input').count() == 1)
+    D = 줄('이아직')
+    본다(tag + ' D 아직(같은 번호 남의 주문이 나가도): 주문올림 그대로', D.locator('.st.done').count() == 1 and D.locator('.st.ship').count() == 0
+         and D.locator('.송장').count() == 0 and (D.locator('.act').count() == 0 and '260820-04' in D.locator('.st.done').inner_text() if 폰 else D.locator('.번호').count() == 1))
+    본다(tag + ' 합포장 두 카드 같은 송장', 번들('합포일') == ['12345678934'] and 번들('합포이') == ['12345678934'], (번들('합포일'), 번들('합포이')))
+    본다(tag + ' 일부만 나감 → 발송완료 · 문자 품목 1줄', 줄('일부만').locator('.st.ship').count() == 1 and 글('sm_G') == G글, 글('sm_G'))
+    if 폰:
+        본다('폰 발송완료 카드는 받는곳(주소) 안 붙음', A.locator('.받는곳').count() == 0 and D.locator('.받는곳').count() == 1)
+        요 = 쪽.locator('.ph-sub').inner_text().replace('\n', ' ')
+        본다('폰 요약줄 「올림 2 · 발송완료 6」 (0인 것은 빠짐)', '올림 2 · 발송완료 6' in 요 and '저장' not in 요 and '보냄' not in 요, 요)
+    else:
+        본다('PC 발송완료 줄 품목칸 밑은 주소 대신 배송비', '배송비 4,500' in A.inner_text() and '서울시' not in A.inner_text() and '서울시' in D.inner_text())
+        본다('PC 상태칸 class·colgroup 168px', A.locator('td.상태칸').count() == 1 and
+             쪽.locator('.문자주문 colgroup col').last.get_attribute('style') == 'width:168px')
+        요 = 쪽.evaluate('ZG.문자주문.요약().오')
+        본다('PC 요약 「올림 2 · 발송완료 6」', 요 == '올림 <b>2</b> · 발송완료 <b>6</b>', 요)
+    본다(tag + ' 검색 자리글에 송장', '· 송장' in (쪽.locator('.문자주문 input.찾기').get_attribute('placeholder') or ''))
+    본다(tag + ' 문자 글: 기본(A)', 글('sm_A') == A글, 글('sm_A'))
+    본다(tag + ' 문자 글: 송장 둘(B)', 글('sm_B') == B글, 글('sm_B'))
+    본다(tag + ' 문자 글: 송장 비움(C) — 송장 줄과 앞 빈 줄 없음', 글('sm_C') == 비움글, 글('sm_C'))
+
+    # 검색 — 송장 숫자로
+    찾 = 쪽.locator('.문자주문 input.찾기'); 찾.click(); 찾.fill('901'); 쪽.wait_for_timeout(400)
+    이름들 = 쪽.locator('.문카드 .r1 .nm').all_inner_texts() if 폰 else [t.split('\n')[0] for t in 쪽.locator('.문자주문 tbody tr td:nth-child(3)').all_inner_texts()]
+    본다(tag + ' 검색 901 → A·B만', sorted(이름들) == ['김정원', '최다온'], 이름들)
+    찾 = 쪽.locator('.문자주문 input.찾기'); 찾.click(); 찾.fill(''); 쪽.wait_for_timeout(400)
+
+    # 치던 중 다시 그려도 값이 남는다
+    칸 = 줄(C).locator('.송장 input').first
+    칸.click(); 쪽.keyboard.type('123', delay=20)
+    다시그림()
+    칸 = 줄(C).locator('.송장 input').first
+    본다(tag + ' 송장 치던 중 다시그리기 → 값 남음', 칸.input_value() == '123', 칸.input_value())
+    칸.click(); 칸.press('End'); 쪽.keyboard.type('45678923', delay=10); 칸.press('Enter'); 쪽.wait_for_timeout(300)
+    본다(tag + ' C 송장 넣고 Enter → 손송장·카드 송장', 하나('sm_C').get('손송장') == ['12345678923'] and 번들(C) == ['12345678923'], 하나('sm_C').get('손송장'))
+    본다(tag + ' 문자 글: 받는 분 없음(C)', 글('sm_C') == 무명글, 글('sm_C'))
+
+    # 손송장 — A
+    def 바깥():
+        줄('김정원').locator('.tm').click(); 쪽.wait_for_timeout(300)
+    줄('김정원').locator('.송장').click(); 쪽.wait_for_timeout(300)
+    칸들 = 줄('김정원').locator('.송장 input')
+    본다(tag + ' 송장 상자 누르면 고치는 칸(값+빈칸)', 칸들.count() == 2 and 칸들.nth(0).input_value() == '12345678901', 칸들.count())
+    쪽.screenshot(path=str(샷 / ('%s-발송-2-송장고침.png' % tag)), full_page=True)
+    칸들.nth(1).click(); 쪽.keyboard.type('12345678912', delay=10); 바깥()
+    본다(tag + ' 빈칸에 더하고 바깥 → 손송장 둘', 하나('sm_A').get('손송장') == ['12345678901', '12345678912'] and 번들('김정원') == ['12345678901', '12345678912'], 하나('sm_A').get('손송장'))
+    줄('김정원').locator('.송장').click(); 쪽.wait_for_timeout(300)
+    칸 = 줄('김정원').locator('.송장 input').nth(1); 칸.click(); 칸.fill(''); 바깥()
+    a = 하나('sm_A')
+    본다(tag + ' 더한 것 지우면 자동과 같아져 손송장 null', '손송장' in a and a['손송장'] is None and 번들('김정원') == ['12345678901'], a.get('손송장'))
+    줄('김정원').locator('.송장').click(); 쪽.wait_for_timeout(300)
+    칸 = 줄('김정원').locator('.송장 input').nth(0); 칸.click(); 칸.fill(''); 바깥()
+    본다(tag + ' 전부 지우면 손송장 [] · 「송장 없음」', 하나('sm_A').get('손송장') == [] and 줄('김정원').locator('.송장 .없음').count() == 1, 하나('sm_A').get('손송장'))
+    쪽.evaluate("ZG.문자주문자료.손송장저장('sm_A', ['12345678901'])"); 다시그림()
+
+    # 발송완료 문자 · 다시 보내기
+    n = len(쪽.evaluate('window.__sms'))
+    줄('김정원').locator('button', has_text='🚚 발송완료 문자').click(); 쪽.wait_for_timeout(400)
+    sms = 쪽.evaluate('window.__sms'); a = 하나('sm_A')
+    본다(tag + ' 「발송완료 문자」 → 그 글·그 전화로', len(sms) == n + 1 and sms[-1]['글'] == A글 and sms[-1]['전화'] == '01023456789', sms[-1]['글'] if sms else '')
+    본다(tag + ' 발송문자보냄일시 생김 · 상태는 올림 그대로', bool(a.get('발송문자보냄일시')) and a['상태'] == '올림', a.get('상태'))
+    A = 줄('김정원')
+    본다(tag + ' 보낸표 「발송문자 보냄」 · 「다시 보내기」', '발송문자 보냄' in A.locator('.보낸표').inner_text() and A.locator('button', has_text='다시 보내기').count() == 1
+         and A.locator('button', has_text='🚚 발송완료 문자').count() == 0)
+    첫 = a['발송문자보냄일시']; 쪽.wait_for_timeout(30)
+    A.locator('button', has_text='다시 보내기').click(); 쪽.wait_for_timeout(400)
+    본다(tag + ' 다시 보내기 → 일시 갱신·문자 또 나감', 하나('sm_A')['발송문자보냄일시'] > 첫 and len(쪽.evaluate('window.__sms')) == n + 2)
+    본다(tag + ' 전화 없으면 발송 단추 잠김(자료층 문자되나 규칙)', 쪽.evaluate("!ZG.문자주문자료.문자되나('')"))
+    쪽.screenshot(path=str(샷 / ('%s-발송-3-보낸뒤.png' % tag)), full_page=True)
+    본다(tag + ' 재고 자료 전후 같음(발송문자는 재고 안 건드림)', 재고표(쪽) == 재고전)
+
+    if not 폰:
+        # 08g — 로젠 처리 뒤 출고에 운송장번호가 실린다
+        쪽.evaluate("""() => {
+          window.XLSX = window.XLSX || {};
+          const 머리 = Array(19).fill(''), 행 = Array(19).fill('');
+          머리[3] = '운송장번호'; 머리[18] = '주문번호';
+          행[3] = '55555555555'; 행[6] = '로젠건'; 행[11] = '1'; 행[18] = '260820-08';
+          ZG.주문파일.시트배열 = (f, cb) => cb({ ok: true, 행들: [머리, 행] });
+          ZG.배송완료창.열기();
+          const dt = new DataTransfer(); dt.items.add(new File(['x'], '로젠.xlsx'));
+          document.querySelector('.drop').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+        }""")
+        쪽.wait_for_timeout(300)
+        쪽.locator('button', has_text='배송완료 처리').last.click(); 쪽.wait_for_timeout(500)
+        출 = 쪽.evaluate("ZG.저장소.읽기(ZG.저장소.키.출고).filter(s => s.주문id === 'o_H1').map(s => s.운송장번호)")
+        본다('08g 로젠 처리 → 출고에 운송장번호', 출 == ['55555555555'], 출)
+        쪽.evaluate('ZG.배송완료창.닫기()'); 그날로()
+        본다('08g 처리한 문자주문 카드에 자동 송장', 줄('로젠건').locator('.st.ship').count() == 1 and 번들('로젠건') == ['55555555555'], 번들('로젠건'))
+
+    # 되돌리기 — 출고가 지워지면 주문올림으로
+    쪽.evaluate("() => { const 저 = ZG.저장소; 저.지우기(저.키.출고, 'sh_t_o_A1'); 저.지우기(저.키.출고, 'sh_t_o_A2'); }"); 다시그림()
+    A = 줄('김정원')
+    본다(tag + ' 출고 지우면 주문올림으로 돌아옴', A.locator('.st.done').count() == 1 and A.locator('.st.ship').count() == 0 and A.locator('.송장').count() == 0)
+    잠 = 쪽.evaluate("() => { const z = ZG.문자주문자료; return [z.발송문자표시('sm_t1'), z.손송장저장('sm_t1', ['1'])]; }")
+    본다(tag + ' 올림 아닌 줄엔 발송문자표시·손송장저장 거부', 잠 == [None, None], 잠)
+    본다(tag + ' 발송완료 콘솔 에러 없음', not 쪽.__dict__['오류'], 쪽.__dict__['오류'][:5])
+    ctx.close()
+
 with sync_playwright() as p:
     브 = p.chromium.launch()
     try:
@@ -224,7 +391,8 @@ with sync_playwright() as p:
         본다('제목: 1종이면 「외」 없음', '청사초' in 제목들)
         본다('달력 있음', 쪽.locator('.문자주문 .cal').count() == 1)
         요약 = 쪽.locator('.ph-sub').inner_text()
-        본다('목록 요약줄 저장·보냄·올림', '저장' in 요약 and '올림' in 요약, 요약.replace('\n', ' '))
+        # 0인 것은 뺀다 (16단계-2 §5) — 이 날은 저장·보냄만 있고 올림은 아직 없다
+        본다('목록 요약줄 저장·보냄 (0인 올림은 빠짐)', '저장' in 요약 and '보냄' in 요약 and '올림' not in 요약, 요약.replace('\n', ' '))
         # 달력 지난달 점·날짜
         쪽.locator('.calhd button[aria-label="지난 달"]').click(); 쪽.wait_for_timeout(300)
         점 = 쪽.locator('.cal button.d', has_text='15').first.locator('i').get_attribute('class')
@@ -433,6 +601,9 @@ with sync_playwright() as p:
         print('    ' + 글.replace('\n', ' / '))
         본다('자사 없음 → 💰 줄 통째로 빠짐, 에러 없음', '💰' not in 글 and '입금계좌' not in 글)
         ctx.close()
+
+        발송시험(브, True)
+        발송시험(브, False)
 
         # ════════ 다른 페이지들 ════════
         print('\n[다른 페이지]')
