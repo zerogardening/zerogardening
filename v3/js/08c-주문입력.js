@@ -101,6 +101,71 @@ window.ZG = window.ZG || {};
     return 만들기('input', { class: 클래스 || 'inp', type: 형 || 'text', value: 값, autocomplete: 'off' });
   }
 
+  /* ══ 주소 찾기 — 카카오(다음) 우편번호 서비스 ══
+     손으로 친 주소는 오타·옛 주소가 그대로 로젠 송장에 찍힌다(10/7 우람님).
+     고르면 도로명주소·우편번호가 채워지고 상세주소만 손으로 잇는다.
+     🔴 창(popup) 말고 화면 안에 띄운다 — 폰 홈화면 앱에서는 새 창이 막힌다 */
+  var 우편스크립트 = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+  var 우편불러옴 = null;
+
+  function 우편불러오기() {
+    if (window.daum && window.daum.Postcode) return Promise.resolve();
+    if (우편불러옴) return 우편불러옴;
+    우편불러옴 = new Promise(function (된다, 안된다) {
+      var s = document.createElement('script');
+      s.src = 우편스크립트;
+      s.onload = function () { 된다(); };
+      s.onerror = function () { 우편불러옴 = null; 안된다(); };
+      document.head.appendChild(s);
+    });
+    return 우편불러옴;
+  }
+
+  function 주소찾기(주소, 우편) {
+    우편불러오기().then(function () {
+      var 막 = 만들기('div', { class: 'pcscrim', style: 'z-index:999' });   // 주문수정 창(61) 위에도 뜨게
+      var 판 = 만들기('div', {
+        style: 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1000;' +
+               'width:min(500px,calc(100vw - 24px));height:min(560px,calc(100vh - 80px));' +
+               'background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.25);' +
+               'display:flex;flex-direction:column'
+      });
+      var x = 만들기('button', { class: 'btn', type: 'button', text: '✕ 닫기', 'aria-label': '닫기' });
+      판.appendChild(만들기('div', { style: 'display:flex;justify-content:flex-end;padding:6px 8px;border-bottom:1px solid #eee' }, [x]));
+      var 속 = 만들기('div', { style: 'flex:1;min-height:0' });
+      판.appendChild(속);
+      function 닫기() { 막.remove(); 판.remove(); }
+      막.addEventListener('click', 닫기);
+      x.addEventListener('click', 닫기);
+      document.body.appendChild(막);
+      document.body.appendChild(판);
+
+      new window.daum.Postcode({
+        width: '100%', height: '100%',
+        oncomplete: function (d) {
+          var 글 = d.userSelectedType === 'J' ? d.jibunAddress : d.roadAddress;
+          if (d.userSelectedType !== 'J' && d.apartment === 'Y' && d.buildingName) 글 += ' (' + d.buildingName + ')';
+          우편.value = d.zonecode || '';
+          주소.value = 글 + ' ';
+          닫기();
+          주소.focus();
+          주소.setSelectionRange(주소.value.length, 주소.value.length);   // 이어서 동·호수를 적는다
+        }
+      }).embed(속, { q: 주소.value.trim(), autoClose: false });
+    }, function () {
+      u.토스트('주소 찾기를 못 불러왔습니다 — 인터넷 연결을 확인하세요.');
+    });
+  }
+
+  function 주소줄(주소, 우편) {
+    var 단추 = 만들기('button', { class: 'btn', type: 'button', text: '🔍 주소 찾기' });
+    단추.style.flex = '0 0 auto';
+    단추.addEventListener('click', function () { 주소찾기(주소, 우편); });
+    주소.style.flex = '1';
+    주소.style.minWidth = '0';
+    return 만들기('div', { style: 'display:flex;gap:6px;align-items:center' }, [주소, 단추]);
+  }
+
   /* ══ 받는 분 — 등록 · 수정이 같은 부품을 쓴다 ══
      한글 칸이다. 입력 중에 다시 그리는 처리를 붙이지 않는다(조합이 끊긴다) */
   function 사람칸(g) {
@@ -119,7 +184,7 @@ window.ZG = window.ZG || {};
       ]),
       만들기('div', { class: 'pair' }, [
         우편밭,
-        밭('주소 <span class="req">*</span>', 주소, true)
+        밭('주소 <span class="req">*</span>', 주소줄(주소, 우편), true)
       ])
     ]);
     return {
