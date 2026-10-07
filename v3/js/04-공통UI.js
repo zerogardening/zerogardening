@@ -423,6 +423,79 @@ window.ZG = window.ZG || {};
     setTimeout(function () { 요소.classList.remove('번쩍'); }, 700);
   }
 
+  /* ── 쓸어서 단추 내기 (아이폰 메모장) ──
+     널서리 04-공통UI 그대로 옮겼다(16단계 문자주문). v3 17c 에 남은 사본은 아직 따로 돈다.
+     두 벌을 두면 「한 번에 하나만 열린다」가 화면마다 따로 놀아 두 줄이 같이 열린다.
+     🔴 세로로 굴리는 손가락을 가로로 오해하면 목록을 못 굴리신다 — |dx| 가 |dy| 보다 클 때만 잡는다.
+     쓰는 쪽은 겉을 .쓸줄 로 감싸고 그 안에 .쓸단추 와 카드를 넣는다. 폭은 단추 너비 합과 맞춘다. */
+  var 열린줄닫기 = null;   // 단추가 나와 있는 줄을 닫는 함수. 한 번에 하나만 연다
+  var 방금끌었다 = false;  // 쓸던 손가락이 뗀 자리에서 클릭이 한 번 더 온다 — 그걸 삼킨다
+
+  function 방금끌었나() {
+    if (!방금끌었다) return false;
+    방금끌었다 = false;
+    return true;
+  }
+  function 열린줄인가(닫기) { return 열린줄닫기 === 닫기; }
+  function 열린줄잊기() { 열린줄닫기 = null; }   // 목록을 새로 그리기 전에 부른다
+
+  function 쓸기붙이기(카드, 폭) {
+    var 시작x = null, 시작y = null, 끌기 = false, 열림 = false;
+
+    function 놓기(값) {
+      열림 = 값;
+      카드.style.transition = '';
+      카드.style.transform = 값 ? 'translateX(-' + 폭 + 'px)' : '';
+      열린줄닫기 = 값 ? 닫기 : (열린줄닫기 === 닫기 ? null : 열린줄닫기);
+    }
+    function 닫기() { 놓기(false); }
+
+    카드.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.target.tagName === 'INPUT') return;   // 체크박스를 누른 손가락은 쓸기가 아니다
+      시작x = e.clientX; 시작y = e.clientY; 끌기 = false;
+    });
+    카드.addEventListener('pointermove', function (e) {
+      if (시작x == null) return;
+      var dx = e.clientX - 시작x, dy = e.clientY - 시작y;
+      if (!끌기) {
+        if (Math.abs(dx) < 8 || Math.abs(dx) <= Math.abs(dy)) return;
+        끌기 = true;
+        try { 카드.setPointerCapture(e.pointerId); } catch (err) { /* 무시 */ }
+        if (열린줄닫기 && 열린줄닫기 !== 닫기) 열린줄닫기();
+        카드.style.transition = 'none';
+      }
+      카드.style.transform = 'translateX(' + Math.min(0, Math.max(-폭, (열림 ? -폭 : 0) + dx)) + 'px)';
+    });
+    function 끝(e) {
+      if (시작x == null) return;
+      var dx = e.clientX - 시작x;
+      시작x = null;
+      if (!끌기) return;
+      끌기 = false;
+      방금끌었다 = true;
+      놓기(열림 ? dx < 40 : dx < -50);
+    }
+    ['pointerup', 'pointercancel'].forEach(function (t) { 카드.addEventListener(t, 끝); });
+    return 닫기;
+  }
+
+  /* 쓸었을 때 나오는 단추 — 그림 위, 글씨 아래. 그림(path 문자열)은 없어도 된다 */
+  function 쓸기단추(글, 결, 누름, 그림html) {
+    var 속 = [];
+    if (그림html) {
+      속.push(만들기('span', {
+        class: 'ic',
+        html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+              'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + 그림html + '</svg>'
+      }));
+    }
+    속.push(만들기('span', { class: 'lb', text: 글 }));
+    var b = 만들기('button', { type: 'button', class: 결, 'aria-label': 글 }, 속);
+    b.addEventListener('click', 누름);
+    return b;
+  }
+
   /* ── 한글 IME 안전 입력 ──
      아이폰에서 「휴케라」가 ㅎㅠㅋㅔㄹㅏ 로 떨어지던 버그.
      조합(composition) 중에 목록을 다시 그리면 조합이 끊긴다.
@@ -616,6 +689,7 @@ window.ZG = window.ZG || {};
     토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 아이콘: 아이콘, 햅틱: 햅틱, 손대야열림: 손대야열림, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
-    조합안전입력: 조합안전입력
+    조합안전입력: 조합안전입력,
+    방금끌었나: 방금끌었나, 열린줄인가: 열린줄인가, 열린줄잊기: 열린줄잊기, 쓸기붙이기: 쓸기붙이기, 쓸기단추: 쓸기단추
   };
 })(window.ZG);

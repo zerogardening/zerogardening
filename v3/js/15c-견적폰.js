@@ -158,10 +158,6 @@ window.ZG = window.ZG || {};
     });
     칸.appendChild(저장);
 
-    var 올리기 = 만들기('button', { class: 'addbtn', type: 'button', text: '주문올리기' });
-    올리기.addEventListener('click', function () { ZG.문자뽑기.열기(g); });
-    칸.appendChild(올리기);
-
     var 삭제 = 만들기('button', {
       class: 'addbtn', type: 'button', text: '🗑 이 견적 요청 삭제',
       style: 'border-color:var(--color-danger-border); color:var(--color-danger)'

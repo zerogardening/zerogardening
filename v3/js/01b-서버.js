@@ -9,7 +9,7 @@ window.ZG = window.ZG || {};
   var 공개키 = 'sb_publishable_ds8hYFdqgj-vsotoaqtv4w_XhkL_DN2';
   var 토큰키 = 'sb-vjqfhwrgrocapcyndgtx-auth-token';
   var 표들 = ['품목', '입고', '출고', '재고조정', '업체', '주문', '주문묶음',
-              '명세서', '명세서줄', '견적요청', '즐겨찾기', '분류폴더', '심폴짝', '운임손질', '고객', '문자', '메모', '제작요청', '블로그'];
+              '명세서', '명세서줄', '견적요청', '즐겨찾기', '분류폴더', '심폴짝', '운임손질', '고객', '문자', '메모', '제작요청', '블로그', '문자주문'];
 
   var 서버 = {
     로그인됨: false, 켜짐: false, 아직안올림: false,
@@ -233,14 +233,19 @@ window.ZG = window.ZG || {};
   }
 
   /* ── Realtime — 채널 하나에 13개 표 ───────────────────────────────────────── */
+  /* 🔴 따로 채널 — 없는 표가 한 채널에 끼면 그 채널 가입이 통째로 실패해 주문·품목 실시간까지 죽는다.
+     SQL 을 아직 안 돌린 새 표는 여기에 이름만 더한다 (16단계 설계 §1-3) */
+  var 따로표 = ['문자주문'];
+  function 표구독(ch, 표) {
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'v3_' + 표 }, function (p) {
+      받은줄(표, p);
+    });
+  }
   function 구독() {
     var ch = supa.channel('v3-전체');
-    표들.concat(['공유설정']).forEach(function (표) {
-      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'v3_' + 표 }, function (p) {
-        받은줄(표, p);
-      });
-    });
+    표들.concat(['공유설정']).forEach(function (표) { if (따로표.indexOf(표) < 0) 표구독(ch, 표); });
     ch.subscribe();
+    따로표.forEach(function (표) { var c = supa.channel('v3-' + 표); 표구독(c, 표); c.subscribe(); });
   }
 
   function 받은줄(표, p) {
