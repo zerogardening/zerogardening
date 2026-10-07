@@ -323,7 +323,7 @@ def 주소시험(브, 폰):
     속 = 펼치기()
     속.locator('button', has_text='주문올리기').click(); 쪽.wait_for_timeout(400)
     올판 = 쪽.locator('.문카드.올리는중') if 폰 else 쪽.locator('.올림판')
-    주칸 = 올판.locator('.field', has_text='주소').locator('textarea' if 폰 else 'input')
+    주칸 = 올판.locator('[placeholder=주소]')
     우칸 = 올판.locator('.field', has_text='우편번호').locator('input')
     쪽.screenshot(path=str(샷 / ('%s-주소-2-올리기판.png' % tag)), full_page=폰)
     본다(tag + ' 올리기 판에 주소·우편 채워짐 · 「주소 찾기」', 주칸.input_value() == '서울 마포구 월드컵로 1 101' and 우칸.input_value() == '04002'
@@ -335,6 +335,105 @@ def 주소시험(브, 폰):
     본다(tag + ' 올린 주문 줄 수령인주소·우편번호', len(주문) == 1 and o.get('수령인주소') == '서울 마포구 월드컵로 1 101' and o.get('우편번호') == '04002', (o.get('수령인주소'), o.get('우편번호')))
     본다(tag + ' 문자주문 줄에도 올린 주소·우편', 하나(sid).get('상태') == '올림' and 하나(sid).get('우편') == '04002')
     본다(tag + ' 주소·우편 콘솔 에러 없음', not 쪽.__dict__['오류'], 쪽.__dict__['오류'][:5])
+    ctx.close()
+
+# ════════ 상세주소·배송메시지 (10/7) — 따로 연 창, 새 시드는 이 창에만 ════════
+def 상세시험(브, 폰):
+    tag = '폰' if 폰 else 'PC'
+    print('\n[%s 상세주소·배송메시지]' % tag)
+    ctx, 쪽 = 새쪽(브, 폰)
+    cdp = ctx.new_cdp_session(쪽)
+    쪽.goto(밑 + '주문.html')
+    쪽.wait_for_function('!!(window.ZG && ZG.문자주문 && ZG.주문)', timeout=20000); 쪽.wait_for_timeout(600)
+    시드(쪽)
+    쪽.evaluate("""() => { const 저 = ZG.저장소, 지금 = Date.now();
+      저.덧붙이기(저.키.문자주문, {id:'sm_old2', 날짜: ZG.ui.오늘문자(), 받는분:'옛손님', 전화:'01022223333', 메모:'', 주소:'부산시 옛길 3', 우편:'48000',
+        품목:[{품목코드:'CAR01-10', 유통명:'청사초', 학명:'', 규격:'10cm', 수량:1, 단가:3800}], 배송비:4500, 상태:'저장', 등록일시: 지금 - 30*60000, 수정일시: 지금 - 30*60000}); }""")
+    쪽.evaluate('ZG.주문.다시그리기()'); 문자탭(쪽); 잡기(쪽)
+    def 하나(i): return json.loads(쪽.evaluate('JSON.stringify(ZG.문자주문자료.하나(%s))' % json.dumps(i)))
+    def 지금칸(): return 쪽.evaluate('document.activeElement && document.activeElement.placeholder || ""')
+    def 찾기흉내(범위):
+        # 08c 주소찾기가 하는 그대로 — 단추 누름(바깥 막혀 토스트) 뒤 값만 넣고 주소칸에 focus · 커서 끝
+        범위.locator('button', has_text='주소 찾기').click(); 쪽.wait_for_timeout(600)
+        쪽.evaluate("""() => { const 주 = document.querySelector('.문자주문 [placeholder="주소"]'), 우 = document.querySelector('.문자주문 [placeholder="우편번호"]');
+          우.value = '04001'; 주.value = '서울 마포구 월드컵로 1 '; 주.focus(); 주.setSelectionRange(주.value.length, 주.value.length); }""")
+        쪽.wait_for_timeout(150)
+    def 글로(loc, 글):
+        loc.click(); 쪽.wait_for_timeout(50)
+        쪽.keyboard.press('ControlOrMeta+a'); 쪽.keyboard.press('Backspace'); 쪽.wait_for_timeout(50)
+        한글(쪽, cdp, 글); 쪽.wait_for_timeout(250)
+
+    쪽.evaluate("""() => { const 부 = ZG.문자주문새문자, z = ZG.문자주문자료;
+      부.상태.담은것.push(z.담을줄(ZG.저장소.품목들().find(p => p.품목코드 === 'CAR01-10'))); ZG.주문.다시그리기(); }""")
+    판 = 쪽.locator('.문자주문')
+    본다(tag + ' 새 문자에 상세주소·배송메시지 칸', 판.locator('input[placeholder=상세주소]').count() == 1 and 판.locator('input[placeholder=배송메시지]').count() == 1)
+    받 = 판.locator('.field', has_text='받는 분').locator('input'); 받.click(); 한글(쪽, cdp, '상세손님'); 쪽.wait_for_timeout(200)
+    판.locator('.field', has_text='전화번호').locator('input').fill('01066667777')
+    # 찾기 안 거치고 손으로 주소칸에 들어가면 그대로 머문다
+    판.locator('input[placeholder=주소]').click(); 쪽.wait_for_timeout(150)
+    본다(tag + ' 새 문자 손으로 누른 주소칸은 그대로', 지금칸() == '주소', 지금칸())
+    찾기흉내(판)
+    본다(tag + ' 새 문자 주소 찾은 뒤 상세주소 칸으로 넘어감', 지금칸() == '상세주소', 지금칸())
+    쪽.keyboard.type('101', delay=20); 한글(쪽, cdp, '동'); 쪽.wait_for_timeout(250)
+    본다(tag + ' 새 문자 상세주소 한글 조합', 판.locator('input[placeholder=상세주소]').input_value() == '101동', 판.locator('input[placeholder=상세주소]').input_value())
+    글로(판.locator('input[placeholder=배송메시지]'), '문앞에 두세요')
+    본다(tag + ' 새 문자 배송메시지 한글 조합', 판.locator('input[placeholder=배송메시지]').input_value() == '문앞에 두세요', 판.locator('input[placeholder=배송메시지]').input_value())
+    쪽.screenshot(path=str(샷 / ('%s-상세-0-새문자.png' % tag)), full_page=폰)
+    판.locator('.보냄줄 button', has_text='저장').click(); 쪽.wait_for_timeout(400)
+    r = json.loads(쪽.evaluate('JSON.stringify(ZG.문자주문자료.전부().find(r => r.받는분 === "상세손님") || {})'))
+    sid = r.get('id')
+    본다(tag + ' 새 문자 저장 → 주소·상세주소·우편·배송메시지 따로', r.get('주소') == '서울 마포구 월드컵로 1' and r.get('상세주소') == '101동'
+         and r.get('우편') == '04001' and r.get('배송메시지') == '문앞에 두세요', (r.get('주소'), r.get('상세주소'), r.get('우편'), r.get('배송메시지')))
+    본문 = 쪽.evaluate('(id) => ZG.문자주문자료.문자내용(ZG.문자주문자료.하나(id))', sid)
+    본다(tag + ' 문자 본문에 주소·상세주소·배송메시지 없음', '마포구' not in 본문 and '101동' not in 본문 and '문앞' not in 본문)
+    본다(tag + ' 저장 뒤 상세주소·배송메시지 비워짐', 판.locator('input[placeholder=상세주소]').input_value() == '' and 판.locator('input[placeholder=배송메시지]').input_value() == '')
+
+    판.locator('button', has_text='문자주문 목록').click(); 쪽.wait_for_timeout(500)
+    def 펼치기(이름):
+        if 폰: 쪽.locator('.문카드', has_text=이름).locator('.r1').click()
+        else: 쪽.locator('tbody tr', has_text=이름).first.click()
+        쪽.wait_for_timeout(300)
+        return 쪽.locator('.문카드', has_text=이름).locator('.속') if 폰 else 쪽.locator('.속판')
+    속 = 펼치기('상세손님')
+    쪽.screenshot(path=str(샷 / ('%s-상세-1-펼침.png' % tag)), full_page=폰)
+    본다(tag + ' 펼침에 상세주소·배송메시지 그대로', 속.locator('input[placeholder=주소]').input_value() == '서울 마포구 월드컵로 1'
+         and 속.locator('input[placeholder=상세주소]').input_value() == '101동' and 속.locator('input[placeholder=배송메시지]').input_value() == '문앞에 두세요')
+    글로(속.locator('input[placeholder=상세주소]'), '102동')
+    속.locator('button', has_text='저장').click(); 쪽.wait_for_timeout(400)
+    본다(tag + ' 펼침 고쳐 저장 → 상세주소만 바뀜', 하나(sid).get('상세주소') == '102동' and 하나(sid).get('주소') == '서울 마포구 월드컵로 1'
+         and 하나(sid).get('배송메시지') == '문앞에 두세요', 하나(sid).get('상세주소'))
+
+    속 = 펼치기('상세손님')
+    속.locator('button', has_text='주문올리기').click(); 쪽.wait_for_timeout(400)
+    올판 = 쪽.locator('.문카드.올리는중') if 폰 else 쪽.locator('.올림판')
+    쪽.screenshot(path=str(샷 / ('%s-상세-2-올리기판.png' % tag)), full_page=폰)
+    본다(tag + ' 올리기 판에 주소·상세주소·배송메시지 채워짐', 올판.locator('[placeholder=주소]').input_value() == '서울 마포구 월드컵로 1'
+         and 올판.locator('[placeholder=상세주소]').input_value() == '102동' and 올판.locator('[placeholder=배송메시지]').input_value() == '문앞에 두세요')
+    올판.locator('button', has_text='주문올리기').click(); 쪽.wait_for_timeout(400)
+    주문 = json.loads(쪽.evaluate('(id) => JSON.stringify(ZG.저장소.읽기(ZG.저장소.키.주문).filter(o => o.문자주문id === id))', sid))
+    o = 주문[0] if 주문 else {}
+    본다(tag + ' 올린 주문 줄 수령인주소 = 「주소 상세주소」·배송메모·우편번호', len(주문) == 1 and o.get('수령인주소') == '서울 마포구 월드컵로 1 102동'
+         and o.get('배송메모') == '문앞에 두세요' and o.get('우편번호') == '04001', (o.get('수령인주소'), o.get('배송메모'), o.get('우편번호')))
+    r = 하나(sid)
+    본다(tag + ' 문자주문 줄에 상세주소·배송메시지 남음', r.get('상태') == '올림' and r.get('상세주소') == '102동' and r.get('배송메시지') == '문앞에 두세요')
+    칸27 = 쪽.evaluate('(id) => { const o = ZG.저장소.읽기(ZG.저장소.키.주문).find(o => o.문자주문id === id); return ZG.주문올리기.세운27(o); }', sid)
+    본다(tag + ' 로젠 27칸 주소(P)·비고(T)', 칸27 and 칸27[15] == '서울 마포구 월드컵로 1 102동' and 칸27[19] == '문앞에 두세요', 칸27 and (칸27[15], 칸27[19]))
+    if 폰: 본다(tag + ' 올린 카드 받는곳 = 주소+상세', 쪽.locator('.문카드', has_text='상세손님').locator('.받는곳').inner_text() == '서울 마포구 월드컵로 1 102동')
+    else: 본다(tag + ' 올린 줄 밑글 = 주소+상세', '서울 마포구 월드컵로 1 102동' in 쪽.locator('tbody tr', has_text='상세손님').first.inner_text())
+
+    # 옛 줄 — 상세주소·배송메시지 없음
+    속 = 펼치기('옛손님')
+    본다(tag + ' 옛 줄 펼침 정상(상세·메시지 빈칸)', 속.locator('input[placeholder=주소]').input_value() == '부산시 옛길 3'
+         and 속.locator('input[placeholder=상세주소]').input_value() == '' and 속.locator('input[placeholder=배송메시지]').input_value() == '')
+    속.locator('button', has_text='주문올리기').click(); 쪽.wait_for_timeout(400)
+    올판 = 쪽.locator('.문카드.올리는중') if 폰 else 쪽.locator('.올림판')
+    올판.locator('button', has_text='주문올리기').click(); 쪽.wait_for_timeout(400)
+    주문 = json.loads(쪽.evaluate('JSON.stringify(ZG.저장소.읽기(ZG.저장소.키.주문).filter(o => o.문자주문id === "sm_old2"))'))
+    o = 주문[0] if 주문 else {}
+    본다(tag + ' 옛 줄 올리기 → 수령인주소 그대로·배송메모 빈칸', len(주문) == 1 and o.get('수령인주소') == '부산시 옛길 3' and o.get('배송메모') == ''
+         and o.get('우편번호') == '48000', (o.get('수령인주소'), o.get('배송메모')))
+    쪽.screenshot(path=str(샷 / ('%s-상세-3-올린뒤.png' % tag)), full_page=폰)
+    본다(tag + ' 상세주소·배송메시지 콘솔 에러 없음', not 쪽.__dict__['오류'], 쪽.__dict__['오류'][:5])
     ctx.close()
 
 with sync_playwright() as p:
@@ -531,7 +630,7 @@ with sync_playwright() as p:
         본다('올리기 판 이름 한글 조합', 이름칸.input_value() == '최화단', 이름칸.input_value())
         본다('이름 치면 단추 열림', not 올.is_disabled() and 'need' not in (이름칸.get_attribute('class') or ''))
         카드.locator('.field', has_text='전화번호').locator('input').fill('010-3333-4444')
-        주 = 카드.locator('.field', has_text='주소').locator('textarea'); 주.click(); 한글(쪽, cdp, '서울시');
+        주 = 카드.locator('textarea[placeholder=주소]'); 주.click(); 한글(쪽, cdp, '서울시');
         쪽.wait_for_timeout(200)
         쪽.screenshot(path=str(샷 / '폰-11-올리기판-채움.png'), full_page=True)
         올.click(); 쪽.wait_for_timeout(400)
@@ -678,6 +777,8 @@ with sync_playwright() as p:
         발송시험(브, False)
         주소시험(브, True)
         주소시험(브, False)
+        상세시험(브, True)
+        상세시험(브, False)
 
         # ════════ 다른 페이지들 ════════
         print('\n[다른 페이지]')

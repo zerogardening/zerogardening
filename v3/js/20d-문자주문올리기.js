@@ -8,22 +8,23 @@ window.ZG = window.ZG || {};
   var u = ZG.ui, 만들기 = u.만들기;
   function 자() { return ZG.문자주문자료; }
 
-  /* 사본 = { 받는분, 전화, 주소, 우편 } — 셸이 들고 있다가 다시 그려도 되살린다 (§8-7) */
+  /* 사본 = { 받는분, 전화, 주소, 상세주소, 우편, 배송메시지 } — 셸이 들고 있다가 다시 그려도 되살린다 (§8-7) */
   function 판(r, 사본, 폰, 닫기) {
     var 부 = ZG.문자주문새문자;
     var 이름 = 만들기('input', { class: 'inp', type: 'text', placeholder: '받는 분', value: 사본.받는분 || '' });
     var 전화 = 부.전화칸(사본.전화, function (v) { 사본.전화 = v; }, 폰);
     var 주소 = 폰
-      ? 만들기('textarea', { class: 'inp ta', rows: '2' })
-      : 만들기('input', { class: 'inp', type: 'text' });
+      ? 만들기('textarea', { class: 'inp ta', rows: '2', placeholder: '주소' })
+      : 만들기('input', { class: 'inp', type: 'text', placeholder: '주소' });
     주소.value = 사본.주소 || '';
+    var 상세 = 만들기('input', { class: 'inp', type: 'text', placeholder: '상세주소', value: 사본.상세주소 || '' });
     var 우편 = 만들기('input', { class: 'inp', type: 'text', inputmode: 'numeric', placeholder: '우편번호', value: 사본.우편 || '' });
+    var 메시지 = 만들기('input', { class: 'inp', type: 'text', placeholder: '배송메시지', value: 사본.배송메시지 || '' });
     // 주소 찾기는 값만 넣고 input 을 안 쏜다 — 돌려주는 focus 와 올리기 직전에 맞춘다
-    function 곳맞추기() { 사본.주소 = 주소.value; 사본.우편 = 우편.value; }
-    주소.addEventListener('input', 곳맞추기);
-    우편.addEventListener('input', 곳맞추기);
-    주소.addEventListener('focus', 곳맞추기);
+    function 곳맞추기() { 사본.주소 = 주소.value; 사본.상세주소 = 상세.value; 사본.우편 = 우편.value; 사본.배송메시지 = 메시지.value; }
+    [주소, 상세, 우편, 메시지].forEach(function (e) { e.addEventListener('input', 곳맞추기); });
     var 주소줄 = 부.주소묶음(주소, 우편);
+    부.상세로넘기기(주소줄, 주소, 상세, 곳맞추기);
 
     var 닫단추 = 만들기('button', { class: 'btn', type: 'button', text: '닫기' });
     닫단추.addEventListener('click', 닫기);
@@ -52,12 +53,14 @@ window.ZG = window.ZG || {};
     var 밭 = 부.밭;
     if (폰) {
       return 만들기('div', { class: '속 올림' }, [
-        밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('주소', 주소줄), 밭('우편번호', 우편, 'width:120px'),
+        밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('주소', 주소줄), 밭('상세주소', 상세),
+        밭('우편번호', 우편, 'width:120px'), 밭('배송메시지', 메시지),
         만들기('div', { class: 'act', style: 'margin-top:0' }, [닫단추, 올림])
       ]);
     }
     return 만들기('div', { class: '올림판' }, [
       밭('받는 분 <span class="req">필수</span>', 이름), 밭('전화번호', 전화), 밭('우편번호', 우편), 밭('주소', 주소줄),
+      밭('배송메시지', 메시지, 'grid-column:1 / span 3'), 밭('상세주소', 상세),   // 상세주소가 주소 바로 밑 넷째 칸에 온다
       만들기('div', { class: '끝단추' }, [닫단추, 올림])
     ]);
   }
