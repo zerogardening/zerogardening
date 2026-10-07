@@ -219,6 +219,9 @@ window.ZG = window.ZG || {};
     참조.문자 = 만들기('button', { class: 폰 ? 'ph-save' : 'btn main', type: 'button', text: '문자' });
     참조.저장.addEventListener('click', function () { 저장(false); });
     참조.문자.addEventListener('click', function () { 저장(true); });
+    /* 누르는 순간 글칸이 포커스를 잃으면 한글 조합이 끝나며 미리보기가 다시 그려져 단추가 밀린다 —
+       손을 뗀 자리가 단추 밖이 되어 눌림이 사라진다. 포커스를 안 뺏어 두고, 값은 저장() 이 칸에서 바로 읽는다 */
+    [참조.저장, 참조.문자].forEach(function (b) { b.addEventListener('mousedown', function (e) { e.preventDefault(); }); });
     return 만들기('div', { class: '보냄줄' }, [참조.저장, 참조.문자]);
   }
 
