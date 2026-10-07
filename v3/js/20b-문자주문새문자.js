@@ -48,11 +48,17 @@ window.ZG = window.ZG || {};
   function 밭(라벨, 칸, 스타일) {
     return 만들기('div', { class: 'field', style: 스타일 || null }, [라벨 ? 만들기('label', { html: 라벨 }) : null, 칸]);
   }
+  /* 조합안전입력은 120ms 뒤에야 값을 넘긴다. 단추는 그 전에 눌리므로 맞추기()로 칸의 지금 값을 바로 넣고,
+     다시 그릴 때는 멈추기()로 남은 타이머를 끊는다 — 안 끊으면 비운 새 화면에 앞사람 이름이 들어간다 */
   function 글칸(값, 자리글, 바뀜) {
     var e = 만들기('input', { class: 'inp', type: 'text', placeholder: 자리글, value: 값 || '' });
-    u.조합안전입력(e, 바뀜, 120);
+    var 감시 = u.조합안전입력(e, 바뀜, 120);
+    e.맞추기 = function () { 감시.취소(); 바뀜(e.value); };
+    e.멈추기 = 감시.취소;
     return e;
   }
+  function 글칸맞추기(칸들) { (칸들 || []).forEach(function (e) { e.맞추기(); }); }
+  function 글칸멈추기(칸들) { (칸들 || []).forEach(function (e) { e.멈추기(); }); }
   function 전화칸(값, 바뀜, 폰) {
     var e = 만들기('input', { class: 'inp' + (폰 ? ' num' : ''), type: 'tel', inputmode: 'numeric', placeholder: '010-', value: 값 || '' });
     if (폰) e.style.textAlign = 'left';
@@ -188,11 +194,13 @@ window.ZG = window.ZG || {};
     return b;
   }
   function 사람칸들(폰) {
-    return {
+    var 칸 = {
       받는분: 글칸(상태.받는분, '받는 분', function (v) { 상태.받는분 = v; 미리보기다시(); }),
       전화: 전화칸(상태.전화, function (v) { 상태.전화 = v; 미리보기다시(); }, 폰),
       메모: 글칸(상태.메모, '메모', function (v) { 상태.메모 = v; })
     };
+    참조.글칸들 = [칸.받는분, 칸.메모];
+    return 칸;
   }
   function 보내기단추(폰) {
     참조.저장 = 만들기('button', { class: 폰 ? 'btn 저장만' : 'btn', type: 'button', text: '저장' });
@@ -250,6 +258,7 @@ window.ZG = window.ZG || {};
 
   /* 「저장」 = 저장만 · 「문자」 = 저장(보냄) 뒤 문자앱. 확인창 없음 (§7) */
   function 저장(보냄) {
+    글칸맞추기(참조.글칸들);
     if (!상태.담은것.length) { u.토스트('담은 품목이 없습니다'); return; }
     if (보냄 && !자().문자되나(상태.전화)) { u.토스트('전화번호가 없습니다'); return; }
     var r = 자().새로저장(지금값(), 보냄);
@@ -260,10 +269,11 @@ window.ZG = window.ZG || {};
   }
 
   function 그리기(본문) {
+    글칸멈추기(참조.글칸들);
     참조 = {};
     if (u.폰인가()) 폰배치(본문); else PC배치(본문);
     결과다시(); 담은칸다시();
   }
 
-  ZG.문자주문새문자 = { 그리기: 그리기, 상태: 상태, 수량칸: 수량칸, 원칸: 원칸, 밭: 밭, 글칸: 글칸, 전화칸: 전화칸 };
+  ZG.문자주문새문자 = { 그리기: 그리기, 상태: 상태, 수량칸: 수량칸, 원칸: 원칸, 밭: 밭, 글칸: 글칸, 글칸맞추기: 글칸맞추기, 글칸멈추기: 글칸멈추기, 전화칸: 전화칸 };
 })(window.ZG);
