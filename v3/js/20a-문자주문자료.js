@@ -9,8 +9,6 @@ window.ZG = window.ZG || {};
   function 저() { return ZG.저장소; }
   function 키() { return ZG.저장소.키.문자주문; }
 
-  var 첫머리없음 = '안녕하세요, 제로가드닝입니다.\n주문하신 내역 안내드립니다.';
-
   function 새id() { return 'sm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7); }
   function 숫자만(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
   function 전화모양(s) {
@@ -97,7 +95,7 @@ window.ZG = window.ZG || {};
   function 문자내용(r) {
     var 이름 = String(r.받는분 || '').trim();
     var 셈 = 합계(r);
-    var 글 = (이름 ? '🌱 [제로가드닝]\n' + 이름 + ' 님 주문 안내' : 첫머리없음) + '\n\n' +
+    var 글 = '🌱 [제로가드닝]\n' + (이름 ? 이름 + ' 님 주문 안내' : '주문 내역 안내') + '\n\n' +
       (r.품목 || []).map(function (p) {
         var 단가 = Number(p.단가) || 0, 수량 = Number(p.수량) || 0;
         return '· ' + p.유통명 + (p.규격 ? ' ' + p.규격 : '') + '\n' +
