@@ -73,8 +73,43 @@ window.ZG = window.ZG || {};
     return ZG.저장소.지우기(키(), 행id(묶음id, 열쇠, 차수));
   }
 
+  /* 🔴 08i 19·20행과 같은 글자여야 열쇠 앞머리가 맞는다 (08i 는 고치지 않는다) */
+  function 이름키(v) { return 글(v).normalize('NFC').replace(/\s/g, ''); }
+  function 주소압축(v) { return 글(v).normalize('NFC').replace(/[\s-]/g, ''); }
+  function 숫자만(v) { return 글(v).replace(/\D/g, ''); }
+
+  function 앞머리들(줄) {
+    var 우 = 숫자만(줄.우편번호) || (주소압축(줄.수령인주소) && '주소#' + 주소압축(줄.수령인주소));
+    return [이름키(줄.수령인) + '|' + 우 + '|', '홀로#' + 글(줄.주문번호) + '#'];
+  }
+
+  /* 주문조회 합계용 박스 수 — 읽기만 한다. 08b 건 ≠ 08i 송장 묶음이라 근사값이다.
+     전화는 안 본다: 원본의 세 전화 중 무엇이 열쇠에 쓰였는지 주문 줄로는 못 가린다.
+     🔴 한 송장이 08b 에서 두 건으로 갈릴 수 있어 같은 손질 행은 한 번만 센다 */
+  function 박스세기(건들) {
+    var 본행 = {}, 행들 = {}, 합 = 0;
+    (건들 || []).forEach(function (g) {
+      var 본합 = 0, 본있음 = false, 더합 = 0;
+      (g.줄들 || []).forEach(function (줄) {
+        if (!줄.묶음id) return;
+        var 앞 = 앞머리들(줄);
+        var 행 = 행들[줄.묶음id] || (행들[줄.묶음id] = 목록(줄.묶음id));
+        행.forEach(function (r) {
+          if (본행[r.id]) return;
+          var 열 = 글(r.묶음열쇠);
+          if (열.indexOf(앞[0]) !== 0 && 열.indexOf(앞[1]) !== 0) return;
+          본행[r.id] = true;
+          var n = Math.min(9, Math.max(1, 정수(r.박스수) || 1));
+          if ((정수(r.차수) || 1) <= 1) { 본있음 = true; 본합 += n; } else 더합 += n;
+        });
+      });
+      합 += (본있음 ? 본합 : 1) + 더합;
+    });
+    return 합;
+  }
+
   ZG.운임손질 = {
     행id: 행id, 목록: 목록, 표: 표, 찾기: 찾기,
-    다음차수: 다음차수, 저장: 저장, 지우기: 지우기
+    다음차수: 다음차수, 저장: 저장, 지우기: 지우기, 박스세기: 박스세기
   };
 })(window.ZG);

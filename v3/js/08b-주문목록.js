@@ -453,6 +453,9 @@ window.ZG = window.ZG || {};
       u.비우기(목록);
       var 건들 = 자.건으로묶기(줄들());
       회차줄채우기(회차줄, 채우기);      // 🔴 줄들() 이 사라진 회차를 풀 수 있다 — 반드시 그 뒤다
+      u.비우기(합계칸);
+      합계칸.hidden = !건들.length;      // 빈 칸이 ph-body 의 gap 을 먹지 않게
+      if (건들.length) 합계칸.appendChild(합계띠(건들, true));
       if (!건들.length) {
         var 없음 = 상태.글 ? '찾는 주문이 없습니다.'
                  : (기간무시() ? '아직 안 나간 주문이 없습니다.'
@@ -466,9 +469,24 @@ window.ZG = window.ZG || {};
     var 회차줄 = 만들기('div', { class: 'fchips 나간칩줄', style: 'padding:0 var(--space-md) var(--space-xs)' });
     칸.appendChild(찾는칸('이름 · 전화번호 · 상품명으로 찾기', 채우기));
     칸.appendChild(상태칩줄(채우기));
+    var 합계칸 = 만들기('div');
     칸.appendChild(회차줄);
+    칸.appendChild(합계칸);
     칸.appendChild(목록);
     채우기();
+  }
+
+  /* 쪽 나누기 전, 지금 걸린 조건 전체의 건들로 센다 */
+  function 합계띠(건들, 폰) {
+    var 돈 = 건들.reduce(function (a, g) { return a + (g.총액 || 0); }, 0);
+    var 박스 = ZG.운임손질 ? ZG.운임손질.박스세기(건들) : 건들.length;
+    function 칸(이름, 수, 단위, 더) {
+      var 값 = '<b>' + u.콤마(수) + '</b>' + 단위;
+      return '<span class="칸' + (더 || '') + '">' + 이름 + ' ' + (폰 ? '<span>' + 값 + '</span>' : 값) + '</span>';
+    }
+    var 점 = 폰 ? '' : '<span class="점">·</span>';
+    return 만들기('div', { class: '합계띠', html:
+      칸('주문', 건들.length, '건') + 점 + 칸('박스', 박스, '개') + 점 + 칸('주문금액', 돈, '원', ' 돈') });
   }
 
   /* 폰에도 같은 회차 칩을 둔다. 탭이 배송완료가 아니면 줄째로 감춘다 */
@@ -758,6 +776,7 @@ window.ZG = window.ZG || {};
               }).join('') + '</span>'
       }));
       카드.appendChild(PC표(이번쪽));
+      if (건들.length) 카드.appendChild(합계띠(건들, false));
       카드.appendChild(PC아래줄(건들));
       카드.appendChild(PC쪽줄(총쪽, 건들.length));
     }

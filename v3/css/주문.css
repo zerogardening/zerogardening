@@ -1076,3 +1076,16 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
   .doc문자 tfoot td{border-top:2px solid #333; border-bottom:none; padding-top:10px}
   .doc문자 .dacct{margin-top:16px; font-size:12px; color:#333}
 }
+
+/* ── 주문조회 합계 줄 (17단계 §4) ── */
+.합계띠{display:flex; align-items:baseline; justify-content:flex-end; gap:var(--space-lg); flex-wrap:wrap; font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.합계띠 .칸{display:inline-flex; align-items:baseline; gap:var(--space-xs); white-space:nowrap}
+.합계띠 b{color:var(--color-text); font-size:var(--font-xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.합계띠 .칸.돈 b{color:var(--color-accent-dark); font-size:var(--font-2xl)}
+.합계띠 .점{color:var(--color-text-faint)}
+.table-card .합계띠{padding:var(--space-lg) var(--space-lg) var(--space-md); border-top:var(--border-width-thick) solid var(--color-border); margin-top:var(--space-xs); background:#FAFAFC}
+.ph-body .합계띠{justify-content:space-between; gap:var(--space-sm); background:var(--color-surface); border-radius:var(--radius-xl); padding:var(--space-md) var(--space-lg); box-shadow:var(--shadow-card); font-size:var(--font-xs)}
+.ph-body .합계띠 b{font-size:var(--font-lg)}
+.ph-body .합계띠 .칸.돈 b{font-size:var(--font-xl)}
+.ph-body .합계띠 .칸{flex-direction:column; align-items:flex-start; gap:0}
+.ph-body .합계띠 .칸.돈{align-items:flex-end}
