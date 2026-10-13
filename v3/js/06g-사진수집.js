@@ -149,21 +149,37 @@ window.ZG = window.ZG || {};
 
   /* 요청이 걸려도 목록에서 빼지 않는다 — 그 뒤에도 사진을 바꿔야 한다.
      완료(끝)는 흐리게 해서 맨 아래로 내린다 */
-  function 대기품목(뺀것) {
-    var 상 = 상태표();
+  /* 20a 와 같은 정의 — 소문자·공백 제거 */
+  function 납작(v) { return String(v == null ? '' : v).toLowerCase().replace(/\s/g, ''); }
+
+  function 대기품목(뺀것, 거름) {
+    var 상 = 상태표(), 찾 = 거름 === false ? '' : 납작(검색글);
     return ZG.저장소.품목들().filter(function (p) {
-      return (p.등록일시 || 0) >= 경계 && (뺀것 ? !!p.사진뺌 : !p.사진뺌);
+      return (p.등록일시 || 0) >= 경계 && (뺀것 ? !!p.사진뺌 : !p.사진뺌) &&
+        (!찾 || 납작(p.품목코드 + p.유통명 + p.학명).indexOf(찾) >= 0);
     }).sort(function (a, b) {
       var x = 상[a.품목코드] === '끝' ? 1 : 0, y = 상[b.품목코드] === '끝' ? 1 : 0;
       return x !== y ? x - y : (b.등록일시 || 0) - (a.등록일시 || 0);
     });
   }
 
-  /* 🔴 완료는 우람님이 손으로 누르신다. 제작요청 기록으로는 판정할 수 없다 —
+  /* 🔴 완료는 우람님이 손으로 누르시거나, **카페24에 올라가면 맥이 대신 적는다**
+     (2026-09-15 우람님 「업로드 끝난 건 자동으로 완료로」 · `지시함.py` 의 `완료로넘기기`).
+     여기서는 아무것도 판정하지 않는다 — 올린 맥이 `사진뺌` 을 적고 내려온다.
+     제작요청 기록으로는 판정할 수 없다 —
      9/4 입고 11품목은 요청을 안 거치고 상세페이지가 끝나 기록이 아예 없다 (2026-09-14)
      🔴 데이터 열쇠는 `사진뺌` 그대로다. 뜻만 「완료」로 바뀌었다 —
      이름을 갈면 이미 빼 두신 품목이 통째로 작업중으로 되돌아온다 (2026-09-14 우람님) */
   var 완료보기 = false;
+  var 검색글 = '';
+
+  /* 대소문자만 무시하고 그대로 걸린 부분만 감싼다. 공백 무시로만 걸리면 표시 없이 둔다 */
+  function 칠글(v) {
+    var 글 = String(v == null ? '' : v), 찾 = 검색글.trim();
+    var i = 찾 ? 글.toLowerCase().indexOf(찾.toLowerCase()) : -1;
+    if (i < 0) return u.안전(글);
+    return u.안전(글.slice(0, i)) + '<mark>' + u.안전(글.slice(i, i + 찾.length)) + '</mark>' + u.안전(글.slice(i + 찾.length));
+  }
 
   function 완료누름(p) {
     var 끝낼까 = !완료보기;
@@ -285,8 +301,8 @@ window.ZG = window.ZG || {};
     목록.forEach(function (p) {
       var 칸 = 만들기('div', { class: 'ph-card' + (상[p.품목코드] === '끝' ? ' 끝남' : '') });
       칸.innerHTML =
-        '<div class="r1"><div class="nm">' + u.안전(p.유통명) + '</div><div class="cd">' + u.안전(p.품목코드) + '</div></div>' +
-        '<div class="sci">' + u.안전(p.학명) + '</div>' +
+        '<div class="r1"><div class="nm">' + 칠글(p.유통명) + '</div><div class="cd">' + 칠글(p.품목코드) + '</div></div>' +
+        '<div class="sci">' + 칠글(p.학명) + '</div>' +
         '<div class="r2">' + u.안전(p.규격) + '<span class="amt"><span class="chip 사진">…</span></span></div>';
       칩달기(칸.querySelector('.chip'), p, 상[p.품목코드]);
       칸.addEventListener('click', function () { 열기(p); });
@@ -314,8 +330,8 @@ window.ZG = window.ZG || {};
     목록.forEach(function (p) {
       var 줄 = 만들기('tr', { class: 상[p.품목코드] === '끝' ? '끝남' : '', style: 'cursor:pointer' });
       줄.innerHTML =
-        '<td class="code">' + u.안전(p.품목코드) + '</td>' +
-        '<td>' + u.안전(p.유통명) + '<div class="sci">' + u.안전(p.학명) + '</div></td>' +
+        '<td class="code">' + 칠글(p.품목코드) + '</td>' +
+        '<td>' + 칠글(p.유통명) + '<div class="sci">' + 칠글(p.학명) + '</div></td>' +
         '<td class="dim">' + u.안전(p.규격) + '</td>' +
         '<td><span class="chip 사진">…</span></td>' +
         '<td class="뺌칸"></td>';
@@ -331,25 +347,49 @@ window.ZG = window.ZG || {};
   }
 
   /* 입고를 저장하면 05d 의 내역다시() 가 이걸 같이 부른다 — 새 품목이 바로 보여야 한다 */
-  var 대기칸 = null;
+  /* 🔴 검색칸은 대기카드()에서 한 번만 만들고 칠하기가 건드리지 않는다 —
+     칠할 때마다 갈면 아이폰 한글 조합이 끊긴다(06a 와 같은 사고) */
+  var 대기칸 = null, 참조 = {};
 
   function 칠하기() {
     if (!대기칸) return;
-    대기칸.innerHTML = '';
-    var 작업수 = 대기품목(false).length, 완료수 = 대기품목(true).length;
-    var 목록 = 대기품목(완료보기);
-    if (!작업수 && !완료수) {              // 아직 아무것도 없다
-      대기칸.appendChild(만들기('div', { class: '지시-빈', style: 'padding:var(--space-4xl) 0',
+    var 거름 = 참조.거름, 칩자리 = 참조.칩자리, 목록자리 = 참조.목록자리;
+    u.비우기(칩자리); u.비우기(목록자리);
+    참조.지움.hidden = !검색글;
+    if (!검색글 && !대기품목(false, false).length && !대기품목(true, false).length) {   // 아직 아무것도 없다
+      거름.hidden = true;
+      목록자리.appendChild(만들기('div', { class: '지시-빈', style: 'padding:var(--space-4xl) 0',
         html: '사진이 다 차면 여기에 쌓입니다.' }));
       return;
     }
-    대기칸.appendChild(갈래칩(작업수, 완료수));
-    대기칸.appendChild(u.폰인가() ? 폰목록(목록) : PC목록(목록));
+    거름.hidden = false;
+    var 목록 = 대기품목(완료보기);
+    칩자리.appendChild(갈래칩(대기품목(false).length, 대기품목(true).length));
+    if (검색글 && !목록.length) {
+      목록자리.appendChild(만들기('div', { class: '지시-빈', style: 'padding:var(--space-4xl) 0', text: '찾는 품목이 없습니다' }));
+      return;
+    }
+    목록자리.appendChild(u.폰인가() ? 폰목록(목록) : PC목록(목록));
+  }
+
+  function 검색칸() {
+    var e = u.손대야열림(만들기('input', { class: 'inp', type: 'search', placeholder: '품목코드 · 유통명 · 학명' }));
+    u.조합안전입력(e, function (값) {
+      if (값 === 검색글) return;
+      검색글 = 값; 칠하기();
+    }, 180);
+    var 지움 = 만들기('button', { class: '지움', type: 'button', text: '✕', 'aria-label': '검색어 지우기' });
+    지움.addEventListener('click', function () { e.value = ''; 검색글 = ''; 칠하기(); });
+    참조.지움 = 지움;
+    return 만들기('div', { class: 'search' }, [만들기('span', { class: 'mag', text: '🔍' }), e, 지움]);
   }
 
   function 대기카드() {
     완료보기 = false;                      // 화면을 새로 그리면 「완료」가 아니라 작업중부터 보인다
-    대기칸 = 만들기('div');
+    검색글 = '';
+    참조 = { 칩자리: 만들기('div'), 목록자리: 만들기('div') };
+    참조.거름 = 만들기('div', { class: '사진거름' }, [참조.칩자리, 검색칸()]);
+    대기칸 = 만들기('div', { class: '사진대기' }, [참조.거름, 참조.목록자리]);
     칠하기();
     return 대기칸;
   }

@@ -213,6 +213,28 @@ td.뺌칸{text-align:right}
 .갈래칩{display:flex; gap:var(--space-sm); padding:0 var(--space-sm) var(--space-md)}
 .갈래칩 .fchip{flex:1; justify-content:center}
 
+/* 작업중 검색칸 (17단계 §1) — 주문.css 의 .search 는 index.html 이 안 싣는다. .사진대기 안에만 가둔다 */
+.사진거름{display:flex; align-items:center; gap:var(--space-md); padding:0 0 var(--space-md)}
+.사진거름 .갈래칩{width:280px; flex:0 0 auto; padding:0}
+.사진거름 .search{width:340px; flex:0 0 auto}
+.사진대기 .search{position:relative}
+.사진대기 .search .inp{padding-left:34px; padding-right:34px; height:var(--h-btn); font-size:var(--font-sm); line-height:calc(var(--h-btn) - 2px)}
+.사진대기 .search .inp::-webkit-search-cancel-button{display:none}
+.사진대기 .search .mag{position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:var(--font-md); opacity:.45}
+.사진대기 .search .지움{
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  width:18px; height:18px; border-radius:50%; border:none; background:#C7C7CC; color:#fff;
+  font-size:10px; font-weight:700; line-height:18px; text-align:center; padding:0; font-family:inherit; cursor:pointer;
+}
+.사진대기 mark{background:#FFF2B8; color:inherit; border-radius:3px; box-shadow:0 0 0 1.5px #FFF2B8}
+@media (max-width:899px){
+  .사진거름{flex-direction:column; align-items:stretch}
+  .사진거름 .갈래칩, .사진거름 .search{width:auto}
+  .사진거름 .갈래칩 .fchip{min-height:36px; align-items:center}
+  .사진대기 .search .inp{height:var(--h-input); font-size:var(--font-lg); line-height:var(--h-input-line)}
+  .사진대기 .search .지움{width:20px; height:20px; line-height:20px; font-size:11px}
+}
+
 /* ── 일자별 (2026-09-14 우람님) ─────────────────────────────────────
    좌우 화살표로 앞뒤 날, 가운데를 누르면 기간을 지정하는 창이 뜬다. */
 .일자줄{
