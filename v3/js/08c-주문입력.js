@@ -121,7 +121,94 @@ window.ZG = window.ZG || {};
     return 우편불러옴;
   }
 
-  function 주소찾기(주소, 우편) {
+  /* ══ 주소 확인 (19단계 §2) — 고른 주소가 손님 원문과 건물번호까지 같은지 본다 ══
+     「번지 하나 틀림」이 그대로 송장에 찍힌다. 막지는 않고, 다를 때만 한 번 묻는다.
+     🔴 카카오 자료에는 건물 본번·부번 칸이 없다 — roadAddress 에 원문과 같은 정규식을 돌린다 */
+  var 도로식 = /([가-힣A-Za-z0-9·.]+(?:로|길)(?:\s*\d+번?안?길)?)\s*(\d+)(?:\s*-\s*(\d+))?(?![\d번가길])/;
+
+  function 도로뽑기(글) {
+    var m = 도로식.exec(String(글 || ''));
+    if (!m) return null;
+    return { 도로: m[1].replace(/\s+/g, ''), 본번: m[2], 부번: m[3] || '', 시작: m.index, 끝: m.index + m[0].length };
+  }
+  function 지번글(d) {
+    var j = String(d.jibunAddress || d.autoJibunAddress || '').trim();
+    [d.sido, d.sigungu].forEach(function (앞) { if (앞 && j.indexOf(앞) === 0) j = j.slice(앞.length).trim(); });
+    return j;
+  }
+  function 주소비교(원문, d) {
+    원문 = String(원문 || '').trim();
+    if (!원문) return { 결과: '없음' };
+    d = d || {};
+    var 고른글 = String(d.roadAddress || d.autoRoadAddress || '').trim();
+    var 답 = { 결과: '불가', 원문조각: null, 고른조각: null, 고른글: 고른글, 꼬리: '', 지번: 지번글(d) };
+    var 가 = 도로뽑기(원문), 나 = 도로뽑기(고른글);
+    if (나 && 나.도로 !== String(d.roadname || '').replace(/\s+/g, '')) 나 = null;   // 도로명을 잘못 끊었다 — 비교하지 않는다
+    if (!가 || !나) return 답;
+    답.원문조각 = { 시작: 가.시작, 끝: 가.끝 };
+    답.고른조각 = { 시작: 나.시작, 끝: 나.끝 };
+    답.꼬리 = 원문.slice(가.끝).replace(/^[\s,]+/, '').trim();
+    답.결과 = 가.도로 === 나.도로 && 가.본번 === 나.본번 && 가.부번 === 나.부번 ? '일치' : '다름';
+    return 답;
+  }
+  function 조각글(글, 조각) {
+    if (!조각) return u.안전(글);
+    return u.안전(글.slice(0, 조각.시작)) + '<span class="다름">' + u.안전(글.slice(조각.시작, 조각.끝)) + '</span>' + u.안전(글.slice(조각.끝));
+  }
+
+  /* 단추가 셋이라 u.확인 을 못 쓴다 — 틀(두 겹 금지·Tab 가두기·포커스 되돌림)은 그대로 따른다.
+     답: '다시' · '원문'(Esc·바깥 누름도) · '사용' */
+  function 주소확인창(비교, 원문, 그때) {
+    if (document.querySelector('.askbox')) return;
+    var 되돌릴포커스 = document.activeElement;
+    function 닫기(답) {
+      document.removeEventListener('keydown', 열쇠);
+      막.remove(); 상자.remove();
+      if (되돌릴포커스 && 되돌릴포커스.focus) 되돌릴포커스.focus();
+      그때(답);
+    }
+    function 열쇠(e) {
+      if (e.key === 'Escape') { e.preventDefault(); 닫기('원문'); }
+      else if (e.key === 'Tab') {
+        var 것들 = 상자.querySelectorAll('button'), 처음 = 것들[0], 끝 = 것들[것들.length - 1];
+        if (e.shiftKey && document.activeElement === 처음) { e.preventDefault(); 끝.focus(); }
+        else if (!e.shiftKey && document.activeElement === 끝) { e.preventDefault(); 처음.focus(); }
+      }
+    }
+    function 단추(글, 클래스, 답) {
+      var b = 만들기('button', { class: 'btn' + (클래스 ? ' ' + 클래스 : ''), type: 'button', text: 글 });
+      b.addEventListener('click', function () { 닫기(답); });
+      return b;
+    }
+    var 막 = 만들기('div', { class: 'askscrim' });
+    막.addEventListener('click', function () { 닫기('원문'); });
+    var 다시 = 단추('다시 찾기', '주의', '다시');
+    var 줄 = function (k, 속) { return 만들기('div', { class: '줄' }, [만들기('span', { class: 'k', text: k }), 만들기('span', { class: 'v', html: 속 })]); };
+    var 상자 = 만들기('div', { class: 'askbox 주소창' + (u.폰인가() ? ' 폰' : ''), role: 'dialog', 'aria-modal': 'true' }, [
+      만들기('h4', { text: '주소가 원문과 다릅니다' }),
+      만들기('div', { class: '대조' }, [
+        줄('손님 원문', 조각글(원문, 비교.원문조각)),
+        줄('고른 주소', 조각글(비교.고른글, 비교.고른조각) + (비교.지번 ? '<small>지번 ' + u.안전(비교.지번) + '</small>' : ''))
+      ]),
+      만들기('div', { class: 'btnrow' }, [다시, 만들기('span', { class: 'spacer' }), 단추('원문 그대로 두기', '', '원문'), 단추('이 주소로 사용', '', '사용')])
+    ]);
+    document.body.appendChild(막);
+    document.body.appendChild(상자);
+    document.addEventListener('keydown', 열쇠);
+    setTimeout(function () { 다시.focus(); }, 20);
+  }
+
+  function 확인줄(종류, 머리, 줄들) {
+    return 만들기('div', { class: '확인줄 ' + 종류 }, [만들기('span', { class: '머리', text: 머리 })].concat(줄들.map(function (kv) {
+      return 만들기('span', {}, [만들기('span', { class: 'k', text: kv[0] }), 만들기('span', { class: 'v', text: kv[1] })]);
+    })));
+  }
+
+  /* 설정 = { 대상, 상세, 표시 } — 대상은 원문주소·주소확인을 쥔 객체(문자주문 상태·사본), 표시는 주소줄이 단다.
+     q 가 있으면 「다시 찾기」 — 원문은 그대로 두고 카카오 검색어만 잇는다 */
+  function 주소찾기(주소, 우편, 설정, q) {
+    설정 = 설정 || {};
+    var 대상 = 설정.대상 || {}, 상세 = 설정.상세 || null, 표시 = 설정.표시 || {};
     우편불러오기().then(function () {
       var 막 = 만들기('div', { class: 'pcscrim', style: 'z-index:999' });   // 주문수정 창(61) 위에도 뜨게
       var 판 = 만들기('div', {
@@ -143,27 +230,74 @@ window.ZG = window.ZG || {};
       new window.daum.Postcode({
         width: '100%', height: '100%',
         oncomplete: function (d) {
-          var 글 = d.userSelectedType === 'J' ? d.jibunAddress : d.roadAddress;
-          if (d.userSelectedType !== 'J' && d.apartment === 'Y' && d.buildingName) 글 += ' (' + d.buildingName + ')';
-          우편.value = d.zonecode || '';
-          주소.value = 글 + ' ';
-          닫기();
-          주소.focus();
-          주소.setSelectionRange(주소.value.length, 주소.value.length);   // 이어서 동·호수를 적는다
+          닫기();   // 🔴 확인창은 embed(z 1000)를 닫은 뒤에 — 안 그러면 그 아래로 숨는다
+          주소골랐다(주소, 우편, 대상, 상세, 표시, d);
         }
-      }).embed(속, { q: 주소.value.trim(), autoClose: false });
+      }).embed(속, { q: q !== undefined ? q : 주소.value.trim(), autoClose: false });
     }, function () {
       u.토스트('주소 찾기를 못 불러왔습니다 — 인터넷 연결을 확인하세요.');
     });
   }
 
-  function 주소줄(주소, 우편) {
+  function 주소골랐다(주소, 우편, 대상, 상세, 표시, d) {
+    function 채우기(꼬리) {
+      var 글 = d.userSelectedType === 'J' ? d.jibunAddress : d.roadAddress;
+      if (d.userSelectedType !== 'J' && d.apartment === 'Y' && d.buildingName) 글 += ' (' + d.buildingName + ')';
+      우편.value = d.zonecode || '';
+      if (꼬리 && 상세 && !상세.value.trim()) {
+        상세.value = 꼬리;
+        상세.dispatchEvent(new Event('input', { bubbles: true }));   // 상세칸 주인(상태·사본)이 값을 받게
+      }
+      주소.value = 꼬리 && !상세 ? 글 + ' ' + 꼬리 : 글 + ' ';
+      주소.focus();
+      주소.setSelectionRange(주소.value.length, 주소.value.length);   // 이어서 동·호수를 적는다
+    }
+    function 칩(보임) { if (표시.칩) 표시.칩.hidden = !보임; }
+    function 줄달기(el) { if (!표시.칸) return; u.비우기(표시.칸); if (el) 표시.칸.appendChild(el); 표시.칸.hidden = !el; }
+    var 원문 = String(대상.원문주소 || '');
+    var 비 = 주소비교(원문, d);
+    if (비.결과 === '없음') { 줄달기(null); 채우기(''); return; }
+    if (비.결과 === '일치') {
+      대상.주소확인 = '일치'; 칩(false);
+      줄달기(확인줄('맞음', '✓ 원문과 일치', [['도로명', 비.고른조각 ? 비.고른글.slice(비.고른조각.시작, 비.고른조각.끝) : 비.고른글], ['지번', 비.지번]]));
+      채우기(비.꼬리); return;
+    }
+    if (비.결과 === '불가') {
+      대상.주소확인 = '비교안됨'; 칩(false);
+      줄달기(확인줄('비교안됨', '! 원문 비교 안 됨', [['원문', 원문], ['지번', 비.지번]]));
+      채우기(''); return;
+    }
+    주소확인창(비, 원문, function (답) {
+      if (답 === '다시') { 주소찾기(주소, 우편, { 대상: 대상, 상세: 상세, 표시: 표시 }, d.query || ''); return; }
+      줄달기(null);
+      if (답 === '사용') { 대상.주소확인 = '고름'; 칩(false); 채우기(''); return; }   // 다른 건물이라 동·호수는 사람이 다시 본다
+      대상.주소확인 = '미확인'; 칩(true);
+    });
+  }
+
+  /* 주소칸 + 찾기 단추 + 확인줄 자리를 세로로 묶어 돌려준다. 줄.칩 은 라벨에 붙일 「미확인」 칩(20b 주소밭).
+     설정이 없으면(수동주문·주문수정) 닫힌 빈 대상을 쓴다 — 저장은 안 된다 */
+  function 주소줄(주소, 우편, 설정) {
+    설정 = 설정 || {};
+    var 대상 = 설정.대상 || {}, 손댐 = false;
+    var 칩 = 만들기('span', { class: '미확인', text: '미확인' });
+    칩.hidden = 대상.주소확인 !== '미확인';
+    var 칸 = 만들기('div', { class: '확인칸' });
+    칸.hidden = true;
+    주소.addEventListener('input', function () { 손댐 = true; 칸.hidden = true; });   // 고친 주소 옆에 지난 ✓ 를 남기지 않는다
     var 단추 = 만들기('button', { class: 'btn', type: 'button', text: '🔍 주소 찾기' });
     단추.style.flex = '0 0 auto';
-    단추.addEventListener('click', function () { 주소찾기(주소, 우편); });
+    단추.addEventListener('click', function () {
+      // 원문은 처음 한 번만 — 두 번째 찾기 때 카카오 주소가 원문을 덮지 않게. 손으로 고쳤으면 그게 새 원문이다
+      if (손댐 || !대상.원문주소) 대상.원문주소 = 주소.value.trim();
+      손댐 = false;
+      주소찾기(주소, 우편, { 대상: 대상, 상세: 설정.상세 || null, 표시: { 칩: 칩, 칸: 칸 } });
+    });
     주소.style.flex = '1';
     주소.style.minWidth = '0';
-    return 만들기('div', { style: 'display:flex;gap:6px;align-items:center' }, [주소, 단추]);
+    var 줄 = 만들기('div', { class: '확인묶음' }, [만들기('div', { style: 'display:flex;gap:6px;align-items:center' }, [주소, 단추]), 칸]);
+    줄.칩 = 칩;
+    return 줄;
   }
 
   /* ══ 받는 분 — 등록 · 수정이 같은 부품을 쓴다 ══
@@ -869,6 +1003,7 @@ window.ZG = window.ZG || {};
     품목카드묶음: 품목카드묶음,   // 09b 수동 카드 · 08e 서비스 창이 같은 부품을 쓴다
     줄만들기: 줄만들기,           // 08e 서비스 품목이 같은 모양의 줄을 만든다 (설계 §2-1)
     닫기창: 닫기창,
-    주소찾기: 주소찾기, 주소줄: 주소줄   // 20b·20c·20d 문자주문 주소칸이 같은 부품을 쓴다
+    주소찾기: 주소찾기, 주소줄: 주소줄,  // 20b·20c·20d 문자주문 주소칸이 같은 부품을 쓴다
+    주소비교: 주소비교
   };
 })(window.ZG);

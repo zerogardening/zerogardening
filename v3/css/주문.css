@@ -1236,3 +1236,35 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .원본판 .원본품목 .q{margin-left:auto; color:var(--color-text-sub); font-variant-numeric:tabular-nums}
 .문자주문 .원본판 .원본품목 b{min-width:80px; text-align:right; font-variant-numeric:tabular-nums}
 .문자주문 .원본판 .원본품목 .줄.배송 b{margin-left:auto}
+
+/* ── 19단계 주소 확인 — 문자주문·수동주문·주문수정이 같이 쓴다(.문자주문 아래로 가두지 않는다) ── */
+.확인묶음{display:flex; flex-direction:column; gap:var(--space-xs)}
+.확인줄{display:flex; flex-direction:column; gap:2px; font-size:var(--font-xs); line-height:1.5; padding:6px 10px; border-radius:var(--radius-sm)}
+.확인줄 .머리{font-weight:var(--weight-bold)}
+.확인줄 .k{display:inline-block; width:38px; color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.확인줄 .v{color:var(--color-text-sub)}
+.확인줄.맞음{background:var(--color-accent-bg); color:var(--color-accent-dark)}
+.확인줄.비교안됨{background:#FFF7E0; color:#8A6100; box-shadow:inset 0 0 0 1px #F0DFAE}
+.미확인{display:inline-flex; align-items:center; gap:4px; padding:var(--pad-chip); border-radius:var(--radius-badge); margin-left:8px; vertical-align:middle;
+  font-size:var(--font-2xs); font-weight:var(--weight-bold); background:#FFF0E3; color:#C2410C; border:1px solid #F8C9A0; white-space:nowrap}
+.미확인::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:#E8590C}
+.미확인[hidden]{display:none}
+.btn.주의{background:#E8590C; color:#fff; border-color:#C94C09; font-weight:var(--weight-bold)}
+.askbox.주소창{width:min(540px, calc(100vw - 40px))}
+.대조{display:flex; flex-direction:column; gap:var(--space-sm)}
+.대조 .줄{display:grid; grid-template-columns:64px 1fr; gap:var(--space-md); align-items:baseline;
+  padding:var(--space-md) var(--space-lg); border-radius:var(--radius-md); background:#F7F7F9; border:1px solid var(--color-border-faint)}
+.대조 .줄 .k{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-muted); white-space:nowrap}
+.대조 .줄 .v{font-size:var(--font-lg); font-weight:var(--weight-semibold); color:var(--color-text); line-height:1.45; word-break:keep-all; overflow-wrap:anywhere}
+.대조 .줄 .v small{display:block; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+.대조 .다름{color:var(--color-danger); background:var(--color-danger-bg); box-shadow:0 0 0 2px var(--color-danger-bg); border-radius:3px; font-weight:var(--weight-bold)}
+.askbox.주소창 .btnrow .spacer{flex:1}
+.askbox.주소창.폰{width:calc(100vw - 28px)}
+.askbox.주소창.폰 .대조 .줄{grid-template-columns:1fr; gap:2px; padding:var(--space-md)}
+.askbox.주소창.폰 .btnrow{flex-direction:column}
+.askbox.주소창.폰 .btnrow .btn{flex:none; width:100%; min-height:46px}
+.askbox.주소창.폰 .btnrow .spacer{display:none}
+@media screen and (max-width:899px){
+  .확인줄{font-size:var(--font-sm)}
+  .확인줄 .k{width:42px}
+}

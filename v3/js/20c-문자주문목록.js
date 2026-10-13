@@ -87,6 +87,8 @@ window.ZG = window.ZG || {};
       : { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 메모: r.메모 || '', 주소: r.주소 || '', 상세주소: r.상세주소 || '', 우편: r.우편 || '',
           배송메시지: r.배송메시지 || '', 배송비: Number(r.배송비) || 0,
           품목: (r.품목 || []).map(function (p) { return Object.assign({}, p); }) };
+    // 원문주소·주소확인도 있던 줄만 — 없는 칸을 실으면 고치기가 빈칸으로 덮는다
+    ['원문주소', '주소확인'].forEach(function (k) { if (k in r) 사본[k] = r[k]; });
     // 예약 칸은 있던 줄만 처음부터 싣는다 — 안 건드린 줄을 저장해도 예약:false 가 새로 붙지 않게
     if (종류 === '고침' && '예약' in r) { 사본.예약 = !!r.예약; 사본.예약일 = r.예약 ? (r.예약일 || '') : ''; }
     상태.열린 = { id: r.id, 종류: 종류, 사본: 사본, 예약판: { 열림: false, 달: '', 정하기: false } };
@@ -280,7 +282,7 @@ window.ZG = window.ZG || {};
       return 만들기('div', { class: '속' }, [
         만들기('div', { class: 'pair' }, [밭('받는 분 <span class="auto">선택</span>', 칸.받는분, 'flex:1'), 밭('전화번호', 칸.전화, 'flex:1.3')]),
         밭('메모 <span class="auto">선택</span>', 칸.메모),
-        밭('주소 <span class="auto">선택</span>', 칸.곳.줄),
+        부().주소밭('주소 <span class="auto">선택</span>', 칸.곳.줄),
         밭('상세주소', 칸.곳.상세),
         밭('우편번호', 칸.곳.우편, 'width:120px'),
         밭('배송메시지 <span class="auto">선택</span>', 칸.배송메시지)
@@ -293,7 +295,7 @@ window.ZG = window.ZG || {};
         밭('메모 <span class="auto">선택</span>', 칸.메모, 'flex:1')
       ]),
       만들기('div', { class: '사람줄' }, [
-        밭('우편번호', 칸.곳.우편, 'width:130px'), 밭('주소 <span class="auto">선택</span>', 칸.곳.줄, 'flex:1')
+        밭('우편번호', 칸.곳.우편, 'width:130px'), 부().주소밭('주소 <span class="auto">선택</span>', 칸.곳.줄, 'flex:1')
       ]),
       만들기('div', { class: '사람줄' }, [
         만들기('div', { style: 'flex:0 0 130px' }), 밭('상세주소', 칸.곳.상세, 'flex:1')   // 주소칸 바로 밑에 맞춘다
