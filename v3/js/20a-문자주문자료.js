@@ -145,12 +145,19 @@ window.ZG = window.ZG || {};
     });
     return 색;
   }
+  /* 번호로 잡는 건 그 번호에 이 문자주문id 줄이 남아 있을 때만.
+     🔴 주문탭에서 올린 주문을 지우면 새주문번호()가 같은 번호를 다른 문자주문에 다시 준다 —
+        번호만 보면 남의 주문을 제 것으로 잡는다 (17단계④ 검수) */
+  function 번호살아있나(r, 제줄들) {
+    var n = String(r.올린주문번호 || '').trim();
+    return n && 제줄들.some(function (o) { return String(o.주문번호 || '').trim() === n; }) ? n : '';
+  }
   // 주문탭에서 나중에 더한 줄도 잡는다 — 판매처 '문자'로 같은 모양 번호의 남의 주문은 막는다
   function 대상줄(r, 색) {
-    var 본 = {}, 줄들 = [];
+    var 본 = {}, 줄들 = [], 제줄 = 색.문자id별[r.id] || [];
     function 담기(o) { if (o.서비스 === true || 본[o.id]) return; 본[o.id] = 1; 줄들.push(o); }
-    (색.문자id별[r.id] || []).forEach(담기);
-    var n = String(r.올린주문번호 || '').trim();
+    제줄.forEach(담기);
+    var n = 번호살아있나(r, 제줄);
     if (n) (색.번호별[n] || []).forEach(담기);
     return 줄들;
   }
@@ -249,12 +256,11 @@ window.ZG = window.ZG || {};
      🔴 서비스 줄(08e)은 주문번호·판매처만 물려받고 문자주문id 가 없다.
         id 로만 지우면 서비스 줄과 그 출고가 고아로 남아 재고가 빠진 채 남는다 */
   function 지울줄(r) {
-    var 본 = {}, 줄들 = [], n = String(r.올린주문번호 || '').trim();
-    저().읽기(저().키.주문).forEach(function (o) {
-      var 맞다 = o.문자주문id === r.id || (n && o.판매처 === '문자' && String(o.주문번호 || '').trim() === n);
-      if (맞다 && !본[o.id]) { 본[o.id] = 1; 줄들.push(o); }
+    var 주문들 = 저().읽기(저().키.주문);
+    var n = 번호살아있나(r, 주문들.filter(function (o) { return o.문자주문id === r.id; }));
+    return 주문들.filter(function (o) {
+      return o.문자주문id === r.id || (n && o.판매처 === '문자' && String(o.주문번호 || '').trim() === n);
     });
-    return 줄들;
   }
   /* 돌려주는 값: { 지운주문수 } 또는 { 오류 }
      🔴 문자주문 줄은 맨 끝에 지운다 — 중간에 끊기면 남아 있어 다시 눌러 마저 지운다 */

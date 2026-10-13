@@ -129,8 +129,8 @@ window.ZG = window.ZG || {};
     });
     var n = Object.keys(번호).length;
     return '<span class="지울주문"><span class="큰">주문 탭에 올라간 주문 ' + n + '건도<br>함께 지워집니다</span>' +
-      '<span class="건"><span class="no">' + u.안전(r.올린주문번호 || Object.keys(번호)[0]) + '</span>' +
-      u.안전(r.받는분 || 줄들[0].수령인 || '') + ' · ' + Object.keys(종).length + '종 ' + u.콤마(개) + '개' +
+      '<span class="건"><span class="no">' + u.안전(Object.keys(번호)[0]) + '</span>' +
+      u.안전(줄들[0].수령인 || r.받는분 || '') + ' · ' + Object.keys(종).length + '종 ' + u.콤마(개) + '개' +
       '<b>' + u.콤마(합) + '원</b></span></span>';
   }
   function 마저지우기(r) {
