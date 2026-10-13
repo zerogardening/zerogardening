@@ -1200,3 +1200,39 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .ph-body .합계띠 .칸.돈 b{font-size:var(--font-xl)}
 .ph-body .합계띠 .칸{flex-direction:column; align-items:flex-start; gap:0}
 .ph-body .합계띠 .칸.돈{align-items:flex-end}
+
+/* ── 18b ② 주문탭 → 예약 (시안 18b ③) — .넘김 은 주문 조회 화면, 팝업은 body 에 붙어 .askbox.넘김창 아래로 가둔다 ── */
+.문자주문 .옴{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:#EEF3FB; color:#3A5A8C; border:var(--border-width) solid #CBD8EC}
+.문자주문 tr.옮겨옴 > td{background:#F3EFFA}
+.문자주문 .문카드.옮겨옴{box-shadow:0 0 0 2px #5F3DA0, var(--shadow-card)}
+.btn.넘김{color:#5F3DA0; border-color:#CDBFE8}
+.btn.넘김:disabled{opacity:.4; color:var(--color-text-sub); border-color:var(--color-border)}
+.btn.넘김큰{width:100%; min-height:50px; font-size:var(--font-lg); font-weight:var(--weight-bold); border-radius:var(--radius-xl)}
+.askbox.넘김창 .넘김목록{display:flex; flex-direction:column; gap:var(--space-sm)}
+.askbox.넘김창 .넘김목록.넘침{max-height:340px; overflow-y:auto}
+.askbox.넘김창 .넘김건{background:#FAFAFC; border:var(--border-width) solid var(--color-border-faint); border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg); display:flex; flex-direction:column; gap:var(--space-xs)}
+.askbox.넘김창 .넘김건 .누구{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-md)}
+.askbox.넘김창 .넘김건 .누구 b{font-size:var(--font-lg); letter-spacing:-.02em}
+.askbox.넘김창 .넘김건 .누구 .t{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+.askbox.넘김창 .넘김건 .누구 .mall{margin-left:auto}
+.askbox.넘김창 .넘김건 .줄{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-md)}
+.askbox.넘김창 .넘김건 .줄 .rg{font-size:var(--font-xs); color:var(--color-text-muted)}
+.askbox.넘김창 .넘김건 .줄 .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.askbox.넘김창 .넘김건 .합{display:flex; justify-content:space-between; border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-xs); margin-top:var(--space-3xs); font-size:var(--font-sm); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+.askbox.넘김창 .넘김건 .합 b{color:var(--color-text); font-size:var(--font-lg); font-variant-numeric:tabular-nums}
+.askbox.넘김창 .결과줄{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:#5F3DA0; background:#F3EFFA; border-radius:var(--radius-sm); padding:var(--space-sm) var(--space-md)}
+.askbox.넘김창.폰 .결과줄{font-size:var(--font-md)}
+.askbox.넘김창.폰 .넘김건 .줄{font-size:var(--font-lg)}
+.askbox.넘김창.폰 .예약고름 button{height:42px; font-size:var(--font-lg)}
+.askbox .위험글{color:var(--color-danger)}
+
+/* 옮긴 줄 펼친 판 — 사람·품목은 읽기 글 */
+.문자주문 .원본판 .원본사람{display:flex; gap:var(--space-lg); flex-wrap:wrap}
+.문자주문 .원본판 .원본사람 .field{display:flex; flex-direction:column; gap:var(--space-3xs); min-width:120px}
+.문자주문 .원본판 .읽기글{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text)}
+.문자주문 .원본판 .원본품목{display:flex; flex-direction:column; gap:var(--space-xs); border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-sm)}
+.문자주문 .원본판 .원본품목 .줄{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-md)}
+.문자주문 .원본판 .원본품목 .rg{font-size:var(--font-xs); color:var(--color-text-muted)}
+.문자주문 .원본판 .원본품목 .q{margin-left:auto; color:var(--color-text-sub); font-variant-numeric:tabular-nums}
+.문자주문 .원본판 .원본품목 b{min-width:80px; text-align:right; font-variant-numeric:tabular-nums}
+.문자주문 .원본판 .원본품목 .줄.배송 b{margin-left:auto}

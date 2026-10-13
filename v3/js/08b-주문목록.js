@@ -714,6 +714,11 @@ window.ZG = window.ZG || {};
       ZG.주문입력.건삭제(g, function () { 열기('목록'); });
     });
     칸.appendChild(만들기('div', { class: 'topbtns' }, [수정, 삭제]));
+    // 마켓 줄이 하나라도 있으면 끈다. 배송완료는 눌렀을 때 20f 가 막는다 (18단계 §4-1)
+    var 넘김 = 만들기('button', { class: 'btn 넘김 넘김큰', type: 'button', text: '📅 예약으로 넘기기' });
+    if (!ZG.예약자료.넘길수있나(g)) 넘김.disabled = true;
+    넘김.addEventListener('click', function () { ZG.예약화면.넘기기창([g]); });
+    칸.appendChild(넘김);
 
     /* ③ 손으로 배송완료 — 그 건의 상태에 따라 한 개만 보인다 (9단계 설계 §5-2).
        카페24·심폴에는 아무 것도 안 보낸다 — 08n 이 확인창에 그 말을 적는다 */
@@ -1077,9 +1082,14 @@ window.ZG = window.ZG || {};
       서비스.addEventListener('click', function () { ZG.서비스품목.창(고름); });
     }
 
+    /* 🔴 여기도 「고른 게 없으면 전체」를 쓰지 않는다 — 고른 건만 주문 목록에서 빠진다 (18단계 §4-2) */
+    var 넘김 = 만들기('button', { class: 'btn sm 넘김', type: 'button', text: '📅 예약으로 넘기기' });
+    if (!고름.length || !고름.every(ZG.예약자료.넘길수있나)) 넘김.disabled = true;
+    넘김.addEventListener('click', function () { ZG.예약화면.넘기기창(고름, function () { 상태.고른 = {}; }); });
+
     return 만들기('div', { class: 'tbar' }, [
       만들기('span', { class: 'sel', html: '고른 것 <b>' + 고름.length + '</b>건' }),
-      서비스,
+      서비스, 넘김,
       만들기('span', { class: 'spacer' }),
       내려
     ]);

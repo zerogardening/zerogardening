@@ -216,8 +216,120 @@ window.ZG = window.ZG || {};
       .concat(셈.배송비 ? ['배송비 ' + u.콤마(셈.배송비)] : []).join(' · ');
   }
 
+  /* ══ ② 주문탭 → 예약 확인 팝업 (§4-3 · 시안 ③ⓑ·PC③ⓐ) ══
+     04 확인() 뼈대를 따라 여기서 짓는다 — u.확인 본문은 html 글뿐이라 예약 고름 칸을 못 넣는다 */
+  function 흡수배송비(g) {
+    var 본 = {}, 합 = 0;
+    g.줄들.forEach(function (o) {
+      var m = o.문자주문id && !본[o.문자주문id] ? 자().하나(o.문자주문id) : null;
+      if (o.문자주문id) 본[o.문자주문id] = 1;
+      if (m && m.상태 === '올림') 합 += Number(m.배송비) || 0;
+    });
+    return 합;
+  }
+  function 넘김건(g) {
+    var 배송비 = 흡수배송비(g), 합 = 배송비;
+    var 줄들 = g.줄들.map(function (o) {
+      합 += ZG.주문자료.금액(o);
+      return 만들기('div', { class: '줄' }, [document.createTextNode(o.유통명 || o.원본코드 || ''),
+        만들기('span', { class: 'rg', text: o.규격 || '' }), 만들기('span', { class: 'q', text: u.콤마(ZG.주문자료.수량(o)) })]);
+    });
+    return 만들기('div', { class: '넘김건' }, [
+      만들기('div', { class: '누구' }, [만들기('b', { text: g.수령인 || '' }), 만들기('span', { class: 't', text: g.전화 || '' }),
+        만들기('span', { class: 'mall', text: g.판매처 === '문자' ? '문자주문' : '수동주문' })])
+    ].concat(줄들, [만들기('div', { class: '합', html: '<span>품목 ' + g.줄들.length + '줄' + (배송비 ? ' · 배송비 ' + u.콤마(배송비) : '') +
+      '</span><b>' + u.콤마(합) + '원</b>' })]));
+  }
+  function 넘기기창(건들, 끝) {
+    if (document.querySelector('.askbox')) return;
+    if (건들.some(function (g) { return ZG.주문입력.나간줄(g.줄들).length; })) { u.토스트('⛔ 배송완료된 주문은 넘길 수 없음'); return; }
+    if (!건들.length || !건들.every(예().넘길수있나)) { u.토스트('수동·문자 주문만 넘길 수 있습니다'); return; }
+    var 되돌릴포커스 = document.activeElement, 누르는중 = false;
+    var 사본 = { 예약: true, 예약일: '' }, 판 = { 열림: false, 달: '', 정하기: false };
+
+    function 닫기() {
+      document.removeEventListener('keydown', 열쇠);
+      막.remove(); 상자.remove();
+      if (되돌릴포커스 && 되돌릴포커스.focus) 되돌릴포커스.focus();
+    }
+    function 열쇠(e) {
+      if (e.key === 'Escape') { e.preventDefault(); if (!누르는중) 닫기(); }
+      else if (e.key === 'Tab') {
+        var 것들 = 상자.querySelectorAll('button:not([disabled])');
+        var 처음 = 것들[0], 막끝 = 것들[것들.length - 1];
+        if (e.shiftKey && document.activeElement === 처음) { e.preventDefault(); 막끝.focus(); }
+        else if (!e.shiftKey && document.activeElement === 막끝) { e.preventDefault(); 처음.focus(); }
+      }
+    }
+    var 막 = 만들기('div', { class: 'askscrim' });
+    막.addEventListener('click', function () { if (!누르는중) 닫기(); });
+    var 취소 = 만들기('button', { class: 'btn', type: 'button', text: '취소' });
+    취소.addEventListener('click', function () { if (!누르는중) 닫기(); });
+    var 넘김 = 만들기('button', { class: 'btn main', type: 'button', text: '예약으로 넘기기' });
+    var 고름칸 = 만들기('div', { class: '예약필드' });
+    function 판정() { 넘김.disabled = 누르는중 || (판.정하기 && !사본.예약일); }
+    function 고름다시() {
+      u.비우기(고름칸);
+      var 정하는중 = !!사본.예약일 || 판.정하기;
+      고름칸.appendChild(고름줄(판, 사본, 고름다시));
+      if (정하는중) 고름칸.appendChild(날짜칸(판, 사본, 고름다시));
+      if (정하는중 && 판.열림) 고름칸.appendChild(날짜판(판, 사본.예약일, function (날) {
+        사본.예약일 = 날; 판.정하기 = false; 판.열림 = false; 고름다시();
+      }));
+      판정();
+    }
+    고름다시();
+    넘김.addEventListener('click', function () {
+      if (누르는중) return;
+      누르는중 = true; 판정(); 넘김.textContent = '옮기는 중…';
+      예().옮기기(건들, 사본.예약일).then(function (답) {
+        if (답.오류) { 누르는중 = false; 넘김.textContent = '예약으로 넘기기'; 판정(); u.토스트(답.오류); return; }
+        닫기();
+        if (끝) 끝();
+        if (u.폰인가()) ZG.주문.열기('목록');
+        ZG.견적탭.탭으로('문자');   // 🔴 탭으로가 뷰를 새 문자로 돌린다 — 예약으로는 그 다음에
+        ZG.문자주문.예약으로(답.새id들);
+        u.토스트('📅 예약 리스트로 옮김 · ' + (건들[0].수령인 || '') + (건들.length > 1 ? ' 외 ' + (건들.length - 1) + '건' : ''));
+      });
+    });
+
+    var 상자 = 만들기('div', { class: 'askbox 문자주문 넘김창' + (u.폰인가() ? ' 폰' : ''), role: 'dialog', 'aria-modal': 'true' }, [
+      만들기('h4', { text: '예약으로 넘기기' }),
+      만들기('div', { class: '넘김목록' + (건들.length > 3 ? ' 넘침' : '') }, 건들.map(넘김건)),
+      만들기('div', { class: '결과줄', text: '주문 목록에서 빠지고 예약 리스트로 이동' }),
+      고름칸,
+      만들기('div', { class: 'btnrow' }, [취소, 넘김])
+    ]);
+    document.body.appendChild(막);
+    document.body.appendChild(상자);
+    document.addEventListener('keydown', 열쇠);
+    setTimeout(function () { 넘김.focus(); }, 20);
+  }
+
+  /* ══ 옮긴 줄의 펼친 판 (§4-6) — 되살림은 원본줄들을 쓴다. 사람·품목은 읽기 글로만 ══ */
+  function 원본판(r, 폰, 예약칸요소, 끝단추들) {
+    var 원본 = r.원본줄들 || [], 첫 = 원본[0] || {}, 셈 = 자().합계(r);
+    function 글(라벨, 값) { return 만들기('div', { class: 'field' }, [만들기('label', { text: 라벨 }), 만들기('div', { class: '읽기글', text: 값 || '—' })]); }
+    var 사람 = 만들기('div', { class: '원본사람' }, [
+      글('받는 분', r.받는분), 글('전화번호', 자().전화모양(r.전화)), 글('주소', 첫.수령인주소 || r.주소)
+    ]);
+    var 품 = 만들기('div', { class: '원본품목' }, 원본.map(function (o) {
+      return 만들기('div', { class: '줄' }, [
+        만들기('span', { class: 'nm', text: (o.유통명 || o.원본코드 || '') + (o.서비스 === true ? ' (서비스)' : '') }),
+        만들기('span', { class: 'rg', text: o.규격 || '' }),
+        만들기('span', { class: 'q', text: u.콤마(ZG.주문자료.수량(o)) + ' × ' + u.콤마(Number(o.단가) || 0) }),
+        만들기('b', { text: u.콤마(ZG.주문자료.금액(o)) + '원' })
+      ]);
+    }).concat(셈.배송비 ? [만들기('div', { class: '줄 배송' }, [만들기('span', { class: 'nm', text: '배송비' }), 만들기('b', { text: u.콤마(셈.배송비) + '원' })])] : []));
+    var 몸 = [사람, 예약칸요소, 품];
+    if (폰) return 만들기('div', { class: '속 원본판' }, 몸.concat([만들기('div', { class: 'act', style: 'margin-top:0; flex-wrap:wrap' }, 끝단추들.slice(1))]));
+    return 만들기('div', { class: '속판 원본판' }, 몸.concat([만들기('div', { class: '끝' }, [끝단추들[0], 만들기('span', { class: 'spacer' })].concat(끝단추들.slice(1)))]));
+  }
+  function 옴칩() { return 만들기('span', { class: '옴', text: '↩ 주문탭에서 옴' }); }
+
   ZG.예약화면 = {
     날글: 날글, 예약칩: 예약칩, D칸: D칸, 날짜판: 날짜판, 예약칸: 예약칸, 잠그기: 잠그기,
-    갈래칩: 갈래칩, 폰구역: 폰구역, PC구역: PC구역, 품글: 품글
+    갈래칩: 갈래칩, 폰구역: 폰구역, PC구역: PC구역, 품글: 품글,
+    넘기기창: 넘기기창, 원본판: 원본판, 옴칩: 옴칩
   };
 })(window.ZG);
