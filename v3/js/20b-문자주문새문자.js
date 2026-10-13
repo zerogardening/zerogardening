@@ -96,6 +96,10 @@ window.ZG = window.ZG || {};
     var e = 만들기('input', { class: 'inp' + (폰 ? ' num' : ''), type: 'tel', inputmode: 'numeric', placeholder: '010-', value: 값 || '' });
     if (폰) e.style.textAlign = 'left';
     e.addEventListener('input', function () { 바뀜(e.value); });
+    // 치는 중엔 안 바꾼다 — 커서가 튄다. 벗어날 때·붙여넣은 다음 틱에만 +82 를 010- 으로
+    function 정리() { var 새 = u.전화정리(e.value); if (새 !== e.value) { e.value = 새; 바뀜(새); } }
+    e.addEventListener('blur', 정리);
+    e.addEventListener('paste', function () { setTimeout(정리, 0); });
     return e;
   }
   function 말풍선틀() {

@@ -11,15 +11,13 @@ window.ZG = window.ZG || {};
 
   function 새id() { return 'sm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7); }
   function 숫자만(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
-  function 전화모양(s) {
-    var d = 숫자만(s);
-    if (/^02/.test(d)) return d.length === 9 ? d.replace(/^(02)(\d{3})(\d{4})$/, '$1-$2-$3') : d.length === 10 ? d.replace(/^(02)(\d{4})(\d{4})$/, '$1-$2-$3') : d;
-    if (d.length === 12) return d.replace(/^(\d{4})(\d{4})(\d{4})$/, '$1-$2-$3');
-    if (d.length === 11) return d.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
-    if (d.length === 10) return d.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
-    return d;
+  function 전화모양(s) { return u.전화정리(s); }
+  /* 저장은 지금처럼 숫자만 — 해외 번호만 앞 + 를 남긴다 */
+  function 전화저장(s) {
+    var 정 = u.전화정리(s);
+    return (정.charAt(0) === '+' ? '+' : '') + 숫자만(정);
   }
-  function 문자되나(전화) { return 숫자만(전화).length >= 9; }
+  function 문자되나(전화) { return 숫자만(u.전화정리(전화)).length >= 9; }
   /* 로젠 27칸 주소는 한 칸이다 — 수동주문(08c)이 한 칸에 「도로명 동·호수」로 넣는 모양과 맞춘다 */
   function 온주소(r) {
     return [r && r.주소, r && r.상세주소].map(function (v) { return String(v || '').trim(); }).filter(Boolean).join(' ');
@@ -51,7 +49,7 @@ window.ZG = window.ZG || {};
       var 밭 = 납작((r.받는분 || '') + (r.메모 || '') + (r.품목 || []).map(function (p) { return p.유통명; }).join(''));
       if (밭.indexOf(열쇠) >= 0) return true;
       if (숫자열쇠.length < 3 || 숫자열쇠 !== 열쇠.replace(/-/g, '')) return false;
-      if (숫자만(r.전화).indexOf(숫자열쇠) >= 0) return true;
+      if (숫자만(u.전화정리(r.전화)).indexOf(숫자열쇠) >= 0) return true;
       if (r.상태 !== '올림') return false;
       색 = 색 || 발송색인();   // 검색할 때 한 번만 — 줄마다 저장소를 읽지 않는다
       return 발송정보(r, 색).송장.some(function (s) { return 숫자만(s).indexOf(숫자열쇠) >= 0; });
@@ -136,7 +134,7 @@ window.ZG = window.ZG || {};
     if (!u.폰인가() && navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(글).catch(function () { /* 무시 — 링크는 그래도 연다 */ });
     }
-    location.href = 'sms:' + 숫자만(전화) + '?body=' + encodeURIComponent(글);
+    location.href = 'sms:' + 전화저장(전화) + '?body=' + encodeURIComponent(글);
   }
 
   /* ── 발송완료 (16단계-2 §2) — 저장하지 않고 주문 줄·출고에서 그때그때 판정한다 ── */
@@ -219,7 +217,7 @@ window.ZG = window.ZG || {};
   /* ── 쓰기 ── */
   function 다듬기(값) {
     var 것 = {
-      받는분: String(값.받는분 || '').trim(), 전화: 숫자만(값.전화), 메모: String(값.메모 || '').trim(),
+      받는분: String(값.받는분 || '').trim(), 전화: 전화저장(값.전화), 메모: String(값.메모 || '').trim(),
       품목: (값.품목 || []).map(function (p) {
         return { 품목코드: p.품목코드, 유통명: p.유통명, 학명: p.학명 || '', 규격: p.규격 || '',
                  수량: Math.max(1, Math.floor(Number(p.수량)) || 1), 단가: Math.max(0, Number(p.단가) || 0) };
@@ -365,7 +363,7 @@ window.ZG = window.ZG || {};
     }
     var 이제 = Date.now();
     저().바꾸기(키(), id, {
-      상태: '올림', 받는분: 이름, 전화: 숫자만(사람.전화), 주소: 주소, 상세주소: 상세, 우편: 우편, 배송메시지: 메시지,
+      상태: '올림', 받는분: 이름, 전화: 전화저장(사람.전화), 주소: 주소, 상세주소: 상세, 우편: 우편, 배송메시지: 메시지,
       올린주문번호: 번호, 올린일시: 이제, 수정일시: 이제
     });
     return { 번호: 번호 };

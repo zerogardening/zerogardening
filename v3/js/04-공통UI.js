@@ -58,6 +58,31 @@ window.ZG = window.ZG || {};
   }
   function 오늘문자() { return ZG.계산.날짜문자(Date.now()); }
 
+  /* ── 전화 정리 (19단계 §1) — 붙여넣은 +82 를 010- 으로. 모양을 모르는 번호는 원문 그대로 둔다(지우면 못 되살린다) ──
+     국내번호는 8 로 시작하지 않으므로 + 없는 옛 값 8210… 도 같이 고친다. 050x 11자리는 안심번호라 4-3-4 */
+  function 전화정리(s) {
+    var 원 = String(s == null ? '' : s).trim();
+    if (!원) return '';
+    var d = 원.replace(/\D/g, '');
+    if (/^82/.test(d) && d.length >= 10 && d.length <= 13) {
+      d = d.slice(2);
+      if (d.charAt(0) !== '0') d = '0' + d;
+    } else if (원.charAt(0) === '+') return 원;
+    if (/^02/.test(d)) {
+      if (d.length === 9) return d.replace(/^(\d{2})(\d{3})(\d{4})$/, '$1-$2-$3');
+      if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3');
+      return 원;
+    }
+    if (/^050\d/.test(d)) {
+      if (d.length === 12) return d.replace(/^(\d{4})(\d{4})(\d{4})$/, '$1-$2-$3');
+      if (d.length === 11) return d.replace(/^(\d{4})(\d{3})(\d{4})$/, '$1-$2-$3');
+      return 원;
+    }
+    if (d.length === 11) return d.replace(/^(\d{3})(\d{4})(\d{4})$/, '$1-$2-$3');
+    if (d.length === 10) return d.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
+    return 원;
+  }
+
   function 안전(문자) {
     return String(문자 == null ? '' : 문자)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -684,7 +709,7 @@ window.ZG = window.ZG || {};
 
   ZG.ui = {
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
-    콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자,
+    콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자, 전화정리: 전화정리,
     폰인가: 폰인가, 폰질의: 폰질의, 움직임끔: 움직임끔, PC보기: PC보기, PC보기인가: PC보기인가,
     토스트: 토스트, 확인: 확인, 물음: 물음, 고르기: 고르기, 더보기시트: 더보기시트, 탭바: 탭바, 옆메뉴: 옆메뉴, 아이콘: 아이콘, 햅틱: 햅틱, 손대야열림: 손대야열림, 흔들기: 흔들기, 목록등장: 목록등장, 번쩍: 번쩍,
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
