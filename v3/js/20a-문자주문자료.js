@@ -32,11 +32,20 @@ window.ZG = window.ZG || {};
   }
   function 하나(id) { return 저().읽기(키()).find(function (r) { return r.id === id; }) || null; }
 
+  /* ── 예약 (18단계 §3-1) ── */
+  function 예약중(r) { return !!r && r.예약 === true && r.상태 !== '올림'; }
+  // 시안 컨펌대로 예약 줄도 받은 날 목록에 칩을 단 채 보인다 — 빼려면 여기 한 줄만 !예약중(r) 로
+  function 오늘에보이나(r) { return true; }
+  function 올릴수있나(r) {
+    if (!예약중(r) || !r.예약일 || r.예약일 <= u.오늘문자()) return { 된다: true };
+    return { 된다: false, 까닭: '예약일(' + Number(r.예약일.slice(5, 7)) + '/' + Number(r.예약일.slice(8, 10)) + ') 전이라 올릴 수 없습니다' };
+  }
+
   function 납작(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s/g, ''); }
   /* 찾는 말이 있으면 날짜와 상관없이 전체에서, 없으면 고른 날 하루만 (널서리 이력전체) */
   function 거르기(날짜, 검색) {
     var 열쇠 = 납작(검색);
-    if (!열쇠) return 전부().filter(function (r) { return r.날짜 === 날짜; });
+    if (!열쇠) return 전부().filter(function (r) { return r.날짜 === 날짜 && 오늘에보이나(r); });
     var 숫자열쇠 = 숫자만(열쇠), 색 = null;
     return 전부().filter(function (r) {
       var 밭 = 납작((r.받는분 || '') + (r.메모 || '') + (r.품목 || []).map(function (p) { return p.유통명; }).join(''));
@@ -50,7 +59,7 @@ window.ZG = window.ZG || {};
   }
   function 점표(달) {
     var 표 = {};
-    전부().forEach(function (r) { if (String(r.날짜).slice(0, 7) === 달) 표[r.날짜] = true; });
+    전부().forEach(function (r) { if (String(r.날짜).slice(0, 7) === 달 && 오늘에보이나(r)) 표[r.날짜] = true; });
     return 표;
   }
   function 오늘보낸수() {
@@ -209,7 +218,7 @@ window.ZG = window.ZG || {};
 
   /* ── 쓰기 ── */
   function 다듬기(값) {
-    return {
+    var 것 = {
       받는분: String(값.받는분 || '').trim(), 전화: 숫자만(값.전화), 메모: String(값.메모 || '').trim(),
       품목: (값.품목 || []).map(function (p) {
         return { 품목코드: p.품목코드, 유통명: p.유통명, 학명: p.학명 || '', 규격: p.규격 || '',
@@ -219,6 +228,9 @@ window.ZG = window.ZG || {};
       주소: String(값.주소 || '').trim(), 상세주소: String(값.상세주소 || '').trim(), 우편: String(값.우편 || '').trim(),
       배송메시지: String(값.배송메시지 || '').trim()
     };
+    // 예약 칸은 넘어올 때만 — 새로저장(20b)은 안 넘기므로 기존 줄 모양이 그대로다
+    if ('예약' in 값) { 것.예약 = !!값.예약; 것.예약일 = 값.예약 ? String(값.예약일 || '') : ''; }
+    return 것;
   }
   function 새로저장(값, 보냄) {
     var 이제 = Date.now(), r = 다듬기(값);
@@ -322,6 +334,8 @@ window.ZG = window.ZG || {};
     var r = 하나(id);
     if (!r) return { 오류: '없는 문자주문입니다' };
     if (r.상태 === '올림') return { 오류: '이미 올린 주문입니다' };
+    var 됨 = 올릴수있나(r);   // 화면이 잠가도 두 기기 틈이 있다
+    if (!됨.된다) return { 오류: 됨.까닭 };
     var 이름 = String(사람.받는분 || '').trim();
     if (!이름) return { 오류: '받는 분을 적어 주세요' };
     if (!(r.품목 || []).length) return { 오류: '품목이 없습니다' };
@@ -352,6 +366,7 @@ window.ZG = window.ZG || {};
 
   ZG.문자주문자료 = {
     숫자만: 숫자만, 전화모양: 전화모양, 문자되나: 문자되나, 온주소: 온주소,
+    예약중: 예약중, 오늘에보이나: 오늘에보이나, 올릴수있나: 올릴수있나,
     전부: 전부, 하나: 하나, 거르기: 거르기, 점표: 점표, 오늘보낸수: 오늘보낸수,
     합계: 합계, 제목: 제목, 후보: 후보, 담을줄: 담을줄,
     문자내용: 문자내용, 문자열기: 문자열기,

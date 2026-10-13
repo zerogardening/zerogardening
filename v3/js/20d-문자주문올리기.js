@@ -35,7 +35,7 @@ window.ZG = window.ZG || {};
     function 판정() {
       var 빔 = !String(사본.받는분 || '').trim();
       이름.classList.toggle('need', 빔);
-      올림.disabled = 빔 || 누르는중;
+      올림.disabled = 빔 || 누르는중 || !자().올릴수있나(자().하나(r.id) || r).된다;
     }
     이름.addEventListener('input', function () { 사본.받는분 = 이름.value; 판정(); });
     이름.addEventListener('compositionend', function () { 사본.받는분 = 이름.value; 판정(); });

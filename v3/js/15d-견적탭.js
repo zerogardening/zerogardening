@@ -40,7 +40,8 @@ window.ZG = window.ZG || {};
     var 길 = document.querySelector('.pc-head .path');
     if (길) {
       if (켜짐 === '문자') {
-        길.textContent = '주문 관리 › 문자주문' + (ZG.문자주문.상태.뷰 === '목록' ? ' › 목록' : '');
+        var 문 = ZG.문자주문.상태;
+        길.textContent = '주문 관리 › 문자주문' + (문.뷰 === '목록' ? (문.갈래 === '예약' ? ' › 예약' : ' › 목록') : '');
       } else if (켜짐 === '고객') {
         var 그사람 = ZG.고객PC.상태.뷰 === '상세' ? ZG.고객자료.하나(ZG.고객PC.상태.키) : null;
         길.textContent = '주문 관리 › 고객' + (그사람 ? ' › ' + (그사람.이름 || '') : '');

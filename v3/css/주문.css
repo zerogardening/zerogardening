@@ -1082,6 +1082,91 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .askbox .지울주문 .건 .no{font-family:var(--font-mono); font-weight:700; color:var(--color-danger)}
 .askbox .지울주문 .건 b{margin-left:auto; font-variant-numeric:tabular-nums}
 
+/* ── 18 예약주문 (18단계 · 시안 18b) — .dn .예약머리 .구역머리 가 흔한 이름이라 .문자주문 아래에 가둔다 ── */
+.문자주문 .st.resv{background:#F3EFFA; color:#5F3DA0; border-color:#DCD0F0}
+.문자주문 .st.resv.due{background:#F76707; color:#fff; border-color:#E8590C}
+.문자주문 .st.resv.due::before{background:rgba(255,255,255,.85)}
+.문자주문 .st.resv.미정{background:#fff; color:#5F3DA0; border:1.5px dashed #A992D6}
+.문자주문 .dn{font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold); color:#5F3DA0; white-space:nowrap}
+.문자주문 .dn.due{color:#C2410C}
+.문자주문 .문카드 .r1 .dn{margin-left:auto}
+.문자주문 .문카드 .품{font-size:var(--font-sm); color:var(--color-text-sub); margin-top:var(--space-xs); font-weight:var(--weight-medium); cursor:pointer}
+.문자주문 .문카드.때됨{box-shadow:0 0 0 2px #F76707, var(--shadow-card)}
+.문자주문 .문카드 .nm.tel{white-space:nowrap; font-size:var(--font-lg)}
+.문자주문 .예약머리{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-text); padding:var(--space-xs) var(--space-2xs) 0}
+.문자주문 .예약머리 .r{margin-left:auto; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.문자주문 .예약머리 .r b{color:var(--color-text); font-variant-numeric:tabular-nums}
+.문자주문 .예약머리 .dn{font-size:var(--font-sm)}
+.문자주문 .예약머리.때됨{color:#C2410C}
+.문자주문 .받은머리 .ago{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.문자주문 .btn.잠김:disabled{opacity:1; color:var(--color-text-hint); background:var(--color-seg-bg); box-shadow:none}
+.문자주문 .fchip.예약 .점{display:inline-block; width:7px; height:7px; border-radius:50%; background:#F76707; margin-left:5px; vertical-align:1px}
+.문자주문 .fchip.on.예약{background:#5F3DA0; border-color:#4B2F82}
+.문자주문 .fchip.on.예약 .점{background:#FFD8A8}
+.문자주문 .cols > .cl{display:flex; flex-direction:column; gap:var(--space-md)}
+.문자주문 .cal .d i.rv{background:#F76707}
+
+/* 펼친 판 예약칸 · 날짜판 */
+.문자주문 .예약필드{display:flex; flex-direction:column; gap:var(--space-sm)}
+.문자주문 .예약필드.가로{flex-direction:row; align-items:flex-start; gap:var(--space-lg); margin-bottom:var(--space-xs)}
+.문자주문 .예약필드.가로 > .field{width:330px; flex:0 0 auto}
+.문자주문 .예약필드 .판자리{width:280px}
+.문자주문 .예약필드 .field{display:flex; flex-direction:column; gap:var(--space-xs)}
+.문자주문 .예약고름{display:flex; gap:var(--space-xs)}
+.문자주문 .예약고름 button{
+  flex:1; font-family:inherit; cursor:pointer; white-space:nowrap;
+  padding:0 var(--space-md); height:30px; border-radius:var(--radius-md);
+  background:var(--color-surface); color:var(--color-text);
+  border:var(--border-width) solid var(--color-border); box-shadow:var(--shadow-btn);
+  font-size:var(--font-sm); font-weight:var(--weight-semibold);
+}
+.문자주문 .예약고름 button.on{background:#5F3DA0; color:#fff; border-color:#4B2F82; box-shadow:0 1px 2px rgba(75,47,130,.35)}
+.ph-shell .문자주문 .예약고름 button{height:42px; font-size:var(--font-lg)}
+.문자주문 .예약줄{display:flex; gap:var(--space-sm); align-items:center}
+.문자주문 .예약줄 .예약고름{flex:1}
+.ph-shell .문자주문 .예약줄 .btn{min-height:42px}
+.문자주문 .날짜칸{display:flex; gap:var(--space-sm); align-items:center}
+.문자주문 .날짜칸 .inp{flex:1; min-width:0; cursor:pointer}
+.문자주문 .속판 .날짜칸 .inp{height:30px; font-size:var(--font-md); line-height:28px}
+.문자주문 .날짜칸 .inp.고름{border-color:#5F3DA0; box-shadow:0 0 0 3px rgba(95,61,160,.15)}
+.문자주문 .날짜칸 .inp.정함{color:#5F3DA0; font-weight:var(--weight-bold); background:#F8F5FD; border-color:#DCD0F0}
+.문자주문 .날짜판{background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-panel), 0 0 0 1px rgba(0,0,0,.06); padding:var(--space-md)}
+.문자주문 .날짜판 .calhd{gap:var(--space-lg); margin-bottom:var(--space-sm)}
+.문자주문 .날짜판 .calhd .m{font-size:var(--font-lg)}
+.문자주문 .날짜판 .calhd button{width:28px; height:28px; font-size:var(--font-md)}
+.문자주문 .날짜판 .cal .d{aspect-ratio:auto; height:32px; font-size:var(--font-sm)}
+.ph-shell .문자주문 .날짜판 .cal .d{height:36px; font-size:var(--font-md)}
+.문자주문 .cal .d.지난{color:var(--color-text-hint); background:transparent; box-shadow:none; cursor:default}
+.문자주문 .날짜판 .cal .d.on{background:#5F3DA0; color:#fff; box-shadow:none}
+.문자주문 .날짜판 .cal .d.today{box-shadow:0 0 0 2px var(--color-accent)}
+
+/* 예약 갈래 두 구역 — 폰 */
+.문자주문 .구역머리{display:flex; align-items:center; gap:var(--space-sm); padding:10px 14px; border-radius:var(--radius-lg); background:#5F3DA0; color:#fff; font-weight:var(--weight-bold); font-size:var(--font-lg); letter-spacing:-.02em}
+.문자주문 .구역머리 .r{margin-left:auto; font-size:var(--font-xs); font-weight:var(--weight-semibold); opacity:.9; white-space:nowrap}
+.문자주문 .구역머리 .r b{font-variant-numeric:tabular-nums}
+.문자주문 .구역머리.미정{background:#F8F5FD; color:#5F3DA0; border:1.5px dashed #A992D6}
+.문자주문 .구역머리.미정 .r{opacity:1; color:#5F3DA0}
+.문자주문 .구역사이{border-top:3px double rgba(0,0,0,.18); margin:var(--space-lg) 0 var(--space-xs)}
+
+/* 예약 갈래 두 구역 — PC */
+.문자주문 tr.묶음 > td{background:#F4F4F6; font-weight:var(--weight-bold); font-size:var(--font-sm); padding-top:8px; padding-bottom:8px}
+.문자주문 tr.묶음 .r{float:right; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.문자주문 tr.묶음 .r b{color:var(--color-text)}
+.문자주문 tr.묶음 .dn{display:inline; margin-left:6px}
+.문자주문 tr.묶음 .ago{margin-left:6px; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.문자주문 tr.묶음.때됨 > td{background:#FFF0E0; color:#C2410C}
+.문자주문 tr.때됨 > td{background:#FFF8F0}
+.문자주문 td .dn{display:block; margin-top:1px}
+.문자주문 td.예약칸{white-space:nowrap}
+.문자주문 td .이름밑{margin-top:4px}
+.문자주문 td.상태칸 .예약표{margin-top:4px}
+.문자주문 tr.구역줄 > td{background:#5F3DA0; color:#fff; font-weight:var(--weight-bold); font-size:var(--font-md); padding:9px 12px; border-bottom:none}
+.문자주문 tr.구역줄 .r{float:right; font-size:var(--font-xs); font-weight:var(--weight-semibold); opacity:.9}
+.문자주문 tr.구역줄.미정 > td{background:#F8F5FD; color:#5F3DA0; border-top:1.5px dashed #A992D6; border-bottom:1.5px dashed #A992D6}
+.문자주문 tr.구역줄.미정 .r{opacity:1}
+.문자주문 tr.틈 > td{height:18px; padding:0; background:#fff; border-bottom:3px double rgba(0,0,0,.18)}
+.문자주문 tr.틈2 > td{height:10px; padding:0; background:#fff; border-bottom:none}
+
 /* 문자주문 내역 인쇄 — 널서리 출고 이력 인쇄 그대로(body 직계로 옮기고 클래스로 나머지를 끈다) */
 .doc문자{display:none}
 @media print{
