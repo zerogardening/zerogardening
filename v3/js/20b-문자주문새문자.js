@@ -137,9 +137,14 @@ window.ZG = window.ZG || {};
     var 칸 = 참조.결과칸;
     if (!칸) return;
     u.비우기(칸);
-    if (!상태.검색.trim()) return;
-    var 목록 = 자().후보(상태.검색);
-    if (!목록.length) { 칸.appendChild(만들기('div', { style: 'padding:var(--space-sm) 0; color:var(--color-text-muted)', text: '찾는 품목이 없습니다' })); return; }
+    var 상자 = 후보상자(상태.검색, 담기);
+    if (상자) 칸.appendChild(상자);
+  }
+  /* 20c 고침판의 품목 추가도 같은 후보 목록을 쓴다 — 글이 비면 null */
+  function 후보상자(글, 고름) {
+    if (!String(글 || '').trim()) return null;
+    var 목록 = 자().후보(글);
+    if (!목록.length) return 만들기('div', { style: 'padding:var(--space-sm) 0; color:var(--color-text-muted)', text: '찾는 품목이 없습니다' });
     var 폰 = u.폰인가();
     var 상자 = 만들기('div', { class: 'ac', role: 'listbox' });
     목록.forEach(function (p, i) {
@@ -147,10 +152,10 @@ window.ZG = window.ZG || {};
       b.innerHTML = '<span class="cd">' + u.안전(p.품목코드) + '</span>' +
         '<div><div class="nm">' + u.안전(p.유통명) + '</div><div class="sci">' + u.안전(p.학명 || '') + '</div></div>' +
         '<div class="rg">' + u.안전(p.규격 || '') + (폰 ? '<br>' : ' · ') + '<b>' + u.콤마(자().담을줄(p).단가) + '원</b></div>';
-      b.addEventListener('click', function () { 담기(p); });
+      b.addEventListener('click', function () { 고름(p); });
       상자.appendChild(b);
     });
-    칸.appendChild(상자);
+    return 상자;
   }
 
   function 폰담은줄(r) {
@@ -324,5 +329,5 @@ window.ZG = window.ZG || {};
     결과다시(); 담은칸다시();
   }
 
-  ZG.문자주문새문자 = { 그리기: 그리기, 상태: 상태, 수량칸: 수량칸, 원칸: 원칸, 밭: 밭, 글칸: 글칸, 주소칸: 주소칸, 주소묶음: 주소묶음, 상세로넘기기: 상세로넘기기, 글칸맞추기: 글칸맞추기, 글칸멈추기: 글칸멈추기, 전화칸: 전화칸 };
+  ZG.문자주문새문자 = { 그리기: 그리기, 상태: 상태, 수량칸: 수량칸, 원칸: 원칸, 밭: 밭, 글칸: 글칸, 주소칸: 주소칸, 주소묶음: 주소묶음, 상세로넘기기: 상세로넘기기, 글칸맞추기: 글칸맞추기, 글칸멈추기: 글칸멈추기, 전화칸: 전화칸, 후보상자: 후보상자 };
 })(window.ZG);

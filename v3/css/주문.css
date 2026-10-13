@@ -1056,6 +1056,32 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 td.상태칸 .btn{margin-top:6px; width:100%}
 .문자주문 td.상태칸 .보낸표{display:block; margin-top:6px; font-size:var(--font-2xs)}
 
+/* 올리기 전 고치기 — 품목 빼기·추가 (17단계 §3-1) */
+.문자주문 .문카드 .항목 .n.빼기줄{display:flex; align-items:center; gap:var(--space-sm)}
+.문자주문 .문카드 .항목 .n.빼기줄 > span{flex:1; min-width:0}
+.문자주문 .문카드 .항목 .btn.빼기{min-height:36px}
+.문자주문 .속판 .항목 .btn.빼기{flex:0 0 auto}
+.문자주문 .추가줄{display:flex; flex-direction:column; gap:var(--space-xs)}
+.문자주문 .추가줄 .lbl{display:block}
+.문자주문 .추가줄.가로{flex-direction:row; align-items:flex-start; gap:var(--space-md)}
+.문자주문 .추가줄.가로 .lbl{padding-top:8px; white-space:nowrap}
+.문자주문 .추가줄 .찾기칸{flex:1; position:relative}
+.문자주문 .추가줄 .search .inp{padding-left:34px; height:40px; font-size:var(--font-lg)}
+.문자주문 .추가줄.가로 .search .inp{height:32px; font-size:var(--font-sm); line-height:30px}
+.문자주문 .추가줄 .ac .it{padding:var(--space-sm) var(--space-lg)}
+.문자주문 .추가줄 .ac .it .cd{font-family:var(--font-mono); font-size:var(--font-2xs); font-weight:700; color:var(--color-accent-dark); width:72px; flex:0 0 auto}
+.문자주문 .추가줄 .ac .it .rg{margin-left:auto; text-align:right; font-size:var(--font-xs); color:var(--color-text-muted)}
+
+/* 올린 뒤 삭제 2차 확인 — 함께 지워질 주문 (17단계 §3-2). askbox 는 body 직속이라 .문자주문 밖이다 */
+.askbox .지울주문{
+  background:var(--color-danger-bg); border:1.5px solid var(--color-danger); border-radius:var(--radius-md);
+  padding:var(--space-lg); display:flex; flex-direction:column; gap:var(--space-sm);
+}
+.askbox .지울주문 .큰{font-size:var(--font-xl); font-weight:var(--weight-bold); color:var(--color-danger); letter-spacing:-.02em; line-height:1.35}
+.askbox .지울주문 .건{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text); background:#fff; border-radius:var(--radius-sm); padding:var(--space-sm) var(--space-md); border:1px solid var(--color-danger-border)}
+.askbox .지울주문 .건 .no{font-family:var(--font-mono); font-weight:700; color:var(--color-danger)}
+.askbox .지울주문 .건 b{margin-left:auto; font-variant-numeric:tabular-nums}
+
 /* 문자주문 내역 인쇄 — 널서리 출고 이력 인쇄 그대로(body 직계로 옮기고 클래스로 나머지를 끈다) */
 .doc문자{display:none}
 @media print{
