@@ -76,10 +76,11 @@ window.ZG = window.ZG || {};
     var 칩줄 = 목.필터칩들(전부, 다시);
     칩줄.appendChild(만들기('div', { style: 'flex:1' }));
     var 찾기 = 목.검색칸(목록다시);
-    찾기.style.width = '264px'; 찾기.style.height = 'var(--h-btn)';
+    찾기.style.width = '250px'; 찾기.style.height = 'var(--h-btn)'; 찾기.style.flex = '0 0 auto';
+    찾기.style.fontSize = 'var(--font-sm)'; 찾기.style.lineHeight = 'calc(var(--h-btn) - 2px)';
     칩줄.appendChild(찾기);
+    칩줄.appendChild(목.업체찾기(전부, 다시));
     조건.appendChild(칩줄);
-    조건.appendChild(목.업체찾기(전부, 다시));
     조건.appendChild(목.선택바());
     카드.appendChild(조건);
 
@@ -143,8 +144,8 @@ window.ZG = window.ZG || {};
 
     // 🔴 「3주 내 소진」 카드를 안 낸다 — 우람님이 그 갈래를 통째로 빼셨다 (2026-09-14)
     뿌리.appendChild(만들기('div', { class: 'field' }, [목.검색칸(목록다시)]));
-    뿌리.appendChild(목.필터칩들(전부, 다시));
     뿌리.appendChild(목.업체찾기(전부, 다시));
+    뿌리.appendChild(목.필터칩들(전부, 다시));
 
     참조.목록칸 = 만들기('div', { class: 'stack' });
     if (상태.필터 === '일자별') {

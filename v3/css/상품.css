@@ -261,16 +261,46 @@ td.뺌칸{text-align:right}
   font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold);
 }
 
-/* 업체 찾기 — 쳐서 고른다(자동완성). 칩 줄이던 것을 2026-09-14 에 바꿨다 */
-.업체줄{ display:flex; align-items:center; gap:var(--space-sm); padding:0 var(--space-sm) }
-.업체줄 .업체찾기{ flex:1; min-width:0 }
-.업체줄 .업체지움{
-  flex:none; width:var(--h-btn); height:var(--h-btn); padding:0;
-  border:1px solid var(--color-border); border-radius:var(--radius-pill);
-  background:var(--color-surface); color:var(--color-text-muted);
-  font-size:var(--font-lg); line-height:1; cursor:pointer;
+/* 입고업체 고르기 상자 (17단계 §2) — 칩 줄(9/14 전) → 쳐서 찾기 → 고르는 상자 */
+.업체고름{position:relative; width:230px; flex:0 0 auto}
+.고름상자{
+  width:100%; display:flex; align-items:center; gap:var(--space-sm);
+  height:var(--h-btn); padding:0 var(--space-md) 0 var(--space-lg);
+  border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+  background:var(--color-surface); box-shadow:inset 0 1px 1px rgba(0,0,0,.03);
+  font-family:inherit; font-size:var(--font-sm); line-height:calc(var(--h-btn) - 2px); color:var(--color-text); text-align:left; cursor:pointer;
 }
-.업체줄 .업체지움:hover{ background:var(--color-btn-bg-hover); color:var(--color-text) }
+.고름상자 .ic{font-size:var(--font-md); opacity:.55}
+.고름상자 .v{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.고름상자 .k{color:var(--color-text-muted); font-weight:var(--weight-semibold); font-size:var(--font-xs)}
+.고름상자 .n{color:var(--color-text-muted); font-size:var(--font-xs); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+.고름상자 .화살{color:var(--color-text-muted); font-size:11px; margin-left:2px}
+.고름상자.열림{border-color:var(--color-accent); box-shadow:0 0 0 3px rgba(47,158,68,.16)}
+.고름상자.걸림{background:var(--color-accent-bg); border-color:var(--color-accent-border); color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+.고름상자.걸림 .n{color:var(--color-accent-dark); opacity:.75}
+.고름상자 .지움{
+  flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:none; padding:0;
+  background:var(--color-accent); color:#fff; font-size:11px; font-weight:700; line-height:22px; text-align:center; font-family:inherit;
+}
+.펼침{
+  position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0;
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+  border-radius:var(--radius-lg); box-shadow:0 14px 34px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04);
+  padding:var(--space-xs); display:flex; flex-direction:column; max-height:60vh; overflow-y:auto;
+}
+.펼침 .it{
+  display:flex; align-items:center; gap:var(--space-sm); padding:8px var(--space-md); cursor:pointer;
+  border-radius:var(--radius-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text);
+}
+.펼침 .it .ck{width:14px; color:var(--color-accent-dark); font-weight:700}
+.펼침 .it .n{margin-left:auto; color:var(--color-text-muted); font-variant-numeric:tabular-nums; font-size:var(--font-sm)}
+.펼침 .it:hover, .펼침 .it:focus{background:#F2F2F5; outline:none}
+.펼침 .it.on{background:var(--color-accent-bg); color:var(--color-accent-dark)}
+.펼침 .sep{height:1px; background:var(--color-border-faint); margin:var(--space-3xs) var(--space-sm)}
+.ph-body .업체고름{width:auto}
+.ph-body .고름상자{height:var(--h-input); font-size:var(--font-lg); line-height:normal}
+.ph-body .고름상자 .k, .ph-body .고름상자 .n{font-size:var(--font-sm)}
+.ph-body .펼침 .it{padding:12px var(--space-md); font-size:var(--font-lg)}
 
 /* 기간 고르는 창 */
 .기간덮개{

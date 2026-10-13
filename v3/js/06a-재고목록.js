@@ -195,11 +195,11 @@ window.ZG = window.ZG || {};
     });
   }
 
-  /* ── 입고업체 찾기 (2026-09-14 우람님 「업체별은 검색&자동완성으로 보여준다」) ──
-     처음엔 칩 줄이었는데 곳이 열둘이라 옆으로 밀어야 했다. 쳐서 고르는 쪽이 빠르다.
+  /* ── 입고업체 고르기 (17단계 §2 — 쳐서 찾던 칸을 고르는 상자로) ──
      🔴 업체 목록은 업체관리가 아니라 **실제 입고 기록**에서 뽑는다 —
         등록 안 된 이름으로 들어온 입고도 골라야 한다.
-     🔴 `datalist` 를 쓴다 — 입고 화면 업체칸(05b)과 같은 결이고, 폰에서도 제 키보드가 뜬다. */
+     🔴 펼칠 때 document 에 건 pointerdown 은 닫을 때 반드시 뗀다. 다시() 로 상자가 갈려도 쌓이지 않게
+        누를 때마다 상자가 아직 붙어 있는지 본다. */
   function 업체찾기(전부, 다시) {
     var 셈 = {};
     전부.forEach(function (요) {
@@ -208,33 +208,73 @@ window.ZG = window.ZG || {};
     var 이름들 = Object.keys(셈).sort(function (a, b) { return 셈[b] - 셈[a]; });
     if (!이름들.length) return 만들기('div');
 
-    var 칸 = 만들기('input', {
-      class: 'inp 업체찾기', type: 'search', list: 'zg-입고업체목록',
-      placeholder: '업체로 거르기', value: 상태.업체, 'aria-label': '입고업체로 거르기'
+    var 걸림 = !!상태.업체;
+    var 상자 = 만들기('button', {
+      class: '고름상자' + (걸림 ? ' 걸림' : ''), type: 'button',
+      'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': '입고업체로 거르기'
     });
-    var 목록 = 만들기('datalist', { id: 'zg-입고업체목록' });
-    목록.innerHTML = 이름들.map(function (n) {
-      return '<option value="' + u.안전(n) + '">' + 셈[n] + '건</option>';
-    }).join('');
-
-    var 고름 = function () {
-      var 값 = (칸.value || '').trim();
-      // 🔴 목록에 없는 글자는 무시한다 — 반쯤 치다 만 것으로 목록이 비면 고장으로 보인다
-      if (값 && 이름들.indexOf(값) < 0) return;
-      if (값 === 상태.업체) return;
-      상태.업체 = 값; 상태.쪽 = 1; 다시();
-    };
-    칸.addEventListener('change', 고름);
-    칸.addEventListener('search', 고름);      // 폰에서 ✕ 를 눌러 지웠을 때
-    칸.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); 고름(); } });
-
-    var 통 = 만들기('div', { class: '업체줄' }, [칸, 목록]);
-    if (상태.업체) {
-      // 🔴 업체 이름은 칸에 이미 적혀 있다 — 단추에 또 쓰지 않는다
-      var 지움 = 만들기('button', { class: '업체지움', type: 'button', text: '✕', 'aria-label': '업체 거르기 끄기' });
-      지움.addEventListener('click', function () { 상태.업체 = ''; 상태.쪽 = 1; 다시(); });
-      통.appendChild(지움);
+    var 화살 = null;
+    if (걸림) {
+      상자.innerHTML = '<span class="ic">🏢</span><span class="v">' + u.안전(상태.업체) + '</span>' +
+        '<span class="n">' + (셈[상태.업체] || 0) + '건</span>';
+      var 지움 = 만들기('span', { class: '지움', role: 'button', 'aria-label': '업체 거르기 끄기', text: '✕' });
+      지움.addEventListener('click', function (e) { e.stopPropagation(); 고르기(''); });
+      상자.appendChild(지움);
+    } else {
+      상자.innerHTML = '<span class="ic">🏢</span><span class="v"><span class="k">업체</span> 전체</span>';
+      화살 = 만들기('span', { class: '화살', text: '▼' });
+      상자.appendChild(화살);
     }
+    var 통 = 만들기('div', { class: '업체고름' }, [상자]);
+    var 펼침 = null;
+
+    function 고르기(이름) {
+      닫기();
+      if (이름 === 상태.업체) return;
+      상태.업체 = 이름; 상태.쪽 = 1; 다시();
+    }
+    function 줄(이름, 글, 수) {
+      var on = 이름 === 상태.업체;
+      var it = 만들기('div', { class: 'it' + (on ? ' on' : ''), role: 'option', tabindex: '-1', 'aria-selected': on ? 'true' : 'false' });
+      it.innerHTML = '<span class="ck">' + (on ? '✓' : '') + '</span>' + u.안전(글) + '<span class="n">' + 수 + '</span>';
+      it.addEventListener('click', function () { 고르기(이름); });
+      return it;
+    }
+    function 바깥(e) { if (!통.isConnected || !통.contains(e.target)) 닫기(); }
+    function 닫기() {
+      document.removeEventListener('pointerdown', 바깥, true);
+      if (!펼침) return;
+      펼침.remove(); 펼침 = null;
+      상자.classList.remove('열림'); 상자.setAttribute('aria-expanded', 'false');
+      if (화살) 화살.textContent = '▼';
+    }
+    function 열기() {
+      펼침 = 만들기('div', { class: '펼침', role: 'listbox' });
+      펼침.appendChild(줄('', '전체', 전부.length));
+      펼침.appendChild(만들기('div', { class: 'sep' }));
+      이름들.forEach(function (n) { 펼침.appendChild(줄(n, n, 셈[n] + '건')); });
+      통.appendChild(펼침);
+      상자.classList.add('열림'); 상자.setAttribute('aria-expanded', 'true');
+      if (화살) 화살.textContent = '▲';
+      document.addEventListener('pointerdown', 바깥, true);
+    }
+    상자.addEventListener('click', function () { 펼침 ? 닫기() : 열기(); });
+
+    // ↑↓ 로 옮기고 Enter 로 고른다 · Escape 로 닫는다 (1단계 §11)
+    통.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && 펼침) { e.preventDefault(); 닫기(); 상자.focus(); return; }
+      if (e.key === 'Enter' && 펼침 && 펼침.contains(document.activeElement)) {
+        e.preventDefault(); document.activeElement.click(); return;
+      }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      if (!펼침) 열기();
+      var 들 = Array.prototype.slice.call(펼침.querySelectorAll('.it'));
+      var 지금 = 들.indexOf(document.activeElement), 다음;
+      if (지금 < 0) 다음 = Math.max(0, 들.findIndex(function (x) { return x.classList.contains('on'); }));
+      else 다음 = Math.max(0, Math.min(들.length - 1, 지금 + (e.key === 'ArrowDown' ? 1 : -1)));
+      들[다음].focus();
+    });
     return 통;
   }
 
