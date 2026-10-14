@@ -150,9 +150,16 @@ window.ZG = window.ZG || {};
     var 머리 = 상태.단위 === '일' ? c.이름 + ' (' + c.요일 + ')' : c.이름;
     var 줄 = '<div class="h">' + u.안전(머리) + '</div><div class="l">주문<b>' + 콤마(c.건수) + '건</b></div>';
     실().마켓정렬(Object.keys(c.마켓)).forEach(function (m) {
-      줄 += '<div class="l"><i class="md" style="background:' + 실().마켓색(m) + '"></i>' + u.안전(m) + '<b>' + 콤마(c.마켓[m].매출) + '</b></div>';
+      줄 += '<div class="l"><i class="md" style="background:' + 실().마켓색(m) + '"></i>' + u.안전(m) + '<b>' + 콤마(c.마켓[m].매출) +
+            (c.매출 ? ' <span class="pct">' + 비중글(c.마켓[m].매출, c.매출) + '</span>' : '') + '</b></div>';
     });
     return 줄 + '<div class="l tot">합계<b>' + 콤마(c.매출) + '</b></div>';
+  }
+
+  /* 1% 미만은 0% 대신 「1% 미만」으로 — 팔린 마켓이 0% 로 보이면 안 팔린 것과 헷갈린다 */
+  function 비중글(v, 전체) {
+    var p = v / 전체 * 100;
+    return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%';
   }
 
   /* ══ 마켓별 — 줄 = 칸(최근이 위), 칸 = 그 기간에 값이 있는 마켓 ══ */
@@ -184,9 +191,13 @@ window.ZG = window.ZG || {};
         만들기('td', { class: 'r dim', text: 콤마(셈.건수) }),
         만들기('td', {}, [차().누적막대(조각(마켓셈), 너비, 10)])
       ]);
+      /* 칸마다 그 기간 전체 중 몇 % (우람님 10/14) — 합계 줄은 아래 비중 줄이 맡는다 */
+      var 전 = 값(셈);
       마켓들.forEach(function (m) {
         var s = 마켓셈[m.이름], v = s ? 값(s) : 0;
-        tr.appendChild(만들기('td', { class: 'r' + (v ? '' : ' z'), text: v ? 콤마(v) : '-' }));
+        var td = 만들기('td', { class: 'r' + (v ? '' : ' z'), text: v ? 콤마(v) : '-' });
+        if (v && 전 && 줄class !== 'ttot') td.appendChild(만들기('span', { class: 'pct', text: 비중글(v, 전) }));
+        tr.appendChild(td);
       });
       return tr;
     }
@@ -201,7 +212,7 @@ window.ZG = window.ZG || {};
     var 비중 = 만들기('tr', { class: 'ttot 비중' }, [만들기('td', { text: '비중' }), 만들기('td'), 만들기('td'), 만들기('td')]);
     var 전체 = 값(합);
     마켓들.forEach(function (m) {
-      비중.appendChild(만들기('td', { class: 'r', text: 전체 ? Math.round(값(m) / 전체 * 100) + '%' : '-' }));
+      비중.appendChild(만들기('td', { class: 'r', text: 전체 ? 비중글(값(m), 전체) : '-' }));
     });
     머리.appendChild(비중);
     var 몸 = 틀();
@@ -222,7 +233,8 @@ window.ZG = window.ZG || {};
       차().누적막대(조각(마켓합), null, 10)
     ]));
     카드.appendChild(만들기('div', { class: 'mleg' }, 결.마켓들.map(function (m) {
-      return 만들기('span', {}, [점(m.색), document.createTextNode(m.이름), 만들기('b', { text: 수(값(m)) })]);
+      return 만들기('span', {}, [점(m.색), document.createTextNode(m.이름), 만들기('b', { text: 수(값(m)) }),
+        만들기('span', { class: 'pct', text: 값(합) ? 비중글(값(m), 값(합)) : '' })]);
     })));
     카드.appendChild(만들기('div', { class: 'pscroll' }, 줄들.map(function (c) {
       return 만들기('div', { class: 'prow2' + (c.일요일 ? ' sun' : '') }, [

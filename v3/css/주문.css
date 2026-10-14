@@ -1459,3 +1459,8 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .mrow .bar i{display:block; height:100%; border-radius:4px}
 .주문실적 .mrow .amt{width:70px; text-align:right}
 .주문실적 .더보기{width:100%}
+
+/* 마켓별 칸의 비중 (10/14) */
+.주문실적 td .pct{display:block; font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium); line-height:1.2}
+.주문실적 .mleg .pct{margin-left:4px; font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.주문실적 .tip .pct{font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
