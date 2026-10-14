@@ -47,8 +47,11 @@ function 옛판지우기(캐시, 주소) {
 }
 
 /* HTML — 늘 네트워크 먼저. 끊겼을 때만 들고 있던 것으로 뜬다(밭에서 신호가 약할 때) */
+/* 🔴 fetch(요청) 만 하면 브라우저 HTTP 캐시를 탄다 — 깃허브 Pages 가 max-age=600 을 주므로
+      push 뒤 최대 10분 동안 옛 HTML(옛 ?v=)이 나와 「반영이 안 됐다」가 된다 (10/14).
+      no-cache = 매번 서버에 「바뀌었나」 묻는다(안 바뀌면 304 라 가볍다) */
 function 네트워크먼저(요청) {
-  return fetch(요청).then(function (답) {
+  return fetch(요청.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (답) {
     if (답 && 답.ok) {
       var 사본 = 답.clone();
       caches.open(캐시이름).then(function (c) { c.put(요청, 사본); });
