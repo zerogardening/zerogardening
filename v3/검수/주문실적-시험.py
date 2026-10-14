@@ -187,8 +187,10 @@ try:
         쪽.evaluate("() => { const 상 = ZG.주문.상태, 오늘 = ZG.ui.오늘문자(); 상.부터 = ZG.주문실적.기간칩('최근 30일', 오늘).부터; 상.까지 = 오늘; 상.기간칩 = ''; ZG.주문.다시그리기(); }")
         쪽.wait_for_timeout(500)
         칩들 = 쪽.eval_on_selector_all('.마켓줄 .fchip', 'els => els.map(e => [e.childNodes[e.childNodes.length-2].textContent, +e.querySelector(".n").textContent, e.classList.contains("zero")])')
-        본다('고정 9 + 전체 + 그밖(전화주문)', [c[0] for c in 칩들][:10] == ['전체', '카페24', '쿠팡', '스마트스토어', 'G마켓', '11번가', '롯데ON', '심폴', '당근', '문자']
-             and 칩들[-1][0] == '전화주문', [c[0] for c in 칩들])
+        # 10/14 우람님 「어디서나 비율 높은 순」 — 전체 다음은 건수 큰 마켓부터, 고정 9 는 다 있다
+        수들 = [c[1] for c in 칩들[1:]]
+        본다('전체 + 건수 많은 순 + 고정 9 다 있음', 칩들[0][0] == '전체' and 수들 == sorted(수들, reverse=True)
+             and set(['카페24', '쿠팡', '스마트스토어', 'G마켓', '11번가', '롯데ON', '심폴', '당근', '문자']) <= set(c[0] for c in 칩들), [c[0] for c in 칩들])
         본다('0 인 칩은 흐림', all(c[2] == (c[1] == 0) for c in 칩들[1:]), 칩들)
         def 띠건():
             return int(쪽.eval_on_selector('.합계띠 .칸 b', 'e => e.textContent').replace(',', ''))

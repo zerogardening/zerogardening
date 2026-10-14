@@ -116,8 +116,8 @@ window.ZG = window.ZG || {};
       t.textContent = 눈금글(v, 돈);
       svg.appendChild(t);
     }
-    // x 이름은 겹치지 않게 솎는다(30일이면 다 못 쓴다). 마지막 칸은 늘 보인다
-    var 최대수 = Math.max(2, Math.floor(안폭 / (글 * 5))), 걸음 = Math.max(1, Math.ceil(n / 최대수));
+    // x 축은 일·주·월 어느 단위든 달만 쓴다 — 새 달이 시작되는 첫 막대 아래 (우람님 10/14)
+    var 앞달 = '';
     var 순서 = 옵.순서 || [], 색 = 옵.색 || function () { return 선색; };
     칸들.forEach(function (c, i) {
       var 쌓 = 0;
@@ -129,10 +129,11 @@ window.ZG = window.ZG || {};
           height: Math.max(0.5, y1 - y2).toFixed(1), fill: 색(m), 'pointer-events': 'none' }));
         쌓 += 값;
       });
-      var 끝 = i === n - 1;
-      if (!끝 && (i % 걸음 !== 0 || (n - 1 - i < 걸음 / 2 && n > 1))) return;
-      var x = 그('text', { x: X(i).toFixed(1), y: H - 6, 'text-anchor': 'middle', 'font-size': 글, fill: 글색 });
-      x.textContent = c.이름 || '';
+      var 달 = String(c.부터 || '').slice(0, 7);
+      if (!달 || 달 === 앞달) return;
+      앞달 = 달;
+      var x = 그('text', { x: (X(i) - 기둥 / 2).toFixed(1), y: H - 6, 'text-anchor': 'start', 'font-size': 글, fill: 글색 });
+      x.textContent = Number(달.slice(5, 7)) + '월';
       svg.appendChild(x);
     });
     svg._막대 = true;
@@ -181,7 +182,7 @@ window.ZG = window.ZG || {};
     옵 = 옵 || {};
     var 돈 = 옵.돈 !== false, 열 = 돈 ? '매출' : '건수';
     var 가짜 = 칸들.map(function (c, i) {
-      var 칸 = { 이름: c.이름, 매출: 0, 건수: 0, 마켓: { 합: {} } };
+      var 칸 = { 이름: c.이름, 부터: c.부터, 매출: 0, 건수: 0, 마켓: { 합: {} } };
       칸[열] = 값들[i] || 0; 칸.마켓.합[열] = 값들[i] || 0;
       return 칸;
     });

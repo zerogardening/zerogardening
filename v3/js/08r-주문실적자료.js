@@ -20,10 +20,15 @@ window.ZG = window.ZG || {};
     return 카페24별명[s] ? '카페24' : (s || '기타');
   }
 
-  /* 고정 아홉을 앞에, 나머지는 받은 순서 그대로 뒤에 */
-  function 마켓정렬(이름들) {
+  /* 값(m)을 주면 큰 것부터 (우람님 10/14 「어디서나 비율 높은 순」) — 같으면 고정 순서.
+     값이 없으면 고정 아홉을 앞에, 나머지는 받은 순서 그대로 뒤에 */
+  function 마켓정렬(이름들, 값) {
     var 앞 = 마켓순서.filter(function (m) { return 이름들.indexOf(m) >= 0; });
-    return 앞.concat(이름들.filter(function (m) { return 마켓순서.indexOf(m) < 0; }));
+    var 다 = 앞.concat(이름들.filter(function (m) { return 마켓순서.indexOf(m) < 0; }));
+    if (!값) return 다;
+    var 자리 = {};
+    다.forEach(function (m, i) { 자리[m] = i; });
+    return 다.slice().sort(function (a, b) { return (값(b) || 0) - (값(a) || 0) || 자리[a] - 자리[b]; });
   }
 
   /* ── 날짜 — 🔴 문자열을 Date 로 바로 파싱하지 않는다(UTC 로 읽혀 하루 밀린다). 늘 new Date(y, m-1, d) ── */
@@ -132,7 +137,7 @@ window.ZG = window.ZG || {};
 
     var 상품들 = 상품순.map(function (p) {
       var 마켓 = {};
-      마켓정렬(Object.keys(p.마켓)).forEach(function (m) {
+      마켓정렬(Object.keys(p.마켓), function (m) { return p.마켓[m].매출; }).forEach(function (m) {
         var s = p.마켓[m];
         마켓[m] = { 매출: s.매출, 수량: s.수량, 건수: s.건수, 비중: p.셈.매출 ? s.매출 / p.셈.매출 : 0 };
       });

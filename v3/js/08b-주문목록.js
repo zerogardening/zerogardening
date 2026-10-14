@@ -580,7 +580,8 @@ window.ZG = window.ZG || {};
     var 그밖 = Object.keys(셈).filter(function (m) { return 실.마켓순서.indexOf(m) < 0; });
     if (상태.마켓 && 실.마켓순서.indexOf(상태.마켓) < 0 && 그밖.indexOf(상태.마켓) < 0) 그밖.push(상태.마켓);
     그밖.sort(function (a, b) { return 수(b) - 수(a); });
-    var 칩들 = [['', '전체', Object.keys(전체).length]].concat(실.마켓순서.concat(그밖).map(function (m) { return [m, m, 수(m)]; }));
+    /* 건수 많은 마켓부터 (10/14 「어디서나 비율 높은 순」) — 0건 칩은 뒤로 */
+    var 칩들 = [['', '전체', Object.keys(전체).length]].concat(실.마켓정렬(실.마켓순서.concat(그밖), 수).map(function (m) { return [m, m, 수(m)]; }));
     return 칩들.map(function (c) {
       var b = 만들기('button', {
         type: 'button', class: 'fchip' + (상태.마켓 === c[0] ? ' on' : '') + (c[0] && !c[2] ? ' zero' : ''),

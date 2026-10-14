@@ -113,7 +113,7 @@ window.ZG = window.ZG || {};
     /* 일·주·월 모두 마켓별 누적막대 (우람님 10/14 「그래프 다 막대로」) */
     var 있는 = {};
     결.칸들.forEach(function (c) { Object.keys(c.마켓).forEach(function (m) { 있는[m] = 1; }); });
-    var 순서 = 실().마켓정렬(Object.keys(있는));
+    var 순서 = 실().마켓정렬(Object.keys(있는), function (m) { var x = 결.마켓들.filter(function (y) { return y.이름 === m; })[0]; return x ? 값(x) : 0; });
     var svg = 차().누적기둥(결.칸들, 상태.지표, Object.assign(옵, {
       순서: 순서, 색: 실().마켓색, 일요일들: 상태.단위 === '일' ? 결.칸들.map(function (c) { return c.일요일; }) : null
     }));
@@ -148,7 +148,7 @@ window.ZG = window.ZG || {};
   function 풍선글(c) {
     var 머리 = 상태.단위 === '일' ? c.이름 + ' (' + c.요일 + ')' : c.이름;
     var 줄 = '<div class="h">' + u.안전(머리) + '</div><div class="l">주문<b>' + 콤마(c.건수) + '건</b></div>';
-    실().마켓정렬(Object.keys(c.마켓)).forEach(function (m) {
+    실().마켓정렬(Object.keys(c.마켓), function (m) { return c.마켓[m].매출; }).forEach(function (m) {
       줄 += '<div class="l"><i class="md" style="background:' + 실().마켓색(m) + '"></i>' + u.안전(m) + '<b>' + 콤마(c.마켓[m].매출) +
             (c.매출 ? ' <span class="pct">' + 비중글(c.마켓[m].매출, c.매출) + '</span>' : '') + '</b></div>';
     });
@@ -163,7 +163,9 @@ window.ZG = window.ZG || {};
 
   /* ══ 마켓별 — 줄 = 칸(최근이 위), 칸 = 그 기간에 값이 있는 마켓 ══ */
   function 조각(셈들) {
-    return 결.마켓들.map(function (m) { var s = 셈들[m.이름]; return { 색: m.색, 값: s ? 값(s) : 0 }; });
+    // 줄마다 그 줄에서 큰 마켓부터 쌓는다 (10/14)
+    return 결.마켓들.map(function (m) { var s = 셈들[m.이름]; return { 색: m.색, 값: s ? 값(s) : 0 }; })
+      .sort(function (a, b) { return b.값 - a.값; });
   }
   function 마켓채우기() {
     u.비우기(칸.마켓);
@@ -255,10 +257,10 @@ window.ZG = window.ZG || {};
     return 것들.slice().sort(function (a, b) { return b[k] - a[k] || b.매출 - a.매출; });
   }
   function 상품조각(p) {
-    return 실().마켓정렬(Object.keys(p.마켓)).map(function (m) { return { 색: 실().마켓색(m), 값: p.마켓[m].매출 }; });
+    return 실().마켓정렬(Object.keys(p.마켓), function (m) { return p.마켓[m].매출; }).map(function (m) { return { 색: 실().마켓색(m), 값: p.마켓[m].매출 }; });
   }
   function 범례() {
-    return 만들기('div', { class: 'legend' }, 실().마켓정렬(결.마켓들.map(function (m) { return m.이름; })).map(function (m) {
+    return 만들기('div', { class: 'legend' }, 결.마켓들.map(function (m) { return m.이름; }).map(function (m) {
       return 만들기('span', { class: 'mall 범례' }, [점(실().마켓색(m)), document.createTextNode(m)]);
     }));
   }
@@ -413,7 +415,8 @@ window.ZG = window.ZG || {};
       var s = p.마켓[m], 색 = 실().마켓색(m);
       펼.appendChild(만들기('div', { class: 'mrow' }, [만들기('span', { class: 'nm' }, [점(색), document.createTextNode(m)]),
         만들기('span', { class: 'bar' }, [만들기('i', { style: 'width:' + (s.비중 * 100).toFixed(1) + '%; background:' + 색 })]),
-        만들기('span', { class: 'amt', text: 콤마(s.매출) }), 만들기('span', { class: 'c', text: 콤마(s.수량) + '개' })]));
+        만들기('span', { class: 'amt', text: 콤마(s.매출) }), 만들기('span', { class: 'pc', text: 비중글(s.매출, p.매출) }),
+        만들기('span', { class: 'c', text: 콤마(s.수량) + '개' })]));
     });
     카드.appendChild(펼);
     return 카드;
