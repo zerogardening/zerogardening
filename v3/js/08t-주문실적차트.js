@@ -100,12 +100,15 @@ window.ZG = window.ZG || {};
     var 합들 = 칸들.map(function (c) { return 돈 ? c.매출 : c.건수; });
     var 최대 = Math.max.apply(null, [0].concat(합들));
     var 칸폭 = 눈금폭(최대), 꼭대기 = 칸폭 * Math.max(1, Math.ceil(최대 / 칸폭));
-    var 안폭 = W - 왼 - 오, 칸너비 = 안폭 / Math.max(1, n), 기둥 = Math.min(56, 칸너비 * 0.62);
+    var 안폭 = W - 왼 - 오, 칸너비 = 안폭 / Math.max(1, n), 기둥 = Math.max(1.5, Math.min(56, 칸너비 * 0.62));
     function X(i) { return 왼 + 칸너비 * (i + 0.5); }
     function Y(v) { return 바닥 - (바닥 - 위) * (v / 꼭대기); }
 
     var svg = 그('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 옵.이름 || '추이' });
     svg.style.display = 'block';
+    (옵.일요일들 || []).forEach(function (일, i) {
+      if (일) svg.appendChild(그('rect', { x: (X(i) - 칸너비 / 2).toFixed(1), y: 위, width: 칸너비.toFixed(1), height: 바닥 - 위, fill: 띠색 }));
+    });
     for (var v = 0; v <= 꼭대기 + 0.5; v += 칸폭) {
       var y = Y(v).toFixed(1);
       svg.appendChild(그('line', { x1: 왼, x2: W - 오, y1: y, y2: y, stroke: 바닥색, 'stroke-width': 1 }));
@@ -113,6 +116,8 @@ window.ZG = window.ZG || {};
       t.textContent = 눈금글(v, 돈);
       svg.appendChild(t);
     }
+    // x 이름은 겹치지 않게 솎는다(30일이면 다 못 쓴다). 마지막 칸은 늘 보인다
+    var 최대수 = Math.max(2, Math.floor(안폭 / (글 * 5))), 걸음 = Math.max(1, Math.ceil(n / 최대수));
     var 순서 = 옵.순서 || [], 색 = 옵.색 || function () { return 선색; };
     칸들.forEach(function (c, i) {
       var 쌓 = 0;
@@ -124,6 +129,8 @@ window.ZG = window.ZG || {};
           height: Math.max(0.5, y1 - y2).toFixed(1), fill: 색(m), 'pointer-events': 'none' }));
         쌓 += 값;
       });
+      var 끝 = i === n - 1;
+      if (!끝 && (i % 걸음 !== 0 || (n - 1 - i < 걸음 / 2 && n > 1))) return;
       var x = 그('text', { x: X(i).toFixed(1), y: H - 6, 'text-anchor': 'middle', 'font-size': 글, fill: 글색 });
       x.textContent = c.이름 || '';
       svg.appendChild(x);
@@ -169,11 +176,17 @@ window.ZG = window.ZG || {};
     return 띠;
   }
 
-  /* 상품 하나의 추이 — 작은 선 하나 */
+  /* 상품 하나의 추이 — 작은 막대 (10/14 「그래프 다 막대로」). 값들은 합계뿐이라 한 색이다 */
   function 추이선(값들, 칸들, 옵) {
     옵 = 옵 || {};
-    return 선그림(값들, 칸들.map(function (c) { return c.이름; }), {
-      폭: 옵.폭 || 270, 높이: 옵.높이 || 150, 글크기: 10, 굵기: 2, 돈: 옵.돈 !== false, 이름: 옵.이름,
+    var 돈 = 옵.돈 !== false, 열 = 돈 ? '매출' : '건수';
+    var 가짜 = 칸들.map(function (c, i) {
+      var 칸 = { 이름: c.이름, 매출: 0, 건수: 0, 마켓: { 합: {} } };
+      칸[열] = 값들[i] || 0; 칸.마켓.합[열] = 값들[i] || 0;
+      return 칸;
+    });
+    return 누적기둥(가짜, 돈 ? '매출' : '건수', {
+      폭: 옵.폭 || 270, 높이: 옵.높이 || 150, 글크기: 10, 이름: 옵.이름, 순서: ['합'], 색: function () { return 선색; },
       일요일들: 옵.일요일띠 ? 칸들.map(function (c) { return c.일요일; }) : null
     });
   }

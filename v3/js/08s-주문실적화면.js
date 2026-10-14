@@ -110,16 +110,15 @@ window.ZG = window.ZG || {};
       폭: 폭, 높이: 칸.폰 ? 190 : 280, 글크기: 칸.폰 ? 10 : 11, 일요일띠: 상태.단위 === '일',
       이름: (상태.지표 === '건수' ? '주문 ' : '매출 ') + 기간글() + ' 합계 ' + 콤마(값(결.합계))
     };
-    /* 월간은 마켓별 누적막대 (우람님 10/14) — 나머지는 합계 꺾은선 */
-    var 월 = 상태.단위 === '월', svg, 순서 = [];
-    if (월) {
-      var 있는 = {};
-      결.칸들.forEach(function (c) { Object.keys(c.마켓).forEach(function (m) { 있는[m] = 1; }); });
-      순서 = 실().마켓정렬(Object.keys(있는));
-      svg = 차().누적기둥(결.칸들, 상태.지표, Object.assign(옵, { 순서: 순서, 색: 실().마켓색 }));
-    } else svg = 차().꺾은선(결.칸들, 상태.지표, 옵);
+    /* 일·주·월 모두 마켓별 누적막대 (우람님 10/14 「그래프 다 막대로」) */
+    var 있는 = {};
+    결.칸들.forEach(function (c) { Object.keys(c.마켓).forEach(function (m) { 있는[m] = 1; }); });
+    var 순서 = 실().마켓정렬(Object.keys(있는));
+    var svg = 차().누적기둥(결.칸들, 상태.지표, Object.assign(옵, {
+      순서: 순서, 색: 실().마켓색, 일요일들: 상태.단위 === '일' ? 결.칸들.map(function (c) { return c.일요일; }) : null
+    }));
     카드.appendChild(svg);
-    if (월 && 순서.length) {
+    if (순서.length) {
       카드.appendChild(만들기('div', { class: 'legend' }, 순서.map(function (m) {
         return 만들기('span', { class: 'mall 범례' }, [점(실().마켓색(m)), document.createTextNode(m)]);
       })));
