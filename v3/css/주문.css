@@ -1268,3 +1268,58 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
   .확인줄{font-size:var(--font-sm)}
   .확인줄 .k{width:42px}
 }
+
+/* ── 옵션이 품목인 상품 (21단계 · 시안 20) ──
+   목록 쪽: 짝 전엔 노랑 옵션(.optw)·「짝 대기」, 짝 후엔 회색 보조줄(.opts) */
+.optw{display:inline-block; margin-top:3px; background:#FFF2B8; color:#6E4A00; font-size:var(--font-sm); font-weight:var(--weight-bold); padding:1px 7px; border-radius:4px; line-height:1.45; word-break:keep-all}
+.optw .k{font-weight:var(--weight-semibold); opacity:.7; margin-right:4px}
+.opts{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px; word-break:keep-all}
+.opts::before{content:'옵션 · '; color:var(--color-text-hint)}
+td.code .wait{display:inline-flex; align-items:center; margin-top:3px; font-family:var(--font-family); font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:#FFF8E6; color:#9A6400; border:var(--border-width) solid #F2DFA8}
+td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.oline .l{min-width:0; word-break:keep-all; overflow-wrap:anywhere}
+.ph-card .optw{font-size:var(--font-md)}
+.ph-card .opts{font-size:var(--font-xs)}
+
+/* 짝창 쪽 — 상품 한 블록(.pblk) 아래 옵션마다 한 줄(.orow).
+   🔴 .orow 는 폰 주문 한 줄과 이름이 같고 .done 은 배송완료창 설명 줄과 같다 — 여기 것은 .pcsheet.dlv .pblk 안에만 산다 */
+.pcsheet.dlv .pblk{padding:var(--space-lg) 0; border-top:var(--border-width) solid var(--color-border)}
+.pcsheet.dlv .pblk:first-child{border-top:none}
+.pcsheet.dlv .phd{display:flex; align-items:baseline; gap:var(--space-sm); flex-wrap:wrap; margin-bottom:var(--space-sm)}
+.pcsheet.dlv .phd b{font-size:var(--font-lg); letter-spacing:-.02em}
+.pcsheet.dlv .phd .cd{font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.pcsheet.dlv .pblk .sub{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.pcsheet.dlv .phd .esc{margin-left:auto; background:none; border:none; padding:0; cursor:pointer; font:inherit; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); text-decoration:underline; text-underline-offset:2px}
+.pcsheet.dlv .pblk .orow, .pcsheet.dlv .pblk .orow.done{
+  display:grid; grid-template-columns:300px 1fr; gap:var(--space-xl); align-items:center; line-height:normal;
+  font-size:var(--font-md); color:var(--color-text); font-weight:normal;
+  padding:var(--space-md) var(--space-lg); margin-left:var(--space-xl);
+  border:none; border-left:3px solid #F2DFA8; background:#FFFCF3; border-radius:0 var(--radius-md) var(--radius-md) 0;
+}
+.pcsheet.dlv .pblk .orow + .orow{margin-top:var(--space-xs)}
+.pcsheet.dlv .pblk .orow.done{border-left-color:var(--color-accent-border); background:var(--color-accent-bg)}
+.pcsheet.dlv .orow .ov{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; line-height:1.35; word-break:keep-all; overflow-wrap:anywhere}
+.pcsheet.dlv .orow .om{display:flex; gap:var(--space-xs); align-items:center; margin-top:3px; flex-wrap:wrap}
+.pcsheet.dlv .orow .act{display:flex; gap:var(--space-sm); align-items:center; min-width:0}
+.pcsheet.dlv .orow .act .q{flex:1; min-width:0}
+.pcsheet.dlv .orow .act .spc{flex:1}
+.pcsheet.dlv .orow .onew{grid-column:1 / -1}
+.pcsheet.dlv .orow .ck{width:20px; height:20px; border-radius:50%; background:var(--color-accent); color:var(--color-on-accent); display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex:0 0 auto}
+.pcsheet.dlv .orow .pc2{font-family:var(--font-mono); font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-accent-dark); white-space:nowrap}
+.pcsheet.dlv .orow .pn{font-size:var(--font-md); font-weight:var(--weight-semibold); white-space:nowrap}
+.pcsheet.dlv .lk{background:none; border:none; padding:0; cursor:pointer; font:inherit; font-size:var(--font-2xs); color:var(--color-accent-dark); font-weight:var(--weight-semibold); white-space:nowrap}
+.pcsheet.dlv .ip{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:#EEF3FB; color:#3A5A8C; border:var(--border-width) solid #CBD8EC; white-space:nowrap}
+.pcsheet.dlv .ln{font-size:var(--font-2xs); color:#9A6400; font-weight:var(--weight-semibold); white-space:nowrap}
+.pcsheet.dlv .orow.done .ln{color:var(--color-text-muted)}
+.pcsheet.dlv .oldnote{margin:0 0 var(--space-sm) var(--space-xl); display:flex; align-items:center; gap:var(--space-sm);
+  font-size:var(--font-xs); font-weight:var(--weight-semibold); color:#9A6400; background:#FFF8E6; border:var(--border-width) dashed #E8C873; border-radius:var(--radius-md); padding:var(--space-sm) var(--space-lg)}
+.pcsheet.dlv .oldnote .cd{font-family:var(--font-mono); font-weight:var(--weight-bold)}
+/* 옵션 줄 안의 품목 카드는 시안처럼 한 줄(찾기칸 + 화분 사이즈)로 눕힌다 — 08c 카드를 그대로 빌려 쓰므로 모양만 여기서 */
+.pcsheet.dlv .orow .itemcard{flex-direction:row; align-items:flex-start; padding:var(--space-xs) var(--space-sm); gap:var(--space-sm)}
+.pcsheet.dlv .orow .itemcard .top{flex:1; min-width:0}
+.pcsheet.dlv .orow .itemcard .pair{flex:0 0 104px}
+.pcsheet.dlv .orow .itemcard .pair .field{flex:1 1 auto}
+.pcsheet.dlv .orow .itemcard .pair label{display:none}
+.pcsheet.dlv .orow .itemcard .inp{height:32px; font-size:var(--font-sm); line-height:30px}
+/* 옵션 줄이 있으면 창을 시안 폭까지 넓힌다 — 760px 에선 찾기칸이 글자 몇 자로 줄어든다 */
+.pcsheet.dlv:has(.pblk){width:min(1040px, 94vw)}

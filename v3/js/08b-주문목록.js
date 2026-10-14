@@ -352,6 +352,20 @@ window.ZG = window.ZG || {};
         그 미리보기를 안 거쳐서 여태 손댈 데가 없었다.
      🔴 기간·탭을 안 본다. 짝은 「상품」 단위라 한 번 지으면 옛 주문까지 다 붙는데,
         기간에 걸어 두면 화면에 안 보이는 줄을 영영 못 고치신다 (8/9 배송준비중 탭과 같은 이치) */
+  /* ── 옵션이 품목인 줄 표시 (21단계) — 짝 전엔 노랑 옵션, 짝 후엔 회색 보조줄.
+     개수 옵션 줄은 null 이라 아무것도 안 붙는다 ── */
+  function 품목옵션(r) {
+    var 풀 = (ZG.짝 && ZG.짝.옵션풀이) ? ZG.짝.옵션풀이(r.원본코드, r.옵션원문) : null;
+    return 풀 && 풀.품목옵션 ? 풀 : null;
+  }
+  function 옵션노랑(풀, 이름도) {
+    var 속 = [];
+    if (이름도 && 풀.옵션이름) 속.push(만들기('span', { class: 'k', text: 풀.옵션이름 }));
+    속.push(document.createTextNode(풀.표시값));
+    return 만들기('span', { class: 'optw' }, 속);
+  }
+  function 옵션보조(풀) { return 만들기('div', { class: 'opts', text: 풀.표시값 }); }
+
   function 짝거리들() {
     return ZG.저장소.읽기(ZG.저장소.키.주문).map(function (r) {
       return { 줄: r, 상품명: r.유통명 || r.원본코드 || '' };
@@ -361,9 +375,9 @@ window.ZG = window.ZG || {};
   function 짝못붙은수() {
     var 표 = {};
     ZG.저장소.읽기(ZG.저장소.키.주문).forEach(function (r) {
-      if (r && !r.품목코드 && r.원본코드) 표[r.원본코드] = 1;
+      if (r && !r.품목코드 && r.원본코드) 표[ZG.짝.옵션풀이(r.원본코드, r.옵션원문).열쇠] = 1;
     });
-    return Object.keys(표).length;      // 줄 수가 아니라 「상품 종 수」 — 지으실 짝의 개수다
+    return Object.keys(표).length;      // 줄 수가 아니라 열쇠 수(옵션이 품목이면 옵션마다) — 지으실 짝의 개수다
   }
 
   function 짝짓기창() {
@@ -594,13 +608,17 @@ window.ZG = window.ZG || {};
     var 보임 = 폈나 ? g.줄들 : g.줄들.slice(0, 2);
     var 줄칸 = 만들기('div', { class: 'olines' });
     보임.forEach(function (r) {
-      줄칸.appendChild(만들기('div', { class: 'oline' }, [
-        만들기('span', { class: 'nm' }, [
-          document.createTextNode(r.유통명 || r.원본코드 || '(품목 없음)'), 서비스딱지(r)
-        ]),
-        만들기('span', { class: 'rg', text: r.규격 || '' }),
+      var 이름 = 만들기('span', { class: 'nm' }, [
+        document.createTextNode(r.유통명 || r.원본코드 || '(품목 없음)'), 서비스딱지(r)
+      ]);
+      var 규 = 만들기('span', { class: 'rg', text: r.규격 || '' });
+      var 풀 = 품목옵션(r);
+      var 앞 = !풀 ? [이름, 규] : [만들기('span', { class: 'l' }, r.품목코드
+        ? [이름, document.createTextNode(' '), 규, 옵션보조(풀)]
+        : [이름, 만들기('br'), 옵션노랑(풀)])];
+      줄칸.appendChild(만들기('div', { class: 'oline' }, 앞.concat([
         만들기('span', { class: 'q', text: 자.수량(r) + '주' })
-      ]));
+      ])));
     });
     카드.appendChild(줄칸);
 
@@ -690,16 +708,18 @@ window.ZG = window.ZG || {};
 
     var 상자 = 만들기('div', { class: 'ph-card', style: 'padding:0 var(--space-2xl)' });
     g.줄들.forEach(function (r) {
+      var 풀 = 품목옵션(r);
+      var 이름 = 만들기('div', { class: 'nm' }, [
+        document.createTextNode(r.유통명 || r.원본코드 || '(품목 없음)'), 서비스딱지(r)
+      ]);
+      var 규 = 만들기('div', {
+        class: 'rg',
+        text: (r.규격 || '') + ' · ' + u.콤마(r.단가) + '원' + (r.수정됨 ? ' · ✎ 수정됨' : '')
+      });
+      if (풀 && !r.품목코드) 규.style.marginTop = '3px';
       상자.appendChild(만들기('div', { class: 'dline' }, [
-        만들기('span', {}, [
-          만들기('div', { class: 'nm' }, [
-            document.createTextNode(r.유통명 || r.원본코드 || '(품목 없음)'), 서비스딱지(r)
-          ]),
-          만들기('div', {
-            class: 'rg',
-            text: (r.규격 || '') + ' · ' + u.콤마(r.단가) + '원' + (r.수정됨 ? ' · ✎ 수정됨' : '')
-          })
-        ]),
+        만들기('span', {}, !풀 ? [이름, 규]
+          : (r.품목코드 ? [이름, 규, 옵션보조(풀)] : [이름, 만들기('div', {}, [옵션노랑(풀)]), 규])),
         만들기('span', { class: 'q', text: 자.수량(r) + '주' })
       ]));
     });
@@ -956,16 +976,21 @@ window.ZG = window.ZG || {};
           tr.appendChild(곳칸);
         }
         var 코드값 = String(r.품목코드 || r.원본코드 || '—');
-        var 코드칸 = 만들기('td', { class: 'code', text: 줄인코드(코드값) });
+        var 풀 = 품목옵션(r), 대기 = 풀 && !r.품목코드;
+        var 코드칸 = 대기
+          ? 만들기('td', { class: 'code' }, [만들기('span', { class: 'orig', text: 줄인코드(코드값) }),
+              만들기('span', { class: 'wait', text: '짝 대기' })])
+          : 만들기('td', { class: 'code', text: 줄인코드(코드값) });
         if (코드값 !== 줄인코드(코드값)) 코드칸.title = 코드값;
         if (r.원본품목코드 && r.원본품목코드 !== r.품목코드) 코드칸.appendChild(원래줄(r.원본품목코드));
         tr.appendChild(코드칸);
 
         var 품목칸 = 만들기('td', {}, [
           document.createTextNode(r.유통명 || '(품목 없음)'),
-          서비스딱지(r),
-          만들기('div', { class: 'sci', text: r.학명 || '' })
-        ]);
+          서비스딱지(r)
+        ].concat(대기 ? [만들기('div', {}, [옵션노랑(풀, true)])] : [],
+          [만들기('div', { class: 'sci', text: r.학명 || '' })],
+          풀 && !대기 ? [옵션보조(풀)] : []));
         var 모 = 나감건 ? null : g.모자람[r.품목코드];
         if (모) 품목칸.appendChild(만들기('div', {
           class: 'lack', text: '⚠ 재고 ' + 모.재고 + '주 — ' + 모.모자란수 + '주 모자람'
