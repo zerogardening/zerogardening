@@ -90,6 +90,53 @@ window.ZG = window.ZG || {};
     return svg;
   }
 
+  /* 월간 — 마켓별 누적막대 (우람님 10/14 「월간은 막대, 누적으로 매출처별」).
+     칸들 = 08r 칸(c.마켓[m].매출·건수), 옵션 { 폭, 높이, 글크기, 이름, 순서(마켓 이름들), 색(이름→색) } */
+  function 누적기둥(칸들, 지표, 옵) {
+    옵 = 옵 || {};
+    var 돈 = 지표 !== '건수', 열 = 돈 ? '매출' : '건수';
+    var W = 옵.폭 || 816, H = 옵.높이 || 280, 글 = 옵.글크기 || 11;
+    var 왼 = 글 * 4.4, 오 = 14, 위 = 10, 아래 = 글 + 17, 바닥 = H - 아래, n = 칸들.length;
+    var 합들 = 칸들.map(function (c) { return 돈 ? c.매출 : c.건수; });
+    var 최대 = Math.max.apply(null, [0].concat(합들));
+    var 칸폭 = 눈금폭(최대), 꼭대기 = 칸폭 * Math.max(1, Math.ceil(최대 / 칸폭));
+    var 안폭 = W - 왼 - 오, 칸너비 = 안폭 / Math.max(1, n), 기둥 = Math.min(56, 칸너비 * 0.62);
+    function X(i) { return 왼 + 칸너비 * (i + 0.5); }
+    function Y(v) { return 바닥 - (바닥 - 위) * (v / 꼭대기); }
+
+    var svg = 그('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 옵.이름 || '추이' });
+    svg.style.display = 'block';
+    for (var v = 0; v <= 꼭대기 + 0.5; v += 칸폭) {
+      var y = Y(v).toFixed(1);
+      svg.appendChild(그('line', { x1: 왼, x2: W - 오, y1: y, y2: y, stroke: 바닥색, 'stroke-width': 1 }));
+      var t = 그('text', { x: 왼 - 7, y: (+y + 3.5).toFixed(1), 'text-anchor': 'end', 'font-size': 글, fill: 글색 });
+      t.textContent = 눈금글(v, 돈);
+      svg.appendChild(t);
+    }
+    var 순서 = 옵.순서 || [], 색 = 옵.색 || function () { return 선색; };
+    칸들.forEach(function (c, i) {
+      var 쌓 = 0;
+      순서.forEach(function (m) {
+        var 값 = (c.마켓[m] && c.마켓[m][열]) || 0;
+        if (!값) return;
+        var y1 = Y(쌓), y2 = Y(쌓 + 값);
+        svg.appendChild(그('rect', { x: (X(i) - 기둥 / 2).toFixed(1), y: y2.toFixed(1), width: 기둥.toFixed(1),
+          height: Math.max(0.5, y1 - y2).toFixed(1), fill: 색(m), 'pointer-events': 'none' }));
+        쌓 += 값;
+      });
+      var x = 그('text', { x: X(i).toFixed(1), y: H - 6, 'text-anchor': 'middle', 'font-size': 글, fill: 글색 });
+      x.textContent = c.이름 || '';
+      svg.appendChild(x);
+    });
+    svg._막대 = true;
+    svg._점 = 합들.map(function (v, i) { return { x: X(i), y: Y(v) }; });
+    svg._틀 = { W: W, H: H, 위: 위, 바닥: 바닥, 칸너비: 칸너비 };
+    svg._점.forEach(function (p, i) {
+      svg.appendChild(그('rect', { x: (p.x - 칸너비 / 2).toFixed(1), y: 0, width: 칸너비.toFixed(1), height: H, fill: 'transparent', 'data-i': i }));
+    });
+    return svg;
+  }
+
   /* i 번째 점을 짚어 보인다 — 점선 기둥 + 동그라미. 돌려주는 x·y 는 0~1 비율(말풍선 자리) */
   function 짚기(svg, i) {
     [].slice.call(svg.querySelectorAll('.짚음')).forEach(function (e) { e.remove(); });
@@ -98,7 +145,8 @@ window.ZG = window.ZG || {};
     var 틀 = svg._틀;
     var 선 = 그('line', { class: '짚음', x1: p.x.toFixed(1), x2: p.x.toFixed(1), y1: 틀.위, y2: 틀.바닥, stroke: '#A1A1A6', 'stroke-dasharray': '3 3', 'pointer-events': 'none' });
     var 점 = 그('circle', { class: '짚음', cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 4, fill: '#fff', stroke: 선색, 'stroke-width': 2.2, 'pointer-events': 'none' });
-    svg.appendChild(선); svg.appendChild(점);
+    svg.appendChild(선);
+    if (!svg._막대) svg.appendChild(점);
     return { x: p.x / 틀.W, y: p.y / 틀.H };
   }
   function 짚기풀기(svg) { [].slice.call(svg.querySelectorAll('.짚음')).forEach(function (e) { e.remove(); }); }
@@ -130,5 +178,5 @@ window.ZG = window.ZG || {};
     });
   }
 
-  ZG.주문실적차트 = { 꺾은선: 꺾은선, 짚기: 짚기, 짚기풀기: 짚기풀기, 누적막대: 누적막대, 추이선: 추이선, 눈금폭: 눈금폭 };
+  ZG.주문실적차트 = { 꺾은선: 꺾은선, 누적기둥: 누적기둥, 짚기: 짚기, 짚기풀기: 짚기풀기, 누적막대: 누적막대, 추이선: 추이선, 눈금폭: 눈금폭 };
 })(window.ZG);
