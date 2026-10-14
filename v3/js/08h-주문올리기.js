@@ -22,6 +22,8 @@ window.ZG = window.ZG || {};
   ];
   /* 이 넷 중 하나라도 없으면 아무것도 저장하지 않고 멈춘다 — 엉뚱한 엑셀이 통째로 주문이 되는 사고를 막는다 */
   var 꼭있어야 = ['주문번호', '발주일', '수령인', '수량'];
+  /* 27칸 밖에서 덤으로 받는 칸. 🔴 칸이름(27칸)에 넣지 않는다 — 원본27·로젠 파일 칸이 한 칸씩 밀린다 */
+  var 덤칸 = ['주문일시'];
 
   function 글(v) { return String(v == null ? '' : v); }
   function 다듬기(v) { return 글(v).trim(); }
@@ -33,7 +35,7 @@ window.ZG = window.ZG || {};
     (행 || []).forEach(function (v, i) {
       var 이름 = 머리키(v);
       if (!이름) return;
-      if (칸이름.indexOf(이름) >= 0) { if (자리[이름] == null) 자리[이름] = i; }
+      if (칸이름.indexOf(이름) >= 0 || 덤칸.indexOf(이름) >= 0) { if (자리[이름] == null) 자리[이름] = i; }
       else 모르는.push(다듬기(v));
     });
     return {
@@ -94,6 +96,26 @@ window.ZG = window.ZG || {};
       s = m[1] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[3]).padStart(2, '0');
     }
     return 자.날짜정규화(s);
+  }
+
+  /* 주문 시각 'HH:MM' | '' — 시각 판정의 원본이다.
+     🔴 도구/edge-주문수집/index.ts 도 같은 규칙으로 order_date 에서 시각을 떼야 한다(21단계 §8). 한쪽만 고치면
+        자동수집 줄과 파일 올린 줄의 시각이 어긋난다.
+     날짜만 든 칸(자정 Date · 소수부 없는 serial · 'YYYY-MM-DD')은 시각이 아니다 — '' 를 돌려 칸을 안 만든다 */
+  function 시각만들기(v) {
+    function 둘(n) { return String(n).padStart(2, '0'); }
+    if (v instanceof Date) {
+      if (isNaN(v.getTime()) || (!v.getHours() && !v.getMinutes() && !v.getSeconds())) return '';
+      return 둘(v.getHours()) + ':' + 둘(v.getMinutes());
+    }
+    if (typeof v === 'number') {
+      if (!(v > 20000 && v < 90000) || v % 1 === 0) return '';
+      var 분 = Math.round((v % 1) * 1440) % 1440;
+      return 둘(Math.floor(분 / 60)) + ':' + 둘(분 % 60);
+    }
+    var m = 글(v).trim().match(/^\d{4}[-.\/]\d{1,2}[-.\/]\d{1,2}[ T]+(\d{1,2}):(\d{2})/);
+    if (!m || +m[1] >= 24 || +m[2] >= 60) return '';
+    return 둘(+m[1]) + ':' + m[2];
   }
 
   /* `ech01-10` · `ERB01-10(2)` → { 코드:'ECH01-10', 꼬리:2 }. 못 알아보면 코드 '' */
@@ -172,6 +194,9 @@ window.ZG = window.ZG || {};
       묶음키: '', 출처: '업로드'
     };
     줄.묶음키 = ZG.주문자료.묶음키(줄);
+    // 시각이 없으면 칸을 만들지 않는다 — 빈 문자열도 안 박는다(중복키·지문이 그대로)
+    var 시각 = 시각만들기(칸값(행, 자리, '주문일시')) || 시각만들기(칸값(행, 자리, '발주일'));
+    if (시각) 줄.주문시각 = 시각;
     return 줄;
   }
 
@@ -817,6 +842,6 @@ window.ZG = window.ZG || {};
     열기: 열기, 닫기: 닫기, 로젠만들기: 로젠만들기, 세운27: 세운27,
     머리읽기: 머리읽기, 읽기결과: 읽기결과, 코드정규화: 코드정규화,
     칸이름들: function () { return 칸이름.slice(); },   // 08j 가 27칸 자리표를 세울 때 쓴다
-    우편정규화: 우편정규화, 날짜만들기: 날짜만들기, 중복키: 중복키
+    우편정규화: 우편정규화, 날짜만들기: 날짜만들기, 시각만들기: 시각만들기, 중복키: 중복키
   };
 })(window.ZG);

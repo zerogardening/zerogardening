@@ -1332,3 +1332,130 @@ td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-m
 }
 /* 옵션 줄이 있으면 창을 시안 폭까지 넓힌다 — 760px 에선 찾기칸이 글자 몇 자로 줄어든다 */
 .pcsheet.dlv:has(.pblk){width:min(1040px, 94vw)}
+
+/* ── 21 주문조회 날짜·마켓 ── (시안 21-주문실적-macA) */
+.mall .md, .fchip .md, .주문실적 .md{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px; flex-shrink:0}
+.fchip .md{width:8px; height:8px; margin-right:5px}
+.fchip.on .md{box-shadow:0 0 0 1.5px #fff}
+.fchip.zero{opacity:.45}
+.hscroll{display:flex; gap:var(--space-xs); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-right:-18px; padding:1px 18px 2px 0}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .fchip{flex-shrink:0}
+.마켓줄 .lab, .주문실적 .lab{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub); margin-right:2px}
+.pc-본문 > .마켓줄{padding:0 var(--space-sm); margin-top:calc(var(--space-2xl) * -1 + var(--space-sm))}
+.ph-card.ocard{display:flex; gap:var(--space-lg); padding-left:var(--space-lg)}
+.ocard .when{width:46px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:1px;
+  border-right:var(--border-width) solid var(--color-border-faint); padding-right:var(--space-md); padding-top:2px; font-variant-numeric:tabular-nums}
+.ocard .when .d{font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); white-space:nowrap}
+.ocard .when .t{font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text); letter-spacing:-.02em}
+.ocard .when .t.no, td.wh .t.no{color:var(--color-text-faint); font-weight:var(--weight-semibold)}
+.ocard .bd{flex:1; min-width:0}
+td.wh{vertical-align:top; font-variant-numeric:tabular-nums; line-height:1.3; border-right:var(--border-width) solid var(--color-border-faint)}
+td.wh .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+
+/* ── 21 주문실적 ── 🔴 전부 .주문실적 아래로 가둔다. .ccard 는 고객관리가 쓴다(가두지 않으면 고객 화면이 바뀐다) */
+.주문실적 .기간줄 .tilde{color:var(--color-text-muted)}
+.주문실적 .stat > div{padding:var(--pad-stat); border:none; margin:0; font-size:inherit; display:block}
+.주문실적 .stat{padding:0; border:none; border-radius:0; margin:0; font-size:inherit; background:none}
+.주문실적 .stat .v small, .주문실적 .sumcard small{font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-left:2px}
+.주문실적 .stat .v.검{color:var(--color-text)}
+.주문실적 .단위줄{display:flex; justify-content:flex-end; margin-top:-4px}
+.주문실적 .sumcard{background:var(--color-surface); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); padding:var(--space-xl) var(--space-2xl)}
+.주문실적 .sumcard .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.주문실적 .sumcard .big{font-size:30px; font-weight:var(--weight-bold); color:var(--color-accent-dark); letter-spacing:-.03em; font-variant-numeric:tabular-nums; line-height:1.15}
+.주문실적 .sumcard .two{display:flex; margin-top:var(--space-md); padding-top:var(--space-md); border-top:var(--border-width) solid var(--color-border-faint)}
+.주문실적 .sumcard .two > div{flex:1}
+.주문실적 .sumcard .v{font-size:var(--font-2xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.주문실적 .ccard{display:block; position:relative; background:var(--color-surface); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); padding:var(--space-lg) var(--space-lg) var(--space-md)}
+.주문실적 .chd{display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-sm)}
+.주문실적 .chd h4{font-size:var(--font-md); font-weight:var(--weight-bold)}
+.주문실적 .chd .right{margin-left:auto}
+.주문실적 .chd .단위글{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:600}
+.주문실적 .mini-tg{display:inline-flex; background:var(--color-seg-bg); padding:2px; border-radius:var(--radius-md)}
+.주문실적 .mini-tg button{font-family:inherit; border:none; background:none; cursor:pointer; font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); padding:4px 12px; border-radius:6px}
+.주문실적 .mini-tg button.on{background:var(--color-surface); color:var(--color-accent-dark); box-shadow:var(--shadow-seg)}
+.주문실적 .legend{display:flex; flex-wrap:wrap; gap:var(--space-2xs); padding:0 var(--space-sm) var(--space-sm)}
+.주문실적 .mall.범례{background:transparent; border:none; padding:0 8px 0 0}
+.주문실적 .stk{display:flex; border-radius:3px; overflow:hidden; background:var(--color-seg-bg)}
+.주문실적 .stk i{display:block; height:100%; border-right:1px solid #fff}
+.주문실적 .stk i:last-child{border-right:none}
+.주문실적 .tip{position:absolute; z-index:2; pointer-events:none; background:rgba(255,255,255,.97); border-radius:var(--radius-md); box-shadow:0 6px 18px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.06);
+  padding:var(--space-sm) var(--space-md); font-size:var(--font-xs); min-width:168px; font-variant-numeric:tabular-nums}
+.주문실적 .tip .h{font-weight:var(--weight-bold); margin-bottom:4px; color:var(--color-text)}
+.주문실적 .tip .l{display:flex; align-items:center; gap:4px; color:var(--color-text-sub); line-height:1.6}
+.주문실적 .tip .l b{margin-left:auto; color:var(--color-text); padding-left:12px}
+.주문실적 .tip .l.tot{border-top:1px solid var(--color-border-faint); margin-top:3px; padding-top:3px; font-weight:var(--weight-bold); color:var(--color-text)}
+/* 마켓별 — PC 표 */
+.주문실적 .ptab{overflow-x:auto}
+.주문실적 .ptab table{table-layout:fixed; font-size:var(--font-xs); font-variant-numeric:tabular-nums}
+.주문실적 .ptab th{padding:6px 5px; white-space:nowrap}
+.주문실적 .ptab th.mh{font-size:var(--font-2xs)}
+.주문실적 .ptab td{padding:6px 5px; white-space:nowrap}
+.주문실적 .ptab td.pd{color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+.주문실적 .ptab td.b{font-weight:var(--weight-bold)}
+.주문실적 .ptab td.z{color:var(--color-text-faint)}
+.주문실적 .ptab tr.ttot td{font-weight:var(--weight-bold); background:#FAFAFC}
+.주문실적 .ptab tr.ttot.비중 td{border-bottom:var(--border-width-thick) solid var(--color-border); color:var(--color-text-sub)}
+.주문실적 .ptbody{max-height:384px; overflow-y:auto}
+.주문실적 tr.sun td, .주문실적 .prow2.sun{background:#F5F5F7}
+/* 마켓별 — 폰 */
+.주문실적 .mleg{display:grid; grid-template-columns:1fr 1fr; gap:3px 14px; margin:var(--space-sm) 0 var(--space-xs); font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.주문실적 .mleg span{display:flex; align-items:center; white-space:nowrap}
+.주문실적 .mleg b{margin-left:auto; color:var(--color-text); font-variant-numeric:tabular-nums}
+.주문실적 .prow2{padding:6px 4px; border-bottom:var(--border-width) solid var(--color-border-faint)}
+.주문실적 .prow2 .a{display:flex; justify-content:space-between; font-size:var(--font-sm); margin-bottom:4px; font-variant-numeric:tabular-nums}
+.주문실적 .prow2 .dd{color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+.주문실적 .prow2 .am{font-weight:var(--weight-bold)}
+.주문실적 .prow2.tot{border-bottom:none; padding-top:0}
+.주문실적 .prow2.tot .dd, .주문실적 .prow2.tot .am{color:var(--color-text); font-weight:var(--weight-bold); font-size:var(--font-md)}
+.주문실적 .pscroll{max-height:300px; overflow-y:auto; border-top:var(--border-width-thick) solid var(--color-border)}
+/* 상품별 — PC */
+.주문실적 .상품표 h3 .search{width:200px}
+.주문실적 .상품표 h3 .search .inp{height:var(--h-btn-sm); font-size:var(--font-sm)}
+.주문실적 th.c{text-align:center}
+.주문실적 th.sortable{color:var(--color-accent-dark)}
+.주문실적 th[role="button"]{cursor:pointer}
+.주문실적 tr.prow{cursor:pointer}
+.주문실적 tr.prow td{vertical-align:middle}
+.주문실적 tr.prow td.rk{color:var(--color-text-hint); font-weight:var(--weight-bold); text-align:center; font-variant-numeric:tabular-nums}
+.주문실적 tr.prow td.pn{font-weight:var(--weight-semibold)}
+.주문실적 tr.prow.open td{background:var(--color-accent-bg); border-bottom-color:transparent}
+.주문실적 tr.det > td{background:#FBFDFB; padding:var(--space-md) var(--space-lg) var(--space-xl) 44px; border-bottom:var(--border-width-thick) solid var(--color-accent-border)}
+.주문실적 td.chevc{color:var(--color-text-faint); font-weight:var(--weight-bold); text-align:center}
+.주문실적 .dgrid{display:flex; gap:var(--space-3xl); align-items:flex-start}
+.주문실적 .dtab{flex:1}
+.주문실적 .dtab table{font-size:var(--font-sm); margin-bottom:var(--space-md)}
+.주문실적 .dtab th{background:transparent; border-bottom:var(--border-width) solid var(--color-border); padding:6px 8px}
+.주문실적 .dtab td{padding:7px 8px}
+.주문실적 .dtab .bar{height:8px; background:var(--color-seg-bg); border-radius:4px; overflow:hidden}
+.주문실적 .dtab .bar i{display:block; height:100%}
+.주문실적 .dchart{width:270px; flex-shrink:0}
+.주문실적 .dchart .k{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-sub); margin-bottom:4px}
+/* 상품별 — 폰 */
+.주문실적 .상품칸{display:flex; flex-direction:column; gap:var(--space-md)}
+.주문실적 .상품칸 .legend{padding:0}
+.주문실적 .pcard{background:var(--color-surface); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); padding:var(--space-lg) var(--space-2xl); cursor:pointer}
+.주문실적 .pcard .t1{display:flex; align-items:baseline; gap:var(--space-sm)}
+.주문실적 .pcard .rk{font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-text-hint); width:16px; font-variant-numeric:tabular-nums}
+.주문실적 .pcard .nm{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.주문실적 .pcard .cd{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.주문실적 .pcard .amt{margin-left:auto; font-size:var(--font-lg); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.주문실적 .pcard .stk{margin-top:var(--space-sm)}
+.주문실적 .pcard .t2{display:flex; gap:var(--space-sm); font-size:var(--font-xs); color:var(--color-text-muted); margin-top:var(--space-2xs); font-weight:var(--weight-medium)}
+.주문실적 .pcard .t2 b{color:var(--color-text-sub); font-variant-numeric:tabular-nums}
+.주문실적 .pcard .t2 .chev{margin-left:auto; font-size:var(--font-md)}
+.주문실적 .pcard.open{box-shadow:var(--shadow-card), 0 0 0 1.5px var(--color-accent-border)}
+.주문실적 .pcard .det{margin-top:var(--space-md); border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-2xs)}
+.주문실적 .vrow{display:flex; align-items:baseline; gap:var(--space-sm); padding:5px 0; font-size:var(--font-sm); border-bottom:var(--border-width) solid var(--color-border-faint)}
+.주문실적 .vrow .vc{font-family:var(--font-mono); font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); width:62px}
+.주문실적 .vrow .vg{flex:1; font-weight:var(--weight-semibold)}
+.주문실적 .vrow .amt, .주문실적 .mrow .amt{font-size:var(--font-sm); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; margin-left:0}
+.주문실적 .vrow .c, .주문실적 .mrow .c{width:38px; text-align:right; color:var(--color-text-muted); font-size:var(--font-xs); font-variant-numeric:tabular-nums}
+.주문실적 .mrow{display:flex; align-items:center; gap:var(--space-sm); padding:7px 0; border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-sm)}
+.주문실적 .mrow:last-child{border-bottom:none}
+.주문실적 .mrow .nm{width:92px; font-size:var(--font-sm); font-weight:var(--weight-semibold); display:flex; align-items:center; white-space:nowrap}
+.주문실적 .mrow .bar{flex:1; height:8px; background:var(--color-seg-bg); border-radius:4px; overflow:hidden}
+.주문실적 .mrow .bar i{display:block; height:100%; border-radius:4px}
+.주문실적 .mrow .amt{width:70px; text-align:right}
+.주문실적 .더보기{width:100%}

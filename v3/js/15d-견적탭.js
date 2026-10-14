@@ -1,4 +1,4 @@
-/* 15d-견적탭 — 주문 화면 셸에 「주문 조회 · 견적 요청 · 고객 · 문자주문」 네 칸을 단다 (5단계 §3 · 11단계 §4 · 16단계 §3-1)
+/* 15d-견적탭 — 주문 화면 셸에 「주문 조회 · 견적 요청 · 고객 · 문자주문 · 주문실적」 다섯 칸을 단다 (5단계 §3 · 11단계 §4 · 16단계 §3-1 · 21단계 §6)
    08b 는 다시그리기() 안 두 줄만 바뀐다. 나머지 손질은 전부 여기서 한다.
    탭 상태는 메모리로만 갖는다 — 새로고침하면 주문 조회로 돌아온다. */
 window.ZG = window.ZG || {};
@@ -6,7 +6,7 @@ window.ZG = window.ZG || {};
   'use strict';
 
   var u = ZG.ui, 만들기 = u.만들기;
-  var 켜짐 = '주문';   // '주문' · '견적' · '고객' · '문자'
+  var 켜짐 = '주문';   // '주문' · '견적' · '고객' · '문자' · '실적'
 
   function 탭으로(이름) {
     if (켜짐 === 이름) return;
@@ -18,15 +18,18 @@ window.ZG = window.ZG || {};
     ZG.주문.다시그리기();
   }
 
-  function 폰모듈() { return 켜짐 === '문자' ? ZG.문자주문 : 켜짐 === '고객' ? ZG.고객폰 : ZG.견적폰; }
-  function PC모듈() { return 켜짐 === '문자' ? ZG.문자주문 : 켜짐 === '고객' ? ZG.고객PC : ZG.견적PC; }
+  function 폰모듈() { return 켜짐 === '실적' ? ZG.주문실적화면 : 켜짐 === '문자' ? ZG.문자주문 : 켜짐 === '고객' ? ZG.고객폰 : ZG.견적폰; }
+  function PC모듈() { return 켜짐 === '실적' ? ZG.주문실적화면 : 켜짐 === '문자' ? ZG.문자주문 : 켜짐 === '고객' ? ZG.고객PC : ZG.견적PC; }
+
+  /* 폰은 390px 에 다섯 칸이라 짧은 이름을 쓴다 */
+  var 폰이름 = { 주문: '조회', 견적: '견적', 고객: '고객', 문자: '문자', 실적: '실적' };
 
   function 탭줄(폰) {
     var 줄 = 만들기('div', { class: 폰 ? 'subtabs' : 'pc-tabs', role: 'tablist' });
-    [['주문 조회', '주문'], ['견적 요청', '견적'], ['고객', '고객'], ['문자주문', '문자']].forEach(function (쌍) {
+    [['주문 조회', '주문'], ['견적 요청', '견적'], ['고객', '고객'], ['문자주문', '문자'], ['주문실적', '실적']].forEach(function (쌍) {
       var 켬 = 켜짐 === 쌍[1];
       var b = 만들기('button', {
-        type: 'button', role: 'tab', text: 쌍[0],
+        type: 'button', role: 'tab', text: 폰 ? 폰이름[쌍[1]] : 쌍[0],
         class: 켬 ? 'on' : '', 'aria-selected': 켬 ? 'true' : 'false'
       });
       b.addEventListener('click', function () { 탭으로(쌍[1]); });
@@ -39,7 +42,9 @@ window.ZG = window.ZG || {};
   function PC머리() {
     var 길 = document.querySelector('.pc-head .path');
     if (길) {
-      if (켜짐 === '문자') {
+      if (켜짐 === '실적') {
+        길.textContent = '주문 관리 › 주문실적';
+      } else if (켜짐 === '문자') {
         var 문 = ZG.문자주문.상태;
         길.textContent = '주문 관리 › 문자주문' + (문.뷰 === '목록' ? (문.갈래 === '예약' ? ' › 예약' : ' › 목록') : '');
       } else if (켜짐 === '고객') {
@@ -58,6 +63,7 @@ window.ZG = window.ZG || {};
     var 모듈 = 폰모듈();
     var 제목 = document.querySelector('.ph-shell .ph-top h1');
     if (제목) 제목.textContent = 모듈.제목();
+    if (켜짐 === '실적') return;   // 실적은 요약줄이 없다 — 요약카드가 본문 맨 위에 있다 (시안)
 
     var 요약 = 모듈.요약();
     var 줄 = document.querySelector('.ph-shell .ph-sub');

@@ -11,6 +11,7 @@ window.ZG = window.ZG || {};
   var 상태 = {
     뷰: '목록', 날짜: '', 부터: '', 까지: '', 글: '', 묶음id: '',
     상세키: '', 폈다: {}, 고른: {}, 쪽: 1, 기간칩: '오늘', 상태칩: '',
+    마켓: '',      // 판매처 칩. 기간·탭을 바꿔도 유지, 메모리만 (21단계 §2)
     출고배치: ''   // 출고리스트에서 고른 지난 배송완료 처리. 열 때마다 「지금 화면」으로 되돌린다
   };
 
@@ -119,8 +120,15 @@ window.ZG = window.ZG || {};
      「전체」·「배송완료」는 그대로 기간을 지킨다 — 배송완료를 전체 기간으로 열면 1,300건이 통째로 쏟아진다 */
   function 기간무시() { return 상태.상태칩 === '준비중'; }
 
-  /* ── 지금 화면에 걸린 줄들 ── */
-  function 줄들() {
+  /* ── 지금 화면에 걸린 줄들 ──
+     🔴 마켓은 맨 마지막에 한 번 건다 — 나감 갈래(나간줄들)까지 같이 걸리고,
+        「고른 게 없으면 화면 전부」(출고리스트·동봉카드·로젠·배송완료)도 걸린 마켓 것만이 된다 */
+  function 줄들() { return 마켓거르기(원래줄들()); }
+  function 마켓거르기(줄) {
+    if (!상태.마켓) return 줄;
+    return 줄.filter(function (r) { return ZG.주문실적.마켓이름(r) === 상태.마켓; });
+  }
+  function 원래줄들() {
     if (상태.상태칩 === '나감') return 나간줄들();
     var 온통 = 기간무시();
     var 목록 = 자.읽기({
@@ -477,6 +485,10 @@ window.ZG = window.ZG || {};
       u.비우기(목록);
       var 건들 = 자.건으로묶기(줄들());
       회차줄채우기(회차줄, 채우기);      // 🔴 줄들() 이 사라진 회차를 풀 수 있다 — 반드시 그 뒤다
+      var 밀림 = 마켓줄.scrollLeft;
+      u.비우기(마켓줄);
+      마켓칩들(채우기).forEach(function (b) { 마켓줄.appendChild(b); });
+      마켓줄.scrollLeft = 밀림;          // 칩을 누를 때마다 맨 앞으로 튀지 않게
       u.비우기(합계칸);
       합계칸.hidden = !건들.length;      // 빈 칸이 ph-body 의 gap 을 먹지 않게
       if (건들.length) 합계칸.appendChild(합계띠(건들, true));
@@ -491,8 +503,10 @@ window.ZG = window.ZG || {};
     }
 
     var 회차줄 = 만들기('div', { class: 'fchips 나간칩줄', style: 'padding:0 var(--space-md) var(--space-xs)' });
+    var 마켓줄 = 만들기('div', { class: 'hscroll 마켓줄' });
     칸.appendChild(찾는칸('이름 · 전화번호 · 상품명으로 찾기', 채우기));
     칸.appendChild(상태칩줄(채우기));
+    칸.appendChild(마켓줄);
     var 합계칸 = 만들기('div');
     칸.appendChild(회차줄);
     칸.appendChild(합계칸);
@@ -553,6 +567,46 @@ window.ZG = window.ZG || {};
     return 줄;
   }
 
+  /* ── 마켓칩 (21단계 §2) — 수 = 마켓을 뺀 나머지 조건에서 그 판매처의 서로 다른 묶음키 수(= 누르면 합계띠 「주문 N건」) ──
+     고정 아홉은 0이어도 흐리게 늘 세운다. 그 밖의 판매처는 있을 때만 뒤에 많은 순으로 */
+  function 마켓칩들(누름) {
+    var 실 = ZG.주문실적, 셈 = {}, 전체 = {};
+    원래줄들().forEach(function (r) {
+      var m = 실.마켓이름(r), k = r.묶음키 || 자.묶음키(r);
+      전체[k] = 1;
+      (셈[m] = 셈[m] || {})[k] = 1;
+    });
+    function 수(m) { return 셈[m] ? Object.keys(셈[m]).length : 0; }
+    var 그밖 = Object.keys(셈).filter(function (m) { return 실.마켓순서.indexOf(m) < 0; });
+    if (상태.마켓 && 실.마켓순서.indexOf(상태.마켓) < 0 && 그밖.indexOf(상태.마켓) < 0) 그밖.push(상태.마켓);
+    그밖.sort(function (a, b) { return 수(b) - 수(a); });
+    var 칩들 = [['', '전체', Object.keys(전체).length]].concat(실.마켓순서.concat(그밖).map(function (m) { return [m, m, 수(m)]; }));
+    return 칩들.map(function (c) {
+      var b = 만들기('button', {
+        type: 'button', class: 'fchip' + (상태.마켓 === c[0] ? ' on' : '') + (c[0] && !c[2] ? ' zero' : ''),
+        'aria-pressed': 상태.마켓 === c[0] ? 'true' : 'false'
+      }, [c[0] ? 만들기('i', { class: 'md', style: 'background:' + 실.마켓색(c[0]) }) : null,
+          document.createTextNode(c[1]), 만들기('span', { class: 'n', text: String(c[2]) })]);
+      b.addEventListener('click', function () { 상태.마켓 = c[0]; 누름(); });
+      return b;
+    });
+  }
+
+  function 마켓꼬리표(g) {
+    var m = g.판매처 || '기타';
+    return 만들기('span', { class: 'mall' }, [만들기('i', { class: 'md', style: 'background:' + ZG.주문실적.마켓색(m) }), document.createTextNode(m)]);
+  }
+
+  /* 건의 주문 시각 = 시각이 있는 줄 중 가장 이른 것. 🔴 등록일시(들어온 때)를 대신 쓰지 않는다 — 없으면 --:-- */
+  function 건시각(g) {
+    return g.줄들.reduce(function (a, r) { return r.주문시각 && (!a || r.주문시각 < a) ? r.주문시각 : a; }, '');
+  }
+  function 건날(g) { return 자.날짜정규화(g.주문일) || ''; }
+  function 시각칸(g) {
+    var t = 건시각(g);
+    return 만들기('span', { class: 't' + (t ? '' : ' no'), text: t || '--:--' });
+  }
+
   function 날짜줄채우기(줄) {
     u.비우기(줄);
     if (기간무시()) {
@@ -602,17 +656,24 @@ window.ZG = window.ZG || {};
 
   function 주문카드(g) {
     var 카드 = 만들기('div', {
-      class: 'ph-card' + (g.부족여부 && 건상태(g) !== '나감' ? ' short' : ''), role: 'button', tabindex: '0'
+      class: 'ph-card ocard' + (g.부족여부 && 건상태(g) !== '나감' ? ' short' : ''), role: 'button', tabindex: '0'
     });
+    var 날 = 건날(g);
+    카드.appendChild(만들기('div', { class: 'when' }, [
+      만들기('span', { class: 'd', text: 날 ? Number(날.slice(5, 7)) + '/' + Number(날.slice(8, 10)) : '' }), 시각칸(g)
+    ]));
+    var 몸 = 카드.appendChild(만들기('div', { class: 'bd' }));
     // 기준은 그 건의 주문일이다 — 준비중 탭은 화면 날짜와 다른 날 주문도 섞여 나온다
     var 별 = 자.재주문횟수(g.묶음키, g.주문일 || 상태.날짜);
     var 첫줄 =[만들기('span', { class: 'who', text: g.수령인 })];
     if (별 > 0) 첫줄.push(만들기('span', { class: 'star', text: '⭐ ' + 별 }));
     var 폰배지 = 상태배지(g);
     if (폰배지) { 폰배지.style.marginLeft = 'auto'; 첫줄.push(폰배지); }
-    첫줄.push(만들기('span', { class: 'mall', text: g.판매처 || '기타', style: 폰배지 ? '' : 'margin-left:auto' }));
+    var 곳 = 마켓꼬리표(g);
+    if (!폰배지) 곳.style.marginLeft = 'auto';
+    첫줄.push(곳);
     첫줄.push(만들기('span', { class: 'chev', text: '›' }));
-    카드.appendChild(만들기('div', { class: 'r0' }, 첫줄));
+    몸.appendChild(만들기('div', { class: 'r0' }, 첫줄));
 
     var 폈나 = !!상태.폈다[g.묶음키];
     var 보임 = 폈나 ? g.줄들 : g.줄들.slice(0, 2);
@@ -630,7 +691,7 @@ window.ZG = window.ZG || {};
         만들기('span', { class: 'q', text: 자.수량(r) + '주' })
       ])));
     });
-    카드.appendChild(줄칸);
+    몸.appendChild(줄칸);
 
     if (!폈나 && g.줄들.length > 2) {
       var 더 = 만들기('button', { class: 'more', type: 'button', text: '＋' + (g.줄들.length - 2) + '개 더' });
@@ -638,7 +699,7 @@ window.ZG = window.ZG || {};
         e.stopPropagation();                       // 상세로 넘어가지 않고 그 자리에서 편다
         상태.폈다[g.묶음키] = true; 다시그리기();
       });
-      카드.appendChild(더);
+      몸.appendChild(더);
     }
 
     // 부족 표시는 시안 그대로 카드째 빨강 하나뿐이다. 경고 글줄을 따로 얹지 않는다
@@ -797,6 +858,9 @@ window.ZG = window.ZG || {};
     function 채우기() {
       u.비우기(카드);
       var 건들 = 자.건으로묶기(줄들());
+      u.비우기(마켓줄);
+      마켓줄.appendChild(만들기('span', { class: 'lab', text: '마켓' }));
+      마켓칩들(function () { 상태.쪽 = 1; 다시그리기(); }).forEach(function (b) { 마켓줄.appendChild(b); });
       var 총쪽 = Math.max(1, Math.ceil(건들.length / 쪽크기));
       if (상태.쪽 > 총쪽) 상태.쪽 = 총쪽;
       var 이번쪽 = 건들.slice((상태.쪽 - 1) * 쪽크기, 상태.쪽 * 쪽크기);
@@ -816,7 +880,9 @@ window.ZG = window.ZG || {};
       카드.appendChild(PC쪽줄(총쪽, 건들.length));
     }
 
+    var 마켓줄 = 만들기('div', { class: 'fchips 마켓줄' });
     칸.appendChild(PC거르개(채우기));
+    칸.appendChild(마켓줄);
     칸.appendChild(카드);
     채우기();
   }
@@ -952,18 +1018,18 @@ window.ZG = window.ZG || {};
   function PC표(건들, 모든건) {
     var 표 = 만들기('table');
     표.innerHTML =
-      '<colgroup><col style="width:28px"><col style="width:200px"><col style="width:92px"><col style="width:86px">' +
+      '<colgroup><col style="width:28px"><col style="width:70px"><col style="width:200px"><col style="width:92px"><col style="width:86px">' +
       '<col><col style="width:86px"><col style="width:76px"><col style="width:66px"><col style="width:82px"></colgroup>';
     var 머리 = 만들기('tr');
     머리.appendChild(만들기('th', {}, [모두고름칸(모든건 || 건들)]));
-    ['받는 분 · 전화 · 주소', '주문한 곳', '품목코드', '품목'].forEach(function (t) { 머리.appendChild(만들기('th', { text: t })); });
+    ['주문 일시', '받는 분 · 전화 · 주소', '주문한 곳', '품목코드', '품목'].forEach(function (t) { 머리.appendChild(만들기('th', { text: t })); });
     머리.appendChild(만들기('th', { text: '규격' }));
     ['수량', '단가', '금액'].forEach(function (t) { 머리.appendChild(만들기('th', { class: 'r', text: t })); });
     표.appendChild(머리);
 
     if (!건들.length) {
       표.appendChild(만들기('tr', {}, [만들기('td', {
-        colspan: '9', class: 'dim',
+        colspan: '10', class: 'dim',
         text: 기간무시() ? '아직 안 나간 주문이 없습니다.'
               : (상태.상태칩 === '나감' ? '이 기간에 나간 주문이 없습니다.' : '이 기간에 들어온 주문이 없습니다.')
       })]));
@@ -979,8 +1045,13 @@ window.ZG = window.ZG || {};
         if (i === 0) {
           var n = String(g.줄들.length);
           tr.appendChild(만들기('td', { rowspan: n }, [고름칸(g)]));
+          var 날 = 건날(g);
+          tr.appendChild(만들기('td', { class: 'wh', rowspan: n }, [
+            만들기('div', { class: 'd', text: 날 ? 날.slice(5).replace('-', '/') + ' ' + 요일[new Date(+날.slice(0, 4), +날.slice(5, 7) - 1, +날.slice(8, 10)).getDay()] : '' }),
+            시각칸(g)
+          ]));
           tr.appendChild(누구칸(g, n));
-          var 곳칸 = 만들기('td', { rowspan: n }, [만들기('span', { class: 'mall', text: g.판매처 || '기타' })]);
+          var 곳칸 = 만들기('td', { rowspan: n }, [마켓꼬리표(g)]);
           var 배지 = 상태배지(g);          // 한 날짜 안에서도 나간 것과 안 나간 것이 구분된다
           if (배지) 곳칸.appendChild(만들기('div', {}, [배지]));
           tr.appendChild(곳칸);
