@@ -20,6 +20,9 @@ KEEP=60   # ponytail: 날짜 파일 60개만 남긴다. 늘리려면 이 숫자�
 KEY=$(tr -d '[:space:]' < "$KEYFILE")
 
 mkdir -p "$OUT"
+
+# v3 표 전부(지금 쓰는 판) — 옛 state 백업이 실패해도 이건 받는다 (10/14 우람님)
+/usr/bin/python3 "$(dirname "$0")/v3백업.py" || echo "❌ v3 백업 실패"
 TODAY=$(date +%Y-%m-%d)
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
