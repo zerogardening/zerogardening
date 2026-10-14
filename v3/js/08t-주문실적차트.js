@@ -91,23 +91,37 @@ window.ZG = window.ZG || {};
   }
 
   /* 월간 — 마켓별 누적막대 (우람님 10/14 「월간은 막대, 누적으로 매출처별」).
-     칸들 = 08r 칸(c.마켓[m].매출·건수), 옵션 { 폭, 높이, 글크기, 이름, 순서(마켓 이름들), 색(이름→색) } */
+     칸들 = 08r 칸(c.마켓[m].매출·건수), 옵션 { 폭, 높이, 글크기, 이름, 순서(마켓 이름들), 색(이름→색), 창 }
+     창 { 시작, 수 } = 보이는 칸 범위(소수 허용 — 끌 때 막대가 칸 단위로 튀지 않게). data-i 는 전체 칸 번호 그대로 */
+  var 자름번호 = 0;
   function 누적기둥(칸들, 지표, 옵) {
     옵 = 옵 || {};
     var 돈 = 지표 !== '건수', 열 = 돈 ? '매출' : '건수';
     var W = 옵.폭 || 816, H = 옵.높이 || 280, 글 = 옵.글크기 || 11;
     var 왼 = 글 * 4.4, 오 = 14, 위 = 10, 아래 = 글 + 17, 바닥 = H - 아래, n = 칸들.length;
+    var 창 = 옵.창 || { 시작: 0, 수: Math.max(1, n) };
+    var 처음 = Math.max(0, Math.floor(창.시작)), 끝 = Math.min(n, Math.ceil(창.시작 + 창.수 - 1e-9));
+    var 보임 = []; for (var k = 처음; k < 끝; k++) 보임.push(k);
     var 합들 = 칸들.map(function (c) { return 돈 ? c.매출 : c.건수; });
-    var 최대 = Math.max.apply(null, [0].concat(합들));
+    // 세로 눈금은 보이는 칸만으로 — 확대하면 작은 날도 높이가 보이게
+    var 최대 = Math.max.apply(null, [0].concat(보임.map(function (i) { return 합들[i]; })));
     var 칸폭 = 눈금폭(최대), 꼭대기 = 칸폭 * Math.max(1, Math.ceil(최대 / 칸폭));
-    var 안폭 = W - 왼 - 오, 칸너비 = 안폭 / Math.max(1, n), 기둥 = Math.max(1.5, Math.min(56, 칸너비 * 0.62));
-    function X(i) { return 왼 + 칸너비 * (i + 0.5); }
+    var 안폭 = W - 왼 - 오, 칸너비 = 안폭 / 창.수, 기둥 = Math.max(1.5, Math.min(56, 칸너비 * 0.62));
+    function X(i) { return 왼 + 칸너비 * (i - 창.시작 + 0.5); }
     function Y(v) { return 바닥 - (바닥 - 위) * (v / 꼭대기); }
 
     var svg = 그('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 옵.이름 || '추이' });
     svg.style.display = 'block';
-    (옵.일요일들 || []).forEach(function (일, i) {
-      if (일) svg.appendChild(그('rect', { x: (X(i) - 칸너비 / 2).toFixed(1), y: 위, width: 칸너비.toFixed(1), height: 바닥 - 위, fill: 띠색 }));
+    var 판 = svg;
+    if (옵.창) {   // 반쯤 걸친 끝 칸이 눈금 글자 위로 넘지 않게 그림 칸에서 자른다
+      var id = 'zg-자름' + (++자름번호);
+      var cp = 그('clipPath', { id: id });
+      cp.appendChild(그('rect', { x: 왼, y: 0, width: 안폭, height: H }));
+      svg.appendChild(cp);
+      판 = 그('g', { 'clip-path': 'url(#' + id + ')' });
+    }
+    보임.forEach(function (i) {
+      if ((옵.일요일들 || [])[i]) 판.appendChild(그('rect', { x: (X(i) - 칸너비 / 2).toFixed(1), y: 위, width: 칸너비.toFixed(1), height: 바닥 - 위, fill: 띠색 }));
     });
     for (var v = 0; v <= 꼭대기 + 0.5; v += 칸폭) {
       var y = Y(v).toFixed(1);
@@ -116,31 +130,38 @@ window.ZG = window.ZG || {};
       t.textContent = 눈금글(v, 돈);
       svg.appendChild(t);
     }
-    // x 축은 일·주·월 어느 단위든 달만 쓴다 — 새 달이 시작되는 첫 막대 아래 (우람님 10/14)
-    var 앞달 = '';
+    if (판 !== svg) svg.appendChild(판);
+    // x 축은 일·주·월 어느 단위든 달만 쓴다 — 새 달이 시작되는 첫 막대 아래 (우람님 10/14). 보이는 첫 칸도 그 달을 쓴다
+    var 앞달 = '', 달글들 = [];
     var 순서 = 옵.순서 || [], 색 = 옵.색 || function () { return 선색; };
-    칸들.forEach(function (c, i) {
-      var 쌓 = 0;
+    보임.forEach(function (i) {
+      var c = 칸들[i], 쌓 = 0;
       순서.forEach(function (m) {
         var 값 = (c.마켓[m] && c.마켓[m][열]) || 0;
         if (!값) return;
         var y1 = Y(쌓), y2 = Y(쌓 + 값);
-        svg.appendChild(그('rect', { x: (X(i) - 기둥 / 2).toFixed(1), y: y2.toFixed(1), width: 기둥.toFixed(1),
+        판.appendChild(그('rect', { x: (X(i) - 기둥 / 2).toFixed(1), y: y2.toFixed(1), width: 기둥.toFixed(1),
           height: Math.max(0.5, y1 - y2).toFixed(1), fill: 색(m), 'pointer-events': 'none' }));
         쌓 += 값;
       });
       var 달 = String(c.부터 || '').slice(0, 7);
       if (!달 || 달 === 앞달) return;
       앞달 = 달;
-      var x = 그('text', { x: (X(i) - 기둥 / 2).toFixed(1), y: H - 6, 'text-anchor': 'start', 'font-size': 글, fill: 글색 });
-      x.textContent = Number(달.slice(5, 7)) + '월';
+      달글들.push({ x: Math.max(왼, X(i) - 기둥 / 2), 글: Number(달.slice(5, 7)) + '월' });
+    });
+    // 첫 칸이 반쯤 걸친 채 바로 다음 칸에서 달이 바뀌면 두 글자가 겹친다 — 앞의 것을 뺀다
+    if (달글들.length > 1 && 달글들[1].x - 달글들[0].x < 글 * 2.8) 달글들.shift();
+    달글들.forEach(function (d) {
+      var x = 그('text', { x: d.x.toFixed(1), y: H - 6, 'text-anchor': 'start', 'font-size': 글, fill: 글색 });
+      x.textContent = d.글;
       svg.appendChild(x);
     });
     svg._막대 = true;
-    svg._점 = 합들.map(function (v, i) { return { x: X(i), y: Y(v) }; });
-    svg._틀 = { W: W, H: H, 위: 위, 바닥: 바닥, 칸너비: 칸너비 };
-    svg._점.forEach(function (p, i) {
-      svg.appendChild(그('rect', { x: (p.x - 칸너비 / 2).toFixed(1), y: 0, width: 칸너비.toFixed(1), height: H, fill: 'transparent', 'data-i': i }));
+    svg._점 = [];
+    보임.forEach(function (i) { svg._점[i] = { x: X(i), y: Y(합들[i]) }; });
+    svg._틀 = { W: W, H: H, 위: 위, 바닥: 바닥, 칸너비: 칸너비, 왼: 왼, 안폭: 안폭 };
+    보임.forEach(function (i) {
+      판.appendChild(그('rect', { x: (X(i) - 칸너비 / 2).toFixed(1), y: 0, width: 칸너비.toFixed(1), height: H, fill: 'transparent', 'data-i': i }));
     });
     return svg;
   }

@@ -11,6 +11,7 @@ window.ZG = window.ZG || {};
 
   var 상태 = { 뷰: '목록', 기간칩: '최근 30일', 부터: '', 까지: '', 단위: '일', 지표: '매출', 정렬: '매출', 글: '', 폈다: {}, 쪽: 1, 보일수: 20 };
   var 결 = null, 칸 = {};
+  var 창 = null, 창키 = '';   // 추이 확대 범위 { 시작, 수 } — null 이면 전체. 기간·단위가 바뀌면 풀린다
   var PC쪽크기 = 10, 폰한번 = 20;
 
   function 다시() { ZG.주문.다시그리기(); }
@@ -56,6 +57,8 @@ window.ZG = window.ZG || {};
     본문.classList.add('주문실적');
     if (!상태.부터) { var 기 = 실().기간칩(상태.기간칩, u.오늘문자()); 상태.부터 = 기.부터; 상태.까지 = 기.까지; }
     결 = 실().읽어모으기({ 부터: 상태.부터, 까지: 상태.까지, 단위: 상태.단위 });
+    var 키 = [상태.부터, 상태.까지, 상태.단위, 결.칸들.length].join('|');
+    if (키 !== 창키) { 창 = null; 창키 = 키; }
     칸 = { 폰: u.폰인가() };
     if (칸.폰) 폰(본문); else PC(본문);
     추이채우기(); 마켓채우기(); 상품채우기();
@@ -114,10 +117,8 @@ window.ZG = window.ZG || {};
     var 있는 = {};
     결.칸들.forEach(function (c) { Object.keys(c.마켓).forEach(function (m) { 있는[m] = 1; }); });
     var 순서 = 실().마켓정렬(Object.keys(있는), function (m) { var x = 결.마켓들.filter(function (y) { return y.이름 === m; })[0]; return x ? 값(x) : 0; });
-    var svg = 차().누적기둥(결.칸들, 상태.지표, Object.assign(옵, {
-      순서: 순서, 색: 실().마켓색, 일요일들: 상태.단위 === '일' ? 결.칸들.map(function (c) { return c.일요일; }) : null
-    }));
-    카드.appendChild(svg);
+    Object.assign(옵, { 순서: 순서, 색: 실().마켓색, 일요일들: 상태.단위 === '일' ? 결.칸들.map(function (c) { return c.일요일; }) : null });
+    var 판 = 카드.appendChild(만들기('div', { class: '추이판' }));
     if (순서.length) {
       카드.appendChild(만들기('div', { class: 'legend' }, 순서.map(function (m) {
         return 만들기('span', { class: 'mall 범례' }, [점(실().마켓색(m)), document.createTextNode(m)]);
@@ -125,24 +126,127 @@ window.ZG = window.ZG || {};
     }
     var 풍선 = 만들기('div', { class: 'tip', hidden: 'hidden' });
     카드.appendChild(풍선);
+    var svg = null;
 
+    function 그림() {   // 확대·이동 때는 이 svg 하나만 갈아 끼운다
+      var 새 = 차().누적기둥(결.칸들, 상태.지표, Object.assign({}, 옵, { 창: 창 }));
+      if (svg) 판.replaceChild(새, svg); else 판.appendChild(새);
+      svg = 새;
+      판.classList.toggle('확대', !!창);
+    }
     function 보이기(i) {
       var 자리 = 차().짚기(svg, i), c = 결.칸들[i];
       if (!자리 || !c) return;
       풍선.innerHTML = 풍선글(c);
       풍선.hidden = false;
       // SVG 에는 offsetLeft 가 없다 — 카드 기준 자리는 상자끼리 빼서 얻는다
-      var 판 = svg.getBoundingClientRect(), 틀 = 카드.getBoundingClientRect();
-      var x = 판.left - 틀.left + 자리.x * 판.width, y = 판.top - 틀.top + 자리.y * 판.height;
+      var 판상자 = svg.getBoundingClientRect(), 틀 = 카드.getBoundingClientRect();
+      var x = 판상자.left - 틀.left + 자리.x * 판상자.width, y = 판상자.top - 틀.top + 자리.y * 판상자.height;
       var 왼 = x + 12;
       if (왼 + 풍선.offsetWidth > 카드.clientWidth - 8) 왼 = x - 12 - 풍선.offsetWidth;
       풍선.style.left = Math.max(4, 왼) + 'px';
       풍선.style.top = Math.max(4, Math.min(y - 24, 카드.clientHeight - 풍선.offsetHeight - 4)) + 'px';
     }
     function 숨기기() { 풍선.hidden = true; 차().짚기풀기(svg); }
-    svg.addEventListener('mouseover', function (e) { var i = e.target.getAttribute('data-i'); if (i != null) 보이기(+i); });
-    svg.addEventListener('click', function (e) { var i = e.target.getAttribute('data-i'); if (i != null) 보이기(+i); });
-    svg.addEventListener('mouseleave', function () { if (!칸.폰) 숨기기(); });
+    그림();
+    확대붙이기(판, function () { return svg; }, 그림, 숨기기);
+    판.addEventListener('mouseover', function (e) { var i = e.target.getAttribute('data-i'); if (i != null && !판._끄는중) 보이기(+i); });
+    판.addEventListener('click', function (e) {
+      if (판._방금끌었다) { 판._방금끌었다 = false; return; }
+      // 판이 손가락을 붙잡아 click 이 판으로 온다 — 누른 자리의 막대를 찾는다
+      var 밑 = document.elementFromPoint(e.clientX, e.clientY), i = 밑 && 밑.getAttribute('data-i');
+      if (i != null) 보이기(+i);
+    });
+    판.addEventListener('mouseleave', function () { if (!칸.폰) 숨기기(); });
+  }
+
+  /* 추이 확대 — 주식 차트처럼. 핀치·ctrl+휠 = 확대(손가락·마우스 자리 중심), 끌기·가로휠 = 이동, 두 번 = 처음으로.
+     세로 한 손가락은 페이지 스크롤에 둔다(CSS touch-action:pan-y). 그리기는 한 프레임에 한 번 */
+  var 최소칸 = 5, 탭거리 = 8;
+  function 확대붙이기(판, svg를, 그림, 숨기기) {
+    var n = 결.칸들.length, 누름 = {}, 시작상태 = null, 예약 = 0, 앞탭 = null, 움직임 = false;
+    if (n <= 최소칸) return;
+    function 지금() { return 창 || { 시작: 0, 수: n }; }
+    function 맞추기(시작, 수) {
+      수 = Math.max(최소칸, Math.min(n, 수));
+      시작 = Math.max(0, Math.min(n - 수, 시작));
+      창 = 수 >= n - 1e-6 ? null : { 시작: 시작, 수: 수 };
+      if (!예약) 예약 = requestAnimationFrame(function () { 예약 = 0; 그림(); });
+    }
+    // 화면 x(px) → 칸 좌표(소수). svg 의 그림 칸(눈금 글자 오른쪽)만 칸에 대응한다
+    function 칸자리(cx, 창) {
+      var s = svg를(), r = s.getBoundingClientRect(), 틀 = s._틀, 배 = r.width / 틀.W;
+      return 창.시작 + (cx - r.left - 틀.왼 * 배) / (틀.안폭 * 배) * 창.수;
+    }
+    function 칸당px(창) { var s = svg를(), r = s.getBoundingClientRect(); return s._틀.안폭 * r.width / s._틀.W / 창.수; }
+    function 손들() { return Object.keys(누름).map(function (k) { return 누름[k]; }); }
+    function 처음부터() {
+      var 손 = 손들(), 창0 = 지금();
+      if (손.length >= 2) {
+        var cx = (손[0].x + 손[1].x) / 2;
+        움직임 = true;
+        시작상태 = { 둘: true, 거리: Math.max(10, Math.abs(손[0].x - 손[1].x)), 축: 칸자리(cx, 창0), 창: 창0 };
+      } else if (손.length === 1) {
+        시작상태 = { 둘: false, x: 손[0].x, y: 손[0].y, 창: 창0, 끈: false };
+      } else 시작상태 = null;
+    }
+    판.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.isPrimary) 누름 = {};   // 놓친 손가락이 남아 핀치가 꼬이지 않게 — 첫 손가락이면 새로 시작
+      누름[e.pointerId] = { x: e.clientX, y: e.clientY };
+      // 손가락 밑 막대 svg 가 갈아 끼워지면 그 손가락의 pointerup 을 잃는다 — 판이 붙잡는다
+      try { 판.setPointerCapture(e.pointerId); } catch (x) {}
+      처음부터();
+    });
+    판.addEventListener('pointermove', function (e) {
+      if (!누름[e.pointerId] || !시작상태) return;
+      누름[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var 손 = 손들(), 처 = 시작상태;
+      if (처.둘 && 손.length >= 2) {
+        // 두 손가락 가운데 아래의 칸이 계속 손가락 아래에 있게 — 벌리며 옮기면 이동도 같이 된다
+        var 거리 = Math.max(10, Math.abs(손[0].x - 손[1].x)), cx = (손[0].x + 손[1].x) / 2;
+        var 수 = Math.max(최소칸, Math.min(n, 처.창.수 * 처.거리 / 거리));
+        var 새 = { 시작: 0, 수: 수 }, 비 = 칸자리(cx, 새);   // 시작 0 기준 자리 → 축이 그 자리에 오도록 시작을 민다
+        판._끄는중 = true; 숨기기();
+        맞추기(처.축 - 비, 수);
+      } else if (!처.둘 && 손.length === 1) {
+        var dx = e.clientX - 처.x, dy = e.clientY - 처.y;
+        if (!처.끈 && Math.abs(dx) < 탭거리 && Math.abs(dy) < 탭거리) return;
+        if (!처.끈 && Math.abs(dy) > Math.abs(dx)) return;
+        처.끈 = 움직임 = true; 판._끄는중 = true; 숨기기();
+        if (처.창.수 < n) 맞추기(처.창.시작 - dx / 칸당px(처.창), 처.창.수);
+      }
+    });
+    function 뗌(e) {
+      if (!누름[e.pointerId]) return;
+      delete 누름[e.pointerId];
+      처음부터();
+      if (Object.keys(누름).length) return;
+      var 탭 = !움직임 && e.type === 'pointerup';
+      if (움직임) 판._방금끌었다 = true;
+      움직임 = 판._끄는중 = false;
+      if (!탭 || e.pointerType === 'mouse') return;   // 마우스 두 번은 dblclick 이 맡는다
+      var t = Date.now();
+      // 두 번째 톡 뒤 따라오는 click 이 옛 svg 에 말풍선을 띄우지 않게 막는다
+      if (앞탭 && t - 앞탭.t < 320 && Math.abs(e.clientX - 앞탭.x) < 30) { 앞탭 = null; 판._방금끌었다 = true; 숨기기(); 맞추기(0, n); }
+      else 앞탭 = { t: t, x: e.clientX };
+    }
+    판.addEventListener('pointerup', 뗌);
+    판.addEventListener('pointercancel', 뗌);
+    // 끌다가 놓으면 click 이 따라온다 — 말풍선이 뜨지 않게. 다음 누름에서 표시는 지운다
+    판.addEventListener('pointerdown', function () { 판._방금끌었다 = false; }, true);
+    판.addEventListener('dblclick', function () { 숨기기(); 맞추기(0, n); });
+    판.addEventListener('wheel', function (e) {
+      var 창0 = 지금();
+      if (e.ctrlKey) {   // 트랙패드 핀치는 ctrl+wheel 로 들어온다
+        e.preventDefault(); 숨기기();
+        var 축 = 칸자리(e.clientX, 창0), 수 = Math.max(최소칸, Math.min(n, 창0.수 * Math.exp(e.deltaY * 0.01)));
+        맞추기(축 - (축 - 창0.시작) * 수 / 창0.수, 수);
+      } else if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && 창) {
+        e.preventDefault(); 숨기기();
+        맞추기(창0.시작 + e.deltaX / 칸당px(창0), 창0.수);
+      }
+    }, { passive: false });
   }
 
   function 풍선글(c) {

@@ -1465,3 +1465,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .mleg .pct{margin-left:4px; font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
 .주문실적 .tip .pct{font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
 .주문실적 .mrow .pc{width:30px; text-align:right; font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium); font-variant-numeric:tabular-nums}
+/* 추이 확대 — 세로 스크롤은 페이지에, 핀치·가로 끌기는 차트에 */
+.주문실적 .추이판{touch-action:pan-y; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
+.주문실적 .추이판.확대{cursor:grab}
+.주문실적 .추이판.확대:active{cursor:grabbing}
