@@ -780,7 +780,7 @@ window.ZG = window.ZG || {};
                 return '<span class="rnd">' + u.안전(회차칩글(c)) + '</span> ';
               }).join('') + '</span>'
       }));
-      카드.appendChild(PC표(이번쪽));
+      카드.appendChild(PC표(이번쪽, 건들));
       if (건들.length) 카드.appendChild(합계띠(건들, false));
       카드.appendChild(PC아래줄(건들));
       카드.appendChild(PC쪽줄(총쪽, 건들.length));
@@ -918,13 +918,14 @@ window.ZG = window.ZG || {};
     상태.기간칩 = 이름; 상태.묶음id = ''; 상태.쪽 = 1; 다시그리기();
   }
 
-  function PC표(건들) {
+  /* 맨 위 「모두 고르기」는 쪽을 가리지 않는다 — 지금 조건에 걸린 건 전부다 (우람님 10/14) */
+  function PC표(건들, 모든건) {
     var 표 = 만들기('table');
     표.innerHTML =
       '<colgroup><col style="width:28px"><col style="width:200px"><col style="width:92px"><col style="width:86px">' +
       '<col><col style="width:86px"><col style="width:76px"><col style="width:66px"><col style="width:82px"></colgroup>';
     var 머리 = 만들기('tr');
-    머리.appendChild(만들기('th', {}, [모두고름칸(건들)]));
+    머리.appendChild(만들기('th', {}, [모두고름칸(모든건 || 건들)]));
     ['받는 분 · 전화 · 주소', '주문한 곳', '품목코드', '품목'].forEach(function (t) { 머리.appendChild(만들기('th', { text: t })); });
     머리.appendChild(만들기('th', { text: '규격' }));
     ['수량', '단가', '금액'].forEach(function (t) { 머리.appendChild(만들기('th', { class: 'r', text: t })); });

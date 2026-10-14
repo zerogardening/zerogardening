@@ -46,6 +46,8 @@ window.ZG = window.ZG || {};
   function 상자(옵션) {
     옵션 = 옵션 || {};
     var 열린 = null;                 // 펼쳐 둔 줄키 하나
+    var 고른 = {};                   // 줄키 → true — 여러 묶음에 단가 한꺼번에 (우람님 10/14)
+    var 머리글칸 = null;             // 「로젠에 나갈 ○묶음 · 박스 ○개」 — 조용히 저장할 때 글자만 갈아 끼운다
     var 편집 = {};                   // 줄키 → { 단가, 박스수 } — 저장 전 손에 든 값
     var 틀 = 만들기('div', {});
     var 준비 = null;
@@ -72,9 +74,33 @@ window.ZG = window.ZG || {};
       if (옵션.바뀌면) 옵션.바뀌면(준비);
     }
 
+    function 머리글() { return '📦 로젠에 나갈 ' + 준비.묶음수 + '묶음 · 박스 ' + 준비.박스합 + '개'; }
+
+    /* 고른 묶음에 같은 단가를 한꺼번에 — 박스수는 각자 것을 그대로 둔다 */
+    function 한꺼번에(단) {
+      if (!단) { u.토스트('택배 단가를 넣어 주세요.'); return; }
+      var 수 = 0;
+      준비.그룹들.forEach(function (g) {
+        var k = 줄키(g);
+        if (!고른[k]) return;
+        ZG.운임손질.저장(옵션.묶음id, g.키, g.차수 || 1, {
+          단가: 단, 박스수: (편집[k] && 편집[k].박스수) || g.박스수 || 1,
+          수령인: 글(g.것들[0].줄.수령인), 자동값: g.자동값
+        });
+        delete 편집[k];
+        수++;
+      });
+      고른 = {};
+      u.토스트(수 + '묶음을 ' + 돈(단) + '원으로 넣었습니다.');
+      다시();
+    }
+
     /* ── 펼침 (§5-4) ── */
 
-    function 펼침(g) {
+    /* 🔴 저장 단추가 없다 — 고르거나 치는 즉시 저장한다 (우람님 10/14 「두 번 누를 필요 없다」).
+       치는 도중 상자를 다시 그리면 입력칸이 갈아끼워져 커서가 날아간다 →
+       저장만 하고 줄머리 금액·색·머리글 글자만 그 자리에서 맞춘다 */
+    function 펼침(g, 머리맞추기) {
       var 값 = 손에든값(g);
       var 합계칸 = 만들기('span', { class: 'hint2' });
       var 밑줄 = 만들기('div', { class: 'sumline' });
@@ -110,7 +136,9 @@ window.ZG = window.ZG || {};
         값.단가 = s;
         세그맞추기();
         합계글();
+        조용히저장();
       });
+      단가칸.addEventListener('keydown', function (e) { if (e.key === 'Enter') 단가칸.blur(); });
 
       var 세그 = 만들기('div', { class: 'seg tight' });
       var 버튼들 = [];
@@ -121,6 +149,7 @@ window.ZG = window.ZG || {};
           if (v) { 값.단가 = v; 단가칸.value = 돈(v); }
           else 단가칸.focus();
           세그맞추기(); 합계글();
+          if (v) 조용히저장();
         });
         버튼들.push({ v: v, b: b });
         세그.appendChild(b);
@@ -137,17 +166,21 @@ window.ZG = window.ZG || {};
         값.박스수 = Math.min(9, Math.max(1, 값.박스수 + d));
         박스칸.textContent = String(값.박스수);
         합계글();
+        조용히저장();
       }
 
-      function 저장() {
+      /* 단가가 비었으면 저장하지 않는다 — 지우고 다시 치는 중이다 */
+      function 조용히저장() {
         var 단 = Number(값.단가) || 0;
-        if (!단) { u.흔들기(단가칸); u.토스트('택배 단가를 넣어 주세요.'); return; }
+        if (!단) return;
         ZG.운임손질.저장(옵션.묶음id, g.키, g.차수 || 1, {
           단가: 단, 박스수: 값.박스수,
           수령인: 글(g.것들[0].줄.수령인), 자동값: g.자동값
         });
-        u.토스트('저장했습니다 — ' + 돈(단) + '원짜리 송장 ' + 값.박스수 + '장으로 나갑니다.');
-        다시();
+        준비 = 옵션.준비하기();
+        if (머리글칸) 머리글칸.textContent = 머리글();
+        if (옵션.바뀌면) 옵션.바뀌면(준비);
+        머리맞추기(단, 값.박스수);
       }
 
       function 되돌리기() {
@@ -201,8 +234,7 @@ window.ZG = window.ZG || {};
       var 바 = [만들기('span', { class: 'spacer' })];
       if (g.추가) 바.push(단추('이 송장 없애기', 없애기, 'sm'));
       else if (g.손댐) 바.push(단추('자동값으로 되돌리기', 되돌리기, 'sm'));
-      바.push(단추('저장', 저장, 'sm main'));
-      줄들.push(만들기('div', { class: 'ebar' }, 바));
+      if (바.length > 1) 줄들.push(만들기('div', { class: 'ebar' }, 바));
 
       var 것 = 만들기('div', { class: 'gedit' }, 줄들);
       것.addEventListener('click', function (e) { e.stopPropagation(); });
@@ -218,11 +250,26 @@ window.ZG = window.ZG || {};
       var 것 = 만들기('div', { class: 'grp' + 색 + (g.추가 ? ' plus' : '') + (열림 ? ' open' : '') });
 
       var 값칸 = 만들기('div', { class: 'val fee' });
-      if (g.운임 === '확인요망') 값칸.textContent = '확인요망';
-      else {
-        값칸.textContent = 돈(g.운임);
-        if (g.박스수 > 1) 값칸.appendChild(만들기('span', { class: 'cap2', text: 돈(g.단가) + ' × ' + g.박스수 }));
+      function 값쓰기(운임, 단, 박스) {
+        값칸.textContent = 돈(운임);
+        if (박스 > 1) 값칸.appendChild(만들기('span', { class: 'cap2', text: 돈(단) + ' × ' + 박스 }));
       }
+      if (g.운임 === '확인요망') 값칸.textContent = '확인요망';
+      else 값쓰기(g.운임, g.단가, g.박스수);
+      function 머리맞추기(단, 박스) {
+        값쓰기(단 * 박스, 단, 박스);
+        것.classList.remove('ng');
+        것.classList.add('edited');
+      }
+
+      var 고름 = 만들기('button', {
+        class: 'cb' + (고른[k] ? ' on' : ''), type: 'button', 'aria-label': 글(g.것들[0].줄.수령인) + ' 고르기'
+      });
+      고름.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (고른[k]) delete 고른[k]; else 고른[k] = true;
+        u.비우기(틀); 틀.appendChild(그리기());
+      });
 
       var 누구 = g.추가
         ? 만들기('div', { class: 'who' }, [
@@ -235,6 +282,7 @@ window.ZG = window.ZG || {};
           ]);
 
       var 줄머리 = 만들기('div', { class: 'gline' }, [
+        고름,
         /* 한 손님 상자가 여럿이면 1-1·1-2 (08i.번호글과 같은 규칙). 저장값은 정수 그대로다 */
         만들기('span', {
           class: 'no' + (g.분번 ? ' split' : ''),
@@ -250,7 +298,7 @@ window.ZG = window.ZG || {};
         u.비우기(틀); 틀.appendChild(그리기());
       });
       것.appendChild(줄머리);
-      if (열림) 것.appendChild(펼침(g));
+      if (열림) 것.appendChild(펼침(g, 머리맞추기));
       return 것;
     }
 
@@ -268,6 +316,8 @@ window.ZG = window.ZG || {};
         });
       }
       var 속 = 보임.map(줄);
+      var 고른수 = 그룹들.filter(function (g) { return 고른[줄키(g)]; }).length;
+      if (고른수) 속.unshift(한꺼번에줄(고른수));
       var 남 = 그룹들.length - 보임.length;
       if (남 > 0) {
         속.push(만들기('div', { class: 'allrow' }, [
@@ -275,12 +325,42 @@ window.ZG = window.ZG || {};
           단추('더 보기', function () { 다보기 = true; u.비우기(틀); 틀.appendChild(그리기()); }, 'sm')
         ]));
       }
+      /* 모두 고르기는 「더 보기」로 접힌 묶음까지 고른다 */
+      var 다켬 = 그룹들.length > 0 && 그룹들.every(function (g) { return 고른[줄키(g)]; });
+      var 모두 = 만들기('button', { class: 'cb' + (다켬 ? ' on' : ''), type: 'button', 'aria-label': '모두 고르기' });
+      모두.addEventListener('click', function () {
+        그룹들.forEach(function (g) { if (다켬) delete 고른[줄키(g)]; else 고른[줄키(g)] = true; });
+        u.비우기(틀); 틀.appendChild(그리기());
+      });
+      머리글칸 = 만들기('span', { text: 머리글() });
       return 만들기('div', { class: 'needbox', style: 'border-color:var(--color-border)' }, [
         만들기('h4', { style: 'background:var(--color-seg-bg); color:var(--color-text-sub); border-bottom-color:var(--color-border)' }, [
-          만들기('span', { text: '📦 로젠에 나갈 ' + 준비.묶음수 + '묶음 · 박스 ' + 준비.박스합 + '개' }),
+          만들기('span', { style: 'display:flex; align-items:center; gap:var(--space-md)' }, [모두, 머리글칸]),
           만들기('span', { class: 'why', text: '포장하는 순서 그대로입니다 — 동봉카드 번호와 같습니다' })
         ]),
         만들기('div', { class: 'inner' }, 속)
+      ]);
+    }
+
+    /* 고른 게 있을 때만 뜬다 — 2,750·3,300 은 누르는 즉시, 직접은 엔터나 「넣기」 */
+    function 한꺼번에줄(수) {
+      var 칸 = 만들기('input', { class: 'inp num', type: 'text', inputmode: 'numeric', maxlength: '9', placeholder: '직접' });
+      칸.addEventListener('input', function () { 칸.value = 칸.value.replace(/[^\d]/g, ''); });
+      칸.addEventListener('keydown', function (e) { if (e.key === 'Enter') 한꺼번에(Number(칸.value) || 0); });
+      var 세그 = 만들기('div', { class: 'seg tight' });
+      ['2750', '3300'].forEach(function (v) {
+        var b = 만들기('button', { type: 'button', text: 돈(v) });
+        b.addEventListener('click', function () { 한꺼번에(Number(v)); });
+        세그.appendChild(b);
+      });
+      return 만들기('div', {
+        class: 'erow',
+        style: 'padding:var(--space-md) var(--space-lg); margin-bottom:var(--space-md); border:var(--border-width) solid var(--color-accent-border); background:var(--color-accent-bg); border-radius:var(--radius-sm)'
+      }, [
+        만들기('span', { class: 'lb', text: '고른 ' + 수 + '묶음' }), 세그,
+        만들기('div', { class: 'wonbox' }, [칸, 만들기('span', { class: 'won', text: '원' })]),
+        단추('넣기', function () { 한꺼번에(Number(칸.value) || 0); }, 'sm main'),
+        단추('고르기 풀기', function () { 고른 = {}; u.비우기(틀); 틀.appendChild(그리기()); }, 'sm')
       ]);
     }
 
