@@ -593,7 +593,7 @@ window.ZG = window.ZG || {};
   }
 
   function 마켓꼬리표(g) {
-    var m = g.판매처 || '기타';
+    var m = ZG.주문실적.마켓이름(g);
     return 만들기('span', { class: 'mall' }, [만들기('i', { class: 'md', style: 'background:' + ZG.주문실적.마켓색(m) }), document.createTextNode(m)]);
   }
 

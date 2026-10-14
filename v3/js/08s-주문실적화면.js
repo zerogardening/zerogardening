@@ -161,7 +161,7 @@ window.ZG = window.ZG || {};
       var t = 만들기('table');
       t.style.minWidth = (첫폭 + 74 + 44 + 140 + 마켓들.length * 64) + 'px';
       t.innerHTML = '<colgroup><col style="width:' + 첫폭 + 'px"><col style="width:74px"><col style="width:44px"><col>' +
-        마켓들.map(function () { return '<col style="width:64px">'; }).join('') + '</colgroup>';
+        마켓들.map(function () { return '<col style="width:76px">'; }).join('') + '</colgroup>';
       return t;
     }
     function 칸줄(이름, 셈, 마켓셈, 너비, 줄class) {
