@@ -1321,5 +1321,14 @@ td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-m
 .pcsheet.dlv .orow .itemcard .pair .field{flex:1 1 auto}
 .pcsheet.dlv .orow .itemcard .pair label{display:none}
 .pcsheet.dlv .orow .itemcard .inp{height:32px; font-size:var(--font-sm); line-height:30px}
+/* 폰 — 300px 고정 왼칸 때문에 오른칸(찾기·저장·등록·풀기)이 창 밖으로 밀린다. 한 단으로 쌓는다 */
+@media screen and (max-width:899px){
+  .pcsheet.dlv .pblk .orow, .pcsheet.dlv .pblk .orow.done{grid-template-columns:minmax(0,1fr); gap:var(--space-sm); margin-left:var(--space-sm); padding:var(--space-md)}
+  .pcsheet.dlv .orow .act{flex-wrap:wrap}
+  .pcsheet.dlv .orow .act .q{flex:1 1 100%}
+  .pcsheet.dlv .orow .act .spc{display:none}
+  .pcsheet.dlv .orow .itemcard .pair{flex:0 0 88px}
+  .pcsheet.dlv .oldnote{margin-left:var(--space-sm)}
+}
 /* 옵션 줄이 있으면 창을 시안 폭까지 넓힌다 — 760px 에선 찾기칸이 글자 몇 자로 줄어든다 */
 .pcsheet.dlv:has(.pblk){width:min(1040px, 94vw)}
