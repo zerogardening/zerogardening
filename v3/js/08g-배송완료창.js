@@ -1,15 +1,17 @@
-/* 08g-배송완료창 — 창 두 개 (6단계-4 설계 §7) · 시안 06-배송완료변환-macA.html 그대로
-   ① 파일 고르기(520px) → ② 처리 결과(760px). PC 전용이다.
-   자료는 전부 08f 가 만진다 — 여기서 `zg.v3.출고`를 직접 쓰지 않는다. */
+/* 08g-배송완료창 — 🚚 배송완료 팝업 하나 (6단계-4 설계 §7 · 22단계 설계 §2 · 시안 22c)
+   파일 전 = 끌어놓기 칸 · 파일 뒤 = 묶음 카드(같은 송장 한 장). PC 모달 800px · 폰 아래 시트.
+   자료는 전부 08f 가 만진다 — 여기서 `zg.v3.출고`를 직접 쓰지 않는다.
+   🔴 출고는 파일 처리 순간 생기고, 보류는 체크를 끄는 그 순간 저장된다 — [저장]은 카페24 올리기뿐이다 */
 window.ZG = window.ZG || {};
 (function (ZG) {
   'use strict';
 
   var u = ZG.ui, 만들기 = u.만들기;
   var 상태 = null, 막 = null, 창 = null;
-  var 참조 = {};          // 줄 단위로만 다시 그리려고 들고 있는 자리들
+  var 참조 = {};          // 카드·줄 단위로만 다시 그리려고 들고 있는 자리들
 
   function B() { return ZG.배송완료; }
+  function H() { return ZG.배송보류; }
 
   function 단추(글, 눌림, 반) {
     var b = 만들기('button', { class: 'btn' + (반 ? ' ' + 반 : ''), type: 'button', text: 글 });
@@ -31,7 +33,7 @@ window.ZG = window.ZG || {};
     if (창) return;
     /* 엑셀이 아직 안 왔으면 기다렸다 저 스스로 다시 불린다 (08d.준비되면) */
     if (!window.XLSX) { ZG.주문파일.준비되면(열기); return; }
-    상태 = { 단계: '고르기', 파일: null, 파일명: '', 총: 0, 무시: 0, 색인: null, 줄들: [], 되돌림: 0, 배치: '' };
+    상태 = { 단계: '고르기', 파일: null, 파일명: '', 총: 0, 무시: 0, 색인: null, 줄들: [], 되돌림: 0, 배치: '', 찾기: '' };
     막 = 만들기('div', { class: 'pcscrim' });
     막.addEventListener('click', 닫기);
     document.body.appendChild(막);
@@ -39,83 +41,77 @@ window.ZG = window.ZG || {};
     u.탈출걸기(닫기);
   }
 
-  function 껍데기(옵션) {
+  function 그리기() {
+    참조 = {};
+    var 폰 = u.폰인가(), 결과 = 상태.단계 === '결과';
     var x = 단추('✕', 닫기, '');
     x.className = 'x'; x.setAttribute('aria-label', '닫기');
-    var 것 = 만들기('div', {
-      class: 'pcsheet dlv' + (옵션.좁게 ? ' narrow' : ''), role: 'dialog', 'aria-modal': 'true'
-    }, [
-      만들기('div', { class: 'hd' }, [
-        만들기('h3', { text: 옵션.제목 }),
-        만들기('span', { class: 'hint', text: 옵션.힌트 || '' }),
-        만들기('span', { class: 'right' }, [x])
-      ]),
-      만들기('div', { class: 'bd' }, 옵션.몸),
-      만들기('div', { class: 'ft' }, 옵션.발)
-    ]);
+    참조.수 = 만들기('span', { class: 'cnt' });
+
+    var 찾기 = 만들기('input', { class: 'inp', type: 'search', placeholder: '품목명 · 고객명', value: 상태.찾기 });
+    if (!결과) 찾기.disabled = true;
+    u.조합안전입력(찾기, function (v) { 상태.찾기 = v; 거르기(); }, 150);
+    var 도구 = [만들기('div', { class: 'srch' }, [찾기]), 단추('📄 로젠 엑셀 불러오기', 불러오기, 'sm')];
+    if (결과 && !폰) {
+      var 파일명 = '카페24_송장업로드_' + 오늘숫자() + '.xlsx';
+      var 파일단추 = 단추('⬇ 송장 파일', function () { 내려받기(파일명); }, 'sm');
+      파일단추.title = 파일명;
+      도구.push(파일단추);
+    }
+
+    var 속 = [];
+    if (폰) 속.push(만들기('div', { class: 'grab' }));
+    속.push(만들기('div', { class: 'hd' }, [
+      만들기('h3', { text: '🚚 배송완료' }), 참조.수,
+      만들기('span', { class: 'hint', text: 결과 ? 상태.파일명 + ' · ' + 상태.총 + '줄' + (상태.무시 ? ' (무시 ' + 상태.무시 + '줄)' : '') : '' }),
+      만들기('span', { class: 'right' }, [x])
+    ]));
+    속.push(만들기('div', { class: 'mtool' }, 도구));
+    속.push(만들기('div', { class: 'bd' }, 결과 ? 결과몸() : 고르기몸(폰)));
+    if (결과) 속.push(참조.발 = 만들기('div', { class: 'ft' }));
+
+    var 것 = 만들기('div', { class: 'pcsheet dlv pop' + (폰 ? ' 폰시트' : ''), role: 'dialog', 'aria-modal': 'true' }, 속);
     if (창) 창.remove();
     창 = 것;
     document.body.appendChild(것);
+    if (결과) 요약새로();
   }
 
-  function 그리기() {
-    참조 = {};
-    if (상태.단계 === '고르기') 고르기창(); else 결과창();
+  /* 결과가 있는데 다시 불러오면 닫고 새로 연다 — 앞 파일의 출고·보류는 이미 저장됐다 */
+  function 불러오기() {
+    if (상태.단계 === '결과') { 닫기(); 열기(); }
+    파일찾기();
   }
 
-  /* ══ ① 파일 고르기 ══ */
+  /* ══ 파일 전 ══ */
 
   function 파일받기(f, 흔들곳) {
     if (!/\.xlsx?$/i.test(f && f.name || '')) { u.흔들기(흔들곳 || 창); u.토스트('.xls · .xlsx 파일만 됩니다.'); return; }
     상태.파일 = f; 상태.파일명 = f.name;
-    그리기();
+    처리();
   }
 
-  function 고르기창() {
-    var 고른칸;
-    if (상태.파일) {
-      고른칸 = 만들기('div', { class: 'fileline' }, [
-        만들기('span', { class: 'ic', text: '📄' }),
-        만들기('div', {}, [
-          만들기('div', { class: 'nm', text: 상태.파일명 }),
-          만들기('div', { class: 'sz', text: Math.max(1, Math.round(상태.파일.size / 1024)) + ' KB' })
-        ]),
-        단추('다시 고르기', 파일찾기, 'sm')
-      ]);
-    } else {
-      고른칸 = 만들기('div', { class: 'drop' }, [
-        만들기('span', { class: 'ic', text: '📄' }),
-        만들기('div', { class: 't', text: '로젠 「출력완료」 파일' }),
-        만들기('div', { class: 's', text: '.xls · .xlsx' }),
-        단추('파일 고르기', 파일찾기)
-      ]);
-      고른칸.addEventListener('dragover', function (e) { e.preventDefault(); 고른칸.classList.add('over'); });
-      고른칸.addEventListener('dragleave', function () { 고른칸.classList.remove('over'); });
-      고른칸.addEventListener('drop', function (e) {
-        e.preventDefault(); 고른칸.classList.remove('over');
-        파일받기(e.dataTransfer.files && e.dataTransfer.files[0], 고른칸);
-      });
-    }
-
-    var 처리버튼 = 단추('배송완료 처리', 처리, 'main');
-    if (!상태.파일) { 처리버튼.disabled = true; 처리버튼.setAttribute('style', 'opacity:.45'); }
-
-    껍데기({
-      제목: '배송완료 처리', 힌트: '로젠 출력완료 파일', 좁게: true,
-      몸: [
-        고른칸,
-        손처리줄()
-      ],
-      발: [만들기('span', { class: 'spacer' }), 단추('취소', 닫기), 처리버튼]
+  function 고르기몸(폰) {
+    var 칸 = 만들기('div', { class: 'drop' }, [
+      만들기('span', { class: 'ic', text: '📄' }),
+      만들기('div', { class: 't', text: '로젠 「출력완료」 파일' }),
+      만들기('div', { class: 's', text: '.xls · .xlsx' }),
+      단추('파일 고르기', 파일찾기)
+    ]);
+    칸.addEventListener('dragover', function (e) { e.preventDefault(); 칸.classList.add('over'); });
+    칸.addEventListener('dragleave', function () { 칸.classList.remove('over'); });
+    칸.addEventListener('drop', function (e) {
+      e.preventDefault(); 칸.classList.remove('over');
+      파일받기(e.dataTransfer.files && e.dataTransfer.files[0], 칸);
     });
+    return 폰 ? [칸] : [칸, 손처리줄()];
   }
 
-  function 파일찾기() { ZG.주문파일.파일고르기({ 확장자: '.xls,.xlsx' }, function (f) { 파일받기(f); }); }
+  function 파일찾기() { ZG.주문파일.파일고르기({ 확장자: '.xls,.xlsx' }, function (f) { if (상태) 파일받기(f); }); }
 
-  /* ══ ③ 로젠 파일 없이 — 고른 건만 손으로 (9단계 설계 §5-1) ══
+  /* ══ 로젠 파일 없이 — 고른 건만 손으로 (9단계 설계 §5-1) ══
      🔴 `ZG.주문.고른줄들()`을 쓰면 안 된다 — 아무것도 안 골랐을 때 화면 전체(최대 1,300건)로
-        폴백한다(08b:518~522). 그 폴백으로 배송완료를 만들면 재고가 통째로 어긋난다.
-        그래서 `상태.고른`으로 직접 센다 */
+        폴백한다. 그 폴백으로 배송완료를 만들면 재고가 통째로 어긋난다. 그래서 `상태.고른`으로 직접 센다 */
   function 고른건들() {
     var 상 = ZG.주문 && ZG.주문.상태;
     if (!상 || !상.고른) return [];
@@ -165,6 +161,8 @@ window.ZG = window.ZG || {};
       var 줄들 = 읽.줄들.concat(B().합포장형제(읽.줄들, 상태.색인));
       줄들.forEach(function (줄, i) { 줄.순번 = i + 1; });
       상태.줄들 = 줄들.map(function (줄) { return 판정하기(줄, 오늘); });
+      /* 🔴 묶는 열쇠는 여기서 고정한다 — 송장을 고치면 운송장번호가 바뀌어 카드가 갈라진다 */
+      상태.줄들.forEach(function (것) { 것.묶키 = 묶음열쇠(것); });
       상태.단계 = '결과';
       그리기();
     });
@@ -183,6 +181,11 @@ window.ZG = window.ZG || {};
 
     것.주문줄들 = 찾은;
     var 갈래 = B().넘길줄만(찾은, 상태.색인);
+    /* 🔴 보류 묶음은 일부만 깎지 않는다 — 송장 파일·카페24 목록에 「보류」가 없어 저절로 빠진다 (22단계 §1) */
+    if (갈래.걸린.some(function (c) { return c.사유 === '보류'; })) {
+      것.판정 = '보류'; 것.보류전판정 = '정상'; 것.표시글 = '보류 중 — 송장만 저장됨';
+      return 것;
+    }
     var 못깎음 = 못깎았나(갈래.걸린);
     if (!갈래.넘길.length) {
       /* 🔴 방패 사유를 갈라 본다 (설계 §3-1). 「이미 나감」과 「품목코드 없음」은 전혀 다른 일이다 —
@@ -208,7 +211,7 @@ window.ZG = window.ZG || {};
     return 있;
   }
 
-  /* ══ ② 결과 창 ══ */
+  /* ══ 결과 ══ */
 
   function 셈(판정들) {
     return 상태.줄들.filter(function (것) { return 판정들.indexOf(것.판정) >= 0; }).length;
@@ -216,21 +219,21 @@ window.ZG = window.ZG || {};
 
   /* 로젠 파일에 없던 줄인데 우리가 붙여 처리한 수 — 되돌린 줄은 빠진다 */
   function 합포장수() {
-    return 상태.줄들.filter(function (것) {
-      return 것.합포장 && 것.만든출고.length;
-    }).length;
+    return 상태.줄들.filter(function (것) { return 것.합포장 && 것.만든출고.length; }).length;
   }
 
   function 출고셈() {
-    var 건 = 0, 코드 = [];
+    var 건 = 0, 코드 = [], 주 = 0, 내것 = {};
     상태.줄들.forEach(function (것) {
       if (!것.만든출고.length) return;      // 되돌린 줄은 품목 수에서도 빠져야 한다
       건 += 것.만든출고.length;
+      것.만든출고.forEach(function (id) { 내것[id] = 1; });
       (것.주문줄들 || []).forEach(function (r) {
         if (r.품목코드 && 코드.indexOf(r.품목코드) < 0) 코드.push(r.품목코드);
       });
     });
-    return { 건: 건, 품목: 코드.length };
+    if (건) ZG.저장소.읽기(ZG.저장소.키.출고).forEach(function (r) { if (내것[r.id]) 주 += Number(r.수량) || 0; });
+    return { 건: 건, 품목: 코드.length, 주: 주 };
   }
 
   /* 줄마다 다른 사유를 수하인 칸 밑에 한 줄로 붙인다 — 상자 머리에 뭉쳐 두면
@@ -242,59 +245,29 @@ window.ZG = window.ZG || {};
     return '';
   }
 
-  function 결과창() {
-    var 초록수 = 만들기('div', { class: 'v' });
-    var 빨강수 = 만들기('div', { class: 'v' });
-    var 완료글 = 만들기('span');
-    참조.초록수 = 초록수; 참조.빨강수 = 빨강수; 참조.완료글 = 완료글;
-
-    var 전체되돌리기 = 참조.전체되돌리기 = 단추('되돌리기', 전부되돌리기, 'sm');
-
-    var 몸 = [
-      만들기('div', { class: 'sums' }, [
-        만들기('div', { class: 'sum ok' }, [
-          만들기('div', { class: 'k', text: '정상 처리' }), 초록수
-        ]),
-        만들기('div', { class: 'sum ng' }, [
-          만들기('div', { class: 'k', text: '확인 필요' }), 빨강수
-        ])
-      ]),
-      만들기('div', { class: 'done' }, [완료글, 전체되돌리기])
-    ];
-
+  function 결과몸() {
+    참조.판 = 만들기('div', { class: 'ogrid' });
+    카드묶음들().forEach(function (묶) { 참조.판.appendChild(카드(묶)); });
+    참조.완료글 = 만들기('span');
+    참조.전체되돌리기 = 단추('되돌리기', 전부되돌리기, 'sm');
+    var 몸 = [참조.판, 만들기('div', { class: 'done' }, [참조.완료글, 참조.전체되돌리기])];
     var 확인표 = 확인상자();          // 확인 필요가 0이면 통째로 안 그린다
     if (확인표) 몸.push(확인표);
-
-    /* 카페24 상자는 자리만 잡아 두고 요약새로()가 채운다 — 「이름으로 찾기」로 판정이 바뀌면 대상 수도 따라 바뀐다 */
-    참조.c24자리 = 만들기('div');
-    몸.push(참조.c24자리);
-
-    var 파일명 = '카페24_송장업로드_' + 오늘숫자() + '.xlsx';
-    껍데기({
-      제목: '배송완료 처리 결과',
-      힌트: 상태.파일명 + ' · ' + 상태.총 + '줄' + (상태.무시 ? ' (무시 ' + 상태.무시 + '줄)' : ''),
-      몸: 몸,
-      발: [
-        만들기('span', { class: 'fname', text: '내려받을 파일 — ' + 파일명 }),
-        만들기('span', { class: 'spacer' }), 단추('닫기', 닫기),
-        단추('⬇ 송장 업로드 파일 내려받기', function () { 내려받기(파일명); }, 'main')
-      ]
-    });
-    요약새로();
+    return 몸;
   }
 
   function 요약새로() {
-    /* `미차감`은 초록이 아니라 빨강이다 — 재고를 한 주도 못 깎았으니 「정상 처리」로 세면 안 된다 */
     var 초록 = 셈(['정상', '이미', '처리']), 빨강 = 셈(['확인', '미차감']);
-    참조.초록수.innerHTML = 초록 + '<small>건</small>';
-    참조.빨강수.innerHTML = 빨강 + '<small>건</small>';
+    var 카드들 = 카드묶음들(), 보류 = 카드들.filter(보류인가).length;
+    참조.수.textContent = 카드들.length + '건';
     var 수 = 출고셈(), 송장줄 = B().송장표(상태.줄들).length - 1, 이미 = 셈(['이미']);
     참조.완료글.innerHTML = '정상 ' + 초록 + '건 — <b>출고 ' + 수.건 + '건 기록</b> · <b>재고 ' + 수.품목 +
       '품목 차감</b> 완료 · 송장 업로드 파일 <b>' + 송장줄 + '줄</b> 준비됨' +
       (이미 ? ' · 이미 처리된 ' + 이미 + '건은 건너뜀' : '') +
       (합포장수() ? ' · <b>합포장 ' + 합포장수() + '건</b>을 같은 송장번호로 함께 처리' : '') +
+      (보류 ? ' · <b>⏸ 보류 ' + 보류 + '건</b> — 송장만 저장' : '') +
       /* 🔴 여기서 출고리스트 창을 띄우면 안 된다 — 08c 의 닫기창()이 `.pcsheet` 를 통째로 지워
-         이 결과창(=내려받을 송장 파일)이 같이 날아간다. 길만 알려 드린다 */
+         이 창(=내려받을 송장 파일)이 같이 날아간다. 길만 알려 드린다 */
       (수.건 ? '<br>📋 <b>포장하실 출고리스트</b> — 주문 화면 「📋 출고리스트」에서 맨 앞 칩(방금 처리분)을 누르세요.' : '') +
       /* 되돌리면 그 줄들은 화면에서 사라진다 — 무슨 일이 일어났는지 여기 한 줄로 남긴다 */
       (상태.되돌림 ? '<br>↩ <b>되돌림</b> — 정상 처리했던 ' + 상태.되돌림 +
@@ -302,55 +275,205 @@ window.ZG = window.ZG || {};
     참조.전체되돌리기.hidden = 수.건 === 0;
 
     if (참조.확인수) 참조.확인수.textContent = '⚠️ 확인 필요 ' + 빨강 + '건';
-    카페24새로();
+    발새로(카드들.filter(켜졌나).length, 보류, 수.주);
   }
 
-  /* ── ① 카페24·심폴 발송처리 상자 (9단계 설계 §4-1) ──
-     🔴 자동 호출은 어디에도 없다. 우람님이 이 단추를 눌러야만 08m 이 뜨고,
-        거기서 미리보기를 통과하고 확인창을 눌러야만 실제 전송이 일어난다 */
-  function 카페24새로() {
-    var 자리 = 참조.c24자리;
-    if (!자리) return;
-    u.비우기(자리);
-
+  /* ── 발 줄 — 합 · 「카페24 송장 올리기」 체크 · [저장] ──
+     🔴 PC는 체크가 켜져 있어도 여기서 보내지 않는다. [저장]이 08m 을 열고 미리보기·확인을 지나야 나간다.
+        보류 줄은 판정이 「보류」라 대상뽑기에서 저절로 빠진다 */
+  function 대상() {
     var 뽑 = ZG.카페24발송.대상뽑기(상태.줄들);
-    var 짝들 = 뽑.짝들, 심폴짝들 = 뽑.심폴짝들 || [];
-    /* 대상이 0건이면 상자를 통째로 안 그린다 */
-    if (!짝들.length && !심폴짝들.length) { 자리.hidden = true; return; }
-    자리.hidden = false;
+    return { 짝들: 뽑.짝들, 심폴짝들: 뽑.심폴짝들 || [], 섞임수: 뽑.섞임수, 전화수: 뽑.전화수 };
+  }
+  function 서버있나() { return !!(ZG.서버 && ZG.서버.클라이언트); }
+  /* 폰은 심폴을 안 보낸다(08m 이 PC 창이다) — 카페24 짝만 센다 */
+  function 올릴수(뽑) { return 뽑.짝들.length + (u.폰인가() ? 0 : 뽑.심폴짝들.length); }
+  function c24켬(뽑) { return 올릴수(뽑) > 0 && 서버있나() && !상태.c24끔; }
 
-    var 빠짐 = [];
-    /* 심폴+카페24가 한 송장에 섞인 줄은 어느 쪽으로도 못 보낸다 — 여기서 수만 알려 드린다 */
+  function 발새로(완료, 보류, 주) {
+    var 발 = 참조.발, 폰 = u.폰인가(), 뽑 = 대상(), n = 올릴수(뽑);
+    u.비우기(발);
+    var 완글 = 만들기('span', { class: 'n', html: '배송완료 <b>' + 완료 + '</b>' + (폰 ? '' : '건 <small>재고 −' + u.콤마(주) + '주</small>') });
+    var 보글 = 만들기('span', { class: 'n hb', html: '⏸ 보류 <b>' + 보류 + '</b>' + (폰 ? '' : '건 <small>송장만 저장</small>') });
+
+    var 켬 = c24켬(뽑), 빠짐 = [];
     if (뽑.섞임수) 빠짐.push('심폴·카페24 섞임 ' + 뽑.섞임수 + '건');
     if (뽑.전화수) 빠짐.push('전화주문 ' + 뽑.전화수 + '건');
+    var c24 = 만들기('button', { type: 'button', class: 'c24' }, [
+      만들기('span', { class: 'cb' + (켬 ? ' on' : '') }),
+      만들기('span', { text: '카페24 송장 올리기' })
+    ]);
+    c24.title = (서버있나() ? '' : '서버에 연결돼 있지 않습니다 · ') + n + '건' + (빠짐.length ? ' · ' + 빠짐.join(' · ') + ' 제외' : '');
+    c24.hidden = !n;
+    if (!서버있나()) c24.disabled = true;
+    c24.addEventListener('click', function () { 상태.c24끔 = !상태.c24끔; 요약새로(); });
 
-    var 셈 = [];
-    if (짝들.length) 셈.push('카페24 <b>' + 짝들.length + '건</b>');
-    if (심폴짝들.length) 셈.push('심폴 <b>' + 심폴짝들.length + '건</b> 포함');
-
-    var 속 = [만들기('span', {
-      html: (셈.length ? 셈.join(' · ') : '발송처리 대상 없음') +
-            (빠짐.length ? ' · ' + 빠짐.join(' · ') + ' 제외' : '')
-    })];
-
-    if (짝들.length || 심폴짝들.length) {
-      var 버튼 = 단추('발송처리', function () {
-        ZG.카페24발송창.열기({ 짝들: 짝들, 심폴짝들: 심폴짝들, 그다음: 요약새로 });
-      }, 'sm main');
-      if (!ZG.서버 || !ZG.서버.클라이언트) {
-        버튼.disabled = true; 버튼.setAttribute('style', 'opacity:.45');
-        속.push(만들기('span', { class: 'note', text: '서버에 연결돼 있지 않습니다' }));
-      }
-      속.push(버튼);
+    var 저장단추 = 만들기('button', { type: 'button', class: 폰 ? 'bigbtn' : 'btn main', text: '저장' });
+    저장단추.addEventListener('click', function () { 저장(저장단추); });
+    if (폰) {
+      발.className = 'ft selfix';
+      발.appendChild(만들기('div', { class: 'r1' }, [완글, 보글, c24]));
+      발.appendChild(저장단추);
+    } else {
+      발.className = 'ft savebar';
+      발.appendChild(완글); 발.appendChild(만들기('span', { class: 'sep' })); 발.appendChild(보글);
+      발.appendChild(만들기('span', { class: 'rt' }, [c24, 저장단추]));
     }
+  }
 
-    자리.appendChild(만들기('div', { class: 'needbox c24' }, [
-      만들기('h4', {}, [
-        /* 심폴이 섞였는데 「카페24」라고만 적혀 있으면 무엇이 나가는지 못 보신다 */
-        만들기('span', { text: 심폴짝들.length ? '☁ 카페24 · 🌿 심폴 발송처리' : '☁ 카페24 발송처리' })
-      ]),
-      만들기('div', { class: 'inner' }, [만들기('div', { class: 'c24row' }, 속)])
-    ]));
+  /* [저장] = 카페24 체크가 켜져 있으면 올리기 · 꺼져 있으면 닫기. 출고 확정의 뜻은 없다 */
+  function 저장(단) {
+    var 뽑 = 대상();
+    if (!c24켬(뽑)) { 닫기(); return; }
+    if (!u.폰인가()) { ZG.카페24발송창.열기({ 짝들: 뽑.짝들, 심폴짝들: 뽑.심폴짝들, 그다음: 닫기 }); return; }
+    /* 폰 — 08m 은 PC 창이라 안 띄운다. 묻고 바로 올린다 */
+    var 짝 = 뽑.짝들.filter(function (p) { return p.켬; }), 심 = 뽑.심폴짝들.length;
+    if (!짝.length) { 닫기(); return; }
+    u.탈출풀기();
+    u.확인({
+      제목: '카페24에 송장 ' + 짝.length + '건을 올릴까요',
+      본문: 심 ? '심폴 ' + 심 + '건은 PC에서' : '', 확인글: '올리기'
+    }, function (예) {
+      u.탈출걸기(닫기);
+      if (!예) return;
+      단.disabled = true; 단.textContent = '올리는 중…';
+      H().카페24올리기(짝).then(function (c) {
+        닫기();
+        u.토스트('카페24 송장 ' + c.됨 + '건 올림');
+        if (c.실패.length) u.확인({
+          제목: '올리지 못한 ' + c.실패.length + '건',
+          본문: c.실패.map(function (f) { return '<b>' + u.안전(f.수하인) + '</b> · ' + u.안전(f.송장) + ' — ' + u.안전(f.사유); }).join('<br>'),
+          확인글: '확인'
+        }, function () {});
+      }, function (e) {
+        단.disabled = false; 단.textContent = '저장';
+        u.토스트('올리기 실패 — ' + String((e && e.message) || e).slice(0, 60));
+      });
+    });
+  }
+
+  /* ── 카드 — 한 장 = 운송장번호 하나 (보류 단위 = 묶음) ── */
+  function 묶음들() {
+    var 순 = [], 표 = {};
+    상태.줄들.forEach(function (것) {
+      var k = 것.묶키;
+      if (!표[k]) { 표[k] = { 키: k, 운송장번호: 것.운송장번호 || '', 것들: [] }; 순.push(표[k]); }
+      표[k].것들.push(것);
+    });
+    return 순;
+  }
+  function 묶음열쇠(것) { return 것.운송장번호 ? '묶' + 것.운송장번호 : '묶#' + 것.순번; }
+  function 카드묶음들() { return 묶음들().filter(function (묶) { return 상품줄들(묶).length; }); }
+  function 찾은묶(키) { return 묶음들().filter(function (m) { return m.키 === 키; })[0]; }
+
+  function 상품줄들(묶) {
+    var 줄 = [], 본 = {};
+    묶.것들.forEach(function (것) {
+      (것.주문줄들 || []).forEach(function (r) {
+        if (본[r.id]) return;
+        본[r.id] = 1; 줄.push(r);
+      });
+    });
+    return 줄;
+  }
+
+  function 있나(묶, 판정들) { return 묶.것들.some(function (것) { return 판정들.indexOf(것.판정) >= 0; }); }
+  function 보류인가(묶) { return 있나(묶, ['보류']); }
+  function 바꿀수(묶) { return !!묶.운송장번호 && 있나(묶, ['정상', '처리', '보류']); }
+  function 켜졌나(묶) { return 묶.것들.some(function (것) { return 것.만든출고.length; }); }
+
+  function 막힘배지(묶) {
+    if (있나(묶, ['미차감'])) return 만들기('span', { class: 'res chk', text: '품목코드 없음' });
+    if (있나(묶, ['이미'])) return 만들기('span', { class: 'res dup', text: '이미 나감' });
+    if (!묶.운송장번호) return 만들기('span', { class: 'res chk', text: '운송장번호 없음' });
+    return 만들기('span', { class: 'res dup', text: '넘어감' });
+  }
+
+  function 카드(묶) {
+    var 보류 = 보류인가(묶), 바꿈 = 바꿀수(묶), 줄들 = 상품줄들(묶);
+    var 날 = ((줄들[0] && ZG.주문자료.날짜정규화(줄들[0].주문일)) || '').slice(5).replace('-', '/');
+    var 것 = ZG.보류목록.묶음카드({ 수령인: 묶.것들[0].수하인, 줄들: 줄들 }, {
+      체크: 바꿈 && !보류, 체크막힘: !바꿈,
+      체크누름: function () { if (보류) 완료로(묶.키); else 보류로(묶.키); },
+      머리배지: 보류 ? [만들기('span', { class: 'hold', text: '송장만 저장' })] : (바꿈 ? [] : [막힘배지(묶)]),
+      오른쪽: 날 ? [만들기('span', { class: 'dt', text: 날 + ' 주문' })] : [],
+      송장: '입력', 송장값: 묶.운송장번호,
+      송장바꿈: function (새) { 송장고치기(묶.키, 새); },
+      꺼짐: 보류
+    });
+    것.dataset.찾기 = [묶.것들[0].수하인].concat(줄들.map(function (r) {
+      return [r.유통명, r.원본코드, r.품목코드].join(' ');
+    })).join(' ').toLowerCase();
+    것.hidden = !맞나(것);
+    return (참조['카' + 묶.키] = 것);
+  }
+
+  function 맞나(카) {
+    var q = String(상태.찾기 || '').trim().toLowerCase();
+    return !q || 카.dataset.찾기.indexOf(q) >= 0;
+  }
+  /* 🔴 다시 그리지 않고 hidden 만 바꾼다 — 찾기칸 한글 조합이 끊기지 않게 */
+  function 거르기() {
+    Object.keys(참조).forEach(function (k) { if (k.charAt(0) === '카') 참조[k].hidden = !맞나(참조[k]); });
+  }
+
+  /* 카드 하나만 갈아 끼운다. 이름 찾기로 새로 주문이 붙은 묶음은 판 끝에 붙인다 */
+  function 카드새로(키) {
+    var 묶 = 찾은묶(키), 옛 = 참조['카' + 키];
+    if (!묶 || !상품줄들(묶).length) return;
+    if (옛 && 옛.parentNode) 옛.parentNode.replaceChild(카드(묶), 옛);
+    else if (참조.판) 참조.판.appendChild(카드(묶));
+  }
+
+  /* 그 송장 묶음의 출고를 되물리고 보류를 건다. 🔴 누르는 그 순간 저장한다 —
+     ✕·Esc로 닫으면 출고는 빠졌는데 보류도 없는 줄이 되어 송장을 잃는다 */
+  function 보류로(키) {
+    var 묶 = 찾은묶(키), 오늘 = u.오늘문자();
+    묶.것들.forEach(function (것) {
+      if (!것.만든출고.length) return;
+      B().출고되돌리기(것.만든출고, 상태.색인);
+      것.만든출고 = [];
+      것.보류전판정 = 것.판정; 것.보류전표시글 = 것.표시글;
+      것.판정 = '보류'; 것.표시글 = '보류 중 — 송장만 저장됨';
+      H().걸기(것.주문줄들, 묶.운송장번호, 오늘);
+    });
+    묶.것들.forEach(줄새로);
+  }
+
+  function 완료로(키) {
+    var 묶 = 찾은묶(키), 오늘 = u.오늘문자();
+    묶.것들.forEach(function (것) {
+      if (것.판정 !== '보류') return;
+      H().풀기(것.주문줄들);
+      var 갈래 = B().넘길줄만(것.주문줄들, 상태.색인);
+      if (!갈래.넘길.length) {
+        것.판정 = 못깎았나(갈래.걸린) ? '미차감' : '이미';
+        것.표시글 = 것.판정 === '미차감' ? '품목코드가 없어 재고를 차감하지 못했습니다 — 확인 필요' : '이미 처리된 주문입니다';
+        return;
+      }
+      것.만든출고 = B().출고넣기(갈래.넘길, 오늘, 상태.색인, { 배치: 상태.배치, 운송장번호: 묶.운송장번호 });
+      것.판정 = 것.보류전판정 || '정상';
+      것.표시글 = 것.보류전표시글 || B().차감글(갈래.넘길);
+    });
+    묶.것들.forEach(줄새로);
+  }
+
+  /* 송장을 고치면 이미 만든 출고는 새 번호로 다시 넣고(같은 배치), 보류면 보류송장만 바꾼다. 08f 는 안 고친다 */
+  function 송장고치기(키, 새) {
+    var 묶 = 찾은묶(키), 오늘 = u.오늘문자();
+    묶.것들.forEach(function (것) {
+      것.운송장번호 = 새;
+      if (것.판정 === '보류') {
+        var 걸린 = (것.주문줄들 || []).filter(H().보류인가)[0];
+        H().걸기(것.주문줄들, 새, 걸린 && 걸린.보류일);
+        return;
+      }
+      if (!것.만든출고.length) return;
+      B().출고되돌리기(것.만든출고, 상태.색인);
+      var 갈래 = B().넘길줄만(것.주문줄들, 상태.색인);
+      것.만든출고 = 갈래.넘길.length ? B().출고넣기(갈래.넘길, 오늘, 상태.색인, { 배치: 상태.배치, 운송장번호: 새 }) : [];
+    });
+    묶.것들.forEach(줄새로);
   }
 
   /* ── 확인 필요 상자 — 한 줄도 없으면 아예 안 그린다 ── */
@@ -398,6 +521,7 @@ window.ZG = window.ZG || {};
       ])]);
     }
     if (것.판정 === '넘어감') return 만들기('td', { class: 'r gone', text: 것.표시글 || '넘어감' });
+    if (것.판정 === '보류') return 만들기('td', { class: 'r gone', text: '⏸ ' + 것.표시글 });
     return 만들기('td', { class: 'went' }, [만들기('div', { class: 'rowbtns' }, [
       만들기('span', { text: 것.표시글 }), 단추('되돌리기', function () { 줄되돌리기(것); }, 'sm')
     ])]);
@@ -419,10 +543,11 @@ window.ZG = window.ZG || {};
     ]));
   }
 
-  /* 🔴 다시 그리기는 줄 단위로만. 표 전체를 다시 그리면 스크롤과 방금 본 이력이 튄다 */
+  /* 🔴 다시 그리기는 줄·카드 단위로만. 판 전체를 다시 그리면 스크롤과 방금 본 이력이 튄다 */
   function 줄새로(것) {
     var 옛 = 참조['줄' + 것.순번];
     if (옛 && 옛.parentNode) 옛.parentNode.replaceChild(줄만들기(것), 옛);
+    카드새로(것.묶키);
     요약새로();
   }
 
@@ -534,7 +659,6 @@ window.ZG = window.ZG || {};
     B().내보내기(상태.줄들, 파일명);
     u.토스트(줄수 + '줄을 내려받았습니다.');
   }
-
 
   ZG.배송완료창 = { 열기: 열기, 닫기: 닫기 };
 })(window.ZG);
