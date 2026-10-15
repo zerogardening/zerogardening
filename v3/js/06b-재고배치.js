@@ -33,7 +33,7 @@ window.ZG = window.ZG || {};
   function 폰목록속(걸러진) {
     var 줄 = 만들기('div', { class: 'ph-sec 고름줄' });
     줄.appendChild(만들기('span', {
-      html: (상태.선택모드 ? '작업할 품목을 고르세요' : '소진일 빠른 순') +
+      html: (상태.선택모드 ? '작업할 품목을 고르세요' : '최신 입고 순') +
         ' <span class="r">' + 걸러진.length + '종</span>'
     }));
     // 목록칸만 갈면 위쪽 재입고 칸이 그대로 남는다 — 화면을 통째로 다시 그린다
@@ -66,7 +66,7 @@ window.ZG = window.ZG || {};
     var 카드 = 만들기('div', { class: 'card table-card' });
     카드.appendChild(만들기('h3', {
       style: 'padding:0 var(--space-sm)',
-      html: '전체 품목 <span class="hint">소진일 빠른 순</span>' +
+      html: '전체 품목 <span class="hint">최신 입고 순</span>' +
         '<span class="right" style="display:flex; gap:var(--space-sm)">' +
         '<button class="btn sm" aria-disabled="true">⬇ 엑셀 내려받기</button>' +
         '<button class="btn sm" aria-disabled="true">인쇄</button></span>'

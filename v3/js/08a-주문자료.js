@@ -199,7 +199,14 @@ window.ZG = window.ZG || {};
       t.필요 += 수량(r);
     });
     순서.forEach(function (t) { t.부족 = t.재고 < t.필요; });
-    return 순서;
+    /* 포장하기 쉽게 규격 작은 화분부터 — 규격 외(구근 등)·규격 모름은 맨 아래 (우람님 10/15) */
+    var 규격 = {};
+    ZG.저장소.품목들().forEach(function (p) { 규격[p.품목코드] = Number(p.규격cm) || 0; });
+    function 크기(t) { return 규격[t.품목코드] || Infinity; }
+    return 순서.sort(function (a, b) {
+      return (크기(a) - 크기(b)) || (a.유통명 || '').localeCompare(b.유통명 || '', 'ko') ||
+        (a.품목코드 < b.품목코드 ? -1 : a.품목코드 > b.품목코드 ? 1 : 0);
+    });
   }
 
   ZG.주문자료 = {
