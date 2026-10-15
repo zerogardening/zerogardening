@@ -297,6 +297,40 @@ window.ZG = window.ZG || {};
         같은 함수를 08·12·15시에 Cron 도 부른다 — 여러 번 눌러도 중복은 안 생긴다(함수가 거른다) */
   var 수집중 = false;
 
+  /* ══ 마켓 주문수집 먼저 (2026-10-15 우람님) ══
+     마켓플러스 자동수집은 30분 주기라 막 들어온 마켓 주문은 카페24에 아직 없다.
+     `v3_공유설정` 「마켓수집」 줄에 요청을 쓰면 아이맥(도구/마켓수집.py)이 마켓플러스에서 수집을 건다.
+     🔴 아이맥이 꺼져 있어도 멈추지 않는다 — 90초 기다리고 카페24에 있는 것만이라도 받는다.
+     🔴 내용을 통째로 덮지 않고 합친다 — 아이맥이 적은 「시작」(2분 안 재수집 막기)이 지워진다 */
+  function 마켓수집(supa, 단추) {
+    var 요청 = new Date().toISOString(), 표 = supa.from('v3_공유설정');
+    function 읽기() {
+      return 표.select('내용').eq('id', '마켓수집').maybeSingle()
+        .then(function (r) { return (r.data && r.data.내용) || {}; });
+    }
+    if (단추) 단추.textContent = '마켓에서 모으는 중…';
+    return 읽기().then(function (옛) {
+      옛.요청 = 요청;
+      return 표.upsert([{ id: '마켓수집', 삭제됨: false, 내용: 옛 }], { onConflict: 'id' });
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      var 끝시각 = Date.now() + 90000;
+      return (function 보기() {
+        return new Promise(function (ok) { setTimeout(ok, 3000); }).then(읽기).then(function (d) {
+          if (d.받은요청 === 요청 && d.끝) return d.결과 || '';
+          if (Date.now() > 끝시각) return '❌ 아이맥이 응답하지 않습니다';
+          return 보기();
+        });
+      })();
+    }).then(function (결과) {
+      if (결과.charAt(0) === '❌') u.토스트('마켓 수집 못 함 — 카페24에 있는 주문만 받습니다 (' + 결과.slice(2, 50) + ')');
+    }).catch(function (e) {
+      u.토스트('마켓 수집 못 함 — ' + String((e && e.message) || e).slice(0, 50));
+    }).then(function () {
+      if (단추) 단추.textContent = '받아오는 중…';
+    });
+  }
+
   function 주문수집하기(단추) {
     if (수집중) return;
     var supa = ZG.서버 && ZG.서버.클라이언트;
@@ -306,7 +340,8 @@ window.ZG = window.ZG || {};
     var 본디 = 단추 ? 단추.textContent : '';
     if (단추) { 단추.disabled = true; 단추.textContent = '받아오는 중…'; }
 
-    supa.functions.invoke('order-collect', { body: { 일수: 14 } })
+    마켓수집(supa, 단추)
+      .then(function () { return supa.functions.invoke('order-collect', { body: { 일수: 14 } }); })
       .then(function (r) {
         if (r.error) throw r.error;
         var d = r.data || {};

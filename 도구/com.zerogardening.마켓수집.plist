@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 10초마다 마켓수집.py 를 돌린다 (2026-10-15). v3 「주문수집」 요청이 있을 때만 마켓플러스를 건드린다.
+     넣는 법:  cp 통합관리/도구/com.zerogardening.마켓수집.plist ~/Library/LaunchAgents/
+               launchctl bootstrap gui/501 ~/Library/LaunchAgents/com.zerogardening.마켓수집.plist
+     보는 법:  tail -f /tmp/zg-마켓수집.log
+     🔴 키체인에 카페24 로그인(카페24열쇠.py)·~/.zg_supabase_key 가 있어야 돈다. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.zerogardening.마켓수집</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/woorambaik/claude-projects/제로가드닝/통합관리/도구/마켓수집.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>10</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/zg-마켓수집.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/zg-마켓수집.log</string>
+</dict>
+</plist>
