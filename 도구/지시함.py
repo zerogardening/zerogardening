@@ -58,7 +58,7 @@ from 제작요청 import 키, 부르기, 표                     # noqa: E402
 갈래별완료말 = {'상세페이지': '이미지 갱신', '카페24올리기': '업로드',
              '상세페이지갱신': '상세페이지 갱신', '마켓품절': '품절 처리', '마켓판매': '판매 재개'}
 # 🔴 카페24올리기 답장은 채널별로 한 줄씩 적으라고 시킨다(위 안내문 ⑤~⑧) — 그 줄에서
-#    실패한 채널만 뽑아 「부분완료 (실패:롯데온)」식으로 붙인다 (우람님 9/23)
+#    실패한 채널만 뽑아 「일부 실패 (실패:롯데온)」식으로 붙인다 (우람님 9/23 · 10/15 「완료」라 적지 않게)
 카페24채널들 = ['대표이미지', '롯데온', '진열', '쿠팡', '심폴']
 실패낱말들 = ('실패', '못 했', '못했', '못 보냈', '못 올', '안 켰', '반려', '안 함', '안 감')
 
@@ -468,6 +468,44 @@ def 짧게(값, n=70):
     return ' '.join(t.split())[:n]
 
 
+품절실행 = re.compile(r'python3\s+"?[^"\s]*품절\.py"?\s+(품절|판매|내리기)\b')
+
+
+def 도구실패줄(기록):
+    """도구가 찍은 🔴·❌ 줄 — **Claude 의 답장이 아니라 도구 출력 원본(tool_result)에서** 뽑는다.
+    🔴 2026-10-15 레이디제인 — `마켓플러스품절.py` 가 G마켓 「전송불가」를 냈는데 답장 대신
+       「품절 처리 완료」로 덮어써서 G마켓만 판매중으로 남았다(블랙바로우 때도 같은 자리를 적어 두고 못 고쳤다).
+       답장은 Claude 가 옮겨 적는 것이라 빠질 수 있다 — 원본을 본다.
+    🔴 `■` 머리줄은 뺀다 — 「카페24 진열·판매 🔴 꺼짐」은 실패가 아니라 상태 표시다."""
+    줄들 = []
+    try:
+        원 = 기록.read_text(encoding='utf-8', errors='replace').split('\n')
+    except OSError:
+        return []
+    도구id = set()      # 🔴 품절 도구를 돌린 Bash 결과만 본다 — 파일을 읽은 결과에도 🔴 가 수두룩하다
+    for L in 원:
+        try:
+            o = json.loads(L)
+        except ValueError:
+            continue
+        for c in (o.get('message') or {}).get('content') or []:
+            if not isinstance(c, dict):
+                continue
+            if (o.get('type') == 'assistant' and c.get('type') == 'tool_use' and c.get('name') == 'Bash'
+                    and 품절실행.search(str((c.get('input') or {}).get('command') or ''))):
+                도구id.add(c.get('id'))
+            if o.get('type') != 'user' or c.get('type') != 'tool_result' or c.get('tool_use_id') not in 도구id:
+                continue
+            속 = c.get('content')
+            if isinstance(속, list):
+                속 = '\n'.join(x.get('text') or '' for x in 속 if isinstance(x, dict))
+            for 줄 in str(속 or '').split('\n'):
+                줄 = ' '.join(줄.split())
+                if ('🔴' in 줄 or '❌' in 줄) and not 줄.startswith('■') and 줄 not in 줄들:
+                    줄들.append(줄[:200])
+    return 줄들
+
+
 def 기록읽기(기록):
     """(최종답, 자취) — 자취는 무엇을 했는지 한 줄씩. 끊겼을 때 이게 유일한 단서다"""
     답, 자취 = '', []
@@ -703,12 +741,19 @@ def 한건():
 
     답원문, 자취 = 기록읽기(기록)
     답 = 답장뽑기(답원문, 자취)
+    일부실패 = False
     if 됐나 and 내용.get('갈래') in 갈래별완료말:
         이름 = 내용.get('폴더') or 내용.get('품목코드') or 줄id
         갈래 = 내용.get('갈래')
         실패채널 = 부분실패채널(답원문) if 갈래 == '카페24올리기' else []
-        if 실패채널:
-            답 = '%s %s 부분완료 (실패:%s)' % (이름, 갈래별완료말[갈래], '·'.join(실패채널))
+        # 🔴 **일부라도 실패하면 「완료」라 적지 않는다** (우람님 2026-10-15). 상태도 「실패」로 둬서 폰에 🔴 로 뜬다.
+        #    마켓품절·마켓판매는 정해진 도구 두 개만 도니 그 출력의 🔴·❌ 가 곧 실패다.
+        실패줄 = 도구실패줄(기록) if 갈래 in ('마켓품절', '마켓판매') else []
+        if 실패채널 or 실패줄:
+            일부실패 = True
+            답 = ('%s %s 일부 실패%s' % (이름, 갈래별완료말[갈래],
+                                      ' (실패:%s)' % '·'.join(실패채널) if 실패채널 else '')
+                 + ''.join('\n' + x for x in 실패줄))[:답장상한]
         else:
             답 = '%s %s 완료' % (이름, 갈래별완료말[갈래])
     elif 됐나 is None:
@@ -722,13 +767,13 @@ def 한건():
     except Exception as e:
         답 += '\n(커밋은 못 했습니다 — %s)' % e
 
-    적기(줄id, 내용, 상태='됨' if 됐나 else '실패', 답장=답, 답한때=int(time.time() * 1000),
+    적기(줄id, 내용, 상태='됨' if 됐나 and not 일부실패 else '실패', 답장=답, 답한때=int(time.time() * 1000),
          걸린초=int(time.time() - 잰때), 커밋=자국)
     뒤처리(내용, 됐나)
     번호적기(내용, 됐나, 답)
     완료로넘기기(내용, 됐나)
-    알림(내용, 됐나, 답)
-    말 = '%s %s — %d초%s' % ('✅' if 됐나 else '❌', 줄id, time.time() - 잰때,
+    알림(내용, 됐나 and not 일부실패, 답)
+    말 = '%s %s — %d초%s' % ('✅' if 됐나 and not 일부실패 else '❌', 줄id, time.time() - 잰때,
                             ' · ' + 자국 if 자국 else '')
     print(말)
     return 말
