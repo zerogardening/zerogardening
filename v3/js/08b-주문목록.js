@@ -297,24 +297,27 @@ window.ZG = window.ZG || {};
         같은 함수를 08·12·15시에 Cron 도 부른다 — 여러 번 눌러도 중복은 안 생긴다(함수가 거른다) */
   var 수집중 = false;
 
-  /* ══ 마켓 주문수집 먼저 (2026-10-15 우람님) ══
+  /* ══ 마켓 주문수집 — 뒤에서 (2026-10-15 우람님) ══
      마켓플러스 자동수집은 30분 주기라 막 들어온 마켓 주문은 카페24에 아직 없다.
-     `v3_공유설정` 「마켓수집」 줄에 요청을 쓰면 아이맥(도구/마켓수집.py)이 마켓플러스에서 수집을 건다.
-     🔴 아이맥이 꺼져 있어도 멈추지 않는다 — 90초 기다리고 카페24에 있는 것만이라도 받는다.
+     `v3_공유설정` 「마켓수집」 줄에 요청을 쓰면 아이맥(도구/마켓수집.py)이 마켓플러스에서 수집을 건다(40초쯤).
+     🔴 단추는 기다리게 하지 않는다 — 카페24 것은 바로 받고, 이건 뒤에서 돌다 끝나면 한 번 더 받는다.
+     🔴 아이맥이 꺼져 있으면 120초 뒤 포기한다(다른 작업이 크롬을 쥐면 75초도 걸렸다). 남은 건 다음 자동수집(30분)이 메운다.
      🔴 내용을 통째로 덮지 않고 합친다 — 아이맥이 적은 「시작」(2분 안 재수집 막기)이 지워진다 */
-  function 마켓수집(supa, 단추) {
+  var 마켓중 = false;
+  function 마켓수집(supa) {
+    if (마켓중) return Promise.resolve(false);
+    마켓중 = true;
     var 요청 = new Date().toISOString(), 표 = supa.from('v3_공유설정');
     function 읽기() {
       return 표.select('내용').eq('id', '마켓수집').maybeSingle()
         .then(function (r) { return (r.data && r.data.내용) || {}; });
     }
-    if (단추) 단추.textContent = '마켓에서 모으는 중…';
     return 읽기().then(function (옛) {
       옛.요청 = 요청;
       return 표.upsert([{ id: '마켓수집', 삭제됨: false, 내용: 옛 }], { onConflict: 'id' });
     }).then(function (r) {
       if (r.error) throw r.error;
-      var 끝시각 = Date.now() + 90000;
+      var 끝시각 = Date.now() + 120000;
       return (function 보기() {
         return new Promise(function (ok) { setTimeout(ok, 3000); }).then(읽기).then(function (d) {
           if (d.받은요청 === 요청 && d.끝) return d.결과 || '';
@@ -323,33 +326,29 @@ window.ZG = window.ZG || {};
         });
       })();
     }).then(function (결과) {
-      if (결과.charAt(0) === '❌') u.토스트('마켓 수집 못 함 — 카페24에 있는 주문만 받습니다 (' + 결과.slice(2, 50) + ')');
+      if (결과.charAt(0) !== '❌') return true;
+      u.토스트('마켓 수집 못 함 (' + 결과.slice(2, 50) + ')');
+      return false;
     }).catch(function (e) {
       u.토스트('마켓 수집 못 함 — ' + String((e && e.message) || e).slice(0, 50));
-    }).then(function () {
-      if (단추) 단추.textContent = '받아오는 중…';
-    });
+      return false;
+    }).then(function (됐나) { 마켓중 = false; return 됐나; });
   }
 
-  function 주문수집하기(단추) {
-    if (수집중) return;
-    var supa = ZG.서버 && ZG.서버.클라이언트;
-    if (!supa) { u.토스트('서버에 연결돼 있지 않습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
-
-    수집중 = true;
-    var 본디 = 단추 ? 단추.textContent : '';
-    if (단추) { 단추.disabled = true; 단추.textContent = '받아오는 중…'; }
-
-    마켓수집(supa, 단추)
-      .then(function () { return supa.functions.invoke('order-collect', { body: { 일수: 14 } }); })
+  /* 카페24에 있는 주문을 v3 로 — 조용히=마켓 수집 뒤 두 번째 받기(새 것 있을 때만 알린다) */
+  function 카페24받기(supa, 조용히) {
+    return supa.functions.invoke('order-collect', { body: { 일수: 14 } })
       .then(function (r) {
         if (r.error) throw r.error;
         var d = r.data || {};
         if (!d.ok) throw new Error(d.오류 || '알 수 없는 오류');
-        var 말 = d.새것 ? ('새 주문 ' + d.새것 + '줄을 받았습니다')
-                        : '새로 들어온 주문이 없습니다';
-        if (d.상태고침) 말 += ' · 배송상태 ' + d.상태고침 + '줄 갱신';
-        u.토스트('📥 ' + 말);
+        if (조용히) { if (d.새것) u.토스트('📥 마켓에서 새 주문 ' + d.새것 + '줄을 받았습니다'); }
+        else {
+          var 말 = d.새것 ? ('새 주문 ' + d.새것 + '줄을 받았습니다')
+                          : '새로 들어온 주문이 없습니다';
+          if (d.상태고침) 말 += ' · 배송상태 ' + d.상태고침 + '줄 갱신';
+          u.토스트('📥 ' + 말);
+        }
         /* 서버가 넣은 줄을 받아온다. Realtime 이 놓쳤을 때도 화면이 맞는다 */
         return Promise.resolve(ZG.서버.받아오기 ? ZG.서버.받아오기() : null).then(function () {
           /* 🔴 Edge Function 은 짝표를 모른다 — 서버는 품목코드만 보고 매칭한다 (2026-08-10).
@@ -388,7 +387,22 @@ window.ZG = window.ZG || {};
           var 붙 = (ZG.짝 && ZG.짝.저장된줄되붙이기) ? ZG.짝.저장된줄되붙이기() : 0;
           if (붙) u.토스트('기억해 둔 짝으로 ' + 붙 + '줄에 품목을 붙였습니다.');
         });
-      })
+      });
+  }
+
+  function 주문수집하기(단추) {
+    if (수집중) return;
+    var supa = ZG.서버 && ZG.서버.클라이언트;
+    if (!supa) { u.토스트('서버에 연결돼 있지 않습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
+
+    수집중 = true;
+    var 본디 = 단추 ? 단추.textContent : '';
+    if (단추) { 단추.disabled = true; 단추.textContent = '받아오는 중…'; }
+
+    마켓수집(supa).then(function (됐나) {
+      if (됐나) return 카페24받기(supa, true).then(다시그리기);
+    });
+    카페24받기(supa, false)
       .catch(function (e) {
         u.토스트('심폴 수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
       });
