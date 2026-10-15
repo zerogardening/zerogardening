@@ -150,6 +150,15 @@ window.ZG = window.ZG || {};
   function 넘기기(건, 끝) {
     var 상품 = 상품만(건.줄들), 셈 = H().미리셈([건]), 뽑 = H().대상([건]);
     var 카페 = 뽑.짝들.length > 0 && !!(ZG.서버 && ZG.서버.클라이언트);
+    /* 🔴 서버 없이 넘기면 출고만 생기고 카페24 송장은 다시 올릴 화면이 없다(보류가 풀려 탭에서 사라진다) */
+    if (뽑.짝들.length && !카페) {
+      u.확인({
+        제목: '지금은 넘길 수 없습니다',
+        본문: '서버에 연결돼 있지 않아 카페24 송장을 올리지 못합니다.<br>연결된 뒤 다시 눌러 주세요 — 보류는 그대로 남아 있습니다.',
+        확인글: '확인'
+      }, function () {});
+      끝(false); return;
+    }
     var 표 = '<span class="넘김표"><span class="w">' + u.안전(건.수령인 || '') + '</span><span class="ls">' +
       상품.map(function (r) {
         return '<span class="l"><span>' + u.안전(품목줄(r)) + '</span><span class="q">×' + 수량(r) + '</span></span>';

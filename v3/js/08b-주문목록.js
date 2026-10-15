@@ -105,9 +105,12 @@ window.ZG = window.ZG || {};
 
   function 상태배지(g) {
     /* 보류 줄이 섞인 건은 회색 「배송보류」 — 준비중 탭에서 빠져 있어 전체 탭에서만 보인다 (22단계 §4) */
-    var 색 = 출고색인();
-    if ((g.줄들 || []).some(function (r) { return ZG.배송보류.보류인가(r) && !색[r.id]; })) {
-      return 만들기('span', { class: 'hold', text: '배송보류' });
+    /* 같은 날 송장을 아직 안 뽑은 상품 줄이 남아 있으면 「일부 보류」 — 그 줄은 배송준비중에서 나가야 한다 */
+    var 색 = 출고색인(), 표 = 상품기준(g.줄들 || []);
+    function 보류됨(r) { return ZG.배송보류.보류인가(r) && !색[r.id]; }
+    if ((g.줄들 || []).some(보류됨)) {
+      var 남음 = g.줄들.some(function (r) { return r.서비스 !== true && !보류됨(r) && 준비중인가(r, 표); });
+      return 만들기('span', { class: 'hold', text: 남음 ? '일부 보류' : '배송보류' });
     }
     var s = 건상태(g);
     if (!s) return null;
@@ -154,14 +157,23 @@ window.ZG = window.ZG || {};
   }
 
   /* 🔴 보류 묶음은 배송준비중에서 뺀다 — 탭이 겹치면 보류 건이 출고리스트에 또 찍힌다.
-     열쇠에 주문일을 붙인다(묶음키는 날짜를 안 본다) — 같은 묶음의 서비스 줄도 같이 빠진다 */
+     빼는 것은 보류 줄과 그 주문의 서비스 줄뿐이다. 같은 사람·같은 날 송장을 아직 안 뽑은 주문은 남아야
+     출고리스트에 찍힌다. 서비스 줄엔 보류송장이 없어 08e 가 물려준 주문번호로 짝짓고,
+     번호로 못 가르는데 그날 남은 상품이 없으면(보류 건에만 딸린 것) 같이 뺀다 */
   function 보류열쇠(r) { return (r.묶음키 || 자.묶음키(r)) + '|' + (r.주문일 || ''); }
+  function 번호열쇠(r) { return (r.묶음키 || 자.묶음키(r)) + '|' + String(r.주문번호 || '').trim(); }
   function 준비중만(목록) {
-    var 표 = 상품기준(목록), 뺄 = Object.create(null), 색 = 출고색인();   // 거르기 전 목록으로 한 번만 (O(n))
+    var 표 = 상품기준(목록), 색 = 출고색인(), 보번호 = Object.create(null), 보날 = Object.create(null), 상품남음 = Object.create(null);
+    function 보류됨(r) { return ZG.배송보류.보류인가(r) && !색[r.id]; }
     ZG.저장소.읽기(ZG.저장소.키.주문).forEach(function (r) {
-      if (ZG.배송보류.보류인가(r) && !색[r.id]) 뺄[보류열쇠(r)] = 1;
+      if (보류됨(r)) { 보번호[번호열쇠(r)] = 1; 보날[보류열쇠(r)] = 1; }
     });
-    return 목록.filter(function (r) { return 준비중인가(r, 표) && !뺄[보류열쇠(r)]; });
+    var 남 = 목록.filter(function (r) { return 준비중인가(r, 표) && !보류됨(r); });
+    남.forEach(function (r) { if (r.서비스 !== true) 상품남음[보류열쇠(r)] = 1; });
+    return 남.filter(function (r) {
+      if (r.서비스 !== true) return true;
+      return !보번호[번호열쇠(r)] && !(보날[보류열쇠(r)] && !상품남음[보류열쇠(r)]);
+    });
   }
 
   /* 「⏸ 보류」 탭 — 기간과 상관없이 송장만 받아 둔 줄 전부 (22단계 §6). 서비스·이미 나간 줄은 뺀다 */
@@ -555,10 +567,11 @@ window.ZG = window.ZG || {};
       단추('⬆ 주문 올리기', 주문올리기누름),
       단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
       단추('📋 출고리스트', function () {
+        if (보류탭막기()) return;
         if (상태.상태칩 !== '나감') 상태.출고배치 = '';   // 배송완료 탭에서 고른 회차는 그대로 들고 간다
         ZG.주문입력.PC출고창(상태, 고른줄들());
       }, true),
-      단추('💌 동봉카드', function () { 카드열기(포장순(고른건들())); }, true)
+      단추('💌 동봉카드', function () { if (!보류탭막기()) 카드열기(포장순(고른건들())); }, true)
     ]);
   }
 
@@ -571,11 +584,12 @@ window.ZG = window.ZG || {};
     수동.addEventListener('click', function () { 열기('수동'); });
     var 출고 = 만들기('button', { class: 'btn', type: 'button', text: '📋 출고리스트' });
     출고.addEventListener('click', function () {
+      if (보류탭막기()) return;
       if (상태.상태칩 !== '나감') 상태.출고배치 = '';
       열기('출고');
     });
     var 카드 = 만들기('button', { class: 'btn', type: 'button', text: '💌 동봉카드' });
-    카드.addEventListener('click', function () { 카드열기(포장순(자.건으로묶기(줄들()))); });
+    카드.addEventListener('click', function () { if (!보류탭막기()) 카드열기(포장순(자.건으로묶기(줄들()))); });
     var 수집 = 만들기('button', { class: 'btn', type: 'button', text: '📥 주문수집' });
     수집.addEventListener('click', function () { 주문수집하기(수집); });
     var 배송 = 만들기('button', { class: 'btn', type: 'button', text: '🚚 배송완료' });
@@ -925,6 +939,13 @@ window.ZG = window.ZG || {};
 
   function 고른줄들() {
     return 고른건들().reduce(function (a, g) { return a.concat(g.줄들); }, []);
+  }
+
+  /* 🔴 보류 탭에서 뽑으면 고른 게 없을 때 화면 전부(=보류 줄)가 출고리스트·카드에 찍힌다 — 보류는 아직 안 싼다 */
+  function 보류탭막기() {
+    if (상태.상태칩 !== '보류') return false;
+    u.토스트('배송보류 탭에서는 뽑지 않습니다.');
+    return true;
   }
 
   function 고른게있나() {
