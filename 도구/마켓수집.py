@@ -94,13 +94,18 @@ def 한바퀴(억지=False):
         return
     시작 = 지금()
     적기(dict(내용, 시작=시작, 끝='', 결과=''))
+    # 🔴 다른 작업이 크롬을 쥐고 있으면 45초까지 기다린다 — 수집 25초를 더해도 v3 의 90초 안이다
+    자물쇠 = Path('/tmp/zg_마켓플러스.lock')
+    for _ in range(9):
+        if not 자물쇠.exists():
+            break
+        time.sleep(5)
     try:
         결과 = '✅ ' + '·'.join(수집걸기())
-    except SystemExit as e:          # 자물쇠를 다른 작업이 쥐고 있으면 sys.exit 로 온다
-        결과 = '❌ ' + str(e).split('\n')[0][:120]
-    except Exception as e:
-        결과 = '❌ ' + str(e).split('\n')[0][:120]
-    적기(dict(내용, 시작=시작, 끝=지금(), 결과=결과))
+    except (SystemExit, Exception) as e:     # 자물쇠·열쇠가 없으면 sys.exit 로 온다
+        결과 = '❌ ' + str(e).split('\n')[0].lstrip('❌ ')[:120]
+    # 🔴 실패는 「방금 돌았다」로 치지 않는다 — 고치고 바로 다시 누르시면 돌아야 한다
+    적기(dict(내용, 시작=시작 if 결과[0] == '✅' else 내용.get('시작', ''), 끝=지금(), 결과=결과))
     print(time.strftime('[%m/%d %H:%M:%S]'), 결과)
 
 
