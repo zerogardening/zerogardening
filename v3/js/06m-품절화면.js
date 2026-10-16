@@ -36,13 +36,9 @@ window.ZG = window.ZG || {};
     var 결 = c.무리 === '실패' ? ' bad' : c.무리 === '완료' ? ' done' : '';
     return '<span class="frac' + 결 + '"><b>' + c.완료수 + '</b>/' + c.분모 + '</span>';
   }
-  function 실패칩(c) { return c.실패수 ? '<span class="fn">실패 ' + c.실패수 + '</span>' : ''; }
-  function 옛답(c) {
-    return c.답장 ? '<div class="why 옛답' + (c.무리 === '실패' ? '' : ' 회색') + '">' + 안(c.답장) + '</div>' : '';
-  }
-
+  function 실패칩(c) { return c.무리 === '실패' && c.실패수 ? '<span class="fn">실패 ' + c.실패수 + '</span>' : ''; }
+  // 옛 줄도 펼치면 마켓 7줄 — 답장 글을 통째로 뿌리지 않는다 (23단계 후속 · 우람님)
   function 폰속(c) {
-    if (c.옛줄 && c.답장) return 옛답(c);
     return '<div class="mlist">' + c.칸.map(function (k) {
       return '<div class="mrow ' + k.값 + '"><span class="dot"></span><span class="mk">' + 안(k.마켓) + '</span>' +
         '<span class="how">' + 방식(k.마켓, c.다시판매) + '</span><span class="st ' + k.값 + '">' + 글[k.값] + '</span>' +
@@ -52,7 +48,6 @@ window.ZG = window.ZG || {};
   }
 
   function PC속(c) {
-    if (c.옛줄 && c.답장) return 옛답(c);
     return '<table class="mt"><colgroup><col style="width:150px"><col style="width:110px"><col style="width:110px">' +
       '<col style="width:90px"><col></colgroup><tr><th>마켓</th><th>방식</th><th>상태</th><th>시각</th><th>사유</th></tr>' +
       c.칸.map(function (k) {

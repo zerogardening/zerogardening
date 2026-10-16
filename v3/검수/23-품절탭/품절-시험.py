@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 23단계 품절 탭 · 06k 순서 · 학명 복사 — python3 v3/검수/23-품절탭/품절-시험.py [실줄.json]
+# 23단계 품절 탭(+후속: 옛 줄 마켓 7줄 · 간격) · 06k 순서 · 학명 복사 — python3 v3/검수/23-품절탭/품절-시험.py [실줄.json]
 # 🔴 supabase CDN 을 막고 가짜 클라이언트를 끼운다 — 진짜 서버에 아무것도 안 쓴다.
 #    실줄.json(있으면) = `v3_지시` 마켓품절·판매 줄을 읽기만 해서 뜬 것. 옛 줄 모양 확인용.
 import json, pathlib, subprocess, sys, time
@@ -26,7 +26,8 @@ M7 = ['카페24', '심폴', '스마트스토어', '쿠팡', 'G마켓', '롯데ON
     줄(지금 - 3 * 분, 'GEN01-10', '마켓품절', '대기', {'카페24': 칸('완료')}),
     줄(지금 - 5 * 분, 'CHR01-10', '마켓판매', '하는중', {'카페24': 칸('완료')}),
     줄(지금 - 12 * 분, 'HEP01-15', '마켓품절', '실패', dict(다('완료'), **{'11번가': 칸('실패', '로그인이 풀려 있음'), '롯데ON': 칸('없음')})),
-    줄(지금 - 60 * 분, 'ANH01-15', '마켓품절', '실패', None, '아네모네 품절 처리 일부 실패\n🔴 전송요청 창이 안 떴다 — 아무것도 안 나갔다', '아네모네 하이브리드'),
+    줄(지금 - 60 * 분, 'ANH01-15', '마켓품절', '실패', None, '아네모네 하이브리드 품절 처리 일부 실패\n❌ 키체인에 심폴 로그인이 없다 — `python3 상품/_도구/심폴열쇠.py 넣기` 를 먼저 돌린다.\n'
+         '🔴 전송요청 창이 안 떴다 — 아무것도 안 나갔다\n🔴 WING 로그인이 풀려 쿠팡을 확인 못 했다 — 9225 크롬 창에서 로그인 후 다시 본다', '아네모네 하이브리드'),
     줄(지금 - 150 * 분, 'CAR01-10', '마켓품절', '됨', 다('완료')),
     줄(지금 - 200 * 분, 'ANP01-15', '마켓품절', '됨', None, '추명국 품절 처리 완료', '추명국 핑크터치'),
     줄(지금 - 1300 * 분, 'MON01-15', '마켓품절', '됨', dict(다('완료'), 심폴=칸('없음'))),
@@ -66,7 +67,7 @@ time.sleep(1.2)
 주소 = 'http://localhost:8793/index.html'
 
 def 열기(브, 폰, 해시):
-    ctx = 브.new_context(viewport={'width': 390, 'height': 844} if 폰 else {'width': 1440, 'height': 1000},
+    ctx = 브.new_context(viewport={'width': 390, 'height': 844} if 폰 else {'width': 1440, 'height': 1500},
                          device_scale_factor=2 if 폰 else 1, permissions=['clipboard-read', 'clipboard-write'], service_workers='block')
     쪽 = ctx.new_page()
     오류 = []
@@ -107,12 +108,19 @@ def 품절탭(브, 폰):
     본다('7칸 — 진행중(하는중)', 막대[2] == 'ok,run,run,run,run,run,run', 막대[2])
     본다('7칸 — 대기', 막대[3] == 'ok,wait,wait,wait,wait,wait,wait', 막대[3])
     본다('7칸 — 옛 줄 됨 = 기록 없음', 막대[5] == ','.join(['unk'] * 7), 막대[5])
-    본다('7칸 — 옛 줄 실패 = 모두 실패', 막대[1] == ','.join(['fail'] * 7), 막대[1])
+    본다('7칸 — 옛 줄 실패 = 답장에 이름 찍힌 마켓만 실패, 나머지 기록 없음', 막대[1] == 'unk,fail,unk,fail,unk,unk,unk', 막대[1])
+    본다('옛 줄 실패 칩 = 뽑은 실패 수', '실패 2' in 쪽.inner_text('.품절탭 ' + 카 + ':nth-child(2)'))
     분수 = 쪽.eval_on_selector_all('.품절탭 ' + 카 + ' .frac', 'es => es.map(e => e.textContent)')
     본다('분수 — 없음은 분모에서 뺌 · 옛 줄은 기록 없음', 분수 == ['5/6', '기록 없음', '1/7', '1/7', '7/7', '기록 없음', '6/6'], 분수)
+    if 폰:
+        간 = 쪽.evaluate("() => { const t = document.querySelector('.속탭').getBoundingClientRect(), c = document.querySelector('.품절탭 .fchips').getBoundingClientRect(), k = document.querySelector('.품절탭 .sc').getBoundingClientRect(); return [c.top - t.bottom, k.top - c.bottom]; }")
+        본다('간격 — 속탭→칩 ≥ 24 · 칩→첫 카드 ≥ 12', 간[0] >= 24 and 간[1] >= 12, 간)
+    else:
+        간 = 쪽.evaluate("() => { const t = document.querySelector('.pc-tabs').getBoundingClientRect(), d = document.querySelector('.품절탭 .card').getBoundingClientRect(), h = document.querySelector('.품절탭 .ch').getBoundingClientRect(), k = document.querySelector('.품절탭 .pcr').getBoundingClientRect(); return [d.top - t.bottom, k.top - h.bottom]; }")
+        본다('간격 — 탭→카드 ≥ 24 · 머리→첫 행 ≥ 22', 간[0] >= 24 and 간[1] >= 22, 간)
     본다('실패 칩 「실패 1」', '실패 1' in 쪽.inner_text('.품절탭 ' + 카 + ':nth-child(1)'))
     본다('다시 판매 꼬리표', 쪽.inner_text('.품절탭 ' + 카 + ':nth-child(3) .ktag') == '다시 판매')
-    쪽.screenshot(path=str(여기 / (이름 + '-1-목록.png')), full_page=not 폰)
+    쪽.screenshot(path=str(여기 / ('후속-' + 이름 + '-1-목록.png')))
 
     손 = '' if 폰 else ' .hd'
     쪽.click('.품절탭 ' + 카 + ':nth-child(1)' + 손); 쪽.wait_for_timeout(900)
@@ -124,17 +132,27 @@ def 품절탭(브, 폰):
         줄들 = 쪽.eval_on_selector_all('.품절탭 .pcr.open table.mt tr', 'rs => rs.map(r => r.innerText.replace(/\\s+/g, " "))')
         본다('펼침 표 머리+7줄 · 사유', len(줄들) == 8 and '로그인이 풀려 있음' in 줄들[7], 줄들)
     본다('chev ⌃', 쪽.inner_text('.품절탭 ' + 카 + '.open .chev') == '⌃')
-    쪽.screenshot(path=str(여기 / (이름 + '-2-펼침.png')), full_page=not 폰)
+    쪽.screenshot(path=str(여기 / ('후속-' + 이름 + '-2-펼침.png')))
     # 폴링 다시그리기에도 펼침 유지
     새로(쪽, [dict(r) for r in 가짜줄] + [줄(지금 - 4000 * 분, 'ZZZ01-1', '마켓품절', '됨', 다('완료'))])
     본다('폴링 다시 그려도 펼친 채', 쪽.query_selector('.품절탭 ' + 카 + '.open') is not None)
     새로(쪽, 가짜줄)
-    # 옛 줄 펼침 — 답장을 그대로
+    # 옛 줄 펼침 — 답장 원문 대신 마켓 7줄, 사유는 그 마켓 한 줄만
+    쪽.click('.품절탭 ' + 카 + ':nth-child(1)' + 손)
     쪽.click('.품절탭 ' + 카 + ':nth-child(2)' + 손); 쪽.click('.품절탭 ' + 카 + ':nth-child(6)' + 손); 쪽.wait_for_timeout(900)
-    옛 = 쪽.eval_on_selector_all('.품절탭 .why.옛답', 'es => es.map(e => [e.innerText, e.classList.contains("회색")])')
-    본다('옛 줄 답장 — 실패는 빨강 · 됨은 회색 · 줄바꿈 유지', len(옛) == 2 and '\n' in 옛[0][0] and not 옛[0][1] and 옛[1][1], 옛)
-    쪽.screenshot(path=str(여기 / (이름 + '-3-옛줄.png')), full_page=not 폰)
+    줄식 = '.mrow' if 폰 else 'table.mt tr:not(:first-child)'
+    옛 = 쪽.eval_on_selector_all('.품절탭 ' + 카 + '.open', '(cs, s) => cs.map(c => [...c.querySelectorAll(s)].map(r => r.innerText.replace(/\\s+/g, " ").trim()))', 줄식)
+    본다('옛 줄 둘 다 마켓 7줄', len(옛) == 2 and all(len(x) == 7 for x in 옛), 옛)
+    본다('옛 실패 — 심폴·쿠팡만 실패 · 나머지 기록 없음', 옛 and '실패' in 옛[0][1] and '실패' in 옛[0][3] and '기록 없음' in 옛[0][0] and '기록 없음' in 옛[0][2], 옛 and 옛[0])
+    사유 = 쪽.inner_text('.품절탭 ' + 카 + ':nth-child(2)')
+    본다('사유는 짧은 한 줄 — 원문·명령·이름 없는 줄 안 보임', '키체인에 심폴 로그인이 없다' in 사유 and 'WING 로그인이 풀려 쿠팡을 확인 못 했다' in 사유
+         and 'python3' not in 사유 and '전송요청' not in 사유 and '일부 실패' not in 사유, 사유)
+    본다('옛 됨 — 7줄 모두 기록 없음', 옛 and all('기록 없음' in x for x in 옛[1]), 옛 and 옛[1])
+    본다('답장 원문 칸 없음', not 쪽.query_selector('.품절탭 .옛답'))
+    쪽.screenshot(path=str(여기 / ('후속-' + 이름 + '-3-옛줄.png')))
     # 칩 · 검색
+    for c in 쪽.query_selector_all('.품절탭 ' + 카 + '.open' + 손): c.click()
+    쪽.wait_for_timeout(300)
     쪽.click('.품절탭 .fchip:nth-child(2)'); 쪽.wait_for_timeout(300)
     본다('칩 실패 → 2장', len(쪽.query_selector_all('.품절탭 ' + 카)) == 2)
     쪽.click('.품절탭 .fchip:nth-child(1)'); 쪽.wait_for_timeout(300)
@@ -157,7 +175,27 @@ def 품절탭(브, 폰):
         n = len(쪽.query_selector_all('.품절탭 ' + 카))
         기 = 쪽.eval_on_selector_all('.품절탭 ' + 카 + ' .frac', 'es => es.filter(e => e.textContent === "기록 없음").length')
         본다('실데이터 %d줄 → 카드 %d장, 모두 「기록 없음」' % (len(실줄), n), n > 0 and 기 == n, (n, 기))
-        쪽.screenshot(path=str(여기 / (이름 + '-4-실데이터.png')), full_page=not 폰)
+        막 = 쪽.eval_on_selector_all('.품절탭 ' + 카, '(cs, 폰) => cs.map(c => [...c.querySelectorAll(폰 ? ".bar i" : ".bar .sg")].map(i => i.className.replace("sg ", "")))', 폰)
+        본다('실데이터 — 7칸 전부 빨간 카드 없음', not any(all(v == 'fail' for v in x) for x in 막), 막)
+        본다('실데이터 — 답장에서 뽑힌 칸이 있다', any(v in ('ok', 'fail', 'none') for x in 막 for v in x))
+        for i in range(n):
+            쪽.click('.품절탭 ' + 카 + ':nth-child(%d)' % (i + 1) + 손)
+        쪽.wait_for_timeout(900)
+        수 = 쪽.eval_on_selector_all('.품절탭 ' + 카 + '.open', '(cs, s) => cs.map(c => c.querySelectorAll(s).length)', 줄식)
+        본다('실데이터 — 펼치면 모두 마켓 7줄', len(수) == n and set(수) == {7}, 수)
+        긴 = 쪽.eval_on_selector_all('.품절탭 .why', 'es => es.map(e => e.innerText).filter(t => t.length > 60 || t.indexOf("\\n") >= 0)')
+        본다('실데이터 — 사유 칸에 긴 글·여러 줄 없음', not 긴, 긴)
+        쪽.evaluate('() => window.scrollTo(0, 0)')
+        쪽.screenshot(path=str(여기 / ('후속-' + 이름 + '-4-실데이터.png')))
+    나무 = ('**② 마켓플러스**\n```\n■ X\n   ├ 스마트스토어 1행 — 판매중으로 0행 되살리고, 재고를 9999 로\n   │    스마트스토어 (ncp)     지금 판매중\n'
+          '   ├ 그 밖 4행 — 중지해제 할 것 1행\n   │    쿠팡 (zg)         지금 판매중지\n   └ 이미 그 상태라 안 건드림 : 3행\n        롯데ON (zg1)      판매중\n'
+          '        G마켓 (0g)           판매중\n        11번가 (zg)       판매중\n\n   ▶ 그 밖 넷 — 중지해제 …\n      ✅ 전송했다 — 전송 요청\n\n'
+          '   🔴 카페24가 판매안함(또는 미진열)이라 중지해제를 할 수 없다 — 건드리지 않는다.\n\n   ▶ 스마트스토어 — 재고를 9999 로 …\n'
+          '      🔴 마켓플러스가 아무 말도 안 했다 — 화면을 보셔야 한다\n\n   말:\n      [confirm] x\n```\n심폴 상품 139개 중 이름이 맞는 것 0개\n   심폴에 없다.')
+    뽑 = 쪽.evaluate("(t) => ZG.품절자료.옛칸들(t)", 나무)
+    본다('나무 모양 — 이미=완료 · 할 것=▶구역 결과 · 심폴 없음 · 카페24 안 건드림',
+         {k: v['값'] for k, v in 뽑.items()} == {'롯데ON': 'ok', 'G마켓': 'ok', '11번가': 'ok', '쿠팡': 'fail', '스마트스토어': 'fail', '심폴': 'none'}
+         and 뽑['쿠팡']['사유'] == '카페24가 판매안함(또는 미진열)이라 중지해제를 할 수 없다', 뽑)
     본다('콘솔 에러 없음', not 오류, 오류)
     ctx.close()
 
@@ -177,7 +215,7 @@ def 작업중(브, 폰):
     본다('누르면 ✓ 복사됨 + done', b.inner_text() == '✓ 복사됨' and 'done' in b.get_attribute('class'))
     본다('클립보드 = 학명 원문', 쪽.evaluate('() => navigator.clipboard.readText()') == 'Dendranthema zawadskii')
     본다('사진창 안 열림', 쪽.query_selector('.사진창') is None)
-    쪽.screenshot(path=str(여기 / (이름 + '-5-작업중-복사.png')), full_page=not 폰)
+    쪽.screenshot(path=str(여기 / ('후속-' + 이름 + '-5-작업중-복사.png')))
     쪽.wait_for_timeout(1500)
     본다('1.5초 뒤 ⧉ 복사', b.inner_text() == '⧉ 복사' and 'done' not in b.get_attribute('class'))
     # 검색으로 <mark> 가 끼어도 복사는 원문

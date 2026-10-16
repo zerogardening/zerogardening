@@ -328,6 +328,10 @@ td.뺌칸{text-align:right}
 .속탭 button{display:flex; align-items:center; justify-content:center}
 .속탭 button.on .탭배지{box-shadow:0 0 0 1.5px #fff}
 
+/* 하위탭 줄 · 칩 줄 · 첫 카드 사이를 띄운다 (우람님 「공백이 너무 없다」) — 다른 하위탭은 그대로 */
+.ph-shell .품절탭{display:flex; flex-direction:column; gap:14px; padding-top:10px}
+.ph-shell .품절탭 .ph-list{gap:12px}
+.pc-main .품절탭{margin-top:10px}
 .품절탭 .지시-빈{text-align:center; color:var(--color-text-hint); font-size:var(--font-md); line-height:1.7; padding:var(--space-4xl) 0}
 .품절탭 .ktag{flex-shrink:0; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:2px 7px; border-radius:var(--radius-badge); background:#E5E5EA; color:#3A3A3C; line-height:1.4}
 .품절탭 .ktag.back{background:var(--color-accent-bg); color:var(--color-accent-dark); box-shadow:inset 0 0 0 1px var(--color-accent-border)}
@@ -372,13 +376,12 @@ td.뺌칸{text-align:right}
 .품절탭 .st.fail{color:#fff; background:var(--color-danger)}
 .품절탭 .why{margin:-4px 0 6px 17px; font-size:var(--font-sm); color:var(--color-danger); font-weight:var(--weight-semibold); padding-bottom:6px; border-bottom:var(--border-width) solid var(--color-border-faint)}
 .품절탭 .mlist .why:last-child{border-bottom:none}
-.품절탭 .why.옛답{margin:12px 0 6px; padding:10px 0 0; border-bottom:none; border-top:var(--border-width) solid var(--color-border-faint); white-space:pre-line; word-break:break-all}
 .품절탭 .why.회색{color:var(--color-text-muted); font-weight:var(--weight-medium)}
 /* PC */
-.품절탭 .card .ch{display:flex; align-items:center; gap:16px; margin-bottom:14px}
+.품절탭 .card .ch{display:flex; align-items:center; gap:16px; margin-bottom:22px}
 .품절탭 .card .ch h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
 .품절탭 .card .ch .srch{margin-left:auto; width:240px}
-.품절탭 .plist{display:flex; flex-direction:column; gap:8px}
+.품절탭 .plist{display:flex; flex-direction:column; gap:10px}
 .품절탭 .pcr{border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface)}
 .품절탭 .pcr .hd{display:grid; grid-template-columns:62px 220px 92px 1fr 118px 18px; align-items:center; gap:14px; padding:12px 16px; cursor:pointer}
 .품절탭 .pcr .ktag{justify-self:start}
@@ -396,7 +399,6 @@ td.뺌칸{text-align:right}
 .품절탭 .pcr .rt .frac{margin-left:0}
 .품절탭 .pcr.bad{border-color:var(--color-danger); box-shadow:0 0 0 1px var(--color-danger); background:#FFFBFB}
 .품절탭 .pcr .chev{margin-left:0}
-.품절탭 .pcr .why.옛답{margin:0 16px 12px; padding-top:10px}
 .품절탭 .mt{margin:0 16px 12px; width:calc(100% - 32px)}
 .품절탭 .mt td{padding:8px 12px}
 .품절탭 .mt td.mk{font-weight:var(--weight-semibold)}
