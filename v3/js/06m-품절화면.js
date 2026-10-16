@@ -76,6 +76,34 @@ window.ZG = window.ZG || {};
     });
   }
 
+  /* 펼친 칸 맨 아래 「다시 보내기」 — 안 된 것 같으면 같은 지시를 한 번 더 쌓는다 (우람님 2026-10-16).
+     🔴 다시판매→품절로 껐다 켜면 그 사이 마켓이 판매중으로 열린다 — 상태는 그대로 두고 지시만 다시 낸다.
+     🔴 진행중이면 안 보인다 — 맥이 집기 전에 두 번 쌓이면 같은 일을 두 번 한다. */
+  function 다시단추(c) {
+    if (c.무리 === '진행중') return '';
+    return '<div class="redo"><button type="button" class="btn sm ' + (c.다시판매 ? 'main' : 'warn') + '">' +
+      (c.다시판매 ? '판매 다시 보내기' : '품절 다시 보내기') + '</button></div>';
+  }
+  function 다시걸기(칸, c) {
+    var b = 칸.querySelector('.redo button');
+    if (!b) return;
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var 품절 = !c.다시판매;
+      u.확인({
+        제목: c.이름 + (품절 ? ' — 품절 처리를 다시 보냅니다' : ' — 판매 재개를 다시 보냅니다'),
+        본문: '자사몰 · 심폴 · 오픈마켓에 같은 지시를 한 번 더 냅니다.<br>이미 그 상태인 마켓은 건드리지 않습니다.',
+        확인글: '다시 보낸다', 위험: 품절
+      }, function (예) {
+        if (!예) return;
+        b.disabled = true;
+        var 품목 = (ZG.저장소.읽기(ZG.저장소.키.품목) || []).filter(function (p) { return p.품목코드 === c.품목코드; })[0] ||
+          { 품목코드: c.품목코드, 유통명: c.이름 };
+        ZG.마켓품절.밀기(품목, 품절);
+      });
+    });
+  }
+
   function 결(c) { return c.무리 === '실패' ? ' bad' : c.무리 === '완료' ? ' done' : ''; }
 
   function 폰카드(c) {
@@ -86,8 +114,9 @@ window.ZG = window.ZG || {};
       '<div class="r2"><span class="cd">' + 안(c.품목코드) + '</span><span class="tt">' + 날시(c.보낸때) + '</span>' +
       실패칩(c) + '<span class="chev">' + (열 ? '⌃' : '⌄') + '</span></div>' +
       '<div class="bar">' + c.칸.map(function (k) { return '<i class="' + k.값 + '"></i>'; }).join('') + '</div>' +
-      '<div class="foldbody' + (열 ? ' open' : '') + '"><div>' + 폰속(c) + '</div></div>';
+      '<div class="foldbody' + (열 ? ' open' : '') + '"><div>' + 폰속(c) + 다시단추(c) + '</div></div>';
     접기걸기(칸, 칸, c);
+    다시걸기(칸, c);
     return 칸;
   }
 
@@ -102,8 +131,9 @@ window.ZG = window.ZG || {};
         return '<div class="sg ' + k.값 + '"><i></i><span>' + 안(k.마켓) + '</span></div>';
       }).join('') + '</div>' +
       '<div class="rt">' + 실패칩(c) + 분수(c) + '</div><span class="chev">' + (열 ? '⌃' : '⌄') + '</span></div>' +
-      '<div class="foldbody' + (열 ? ' open' : '') + '"><div>' + PC속(c) + '</div></div>';
+      '<div class="foldbody' + (열 ? ' open' : '') + '"><div>' + PC속(c) + 다시단추(c) + '</div></div>';
     접기걸기(칸, 칸.querySelector('.hd'), c);
+    다시걸기(칸, c);
     return 칸;
   }
 
@@ -130,7 +160,7 @@ window.ZG = window.ZG || {};
     if (!상.읽음) { 목록자리.appendChild(빈칸('불러오는 중…')); return; }
     var 목록 = 걸러();
     칩자리.appendChild(칩줄(목록));
-    if (!ZG.품절자료.카드들().length) { 목록자리.appendChild(빈칸('최근 30일 품절 요청이 없습니다')); return; }
+    if (!ZG.품절자료.카드들().length) { 목록자리.appendChild(빈칸('품절 요청이 없습니다')); return; }
     var 보일 = 목록.filter(function (c) { return 칩 === '전체' || c.무리 === 칩; });
     if (!보일.length) { 목록자리.appendChild(빈칸(검색글 ? '찾는 품목이 없습니다' : '해당하는 요청이 없습니다')); return; }
     var 폰 = u.폰인가();

@@ -10,6 +10,8 @@ window.ZG = window.ZG || {};
 
   var 마켓들 = ['카페24', '심폴', '스마트스토어', '쿠팡', 'G마켓', '롯데ON', '11번가'];
   var 폴링초 = 15, 날수 = 30;
+  // 🔴 이때부터 낸 지시만 보인다 — 그 전 것은 우람님이 「다 정리하고 앞으로 지시한 것만」 (2026-10-16 23:5x). 표에서 지우지 않는다
+  var 시작점 = 1792162504808;
   var 줄들 = [], 오류 = '', 읽음 = false, 서명 = '', 타이머 = null, 읽는중 = false, 또 = false;
 
   function 클() {
@@ -38,7 +40,7 @@ window.ZG = window.ZG || {};
     // id 앞 13자리 = 보낸때 ms — 문자열 비교가 곧 시간 비교다
     return 제때(c.from('v3_지시').select('id,내용,삭제됨')
       .eq('삭제됨', false).in('내용->>갈래', ['마켓품절', '마켓판매'])
-      .gte('id', String(Date.now() - 날수 * 864e5))
+      .gte('id', String(Math.max(시작점, Date.now() - 날수 * 864e5)))
       .order('id', { ascending: false }).limit(300))
       .then(function (답) {
         if (답 && 답.error) throw 답.error;

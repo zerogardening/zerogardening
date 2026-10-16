@@ -400,6 +400,8 @@ td.뺌칸{text-align:right}
 .품절탭 .pcr.bad{border-color:var(--color-danger); box-shadow:0 0 0 1px var(--color-danger); background:#FFFBFB}
 .품절탭 .pcr .chev{margin-left:0}
 .품절탭 .mt{margin:0 16px 12px; width:calc(100% - 32px)}
+.품절탭 .redo{display:flex; justify-content:flex-end; padding:10px 16px 12px}
+.품절탭 .ph-list .redo{padding:10px 0 2px}
 .품절탭 .mt td{padding:8px 12px}
 .품절탭 .mt td.mk{font-weight:var(--weight-semibold)}
 .품절탭 .mt td.why{margin:0; padding:8px 12px; border-bottom:var(--border-width) solid var(--color-border-faint)}
