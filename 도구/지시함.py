@@ -278,6 +278,7 @@ python3 "상품/_도구/마켓플러스품절.py" 품절 %(코드)s --진짜
    마켓에 두 번 나가면 우람님이 손으로 되돌리셔야 한다.
 🔴 자사몰(카페24)은 **이미 처리됐다.** 여기서 건드리지 마라.
 🔴 심폴이 실패해도 마켓플러스는 돌려라 — 한쪽만 되는 게 둘 다 안 되는 것보다 낫다.
+🔴 `@@결과` 로 시작하는 줄은 옮겨 적지 마라.
 """,
 
     '마켓판매': """오픈마켓을 다시 판매중으로 되돌린다. **아래 한 줄만** 돌리고, 나온 글을 그대로 답장에 옮겨 적어라.
@@ -292,6 +293,7 @@ python3 "상품/_도구/마켓플러스품절.py" 판매 %(코드)s --진짜
 🔴 출력에 🔴 가 있으면 **실패다.** 그 줄을 빠짐없이 옮겨 적어라. 다시 돌리지 마라.
 🔴 자사몰(카페24)은 **이미 처리됐다.** 여기서 건드리지 마라.
 🔴 심폴이 실패해도 마켓플러스는 돌려라 — 한쪽만 되는 게 둘 다 안 되는 것보다 낫다.
+🔴 `@@결과` 로 시작하는 줄은 옮겨 적지 마라.
 """,
 
     '카페24올리기': """「%(품목)s」를 카페24에 올려라. 우람님이 상세페이지를 확인하시고 누르신 것이다.
@@ -468,7 +470,9 @@ def 짧게(값, n=70):
     return ' '.join(t.split())[:n]
 
 
-품절실행 = re.compile(r'python3\s+"?[^"\s]*품절\.py"?\s+(품절|판매|내리기)\b')
+품절실행 = re.compile(r'python3\s+"?[^"\s]*?(심폴품절|마켓플러스품절)\.py"?\s+(품절|판매|내리기)\b')
+# 품절 탭 마켓 칸 (23단계 §1) — 도구마다 제 몫. 카페24 칸은 브라우저(06k)가 줄을 만들 때 넣는다
+도구마켓 = {'심폴품절': ['심폴'], '마켓플러스품절': ['스마트스토어', '쿠팡', 'G마켓', '롯데ON', '11번가']}
 
 
 def 도구실패줄(기록):
@@ -501,9 +505,61 @@ def 도구실패줄(기록):
                 속 = '\n'.join(x.get('text') or '' for x in 속 if isinstance(x, dict))
             for 줄 in str(속 or '').split('\n'):
                 줄 = ' '.join(줄.split())
+                if 줄.startswith('@@'):        # `@@결과` JSON 안의 🔴 사유가 섞여 들어온다
+                    continue
                 if ('🔴' in 줄 or '❌' in 줄) and not 줄.startswith('■') and 줄 not in 줄들:
                     줄들.append(줄[:200])
     return 줄들
+
+
+def 마켓결과(기록):
+    """품절 도구들이 찍은 `@@결과 {JSON}` 을 모아 `내용.마켓` 에 합칠 dict 로 (23단계 §4-3).
+    🔴 tool_result 원본에서 읽는다(도구실패줄과 같은 길) — 답장은 Claude 가 옮겨 적어 빠질 수 있다.
+    같은 도구를 두 번 돌렸으면 뒤엣것. 돌렸는데 `@@결과` 가 없으면 그 도구 몫을 실패로 적는다 —
+    비워 두면 화면이 「기록 없음」으로 보여 실패가 묻힌다."""
+    try:
+        원 = 기록.read_text(encoding='utf-8', errors='replace').split('\n')
+    except (OSError, AttributeError):
+        return {}
+    도구id, 도구별 = {}, {}
+    for L in 원:
+        try:
+            o = json.loads(L)
+        except ValueError:
+            continue
+        for c in (o.get('message') or {}).get('content') or []:
+            if not isinstance(c, dict):
+                continue
+            if o.get('type') == 'assistant' and c.get('type') == 'tool_use' and c.get('name') == 'Bash':
+                m = 품절실행.search(str((c.get('input') or {}).get('command') or ''))
+                if m:
+                    도구id[c.get('id')] = m.group(1)
+            if o.get('type') != 'user' or c.get('type') != 'tool_result' or c.get('tool_use_id') not in 도구id:
+                continue
+            도구 = 도구id[c.get('tool_use_id')]
+            속 = c.get('content')
+            if isinstance(속, list):
+                속 = '\n'.join(x.get('text') or '' for x in 속 if isinstance(x, dict))
+            찾은, 첫빨강 = None, ''
+            for 줄 in str(속 or '').split('\n'):
+                줄 = 줄.strip()
+                if 줄.startswith('@@결과 '):
+                    try:
+                        찾은 = json.loads(줄[len('@@결과 '):])
+                    except ValueError:
+                        pass
+                elif not 첫빨강 and ('🔴' in 줄 or '❌' in 줄) and not 줄.startswith(('■', '@@')):
+                    첫빨강 = ' '.join(줄.split())
+            if isinstance(찾은, dict):
+                도구별[도구] = {k: v for k, v in 찾은.items() if k in 도구마켓[도구] and isinstance(v, dict)}
+            else:
+                사유 = 첫빨강.lstrip('🔴❌ ')[:120] or '결과 기록이 없습니다'
+                때 = int(time.time() * 1000)
+                도구별[도구] = {k: {'상태': '실패', '사유': 사유, '때': 때} for k in 도구마켓[도구]}
+    합 = {}
+    for 것 in 도구별.values():
+        합.update(것)
+    return 합
 
 
 def 기록읽기(기록):
@@ -742,6 +798,13 @@ def 한건():
     답원문, 자취 = 기록읽기(기록)
     답 = 답장뽑기(답원문, 자취)
     일부실패 = False
+    # 품절 탭 마켓 칸 — 집을 때 읽은 카페24 칸 위에 맥 몫을 얹는다 (23단계 §4-3)
+    마켓 = 맥실패 = None
+    if 내용.get('갈래') in ('마켓품절', '마켓판매'):
+        맥몫 = 마켓결과(기록)
+        마켓 = dict(내용.get('마켓') or {})
+        마켓.update(맥몫)
+        맥실패 = any((v or {}).get('상태') == '실패' for v in 맥몫.values())   # 카페24 실패는 맥 성패에 안 넣는다
     if 됐나 and 내용.get('갈래') in 갈래별완료말:
         이름 = 내용.get('폴더') or 내용.get('품목코드') or 줄id
         갈래 = 내용.get('갈래')
@@ -749,7 +812,7 @@ def 한건():
         # 🔴 **일부라도 실패하면 「완료」라 적지 않는다** (우람님 2026-10-15). 상태도 「실패」로 둬서 폰에 🔴 로 뜬다.
         #    마켓품절·마켓판매는 정해진 도구 두 개만 도니 그 출력의 🔴·❌ 가 곧 실패다.
         실패줄 = 도구실패줄(기록) if 갈래 in ('마켓품절', '마켓판매') else []
-        if 실패채널 or 실패줄:
+        if 실패채널 or 실패줄 or 맥실패:
             일부실패 = True
             답 = ('%s %s 일부 실패%s' % (이름, 갈래별완료말[갈래],
                                       ' (실패:%s)' % '·'.join(실패채널) if 실패채널 else '')
@@ -767,8 +830,9 @@ def 한건():
     except Exception as e:
         답 += '\n(커밋은 못 했습니다 — %s)' % e
 
+    더할것 = {'마켓': 마켓} if 마켓 is not None else {}
     적기(줄id, 내용, 상태='됨' if 됐나 and not 일부실패 else '실패', 답장=답, 답한때=int(time.time() * 1000),
-         걸린초=int(time.time() - 잰때), 커밋=자국)
+         걸린초=int(time.time() - 잰때), 커밋=자국, **더할것)
     뒤처리(내용, 됐나)
     번호적기(내용, 됐나, 답)
     완료로넘기기(내용, 됐나)

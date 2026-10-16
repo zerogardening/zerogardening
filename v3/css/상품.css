@@ -317,3 +317,99 @@ td.뺌칸{text-align:right}
 .기간창 .inp{ width:100% }
 .기간창 .단추줄{ display:flex; gap:var(--space-sm); margin-top:var(--space-3xl) }
 .기간창 .단추줄 .btn{ flex:1 }
+
+/* ══ 23단계 — 품절 탭 (시안 23-품절탭-macA.html) ══
+   🔴 전부 .품절탭 아래 — .bar .st .why .mrow .dot 가 주문·메모·업체 css 에 이미 있다.
+   🔴 배지는 .탭배지 — 시안 .bd 는 .사진창 .bd 와 겹친다. */
+.pc-tabs button{display:inline-flex; align-items:center}
+.탭배지{font-style:normal; display:inline-block; min-width:17px; padding:0 5px; border-radius:9px; background:#8E8E93; color:#fff; font-size:var(--font-2xs); line-height:17px; text-align:center; font-weight:var(--weight-bold); margin-left:5px; font-variant-numeric:tabular-nums}
+.탭배지.빨강{background:var(--color-danger)}
+.탭배지[hidden]{display:none}
+.속탭 button{display:flex; align-items:center; justify-content:center}
+.속탭 button.on .탭배지{box-shadow:0 0 0 1.5px #fff}
+
+.품절탭 .지시-빈{text-align:center; color:var(--color-text-hint); font-size:var(--font-md); line-height:1.7; padding:var(--space-4xl) 0}
+.품절탭 .ktag{flex-shrink:0; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:2px 7px; border-radius:var(--radius-badge); background:#E5E5EA; color:#3A3A3C; line-height:1.4}
+.품절탭 .ktag.back{background:var(--color-accent-bg); color:var(--color-accent-dark); box-shadow:inset 0 0 0 1px var(--color-accent-border)}
+.품절탭 .frac{margin-left:auto; font-size:var(--font-md); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums; white-space:nowrap}
+.품절탭 .frac b{font-size:22px; color:var(--color-text); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.품절탭 .frac.done b{color:var(--color-accent-dark)}
+.품절탭 .frac.bad b{color:var(--color-danger)}
+.품절탭 .frac.옛{font-size:var(--font-xs); color:var(--color-text-hint)}
+.품절탭 .fn{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#fff; background:var(--color-danger); padding:1px 7px; border-radius:var(--radius-pill)}
+.품절탭 .bar{display:flex; gap:3px; margin-top:10px}
+.품절탭 .bar i{flex:1; height:7px; border-radius:3px; background:#E3E3E8}
+.품절탭 .bar i.ok, .품절탭 .bar .sg.ok i{background:var(--color-accent)}
+.품절탭 .bar i.run, .품절탭 .bar .sg.run i{background:#F2A30F}
+.품절탭 .bar i.fail, .품절탭 .bar .sg.fail i{background:var(--color-danger)}
+/* 폰 카드 */
+.품절탭 .sc{background:var(--color-surface); border-radius:var(--radius-xl); padding:12px 16px 14px; box-shadow:var(--shadow-card); cursor:pointer}
+.품절탭 .sc .r1{display:flex; align-items:center; gap:8px}
+.품절탭 .sc .nm{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.품절탭 .sc .r2{display:flex; align-items:center; gap:8px; margin-top:3px; font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.품절탭 .cd{font-family:var(--font-mono); font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
+.품절탭 .sc .tt{font-variant-numeric:tabular-nums}
+.품절탭 .chev{margin-left:auto; color:var(--color-text-hint); font-size:var(--font-md)}
+.품절탭 .sc.bad{box-shadow:0 0 0 1.5px var(--color-danger), var(--shadow-card); background:#FFFBFB}
+.품절탭 .sc.done, .품절탭 .pcr.done{opacity:.72}
+.품절탭 .sc.done .bar i{opacity:.55}
+.품절탭 .sc.open{padding-bottom:6px}
+.품절탭 .mlist{margin-top:12px; border-top:var(--border-width) solid var(--color-border-faint)}
+.품절탭 .mrow{display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md)}
+.품절탭 .mrow:last-child{border-bottom:none}
+.품절탭 .mrow .dot{width:9px; height:9px; border-radius:50%; background:#D1D1D6; flex-shrink:0}
+.품절탭 .mrow.ok .dot{background:var(--color-accent)}
+.품절탭 .mrow.run .dot{background:#F2A30F}
+.품절탭 .mrow.fail .dot{background:var(--color-danger)}
+.품절탭 .mrow .mk{font-weight:var(--weight-semibold); min-width:84px}
+.품절탭 .mrow .how{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.품절탭 .mrow .st{margin-left:auto}
+.품절탭 .mrow .tm{width:38px; text-align:right; font-size:var(--font-xs); color:var(--color-text-muted); font-variant-numeric:tabular-nums}
+.품절탭 .st{font-size:var(--font-xs); font-weight:var(--weight-bold); padding:2px 8px; border-radius:var(--radius-pill); white-space:nowrap}
+.품절탭 .st.ok{color:var(--color-accent-dark); background:var(--color-accent-bg)}
+.품절탭 .st.run{color:#9A5B00; background:#FFF3D6}
+.품절탭 .st.wait, .품절탭 .st.none, .품절탭 .st.unk{color:var(--color-text-muted); background:#F0F0F3}
+.품절탭 .st.fail{color:#fff; background:var(--color-danger)}
+.품절탭 .why{margin:-4px 0 6px 17px; font-size:var(--font-sm); color:var(--color-danger); font-weight:var(--weight-semibold); padding-bottom:6px; border-bottom:var(--border-width) solid var(--color-border-faint)}
+.품절탭 .mlist .why:last-child{border-bottom:none}
+.품절탭 .why.옛답{margin:12px 0 6px; padding:10px 0 0; border-bottom:none; border-top:var(--border-width) solid var(--color-border-faint); white-space:pre-line; word-break:break-all}
+.품절탭 .why.회색{color:var(--color-text-muted); font-weight:var(--weight-medium)}
+/* PC */
+.품절탭 .card .ch{display:flex; align-items:center; gap:16px; margin-bottom:14px}
+.품절탭 .card .ch h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.품절탭 .card .ch .srch{margin-left:auto; width:240px}
+.품절탭 .plist{display:flex; flex-direction:column; gap:8px}
+.품절탭 .pcr{border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface)}
+.품절탭 .pcr .hd{display:grid; grid-template-columns:62px 220px 92px 1fr 118px 18px; align-items:center; gap:14px; padding:12px 16px; cursor:pointer}
+.품절탭 .pcr .ktag{justify-self:start}
+.품절탭 .pcr .who{display:flex; flex-direction:column; gap:2px; min-width:0}
+.품절탭 .pcr .nm{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.품절탭 .pcr .tt{font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+.품절탭 .pcr .bar{margin-top:0}
+.품절탭 .bar.lb{gap:4px}
+.품절탭 .bar .sg{flex:1; display:flex; flex-direction:column; gap:4px; align-items:stretch; min-width:0}
+.품절탭 .bar .sg i{flex:none; height:7px; border-radius:3px; background:#E3E3E8}   /* 시안은 .bar i{flex:1} 이 세로줄 안에서 높이를 0 으로 눌렀다 */
+.품절탭 .bar .sg span{font-size:var(--font-3xs); color:var(--color-text-muted); text-align:center; font-weight:var(--weight-semibold); white-space:nowrap}
+.품절탭 .bar .sg.fail span{color:var(--color-danger); font-weight:var(--weight-bold)}
+.품절탭 .bar .sg.run span{color:#9A5B00}
+.품절탭 .pcr .rt{display:flex; align-items:center; justify-content:flex-end; gap:8px}
+.품절탭 .pcr .rt .frac{margin-left:0}
+.품절탭 .pcr.bad{border-color:var(--color-danger); box-shadow:0 0 0 1px var(--color-danger); background:#FFFBFB}
+.품절탭 .pcr .chev{margin-left:0}
+.품절탭 .pcr .why.옛답{margin:0 16px 12px; padding-top:10px}
+.품절탭 .mt{margin:0 16px 12px; width:calc(100% - 32px)}
+.품절탭 .mt td{padding:8px 12px}
+.품절탭 .mt td.mk{font-weight:var(--weight-semibold)}
+.품절탭 .mt td.why{margin:0; padding:8px 12px; border-bottom:var(--border-width) solid var(--color-border-faint)}
+.품절탭 .mt tr.fail td{background:#FFF1F0}
+
+/* ══ 23b — 학명 복사 (시안 23b-작업중복사-macA.html) ══ */
+.사진대기 .scirow{display:flex; align-items:center; gap:8px; margin-top:3px}
+.사진대기 .scirow .sci{font-style:italic; color:var(--color-text-sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.ph-shell .사진대기 .scirow .sci{font-size:var(--font-sm)}
+.사진대기 td .scirow .sci{font-style:italic; font-size:var(--font-table-sci); color:var(--color-text-sub)}
+.사진대기 .cpy{flex-shrink:0; font-family:inherit; font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub);
+  background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-radius:var(--radius-sm);
+  padding:0 9px; height:24px; box-shadow:var(--shadow-btn); cursor:pointer; white-space:nowrap}
+.ph-shell .사진대기 .cpy{height:30px; padding:0 12px; font-size:var(--font-sm)}
+.사진대기 .cpy.done{color:var(--color-accent-dark); background:var(--color-accent-bg); border-color:var(--color-accent-border)}

@@ -221,6 +221,43 @@ window.ZG = window.ZG || {};
     }).catch(function () { 칩.style.display = 'none'; });   // 못 세면 숫자를 지어내지 않는다
   }
 
+  /* ── 학명 [복사] (23b) — 학명이 있을 때만 단추를 단다 ── */
+  function 학명칸(p) {
+    if (!String(p.학명 || '').trim()) return '<div class="sci">' + 칠글(p.학명) + '</div>';
+    return '<div class="scirow"><span class="sci">' + 칠글(p.학명) + '</span>' +
+           '<button type="button" class="cpy">⧉ 복사</button></div>';
+  }
+
+  /* 클립보드 → 안 되면 숨은 textarea 두 겹 (06f 복사하기와 같은 수) */
+  function 글복사(글) {
+    function 예비() {
+      var t = 만들기('textarea', { style: 'position:fixed; top:-1000px; opacity:0', readonly: 'readonly' });
+      t.value = 글;
+      document.body.appendChild(t);
+      t.select();
+      var 됐나 = false;
+      try { 됐나 = document.execCommand('copy'); } catch (e) { 됐나 = false; }
+      document.body.removeChild(t);
+      return 됐나 ? Promise.resolve() : Promise.reject(new Error('막힘'));
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(글).catch(예비);
+    return 예비();
+  }
+
+  function 복사걸기(칸, p) {
+    var b = 칸.querySelector('.cpy');
+    if (!b) return;
+    var 타 = null;
+    b.addEventListener('click', function (e) {
+      e.stopPropagation(); e.preventDefault();      // 줄·카드를 누르면 사진창이 열린다
+      글복사(String(p.학명).trim()).then(function () {   // 칠글의 <mark> 가 아니라 원문
+        b.textContent = '✓ 복사됨'; b.classList.add('done');
+        clearTimeout(타);
+        타 = setTimeout(function () { b.textContent = '⧉ 복사'; b.classList.remove('done'); }, 1500);
+      }, function () { u.토스트('복사가 막혔습니다'); });
+    });
+  }
+
   /* 폰 — 05d 의 폰내역() 카드와 같은 결(.ph-list > .ph-card) */
   /* 🔴 폰에서 카드를 왼쪽으로 밀면 빼기가 나온다 (2026-09-14 우람님 「✕ 가 작아 불편하다」).
      어려운 점은 **미는 것과 누르는 것이 같은 손짓**이라는 것이다 — 카드를 누르면 사진창이 열린다.
@@ -302,9 +339,10 @@ window.ZG = window.ZG || {};
       var 칸 = 만들기('div', { class: 'ph-card' + (상[p.품목코드] === '끝' ? ' 끝남' : '') });
       칸.innerHTML =
         '<div class="r1"><div class="nm">' + 칠글(p.유통명) + '</div><div class="cd">' + 칠글(p.품목코드) + '</div></div>' +
-        '<div class="sci">' + 칠글(p.학명) + '</div>' +
+        학명칸(p) +
         '<div class="r2">' + u.안전(p.규격) + '<span class="amt"><span class="chip 사진">…</span></span></div>';
       칩달기(칸.querySelector('.chip'), p, 상[p.품목코드]);
+      복사걸기(칸, p);
       칸.addEventListener('click', function () { 열기(p); });
       칸.appendChild(뺌단추(p));            // 밀기가 안 되는 기기를 위해 남겨 둔다(폰에선 CSS 로 감춘다)
       목.appendChild(민카드(칸, p));
@@ -331,12 +369,13 @@ window.ZG = window.ZG || {};
       var 줄 = 만들기('tr', { class: 상[p.품목코드] === '끝' ? '끝남' : '', style: 'cursor:pointer' });
       줄.innerHTML =
         '<td class="code">' + 칠글(p.품목코드) + '</td>' +
-        '<td>' + 칠글(p.유통명) + '<div class="sci">' + 칠글(p.학명) + '</div></td>' +
+        '<td>' + 칠글(p.유통명) + 학명칸(p) + '</td>' +
         '<td class="dim">' + u.안전(p.규격) + '</td>' +
         '<td><span class="chip 사진">…</span></td>' +
         '<td class="뺌칸"></td>';
       칩달기(줄.querySelector('.chip'), p, 상[p.품목코드]);
       줄.querySelector('.뺌칸').appendChild(뺌단추(p));
+      복사걸기(줄, p);
       줄.addEventListener('click', function () { 열기(p); });
       몸.appendChild(줄);
     });

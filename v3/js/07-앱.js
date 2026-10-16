@@ -5,10 +5,11 @@ window.ZG = window.ZG || {};
 
   var u = ZG.ui, 만들기 = u.만들기;
   /* 🔴 `이름` 은 해시이자 열쇠다 — `#입고`·`#재고` 로 걸린 링크가 여기저기 있다.
-     `폰: true` 인 셋이 입고 화면 안 속탭이다 (2026-09-14 우람님 「입고 탭 하나에 다 묶는다」). */
+     `폰: true` 인 넷이 상품 화면 안 속탭이다 (2026-09-14 우람님 「입고 탭 하나에 다 묶는다」 · 품절 23단계). */
   var 탭들 = [
     { 이름: '입고', 아이콘: '🌿', 폰: true, 모듈: function () { return ZG.입고; } },
     { 이름: '재고', 아이콘: '📦', 폰: true, 모듈: function () { return ZG.재고; } },
+    { 이름: '품절', 아이콘: '🚫', 폰: true, 모듈: function () { return ZG.품절; } },
     { 이름: '작업중', 아이콘: '🛠', 폰: true, 모듈: function () { return ZG.작업중; } },
     { 이름: '이미지', 아이콘: '🖼', 모듈: function () { return ZG.상품이미지; } },
     { 이름: '블로그', 아이콘: '✏️', 모듈: function () { return ZG.블로그; } }
@@ -17,6 +18,12 @@ window.ZG = window.ZG || {};
   // 「명세서 발행」은 업체 관리 안 세 번째 탭이 됐다 — 왼쪽 메뉴는 4개다 (3단계 설계)
   var 지금 = '입고';
   var 뿌리, 본문;
+  var 단추들 = [], 알약 = null;          // PC 탭 — 배지가 칠해지면 알약 너비를 다시 잰다
+
+  /* 품절 탭 단추 안 배지 자리. 숫자는 06l 이 칠한다 (23단계 §3-5) */
+  function 배지달기(b, t) {
+    if (t.이름 === '품절') b.appendChild(만들기('i', { class: '탭배지', 'data-품절배지': '', hidden: '' }));
+  }
 
   function 해시읽기() {
     var h = decodeURIComponent(location.hash.replace('#', ''));
@@ -45,14 +52,15 @@ window.ZG = window.ZG || {};
     ]);
 
     var 탭 = 만들기('div', { class: 'pc-tabs', role: 'tablist' });
-    var 알약 = 만들기('i', { class: 'ind' });
+    알약 = 만들기('i', { class: 'ind' });
     탭.appendChild(알약);
-    var 단추들 = 탭들.map(function (t) {
+    단추들 = 탭들.map(function (t) {
       var b = 만들기('button', {
         type: 'button', role: 'tab', text: t.이름,
         'aria-selected': t.이름 === 지금 ? 'true' : 'false',
         class: t.이름 === 지금 ? 'on' : ''
       });
+      배지달기(b, t);
       b.addEventListener('click', function () { 탭으로(t.이름); });
       탭.appendChild(b);
       return b;
@@ -62,12 +70,16 @@ window.ZG = window.ZG || {};
     var 주 = 만들기('div', { class: 'pc-main' }, [머리, 탭, 본문]);
     뿌리.appendChild(만들기('div', { class: 'shell' }, [옆, 주]));
 
-    // 알약을 켜진 탭 자리로
+    requestAnimationFrame(알약맞추기);
+  }
+
+  /* 알약을 켜진 탭 자리로 — 배지가 붙고 떨어지면 단추 너비가 바뀌어 다시 부른다 */
+  function 알약맞추기() {
+    if (u.폰인가() || !알약) return;
     var 켜짐 = 단추들[탭들.findIndex(function (t) { return t.이름 === 지금; })];
-    requestAnimationFrame(function () {
-      알약.style.width = 켜짐.offsetWidth + 'px';
-      알약.style.transform = 'translateX(' + (켜짐.offsetLeft - 2) + 'px)';
-    });
+    if (!켜짐) return;
+    알약.style.width = 켜짐.offsetWidth + 'px';
+    알약.style.transform = 'translateX(' + (켜짐.offsetLeft - 2) + 'px)';
   }
 
   /* ── 폰 뼈대 ── */
@@ -81,7 +93,9 @@ window.ZG = window.ZG || {};
       뒤.addEventListener('click', 정보.뒤로);
       왼쪽.appendChild(뒤);
     }
-    if (정보.제목) 왼쪽.appendChild(만들기('h1', { text: 정보.제목, style: 정보.작게 ? 'font-size:22px' : null }));
+    // 목록 화면은 넷 다 「상품」(23단계 시안) — 상세(뒤로 있음)만 제 제목
+    var 제목 = 정보.뒤로 ? 정보.제목 : '상품';
+    if (제목) 왼쪽.appendChild(만들기('h1', { text: 제목, style: 정보.작게 ? 'font-size:22px' : null }));
     위.appendChild(왼쪽);
 
     var 아래 = (정보.왼 || 정보.오) ? 만들기('div', { class: 'ph-sub' }, [
@@ -99,6 +113,7 @@ window.ZG = window.ZG || {};
         type: 'button', text: t.이름, style: 'flex:1; padding:0',
         class: t.이름 === 지금 ? 'on' : ''
       });
+      배지달기(b, t);
       b.addEventListener('click', function () { 탭으로(t.이름); });
       속탭.appendChild(b);
     });
@@ -119,6 +134,7 @@ window.ZG = window.ZG || {};
     if (u.폰인가()) 폰뼈대(); else PC뼈대();
     현재모듈().그리기(본문);
     if (u.폰인가()) 요약다시();
+    if (ZG.품절자료) ZG.품절자료.배지칠하기();
   }
 
   /* 폰 위쪽 요약줄만 다시 — 저장 뒤 숫자가 바뀔 때 */
@@ -173,6 +189,7 @@ window.ZG = window.ZG || {};
     지금 = 해시읽기() || ZG.저장소.설정읽기().마지막탭 || '입고';
     if (!location.hash) location.hash = '#' + 지금;
     다시그리기();
+    if (ZG.품절자료) ZG.품절자료.시작();
 
     window.addEventListener('hashchange', 해시바뀜);
     u.폰질의.addEventListener('change', 다시그리기);
@@ -181,6 +198,6 @@ window.ZG = window.ZG || {};
     });
   }
 
-  ZG.앱 = { 시작: 시작, 다시그리기: 다시그리기, 요약다시: 요약다시 };
+  ZG.앱 = { 시작: 시작, 다시그리기: 다시그리기, 요약다시: 요약다시, 알약맞추기: 알약맞추기 };
   document.addEventListener('DOMContentLoaded', 시작);
 })(window.ZG);
