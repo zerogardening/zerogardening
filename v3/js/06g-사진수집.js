@@ -270,7 +270,8 @@ window.ZG = window.ZG || {};
   var 열린칸 = null;                    // 한 번에 하나만 열어 둔다
   var 단추폭 = 88;
 
-  function 밀기붙이기(싼것, 칸, p) {
+  function 밀기붙이기(싼것, 칸, p, 폭) {
+    var 단추폭 = 폭 || 88;
     var 시작X = 0, 시작Y = 0, 미는중 = false, 정했나 = false, 열림 = false, 지금 = 0;
 
     function 옮기기(px, 부드럽게) {
@@ -333,8 +334,21 @@ window.ZG = window.ZG || {};
       if (삭제) 삭제.누름(); else 완료누름(p);
     });
     싼것.appendChild(뒷);
+    /* 작업중 카드는 [업로드]가 하나 더 — 결과 창의 「상품 업로드/상세페이지 갱신」과 같은 지시를 낸다 */
+    var 둘 = !삭제 && !완료보기 && ZG.결과화면 && ZG.결과화면.카드올리기;
+    if (둘) {
+      싼것.classList.add('둘');
+      var 올 = 만들기('button', { type: 'button', class: '뒷단추 올림', html: '⬆<span>업로드</span>' });
+      올.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (열린칸 && 열린칸.__닫기) 열린칸.__닫기();
+        올.disabled = true;
+        ZG.결과화면.카드올리기(p, function () { 올.disabled = false; });
+      });
+      싼것.appendChild(올);
+    }
     싼것.appendChild(칸);
-    밀기붙이기(싼것, 칸, p);
+    밀기붙이기(싼것, 칸, p, 둘 ? 단추폭 * 2 : 단추폭);
     return 싼것;
   }
 
