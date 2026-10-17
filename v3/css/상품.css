@@ -417,3 +417,60 @@ td.뺌칸{text-align:right}
   padding:0 9px; height:24px; box-shadow:var(--shadow-btn); cursor:pointer; white-space:nowrap}
 .ph-shell .사진대기 .cpy{height:30px; padding:0 12px; font-size:var(--font-sm)}
 .사진대기 .cpy.done{color:var(--color-accent-dark); background:var(--color-accent-bg); border-color:var(--color-accent-border)}
+
+/* ══ 23c — 품절 실패만 다시 · 쿠팡 미확인(노랑) (시안 23c-품절실패만다시-macA.html) ══ */
+.품절탭 .bar i.chk, .품절탭 .bar .sg.chk i{background:#F2C94C}
+.품절탭 .bar .sg.chk span{color:#8A6100}
+.품절탭 .mrow.chk .dot{background:#F2C94C}
+.품절탭 .st.chk{color:#8A6100; background:#FFF6D6}
+.품절탭 .why.노랑{color:#8A6100}
+.품절탭 .btn.rd{color:var(--color-danger); border-color:#F2B8B3; font-weight:var(--weight-bold); justify-content:center}
+.품절탭 .mrow .btn.rd{min-height:32px; font-size:var(--font-sm); padding:0 11px}
+.품절탭 .mrow .tm:has(.btn){width:auto}
+.품절탭 .redo{gap:8px}
+.ph-shell .품절탭 .redo .btn:not(.sm){flex:1; min-height:44px; font-size:var(--font-md); justify-content:center}
+.품절탭 .redo .n{font-weight:var(--weight-medium); opacity:.85; margin-left:2px}
+.품절탭 .mt td.rdc, .품절탭 .mt td.lkc{text-align:right}
+
+/* ══ 24단계 — 업로드 › 완료 (시안 24-업로드완료-macA.html) — .품절탭 카드에 .업로드탭 만 덧입힌다 ══ */
+.업로드탭 .th{width:46px; height:46px; border-radius:10px; object-fit:cover; flex-shrink:0; background:#E3E3E8; box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.업로드탭 .sc .top{display:flex; align-items:center; gap:12px}
+.업로드탭 .sc .info{flex:1; min-width:0}
+.업로드탭 .sc .nm{min-width:0}
+.업로드탭 .fn{white-space:nowrap}
+.업로드탭 .bar i.unk, .업로드탭 .bar .sg.unk i{background:repeating-linear-gradient(135deg,#DADADF 0 3px,#F3F3F6 3px 6px)}
+.업로드탭 .bar .sg.w{flex:1.7}
+.업로드탭 .bar .sg.unk span, .업로드탭 .bar .sg.none span{color:var(--color-text-hint)}
+.업로드탭 .mrow{padding:7px 0}
+.업로드탭 .mrow .btn.sm{min-width:88px}
+.업로드탭 .dot{width:9px; height:9px; border-radius:50%; background:#D1D1D6; flex-shrink:0; display:inline-block}
+.업로드탭 .ok .dot{background:var(--color-accent)}
+.업로드탭 .fail .dot{background:var(--color-danger)}
+.업로드탭 .chk .dot{background:#F2C94C}
+.업로드탭 .unk .dot{background:#fff; box-shadow:inset 0 0 0 1.5px #C7C7CC}
+.업로드탭 .st.unk{color:var(--color-text-hint); background:#fff; box-shadow:inset 0 0 0 1px var(--color-border)}
+.업로드탭 .mrow.unk .mk, .업로드탭 .mrow.none .mk, .업로드탭 .mt tr.unk td.mk, .업로드탭 .mt tr.none td.mk{color:var(--color-text-sub)}
+.업로드탭 .mt td{padding:7px 12px; vertical-align:middle}
+.업로드탭 .mt td.mk .dot{margin-right:9px; vertical-align:1px}
+.업로드탭 .mt td.lkc .btn{min-width:96px}
+.업로드탭 .lk{flex-shrink:0; color:var(--color-accent-dark); font-weight:var(--weight-semibold); text-decoration:none}
+.ph-shell .업로드탭 .lk{min-height:32px; font-size:var(--font-sm); padding:0 11px}
+.업로드탭 .lk.off{color:var(--color-text-faint); background:#F2F2F4; border-color:var(--color-border-faint); box-shadow:none; pointer-events:none}
+.업로드탭 .pcr .hd{grid-template-columns:40px 176px 74px 1fr 92px 18px; padding:10px 16px}
+.업로드탭 .pcr .th{width:40px; height:40px; border-radius:8px}
+.업로드탭 .pcr .tt{white-space:nowrap}
+.업로드탭 .btn.되돌{color:var(--color-text-muted)}
+.pc-main .업로드탭{margin-top:0}
+/* 폰 — 06g 민칸으로 싸서 밀면 ↺. 민칸이 overflow:hidden 이라 빨간 테두리를 안으로 그린다 */
+.민칸 .sc{position:relative; margin:0; transition:transform .22s cubic-bezier(.22,.61,.36,1); touch-action:pan-y; will-change:transform}
+.민칸.끄는중 .sc{transition:none}
+.민칸 .sc.bad{box-shadow:inset 0 0 0 1.5px var(--color-danger)}
+/* 검색 + 정렬 한 줄 (정렬은 완료에서만) */
+.사진거름 .검색줄{display:flex; gap:8px; margin-left:auto}
+.사진거름 .검색줄 .정렬{width:auto; flex:0 0 auto}
+@media (max-width:899px){
+  .사진거름 .검색줄{margin-left:0}
+  .사진거름 .검색줄 .search{flex:1; min-width:0}
+}
+.사진거름 .정렬[hidden]{display:none}
+.품절탭 .mt tr:last-child td.why{border-bottom:none}

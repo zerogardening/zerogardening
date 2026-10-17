@@ -10,7 +10,8 @@ window.ZG = window.ZG || {};
     { 이름: '입고', 아이콘: '🌿', 폰: true, 모듈: function () { return ZG.입고; } },
     { 이름: '재고', 아이콘: '📦', 폰: true, 모듈: function () { return ZG.재고; } },
     { 이름: '품절', 아이콘: '🚫', 폰: true, 모듈: function () { return ZG.품절; } },
-    { 이름: '작업중', 아이콘: '🛠', 폰: true, 모듈: function () { return ZG.작업중; } },
+    // 「작업중」 → 「업로드」(24단계) — 모듈은 그대로 ZG.작업중. 옛 #작업중 은 별칭으로 받는다
+    { 이름: '업로드', 아이콘: '🛠', 폰: true, 모듈: function () { return ZG.작업중; } },
     { 이름: '이미지', 아이콘: '🖼', 모듈: function () { return ZG.상품이미지; } },
     { 이름: '블로그', 아이콘: '✏️', 모듈: function () { return ZG.블로그; } }
   ];
@@ -25,10 +26,11 @@ window.ZG = window.ZG || {};
     if (t.이름 === '품절') b.appendChild(만들기('i', { class: '탭배지', 'data-품절배지': '', hidden: '' }));
   }
 
-  function 해시읽기() {
-    var h = decodeURIComponent(location.hash.replace('#', ''));
+  function 탭이름(h) {
+    if (h === '작업중') h = '업로드';
     return 탭들.some(function (t) { return t.이름 === h; }) ? h : null;
   }
+  function 해시읽기() { return 탭이름(decodeURIComponent(location.hash.replace('#', ''))); }
 
   function 현재모듈() {
     var 것 = 탭들.filter(function (t) { return t.이름 === 지금; })[0] || 탭들[0];
@@ -48,7 +50,7 @@ window.ZG = window.ZG || {};
 
     var 머리 = 만들기('div', { class: 'pc-head' }, [
       만들기('h2', { text: '상품' }),
-      만들기('div', { class: 'path', text: '상품 › ' + 지금 })
+      만들기('div', { class: 'path', text: 경로() })
     ]);
 
     var 탭 = 만들기('div', { class: 'pc-tabs', role: 'tablist' });
@@ -138,8 +140,17 @@ window.ZG = window.ZG || {};
   }
 
   /* 폰 위쪽 요약줄만 다시 — 저장 뒤 숫자가 바뀔 때 */
+  /* PC 경로 — 업로드만 속 칩(작업중·완료)까지 적는다. 다른 탭의 머리()는 그리기 전에 부르면 안 된다 */
+  function 경로() {
+    return '상품 › ' + ((지금 === '업로드' && ZG.작업중.머리().경로) || 지금);
+  }
+
   function 요약다시() {
-    if (!u.폰인가()) return;
+    if (!u.폰인가()) {
+      var 길 = 뿌리.querySelector('.pc-head .path');
+      if (길) 길.textContent = 경로();
+      return;
+    }
     var 정보 = 머리정보();
     var 줄 = 뿌리.querySelector('.ph-sub');
     if (!줄) return;
@@ -186,7 +197,7 @@ window.ZG = window.ZG || {};
   function 시작() {
     뿌리 = document.getElementById('앱');
     ZG.저장소.부팅();
-    지금 = 해시읽기() || ZG.저장소.설정읽기().마지막탭 || '입고';
+    지금 = 해시읽기() || 탭이름(ZG.저장소.설정읽기().마지막탭) || '입고';
     if (!location.hash) location.hash = '#' + 지금;
     다시그리기();
     if (ZG.품절자료) ZG.품절자료.시작();

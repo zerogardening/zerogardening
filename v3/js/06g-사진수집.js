@@ -172,6 +172,7 @@ window.ZG = window.ZG || {};
      이름을 갈면 이미 빼 두신 품목이 통째로 작업중으로 되돌아온다 (2026-09-14 우람님) */
   var 완료보기 = false;
   var 검색글 = '';
+  var 정렬 = '올린날';            // 완료(업로드 완료 카드)에만 — 올린날 · 실패먼저
 
   /* 대소문자만 무시하고 그대로 걸린 부분만 감싼다. 공백 무시로만 걸리면 표시 없이 둔다 */
   function 칠글(v) {
@@ -203,7 +204,10 @@ window.ZG = window.ZG || {};
         type: 'button', class: 'fchip' + (완료보기 === 것[1] ? ' on' : ''),
         html: 것[0] + ' <span class="n">' + 것[2] + '</span>'
       });
-      b.addEventListener('click', function () { 완료보기 = 것[1]; 칠하기(); });
+      b.addEventListener('click', function () {
+        완료보기 = 것[1]; 칠하기();
+        if (ZG.앱 && ZG.앱.요약다시) ZG.앱.요약다시();     // PC 경로 「업로드 › 완료」
+      });
       줄.appendChild(b);
     });
     return 줄;
@@ -395,6 +399,7 @@ window.ZG = window.ZG || {};
     var 거름 = 참조.거름, 칩자리 = 참조.칩자리, 목록자리 = 참조.목록자리;
     u.비우기(칩자리); u.비우기(목록자리);
     참조.지움.hidden = !검색글;
+    참조.정렬.hidden = !완료보기;
     if (!검색글 && !대기품목(false, false).length && !대기품목(true, false).length) {   // 아직 아무것도 없다
       거름.hidden = true;
       목록자리.appendChild(만들기('div', { class: '지시-빈', style: 'padding:var(--space-4xl) 0',
@@ -408,7 +413,17 @@ window.ZG = window.ZG || {};
       목록자리.appendChild(만들기('div', { class: '지시-빈', style: 'padding:var(--space-4xl) 0', text: '찾는 품목이 없습니다' }));
       return;
     }
-    목록자리.appendChild(u.폰인가() ? 폰목록(목록) : PC목록(목록));
+    // 완료 = 업로드 완료 카드 (24단계 · 06m 의 품절 카드를 업로드 모드로)
+    목록자리.appendChild(완료보기 ? ZG.품절.업로드목록(검색글, 정렬)
+      : u.폰인가() ? 폰목록(목록) : PC목록(목록));
+  }
+
+  function 정렬칸() {
+    var e = 만들기('select', { class: 'inp 정렬', 'aria-label': '정렬' });
+    e.innerHTML = '<option value="올린날">올린 날 순</option><option value="실패먼저">실패 먼저</option>';
+    e.value = 정렬;
+    e.addEventListener('change', function () { 정렬 = e.value; 칠하기(); });
+    return e;
   }
 
   function 검색칸() {
@@ -427,7 +442,9 @@ window.ZG = window.ZG || {};
     완료보기 = false;                      // 화면을 새로 그리면 「완료」가 아니라 작업중부터 보인다
     검색글 = '';
     참조 = { 칩자리: 만들기('div'), 목록자리: 만들기('div') };
-    참조.거름 = 만들기('div', { class: '사진거름' }, [참조.칩자리, 검색칸()]);
+    참조.정렬 = 정렬칸();
+    참조.거름 = 만들기('div', { class: '사진거름' }, [참조.칩자리,
+      만들기('div', { class: '검색줄' }, [검색칸(), 참조.정렬])]);
     대기칸 = 만들기('div', { class: '사진대기' }, [참조.거름, 참조.목록자리]);
     칠하기();
     return 대기칸;
@@ -686,7 +703,7 @@ window.ZG = window.ZG || {};
   }
 
   ZG.사진수집 = { 대기카드: 대기카드, 대기다시: 대기다시, 대기품목: 대기품목, 열기: 열기, 경계: 경계,
-                  주소: 주소, 사진훑기: 사진훑기, 요청걸기: 요청걸기 };
+                  주소: 주소, 사진훑기: 사진훑기, 요청걸기: 요청걸기, 민카드: 민카드, 완료누름: 완료누름 };
 
   /* ── 「작업중」 속탭 (2026-09-14 우람님 「입고 탭 하나에 다 묶는다」) ──
      전에는 입고 화면 맨 아래에 카드로 붙어 있었다. 이제 제 탭이다.
@@ -697,7 +714,7 @@ window.ZG = window.ZG || {};
       본문.appendChild(대기카드());
     },
     머리: function () {
-      return { 제목: '작업중', 뒤로: null,
+      return { 제목: '업로드', 경로: '업로드 › ' + (완료보기 ? '완료' : '작업중'), 뒤로: null,
                왼: '사진이 다 차면 상세페이지가 자동으로 걸립니다', 오: '' };
     },
     다시: 대기다시

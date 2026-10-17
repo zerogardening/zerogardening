@@ -71,7 +71,11 @@ window.ZG = window.ZG || {};
   function 시작() {
     if (타이머) return;
     새로();
-    타이머 = setInterval(function () { if (!document.hidden) 새로(); }, 폴링초 * 1000);
+    타이머 = setInterval(function () {
+      if (document.hidden) return;
+      새로();
+      if (보이나()) 업로드새로();
+    }, 폴링초 * 1000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) 새로(); });
   }
 
@@ -115,12 +119,26 @@ window.ZG = window.ZG || {};
     return 나무;
   }
 
+  // 미확인 = 전송은 됐는데 쿠팡 WING 으로 확인을 못 했다 (노랑 · 실패 아님 · 「실패만 다시」에 안 든다)
+  function 값(상태) {
+    return { 완료: 'ok', 없음: 'none', 미확인: 'chk', 대기: 'wait' }[상태] || 'fail';
+  }
+
+  /* 10/17 전 줄 — WING 확인을 못 한 쿠팡을 「실패」로 덮어 적었다(마켓플러스품절.py 고침 전).
+     답장에 확인 못 한 까닭이 찍혀 있으면 미확인으로 읽는다. 표는 고치지 않는다 */
+  function 고친마켓(내) {
+    var 마 = 내.마켓, 쿠 = 마 && 마['쿠팡'];
+    if (!쿠 || 쿠.상태 !== '실패' || !/^WING 확인/.test(쿠.사유 || '') ||
+        !/WING (로그인이 풀려|크롬에 못 붙었다|목록에서)/.test(내.답장 || '')) return 마;
+    var 새 = {};
+    Object.keys(마).forEach(function (k) { 새[k] = 마[k]; });
+    새['쿠팡'] = { 상태: '미확인', 사유: '전송 완료 · 쿠팡 확인 못 함 (WING)', 때: 쿠.때 };
+    return 새;
+  }
+
   function 칸상태(줄, 마켓, 옛) {
-    var 내 = 줄.내용, 칸 = (내.마켓 || {})[마켓];
-    if (칸) {
-      var 값 = 칸.상태 === '완료' ? 'ok' : 칸.상태 === '없음' ? 'none' : 'fail';
-      return { 마켓: 마켓, 값: 값, 사유: 칸.사유 || '', 때: 칸.때 || null };
-    }
+    var 내 = 줄.내용, 칸 = (고친마켓(내) || {})[마켓];
+    if (칸) return { 마켓: 마켓, 값: 값(칸.상태), 사유: 칸.사유 || '', 때: 칸.때 || null };
     var 상 = 내.상태;
     if (상 === '대기') return { 마켓: 마켓, 값: 'wait', 사유: '', 때: null };
     if (상 === '하는중') return { 마켓: 마켓, 값: 'run', 사유: '', 때: null };
@@ -147,14 +165,19 @@ window.ZG = window.ZG || {};
       var 칸 = 마켓들.map(function (m) { return 칸상태(줄, m, 옛); });
       var 셈 = function (v) { return 칸.filter(function (k) { return k.값 === v; }).length; };
       // 옛 줄은 지시 상태로만 무리를 가른다 — 답장에서 뽑은 칸은 보여주기만 (배지 숫자를 글 해석에 걸지 않는다)
-      var 무리 = (!옛줄 && 셈('fail')) || 내.상태 === '실패' || 내.상태 === '거부' ? '실패'
-        : (내.상태 === '대기' || 내.상태 === '하는중') ? '진행중' : '완료';
+      // 새 줄은 칸으로만 — 지시가 「실패」여도 칸이 다 됐으면 완료다(SPD01 전송불가 오판 · 쿠팡 미확인).
+      // 단 칸이 비어 있으면(도중에 끊김) 지시 「실패」를 믿는다
+      var 진행 = 내.상태 === '대기' || 내.상태 === '하는중';
+      var 무리 = 옛줄
+        ? (내.상태 === '실패' || 내.상태 === '거부' ? '실패' : 진행 ? '진행중' : '완료')
+        : (셈('fail') || ((내.상태 === '실패' || 내.상태 === '거부') && 셈('unk')) ? '실패'
+          : 진행 || 셈('wait') || 셈('run') ? '진행중' : '완료');
       카.push({
         품목코드: 코드, id: 줄.id, 갈래: 내.갈래, 다시판매: 내.갈래 === '마켓판매',
         보낸때: 내.보낸때 || Number(String(줄.id).slice(0, 13)) || 0,
         이름: p.유통명 || 내.폴더 || 코드, 학명: p.학명 || '',
         칸: 칸, 완료수: 셈('ok'), 실패수: 셈('fail'), 분모: 마켓들.length - 셈('none'),
-        무리: 무리, 옛줄: 옛줄, 상태: 내.상태 || '', 답장: 내.답장 || ''
+        무리: 무리, 옛줄: 옛줄, 상태: 내.상태 || '', 답장: 내.답장 || '', 마켓원: 고친마켓(내) || {}
       });
     });
     var 순 = { 실패: 0, 진행중: 1, 완료: 2 };
@@ -179,8 +202,76 @@ window.ZG = window.ZG || {};
     if (ZG.앱 && ZG.앱.알약맞추기) ZG.앱.알약맞추기();
   }
 
+  /* ══ 업로드 › 완료 (24단계) — 같은 카드를 업로드 모드로 쓴다 ══
+     품목 = 06g 「완료」(사진뺌) · 원줄 = 그 품목의 가장 최근 `카페24올리기` · 카페24 번호 = 원줄 칸 → 원고 머리.
+     🔴 옛 업로드(마켓 칸 없음)는 카페24 만 머리 번호로 · 나머지 여섯은 「기록 없음」 */
+  var 올 = { 줄: {}, 머리: {}, 읽음: false, 오류: '', 읽는중: false, 서명: '' };
+  var 카페24주소 = 'https://www.zerogardening.com/product/detail.html?product_no=';
+
+  function 보이나() { return !!document.querySelector('.업로드탭'); }
+
+  function 업로드새로() {
+    var c = 클();
+    if (올.읽는중) return;
+    if (!c) { 올.오류 = 말썽(new Error('오프라인')); if (보이나()) ZG.작업중.다시(); return; }
+    올.읽는중 = true;
+    var 코드들 = ZG.사진수집.대기품목(true, false).map(function (p) { return p.품목코드; });
+    Promise.all([
+      제때(c.from('v3_지시').select('id,내용').eq('삭제됨', false).eq('내용->>갈래', '카페24올리기')
+        .order('id', { ascending: false }).limit(1000)),
+      코드들.length ? 제때(c.from('v3_원고').select('id,내용').in('id', 코드들)) : Promise.resolve({ data: [] })
+    ]).then(function (답) {
+      답.forEach(function (d) { if (d && d.error) throw d.error; });
+      var 줄 = {}, 머리 = {};
+      (답[0].data || []).forEach(function (r) {   // id 내림차순 — 처음 만난 것이 가장 최근
+        var k = (r.내용 || {}).품목코드;
+        if (k && !줄[k]) 줄[k] = r.내용;
+      });
+      (답[1].data || []).forEach(function (r) { 머리[r.id] = r.내용 || {}; });
+      올.줄 = 줄; 올.머리 = 머리; 올.읽음 = true; 올.오류 = '';
+    }, function (e) { 올.오류 = 말썽(e); }).then(function () {
+      올.읽는중 = false;
+      var 새 = 올.오류 || JSON.stringify([올.줄, 올.머리]);
+      if (새 === 올.서명) return;
+      올.서명 = 새;
+      if (보이나()) ZG.작업중.다시();
+    });
+  }
+
+  function 업로드카드(p) {
+    var 내 = 올.줄[p.품목코드] || {}, 머 = 올.머리[p.품목코드] || {}, 옛 = !내.마켓;
+    var 칸 = 마켓들.map(function (m) {
+      var k = !옛 && 내.마켓[m];
+      var 것 = k ? { 마켓: m, 값: 값(k.상태), 사유: k.사유 || '', 때: k.때 || null, 번호: k.번호 || '' }
+        : { 마켓: m, 값: 'unk', 사유: '', 때: null, 번호: '' };
+      if (m === '카페24' && (옛 || 것.값 === 'ok') && !것.번호 && 머.카페24번호) {
+        것.값 = 'ok'; 것.번호 = String(머.카페24번호); 것.때 = 것.때 || 머.올린때 || 내.답한때 || null;
+      }
+      // 주소는 카페24 만 — 다른 마켓은 번호를 아직 못 얻는다(상품 보기 꺼짐)
+      것.주소 = m === '카페24' && 것.값 === 'ok' && /^\d+$/.test(것.번호) ? 카페24주소 + 것.번호 : '';
+      return 것;
+    });
+    var 셈 = function (v) { return 칸.filter(function (k) { return k.값 === v; }).length; };
+    return {
+      업로드: true, 품목: p, 품목코드: p.품목코드, 이름: p.유통명 || p.품목코드, 학명: p.학명 || '',
+      수정일시: p.수정일시 || 0, 옛줄: 옛, 올린때: 내.답한때 || 머.올린때 || 0,
+      칸: 칸, 완료수: 셈('ok'), 실패수: 셈('fail'), 분모: 마켓들.length - 셈('none'),
+      무리: 셈('fail') ? '실패' : '완료'
+    };
+  }
+
+  function 업로드카드들(정렬) {
+    if (!올.읽음 && !올.오류) 업로드새로();
+    return ZG.사진수집.대기품목(true, false).map(업로드카드).sort(function (a, b) {
+      if (정렬 === '실패먼저' && (a.실패수 > 0) !== (b.실패수 > 0)) return a.실패수 > 0 ? -1 : 1;
+      return b.올린때 - a.올린때;
+    });
+  }
+
   ZG.품절자료 = {
     옛칸들: 옛칸들, 시작: 시작, 새로: 새로, 카드들: 카드들, 배지칠하기: 배지칠하기, 마켓들: 마켓들,
-    상태: function () { return { 오류: 오류, 읽음: 읽음 }; }
+    상태: function () { return { 오류: 오류, 읽음: 읽음 }; },
+    업로드카드들: 업로드카드들, 업로드새로: 업로드새로,
+    업로드상태: function () { return { 오류: 올.오류, 읽음: 올.읽음 }; }
   };
 })(window.ZG);
