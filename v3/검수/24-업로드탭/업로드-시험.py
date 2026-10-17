@@ -176,6 +176,8 @@ def 품절탭(브, 폰):
     막 = dict(막)
     본다('옛 WING 오판 → 쿠팡 노랑(chk)', 막['SPD01-0'] == 'ok,ok,ok,chk,ok,ok,ok', 막['SPD01-0'])
     본다('미확인 상태 → 노랑', 막['MON01-15'] == 'ok,ok,ok,chk,ok,ok,ok', 막['MON01-15'])
+    노 = 쪽.eval_on_selector_all(카, 'cs => cs.filter(c => c.querySelector(".cd").textContent == "SPD01-0").map(c => [...c.querySelectorAll(".btn.rd")].map(b => b.dataset.다시 || b.getAttribute("data-다시")))')
+    본다('노랑 쿠팡 줄에도 [다시](쿠팡만)', 노 == [['쿠팡']], 노)
     배 = 쪽.eval_on_selector('[data-품절배지]', 'b => b.textContent')
     본다('배지 = 진짜 실패 2장(HEP·GEN)', 배 == '2', 배)
     손 = '' if 폰 else ' .hd'

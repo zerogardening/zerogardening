@@ -48,7 +48,7 @@ window.ZG = window.ZG || {};
     if (c.업로드) return k.주소
       ? '<a class="btn sm lk" href="' + 안(k.주소) + '" target="_blank" rel="noopener">상품 보기 ↗</a>'
       : '<a class="btn sm lk off" aria-disabled="true">상품 보기 ↗</a>';
-    return k.값 === 'fail' && !c.옛줄 && c.무리 !== '진행중'
+    return (k.값 === 'fail' || k.값 === 'chk') && !c.옛줄   // 노랑도 줄 [다시] — WING 로그인 뒤 다시 확인 (「실패만 다시」엔 안 든다) && c.무리 !== '진행중'
       ? '<button type="button" class="btn sm rd" data-다시="' + 안(k.마켓) + '">다시</button>' : '';
   }
   function 사유칸(k) { return k.값 === 'fail' ? ' class="why"' : k.값 === 'chk' ? ' class="why 노랑"' : ' class="why 회색"'; }
