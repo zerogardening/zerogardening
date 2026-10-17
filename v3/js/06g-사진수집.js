@@ -155,7 +155,7 @@ window.ZG = window.ZG || {};
   function 대기품목(뺀것, 거름) {
     var 상 = 상태표(), 찾 = 거름 === false ? '' : 납작(검색글);
     return ZG.저장소.품목들().filter(function (p) {
-      return (p.등록일시 || 0) >= 경계 && (뺀것 ? !!p.사진뺌 : !p.사진뺌) &&
+      return (p.등록일시 || 0) >= 경계 && (뺀것 ? !!p.사진뺌 : !p.사진뺌 && !p.작업중뺌) &&
         (!찾 || 납작(p.품목코드 + p.유통명 + p.학명).indexOf(찾) >= 0);
     }).sort(function (a, b) {
       var x = 상[a.품목코드] === '끝' ? 1 : 0, y = 상[b.품목코드] === '끝' ? 1 : 0;
@@ -187,6 +187,25 @@ window.ZG = window.ZG || {};
     ZG.저장소.바꾸기(ZG.저장소.키.품목, p.품목코드, { 사진뺌: 끝낼까, 수정일시: Date.now() });
     u.토스트((끝낼까 ? '완료했습니다 — ' : '작업중으로 되돌렸습니다 — ') + p.품목코드);
     칠하기();
+  }
+
+  /* 작업중 카드 [삭제] = 작업중 목록에서만 뺀다 — 품목 행에 `작업중뺌:true` 표시만 남긴다(2026-10-18 우람님).
+     🔴 품목을 지우는 게 아니다(`삭제됨` 이 아니다) · 사진·원고·결과·카페24 상품은 그대로다.
+     🔴 카페24에 올라간 품목이면 먼저 확인창. 되살리기 단추는 없다 — 품목 행의 `작업중뺌` 을 false 로 */
+  function 작업중빼기(p, 끝냄) {
+    function 빼() {
+      ZG.저장소.바꾸기(ZG.저장소.키.품목, p.품목코드, { 작업중뺌: true, 수정일시: Date.now() });
+      u.토스트('작업중에서 뺐습니다 — ' + p.품목코드);
+      칠하기();
+    }
+    var 자료 = ZG.원고자료;
+    var 읽기 = 자료 && 자료.불러오기 ? 자료.불러오기(p.품목코드) : Promise.reject(new Error('자료 없음'));
+    읽기.then(function (r) { return (r && r.머리 && r.머리.카페24번호) || null; }, function () { return null; })
+      .then(function (올림) {
+        if (!올림) { 빼(); return; }
+        u.확인({ 제목: '작업중에서 뺄까요?', 본문: '카페24 상품은 그대로 둡니다.<br>목록에서만 사라집니다.', 확인글: '뺀다', 위험: true },
+          function (예) { if (예) 빼(); else if (끝냄) 끝냄(); });
+      });
   }
 
   function 뺌단추(p) {
@@ -336,6 +355,16 @@ window.ZG = window.ZG || {};
     싼것.appendChild(뒷);
     /* 작업중 카드는 [업로드]가 하나 더 — 결과 창의 「상품 업로드/상세페이지 갱신」과 같은 지시를 낸다 */
     var 둘 = !삭제 && !완료보기 && ZG.결과화면 && ZG.결과화면.카드올리기;
+    if (!삭제 && !완료보기) {
+      싼것.classList.add('셋');
+      var 빼 = 만들기('button', { type: 'button', class: '뒷단추 삭제', html: '🗑<span>삭제</span>' });
+      빼.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (열린칸 && 열린칸.__닫기) 열린칸.__닫기();
+        작업중빼기(p);
+      });
+      싼것.appendChild(빼);
+    }
     if (둘) {
       싼것.classList.add('둘');
       var 올 = 만들기('button', { type: 'button', class: '뒷단추 올림', html: '⬆<span>업로드</span>' });
@@ -348,7 +377,7 @@ window.ZG = window.ZG || {};
       싼것.appendChild(올);
     }
     싼것.appendChild(칸);
-    밀기붙이기(싼것, 칸, p, 둘 ? 단추폭 * 2 : 단추폭);
+    밀기붙이기(싼것, 칸, p, (!삭제 && !완료보기 ? 1 : 0) * 단추폭 + (둘 ? 단추폭 * 2 : 단추폭));
     return 싼것;
   }
 
@@ -382,7 +411,7 @@ window.ZG = window.ZG || {};
     카드.appendChild(머리);
     var 표 = 만들기('table');
     표.innerHTML =
-      '<colgroup><col style="width:110px"><col><col style="width:110px"><col style="width:120px"><col style="width:56px"></colgroup>' +
+      '<colgroup><col style="width:110px"><col><col style="width:110px"><col style="width:120px"><col style="width:104px"></colgroup>' +
       '<thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th>사진</th><th></th></tr></thead>';
     var 몸 = 만들기('tbody');
     목록.forEach(function (p) {
@@ -395,6 +424,11 @@ window.ZG = window.ZG || {};
         '<td class="뺌칸"></td>';
       칩달기(줄.querySelector('.chip'), p, 상[p.품목코드]);
       줄.querySelector('.뺌칸').appendChild(뺌단추(p));
+      if (!완료보기) {
+        var 지 = 만들기('button', { type: 'button', class: '뺌', text: '삭제', title: '작업중 목록에서 뺍니다' });
+        지.addEventListener('click', function (e) { e.stopPropagation(); 작업중빼기(p); });
+        줄.querySelector('.뺌칸').appendChild(지);
+      }
       복사걸기(줄, p);
       줄.addEventListener('click', function () { 열기(p); });
       몸.appendChild(줄);
