@@ -109,14 +109,21 @@ window.ZG = window.ZG || {};
     if (c.업로드) return u.폰인가() ? '' : '<div class="redo"><button type="button" class="btn sm 되돌" title="작업중으로 되돌리기">↺ 작업중으로</button></div>';
     if (c.무리 === '진행중') return '';
     var 실 = 실패마켓(c);
+    var 삭 = u.폰인가() ? '' : '<button type="button" class="btn sm 지움" title="이 카드를 목록에서 지웁니다">삭제</button>';
     var 보조 = '<button type="button" class="btn" data-다시="*">' + (c.다시판매 ? '판매 전체 다시' : '품절 전체 다시') + '</button>';
-    if (!실.length || c.옛줄) return '<div class="redo">' + 보조 + '</div>';
+    if (!실.length || c.옛줄) return '<div class="redo">' + 삭 + 보조 + '</div>';
     var 주 = '<button type="button" class="btn warn" data-다시="' + 안(실.join(',')) + '">실패만 다시<span class="n">(' + 실.length + '곳)</span></button>';
-    return '<div class="redo">' + (u.폰인가() ? 주 + 보조 : 보조 + 주) + '</div>';
+    return '<div class="redo">' + 삭 + (u.폰인가() ? 주 + 보조 : 보조 + 주) + '</div>';
+  }
+  /* 품절 카드 삭제 — 폰은 밀기(06g 민카드) · PC 는 펼친 칸 맨 아래 「삭제」. 진행중은 못 지운다 */
+  function 지우기(c) {
+    ZG.품절자료.지우기(c.품목코드).then(null, function (e) { u.토스트(e.message || '지우지 못했습니다'); });
   }
   function 실패마켓(c) { return c.칸.filter(function (k) { return k.값 === 'fail'; }).map(function (k) { return k.마켓; }); }
 
   function 다시걸기(칸, c) {
+    var 삭 = 칸.querySelector('.지움');
+    if (삭) 삭.addEventListener('click', function (e) { e.stopPropagation(); 지우기(c); });
     var 되 = 칸.querySelector('.되돌');
     if (되) 되.addEventListener('click', function (e) { e.stopPropagation(); ZG.사진수집.완료누름(c.품목); });
     Array.prototype.forEach.call(칸.querySelectorAll('[data-다시]'), function (b) {
@@ -170,7 +177,8 @@ window.ZG = window.ZG || {};
     다시걸기(칸, c);
     썸걸기(칸);
     // 폰 업로드 카드는 06g 작업중 카드처럼 밀면 ↺(작업중으로)
-    return c.업로드 ? ZG.사진수집.민카드(칸, c.품목) : 칸;
+    if (c.업로드) return ZG.사진수집.민카드(칸, c.품목);
+    return c.무리 === '진행중' ? 칸 : ZG.사진수집.민카드(칸, null, { 글: '삭제', 누름: function () { 지우기(c); } });
   }
 
   function PC행(c) {

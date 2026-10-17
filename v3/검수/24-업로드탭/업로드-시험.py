@@ -58,10 +58,13 @@ def 줄(id앞, 코드, 갈래, 상태, 마켓=None, 답장=''):
   window.__쓴것 = []; window.__부른것 = []; window.__지시 = 지시; window.__머리 = 머리;
   const 질의 = (t) => { const q = { _갈: null, _gte: null,
     select(){return q}, order(){return q}, limit(){return q},
-    eq(k, v){ if (k === '내용->>갈래') q._갈 = [v]; return q }, in(k, v){ if (k === '내용->>갈래') q._갈 = v; return q },
+    eq(k, v){ if (k === '내용->>갈래') q._갈 = [v]; return q }, in(k, v){ if (k === '내용->>갈래') q._갈 = v; if (k === 'id') q._ids = v; return q },
     gte(k, v){ q._gte = v; return q },
+    update(v){ q._u = v; return q },
     upsert(r){ window.__부른것.push('upsert:' + t); window.__쓴것.push(r); return Promise.resolve({ error: null }); },
     then(ok, no){
+      if (q._u) { window.__지움 = (window.__지움 || []).concat([q._ids]);
+        window.__지시 = window.__지시.filter(r => !q._ids.includes(r.id)); return Promise.resolve({ error: null }).then(ok, no); }
       const rows = t === 'v3_지시' ? window.__지시.filter(r => (!q._갈 || q._갈.includes(r.내용.갈래)) && (!q._gte || r.id >= q._gte))
         : t === 'v3_원고' ? window.__머리 : [];
       return Promise.resolve({ data: rows, error: null }).then(ok, no); } }; return q; };
@@ -182,10 +185,10 @@ def 품절탭(브, 폰):
     본다('배지 = 진짜 실패 2장(HEP·GEN)', 배 == '2', 배)
     손 = '' if 폰 else ' .hd'
     i = 코드.index('HEP01-15') + 1
-    쪽.click(카 + ':nth-child(%d)' % i + 손); 쪽.wait_for_timeout(900)
+    쪽.click(('.품절탭 .민칸:nth-child(%d) .sc' % i) if 폰 else (카 + ':nth-child(%d)' % i + 손)); 쪽.wait_for_timeout(900)
     열 = 카 + '.open'
     단 = 쪽.eval_on_selector_all(열 + ' .redo button', 'bs => bs.map(b => b.innerText.replace(/\\s+/g, ""))')
-    본다('두 단추 — 순서 ' + ('폰 주·보조' if 폰 else 'PC 보조·주'), 단 == (['실패만다시(2곳)', '품절전체다시'] if 폰 else ['품절전체다시', '실패만다시(2곳)']), 단)
+    본다('두 단추 — 순서 ' + ('폰 주·보조' if 폰 else 'PC 보조·주'), 단 == (['실패만다시(2곳)', '품절전체다시'] if 폰 else ['삭제', '품절전체다시', '실패만다시(2곳)']), 단)
     본다('실패 줄마다 [다시]', len(쪽.query_selector_all(열 + ' .btn.rd')) == 2)
     쪽.screenshot(path=str(여기 / (이름 + '-5-품절실패만다시.png')))
     쪽.click(열 + ' .redo .btn.warn'); 쪽.wait_for_timeout(300)
@@ -200,7 +203,7 @@ def 품절탭(브, 폰):
     # 카페24 [다시] — Edge 먼저
     쪽.click(열 + ' .chev' if 폰 else 열 + ' .hd'); 쪽.wait_for_timeout(400)
     j = 코드.index('GEN01-10') + 1
-    쪽.click(카 + ':nth-child(%d)' % j + 손); 쪽.wait_for_timeout(900)
+    쪽.click(('.품절탭 .민칸:nth-child(%d) .sc' % j) if 폰 else (카 + ':nth-child(%d)' % j + 손)); 쪽.wait_for_timeout(900)
     쪽.click(카 + '.open .btn.rd'); 쪽.wait_for_timeout(300)
     쪽.click('.askbox .btn.warn'); 쪽.wait_for_timeout(600)
     쓴 = 쪽.evaluate('() => window.__쓴것.filter(x => x[0] && x[0].내용 && x[0].내용.갈래).map(x => x[0].내용)')
@@ -209,6 +212,34 @@ def 품절탭(브, 폰):
     본다('카페24 [다시] — Edge 먼저 · 맥 몫 없으니 바로 됨', 'invoke:market-soldout' in 부 and u.get('대상') == ['카페24']
          and u['마켓']['카페24']['상태'] == '완료' and u.get('상태') == '됨', (부, u.get('상태')))
     본다('콘솔 에러 없음', not 오류, 오류)
+    # ── 카드 삭제 (폰 밀기 · PC 삭제 단추) — 같은 품목의 더 옛 줄이 되살아나지 않고, 진행중은 못 지운다
+    쪽.evaluate('''(지금) => { window.__지시 = window.__지시.concat([
+      { id: (지금 - 99 * 60000) + '-GEN01-10', 삭제됨: false, 내용: { 누가: '시스템', 갈래: '마켓품절', 품목코드: 'GEN01-10', 상태: '됨', 보낸때: 지금 - 99 * 60000, 마켓: Object.fromEntries(ZG.품절자료.마켓들.map(m => [m, { 상태: '완료', 때: 지금 }])) } },
+      { id: (지금 - 1000) + '-CAR01-10', 삭제됨: false, 내용: { 누가: '시스템', 갈래: '마켓품절', 품목코드: 'CAR01-10', 상태: '대기', 보낸때: 지금 - 1000, 마켓: Object.fromEntries(ZG.품절자료.마켓들.map(m => [m, { 상태: '대기' }])) } }]);
+      ZG.품절자료.새로(); }''', 지금); 쪽.wait_for_timeout(900)
+    전 = 쪽.eval_on_selector_all(카 + ' .cd', 'es => es.map(e => e.textContent)')
+    본다('삭제 시험 준비 — 진행중 CAR01 카드 있음', 'CAR01-10' in 전 and 'GEN01-10' in 전, 전)
+    if 폰:
+        본다('폰 — 진행중 카드는 민칸 아님', 쪽.evaluate("() => [...document.querySelectorAll('.품절탭 .ph-list > *')].filter(e => e.textContent.includes('CAR01-10')).every(e => !e.classList.contains('민칸'))"))
+        g = 쪽.evaluate("() => [...document.querySelectorAll('.품절탭 .민칸')].findIndex(e => e.textContent.includes('GEN01-10'))")
+        쪽.evaluate('''(g) => { const 칸 = document.querySelectorAll('.품절탭 .민칸 .sc')[g];
+          const t = (type, x) => { const e = new Event(type, { bubbles: true, cancelable: true });
+            e.touches = type === 'touchend' ? [] : [{ clientX: x, clientY: 100 }]; 칸.dispatchEvent(e); };
+          t('touchstart', 300); t('touchmove', 250); t('touchmove', 150); t('touchend', 150); }''', g)
+        쪽.wait_for_timeout(500)
+        본다('폰 — 밀면 「삭제」 단추', 쪽.is_visible('.품절탭 .민칸:nth-child(%d) .뒷단추' % (g + 1)) and '삭제' in 쪽.inner_text('.품절탭 .민칸:nth-child(%d) .뒷단추' % (g + 1)))
+        쪽.click('.품절탭 .민칸:nth-child(%d) .뒷단추' % (g + 1)); 쪽.wait_for_timeout(700)
+    else:
+        if not 쪽.query_selector(카 + '.open:has-text("GEN01-10")'): 쪽.click(카 + ':has-text("GEN01-10") .hd'); 쪽.wait_for_timeout(600)
+        본다('PC — 진행중 카드엔 삭제 단추 없음', not 쪽.query_selector(카 + ':has-text("CAR01-10") .지움'))
+        쪽.click(카 + '.open:has-text("GEN01-10") .지움'); 쪽.wait_for_timeout(700)
+    후 = 쪽.eval_on_selector_all(카 + ' .cd', 'es => es.map(e => e.textContent)')
+    지움 = 쪽.evaluate('() => window.__지움')
+    본다('삭제 — GEN01 카드 사라짐 · 옛 줄도 되살아나지 않음 · 나머지 그대로', 'GEN01-10' not in 후 and len(후) == len(전) - 1, 후)
+    본다('삭제 — 그 품목 줄 둘 다 삭제됨=true 로 보냄', 지움 and len(지움[0]) == 2 and all('GEN01-10' in i for i in 지움[0]), 지움)
+    본다('삭제 — 마켓 쪽 호출(invoke) 없음', 'invoke:market-soldout' not in 쪽.evaluate('() => window.__부른것')[-1:] , '')
+    쪽.wait_for_timeout(16000)
+    본다('삭제 — 15초 뒤 다시 읽어도 안 돌아옴', 'GEN01-10' not in 쪽.eval_on_selector_all(카 + ' .cd', 'es => es.map(e => e.textContent)'))
     if 실품절:
         쪽.evaluate("(r) => { window.__지시 = r; ZG.품절자료.새로(); }", 실품절); 쪽.wait_for_timeout(700)
         스 = 쪽.evaluate("() => ZG.품절자료.카드들().filter(c => c.품목코드 === 'SPD01-0' || c.품목코드 === 'ASJ01-15').map(c => [c.품목코드, c.무리, c.칸[3].값])")

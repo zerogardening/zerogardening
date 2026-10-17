@@ -429,6 +429,7 @@ td.뺌칸{text-align:right}
 .품절탭 .mrow .tm:has(.btn){width:auto}
 .품절탭 .redo{gap:8px}
 .ph-shell .품절탭 .redo .btn:not(.sm){flex:1; min-height:44px; font-size:var(--font-md); justify-content:center}
+.품절탭 .redo .지움{margin-right:auto}
 .품절탭 .redo .n{font-weight:var(--weight-medium); opacity:.85; margin-left:2px}
 .품절탭 .mt td.rdc, .품절탭 .mt td.lkc{text-align:right}
 

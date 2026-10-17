@@ -321,14 +321,16 @@ window.ZG = window.ZG || {};
     }, true);
   }
 
-  function 민카드(칸, p) {
-    var 싼것 = 만들기('div', { class: '민칸' + (완료보기 ? ' 되돌리기' : '') });
+  /* 셋째 인자 = 품절 탭이 쓰는 「삭제」 뒷단추({글, 누름}) — 없으면 완료/작업중 */
+  function 민카드(칸, p, 삭제) {
+    var 되 = !삭제 && 완료보기;
+    var 싼것 = 만들기('div', { class: '민칸' + (되 ? ' 되돌리기' : '') });
     var 뒷 = 만들기('button', { type: 'button', class: '뒷단추',
-      html: 완료보기 ? '↺<span>작업</span>' : '✓<span>완료</span>' });
+      html: 삭제 ? '🗑<span>' + 삭제.글 + '</span>' : 완료보기 ? '↺<span>작업</span>' : '✓<span>완료</span>' });
     뒷.addEventListener('click', function (e) {
       e.stopPropagation();
       열린칸 = null;
-      완료누름(p);
+      if (삭제) 삭제.누름(); else 완료누름(p);
     });
     싼것.appendChild(뒷);
     싼것.appendChild(칸);

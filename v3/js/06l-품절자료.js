@@ -68,6 +68,24 @@ window.ZG = window.ZG || {};
     });
   }
 
+  /* 카드 삭제 = 그 품목의 품절·판매 지시 줄을 전부 소프트 삭제(삭제됨=true).
+     🔴 가장 최근 줄만 지우면 더 옛 줄이 카드로 되살아난다 — 보이는 줄 전부를 지운다.
+     🔴 진행중(대기·하는중) 줄은 맥이 집을 수 있어 안 지운다. 마켓 상태는 건드리지 않는다. */
+  function 지우기(코드) {
+    var c = 클();
+    if (!c) return Promise.reject(new Error('오프라인'));
+    var 들 = 줄들.filter(function (r) { return r.내용.품목코드 === 코드; });
+    if (들.some(function (r) { return r.내용.상태 === '대기' || r.내용.상태 === '하는중'; }))
+      return Promise.reject(new Error('진행중이라 지울 수 없습니다'));
+    var 아이디 = 들.map(function (r) { return r.id; });
+    return 제때(c.from('v3_지시').update({ 삭제됨: true }).in('id', 아이디)).then(function (답) {
+      if (답 && 답.error) throw 답.error;
+      줄들 = 줄들.filter(function (r) { return 아이디.indexOf(r.id) < 0; });
+      서명 = ''; 배지칠하기();
+      if (ZG.품절 && ZG.품절.다시) ZG.품절.다시();
+    });
+  }
+
   function 시작() {
     if (타이머) return;
     새로();
@@ -269,7 +287,7 @@ window.ZG = window.ZG || {};
   }
 
   ZG.품절자료 = {
-    옛칸들: 옛칸들, 시작: 시작, 새로: 새로, 카드들: 카드들, 배지칠하기: 배지칠하기, 마켓들: 마켓들,
+    옛칸들: 옛칸들, 시작: 시작, 새로: 새로, 지우기: 지우기, 카드들: 카드들, 배지칠하기: 배지칠하기, 마켓들: 마켓들,
     상태: function () { return { 오류: 오류, 읽음: 읽음 }; },
     업로드카드들: 업로드카드들, 업로드새로: 업로드새로,
     업로드상태: function () { return { 오류: 올.오류, 읽음: 올.읽음 }; }
