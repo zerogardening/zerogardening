@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>제로가드닝 통합관리 — 현황판</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F9E44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="통합관리">
+<link rel="icon" href="icons/icon-192.png?v=2">
+<link rel="apple-touch-icon" href="icons/icon-180.png?v=2">
+<meta http-equiv="Cache-Control" content="no-cache">
+
+<link rel="stylesheet" href="css/공통.css?v=89">
+<link rel="stylesheet" href="css/현황판.css?v=137">
+</head>
+<body>
+
+<div id="앱"></div>
+<div id="토스트칸" aria-live="polite"></div>
+
+<!-- 공통 뼈대(00~04) 위에 현황판만 얹는다. 메모.html 과 같은 조합이다.
+     00-시드는 뺄 수 없다 — 01-저장소 부팅()이 ZG.시드.심기()를 부른다.
+     그 심기()가 ZG.품목코드.학명키()를 부르므로 02-품목코드도 같이 싣는다(빼면 첫 방문에서 터진다).
+     🔴 01b-서버가 로그인 문을 든다. 현황판은 표를 직접 읽고 쓰므로 01c-보내기는 안 쓰지만
+        01b 가 부팅 중에 부르므로 같이 싣는다. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/00-확대금지.js?v=63"></script>
+<script src="js/00-새판.js?v=63"></script>
+<script src="js/00-시드.js?v=63"></script>
+<script src="js/01-저장소.js?v=94"></script>
+<script src="js/02-품목코드.js?v=63"></script>
+<script src="js/01b-서버.js?v=94"></script>
+<script src="js/01c-보내기.js?v=63"></script>
+<script src="js/04-공통UI.js?v=137"></script>
+<script src="js/21a-현황판자료.js?v=137"></script>
+<script src="js/21b-현황판화면.js?v=137"></script>
+</body>
+</html>
