@@ -524,6 +524,7 @@ def 도구실패줄(기록):
             속 = c.get('content')
             if isinstance(속, list):
                 속 = '\n'.join(x.get('text') or '' for x in 속 if isinstance(x, dict))
+            속 = 뒤로간출력(속)
             for 줄 in str(속 or '').split('\n'):
                 줄 = ' '.join(줄.split())
                 if 줄.startswith('@@'):        # `@@결과` JSON 안의 🔴 사유가 섞여 들어온다
@@ -531,6 +532,18 @@ def 도구실패줄(기록):
                 if ('🔴' in 줄 or '❌' in 줄) and not 줄.startswith('■') and 줄 not in 줄들:
                     줄들.append(줄[:200])
     return 줄들
+
+
+def 뒤로간출력(속):
+    """🔴 Bash 가 2분을 넘기면 「moved to the background … Output is being written to: 파일」만 돌려준다 —
+    `@@결과` 는 그 파일에 있다(10/19 FEE01-10 이 이걸로 「결과 기록이 없습니다」). 파일이 있으면 그 글을 붙인다"""
+    m = re.search(r'Output is being written to: (\S+?\.output)', str(속 or ''))
+    if not m:
+        return 속
+    try:
+        return str(속) + '\n' + open(m.group(1), encoding='utf-8', errors='replace').read()
+    except OSError:
+        return 속
 
 
 def 마켓결과(기록, 대상=None):
@@ -561,6 +574,7 @@ def 마켓결과(기록, 대상=None):
             속 = c.get('content')
             if isinstance(속, list):
                 속 = '\n'.join(x.get('text') or '' for x in 속 if isinstance(x, dict))
+            속 = 뒤로간출력(속)
             찾은, 첫빨강 = None, ''
             for 줄 in str(속 or '').split('\n'):
                 줄 = 줄.strip()
