@@ -54,6 +54,10 @@ from 제작요청 import 키, 부르기, 표                     # noqa: E402
 상한초 = 30 * 60          # 자유 지시 한 건에 30분. 넘으면 끊고 '실패' 로 적는다
 갈래상한 = {'상세페이지': 3 * 60 * 60, '카페24올리기': 80 * 60,
             '마켓품절': 30 * 60, '마켓판매': 30 * 60}
+# 🔴 토큰 절약(10/19) — 시스템 갈래는 일의 무게에 맞는 모델로. 정해진 명령만 돌리는 일은 haiku.
+#    여기 없는 갈래·우람님 자유 지시는 기본 모델(Opus) 그대로
+갈래모델 = {'마켓품절': 'haiku', '마켓판매': 'haiku',
+            '상세페이지갱신': 'sonnet', '카페24올리기': 'sonnet', '상세페이지': 'sonnet'}
 # 🔴 정해진 갈래는 Claude 의 긴 설명 대신 이 짧은 말로 답장·알림을 채운다 (우람님 9/23 「간결하게」)
 갈래별완료말 = {'상세페이지': '이미지 갱신', '카페24올리기': '업로드',
              '상세페이지갱신': '상세페이지 갱신', '마켓품절': '품절 처리', '마켓판매': '판매 재개'}
@@ -457,7 +461,7 @@ def 시킬글(내용):
     return (내용.get('글') or '').strip(), 상한초
 
 
-def 부르기클로드(글, 줄id, 이번상한=None):
+def 부르기클로드(글, 줄id, 이번상한=None, 모델=None):
     """(끝났나, 기록파일). 끝났나 = True 성공 · False 실패 · None 시간초과.
     🔴 화면에 찍힌 것을 손에 들고 있지 않는다. **파일로 흘린다** —
        시간이 넘어 끊겨도 그때까지 무엇을 했는지가 파일에 남아 있어야 한다."""
@@ -469,7 +473,8 @@ def 부르기클로드(글, 줄id, 이번상한=None):
             r = subprocess.run(
                 [클로드길(환경), '-p', 머리말 % 글,
                  '--allowedTools', 도구들, '--disallowedTools', 막을것,
-                 '--output-format', 'stream-json', '--verbose'],
+                 '--output-format', 'stream-json', '--verbose']
+                + (['--model', 모델] if 모델 else []),
                 stdin=빈, stdout=흐름, stderr=subprocess.STDOUT,
                 text=True, cwd=str(뿌리), timeout=이번상한 or 상한초, env=환경)
             return r.returncode == 0, 기록
@@ -826,7 +831,8 @@ def 한건():
 
     잰때 = time.time()
     try:
-        됐나, 기록 = 부르기클로드(글, 줄id, 이번상한)
+        모델 = 갈래모델.get(내용.get('갈래')) if 내용.get('누가') == '시스템' else None
+        됐나, 기록 = 부르기클로드(글, 줄id, 이번상한, 모델)
     except Exception as e:
         적기(줄id, 내용, 상태='실패', 답한때=int(time.time() * 1000),
              걸린초=int(time.time() - 잰때), 답장='Claude 를 부르지 못했습니다 — %s' % e)
