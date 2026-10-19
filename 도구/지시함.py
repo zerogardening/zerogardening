@@ -58,6 +58,9 @@ from 제작요청 import 키, 부르기, 표                     # noqa: E402
 #    여기 없는 갈래·우람님 자유 지시는 기본 모델(Opus) 그대로
 갈래모델 = {'마켓품절': 'haiku', '마켓판매': 'haiku',
             '상세페이지갱신': 'sonnet', '카페24올리기': 'sonnet', '상세페이지': 'sonnet'}
+# 🔴 10/19 — 상세페이지는 상품 창 폴더에서 돌린다. 상품 창 CLAUDE.md·팀원(모델별)을 그대로 써서
+#    절차가 두 곳(여기 · 상품 창)에 갈라지지 않게. 폴더가 없으면 허브에서 혼자 돈다(옛 방식)
+갈래방 = {'상세페이지': 뿌리.parent / '제로가드닝-상품'}
 # 🔴 정해진 갈래는 Claude 의 긴 설명 대신 이 짧은 말로 답장·알림을 채운다 (우람님 9/23 「간결하게」)
 갈래별완료말 = {'상세페이지': '이미지 갱신', '카페24올리기': '업로드',
              '상세페이지갱신': '상세페이지 갱신', '마켓품절': '품절 처리', '마켓판매': '판매 재개'}
@@ -387,7 +390,7 @@ def 착수쌓기():
 """,
     '상세페이지': """「%(품목)s」 상세페이지를 처음부터 끝까지 만들어라. 사진이 다 차서 자동으로 걸린 일감이다.
 
-상품 창의 지침을 따른다 — `상품/워크플로우.md` 와 `상품/_도구` 의 도구들.
+여기는 상품 창이다 — **`상품/워크플로우.md` 순서대로 팀원(Agent)을 부른다.** 팀원 일을 직접 하지 않는다.
 차례는 리서치 → **식물특성 되돌리기** → 원고 → SEO → 대표이미지 → 조립 → 검수 → 카페24 등록이다.
 
 🔴 **리서치가 끝나면 식물 특성 7칸을 통합관리로 되돌린다. 빠뜨리지 마라** (2026-09-14 우람님
@@ -461,7 +464,7 @@ def 시킬글(내용):
     return (내용.get('글') or '').strip(), 상한초
 
 
-def 부르기클로드(글, 줄id, 이번상한=None, 모델=None):
+def 부르기클로드(글, 줄id, 이번상한=None, 모델=None, 방=None):
     """(끝났나, 기록파일). 끝났나 = True 성공 · False 실패 · None 시간초과.
     🔴 화면에 찍힌 것을 손에 들고 있지 않는다. **파일로 흘린다** —
        시간이 넘어 끊겨도 그때까지 무엇을 했는지가 파일에 남아 있어야 한다."""
@@ -472,11 +475,11 @@ def 부르기클로드(글, 줄id, 이번상한=None, 모델=None):
         try:
             r = subprocess.run(
                 [클로드길(환경), '-p', 머리말 % 글,
-                 '--allowedTools', 도구들, '--disallowedTools', 막을것,
+                 '--allowedTools', 도구들 + (',Agent' if 방 else ''), '--disallowedTools', 막을것,
                  '--output-format', 'stream-json', '--verbose']
                 + (['--model', 모델] if 모델 else []),
                 stdin=빈, stdout=흐름, stderr=subprocess.STDOUT,
-                text=True, cwd=str(뿌리), timeout=이번상한 or 상한초, env=환경)
+                text=True, cwd=str(방 or 뿌리), timeout=이번상한 or 상한초, env=환경)
             return r.returncode == 0, 기록
         except subprocess.TimeoutExpired:
             return None, 기록
@@ -831,8 +834,10 @@ def 한건():
 
     잰때 = time.time()
     try:
-        모델 = 갈래모델.get(내용.get('갈래')) if 내용.get('누가') == '시스템' else None
-        됐나, 기록 = 부르기클로드(글, 줄id, 이번상한, 모델)
+        시스템 = 내용.get('누가') == '시스템'
+        모델 = 갈래모델.get(내용.get('갈래')) if 시스템 else None
+        방 = 갈래방.get(내용.get('갈래')) if 시스템 else None
+        됐나, 기록 = 부르기클로드(글, 줄id, 이번상한, 모델, 방 if 방 and 방.is_dir() else None)
     except Exception as e:
         적기(줄id, 내용, 상태='실패', 답한때=int(time.time() * 1000),
              걸린초=int(time.time() - 잰때), 답장='Claude 를 부르지 못했습니다 — %s' % e)
