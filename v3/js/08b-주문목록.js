@@ -420,7 +420,23 @@ window.ZG = window.ZG || {};
       })
       .catch(function (e) {
         u.토스트('주문수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
-      })
+      });
+  }
+
+  function 주문수집하기(단추) {
+    if (수집중) return;
+    ZG.예약탭.자동();   // 예약일이 된 예약도 이때 올린다 (26단계 §3)
+    var supa = ZG.서버 && ZG.서버.클라이언트;
+    if (!supa) { u.토스트('서버에 연결돼 있지 않습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
+
+    수집중 = true;
+    var 본디 = 단추 ? 단추.textContent : '';
+    if (단추) { 단추.disabled = true; 단추.textContent = '받아오는 중…'; }
+
+    마켓수집(supa).then(function (됐나) {
+      if (됐나) return 카페24받기(supa, true).then(다시그리기);
+    });
+    카페24받기(supa, false)
       /* 🔴 카페24가 실패해도 심폴은 받아온다. 함수가 나뉘어 있어 서로를 무너뜨리지 않는다 */
       .then(function () { return 심폴수집(supa); })
       .then(function () {
@@ -448,23 +464,7 @@ window.ZG = window.ZG || {};
           var 붙 = (ZG.짝 && ZG.짝.저장된줄되붙이기) ? ZG.짝.저장된줄되붙이기() : 0;
           if (붙) u.토스트('기억해 둔 짝으로 ' + 붙 + '줄에 품목을 붙였습니다.');
         });
-      });
-  }
-
-  function 주문수집하기(단추) {
-    if (수집중) return;
-    ZG.예약탭.자동();   // 예약일이 된 예약도 이때 올린다 (26단계 §3)
-    var supa = ZG.서버 && ZG.서버.클라이언트;
-    if (!supa) { u.토스트('서버에 연결돼 있지 않습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
-
-    수집중 = true;
-    var 본디 = 단추 ? 단추.textContent : '';
-    if (단추) { 단추.disabled = true; 단추.textContent = '받아오는 중…'; }
-
-    마켓수집(supa).then(function (됐나) {
-      if (됐나) return 카페24받기(supa, true).then(다시그리기);
-    });
-    카페24받기(supa, false)
+      })
       .catch(function (e) {
         u.토스트('심폴 수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
       });
