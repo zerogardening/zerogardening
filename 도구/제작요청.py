@@ -16,6 +16,9 @@ import json, re, sys, urllib.request, urllib.parse
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import 원고파일 as 원고          # noqa: E402  🔴 규격이름() — 0 은 규격이 아니다 (2026-09-28)
+
 주소 = 'https://vjqfhwrgrocapcyndgtx.supabase.co/rest/v1/'
 뿌리 = Path(__file__).resolve().parents[2]          # 제로가드닝/
 품목방 = 뿌리 / '상품' / '품목'
@@ -220,8 +223,10 @@ def 규격보태기(파일, 방, 폴더, 내, 오늘):
        `EUA01-10` 이 15cm 상세페이지를 그대로 써서, 10cm 화분 사진에 「지름 15cm」가 찍혀 나갔다.
     돌려주는 값 = 이 규격을 가리키는 이름(`향등골나물-알바/10`). 보탤 것이 없으면 None."""
     본문 = 파일.read_text(encoding='utf-8')
-    새규격 = str(내.get('규격cm', '')).strip()
-    옛규격들 = 있는규격들(본문)
+    # 🔴 0(규격 외)은 규격이 아니다 — 보태지도, 폴더를 가르지도 않는다 (2026-09-28).
+    #    예전엔 구근 입력.md 에 「규격이 둘이다」가 붙고 발행이미지/0/ 이 파였다 (9/28 13:01 구근 13종)
+    새규격 = 원고.규격이름(내.get('규격cm'))
+    옛규격들 = [g for g in 있는규격들(본문) if 원고.규격이름(g)]
     if not 새규격 or 새규격 in 옛규격들:
         return None
     유통명, 코드 = 내.get('유통명', ''), 내.get('품목코드', '')

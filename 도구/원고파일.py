@@ -37,12 +37,21 @@ def 칸목록(구근=False, html=True):
     return ㄱ if html else [k for k in ㄱ if k not in html전용]
 
 
+def 규격이름(값):
+    """🔴 규격 폴더·사진 꼬리표·`창고주소-{규격}.md` 에 쓸 이름. **0 과 빈값은 규격이 아니다 → ''** (2026-09-28).
+       0 은 구근의 「규격 외(0cm)」라 크기가 아니다. 이걸 규격으로 쳐서 `TUN02-0` 노라가
+       `발행이미지/0/` · `~/상세페이지/튤립-노라/0/` · `사진/1-0.jpg` · `창고주소-0.md` 로 갈려 나갔다.
+       🔴 같은 규칙: 제작요청.py 규격보태기 · 사진받기.py · 상품/_도구/(편집·검수·상세설명-올리기·심폴보내기).py"""
+    s = str(값 if 값 is not None else '').strip()
+    return s if (s.isdigit() and int(s) != 0) else ''
+
+
 def 규격(코드):
-    """🔴 품목코드 뒷자리가 곧 규격이다 — `EUA01-15` → `15` · `CAL01-21` → `21`.
+    """🔴 품목코드 뒷자리가 곧 규격이다 — `EUA01-15` → `15` · `CAL01-21` → `21` · `TUN02-0` → ''(규격 아님).
        같은 식물 두 규격은 `발행이미지/` 아래 그 이름의 폴더가 한 겹 더 있다 (2026-09-14).
        `상세설명-올리기.py:57` 의 `품목/규격` 과 같은 값이다 — 규칙이 갈리면 또 어긋난다."""
     m = re.search(r'-(\d+)$', str(코드 or ''))
-    return m.group(1) if m else ''
+    return 규격이름(m.group(1)) if m else ''
 
 
 def 제작본(품목방, 코드=None):
@@ -178,6 +187,11 @@ def 미니읽기(조각):
     안, _ = _안(조각, 미니틀)
     if 안 is None:
         return {}
+    # 🔴 2026-09-28 — 차례(첫 칸=계열·둘째=둘레)로만 읽어, 둘레 한 칸뿐인 알리움의 「8cm 이상」이
+    #    앱의 「계열」 칸으로 올라갔다. 앞의 <b> 이름표로 가른다. 이름표가 없을 때만 옛 차례를 쓴다
+    이름칸 = _이름표칸(안)
+    if 이름칸:
+        return {칸: {'본문': 글로(본문)} for 칸, 본문 in 이름칸}
     값, 스 = {}, re.findall(스팬틀, 안, re.S)
     for i, 칸 in enumerate(('2-계열', '2-둘레')):
         if i < len(스):
@@ -185,10 +199,28 @@ def 미니읽기(조각):
     return 값
 
 
+def _이름표칸(안):
+    """`<b>계열</b><span>…</span>` · `<b>구근 둘레</b><span>…</span>` → [(칸, 본문)]"""
+    짝 = []
+    for 이름, 본문 in re.findall(r'<b[^>]*>(.*?)</b>\s*<span[^>]*>(.*?)</span>', 안, re.S):
+        이름 = re.sub(r'<[^>]+>|\s+', '', 이름)
+        칸 = '2-계열' if 이름 == '계열' else '2-둘레' if '둘레' in 이름 else None
+        if 칸:
+            짝.append((칸, 본문))
+    return 짝
+
+
 def 미니박기(조각, 관련):
     안, b = _안(조각, 미니틀)
     if 안 is None:
         return 조각
+    if _이름표칸(안):
+        def 이름갈기(m):
+            이름 = re.sub(r'<[^>]+>|\s+', '', m.group(2))
+            칸 = '2-계열' if 이름 == '계열' else '2-둘레' if '둘레' in 이름 else None
+            return (m.group(1) + m.group(2) + m.group(3) + m.group(4) + html로(관련[칸]['본문']) + m.group(6)
+                    ) if (칸 and 칸 in 관련) else m.group(0)
+        return _되박기(조각, b, re.sub(r'(<b[^>]*>)(.*?)(</b>\s*)(<span[^>]*>)(.*?)(</span>)', 이름갈기, 안, flags=re.S))
     셈 = [0]
 
     def 갈기(m):
