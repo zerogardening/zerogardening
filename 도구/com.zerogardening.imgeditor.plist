@@ -13,7 +13,7 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/usr/bin/python3</string>
-		<string>/Users/zerogardening/claude-projects/제로가드닝/상품/_도구/편집.py</string>
+		<string>/Users/woorambaik/claude-projects/제로가드닝/상품/_도구/편집.py</string>
 	</array>
 	<key>EnvironmentVariables</key>
 	<dict>

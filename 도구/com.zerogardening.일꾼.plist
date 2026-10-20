@@ -14,7 +14,7 @@
 	<key>ProgramArguments</key>
 	<array>
 		<string>/usr/bin/python3</string>
-		<string>/Users/zerogardening/claude-projects/제로가드닝/통합관리/도구/일꾼.py</string>
+		<string>/Users/woorambaik/claude-projects/제로가드닝/통합관리/도구/일꾼.py</string>
 	</array>
 	<key>StartInterval</key>
 	<integer>60</integer>

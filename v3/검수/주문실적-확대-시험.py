@@ -6,7 +6,7 @@
 import pathlib, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 샷 = 뿌리 / '검수' / '21-주문실적'
 샷.mkdir(parents=True, exist_ok=True)
 심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"

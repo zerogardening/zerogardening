@@ -1,7 +1,7 @@
 """사진받기.py — 창고 쪽이 새것이면 덮는가, 안 바뀐 건 건너뛰는가"""
 import sys, time, types, tempfile, os
 from pathlib import Path
-도구 = Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/도구')
+도구 = Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/도구')
 
 가짜 = types.ModuleType('제작요청')
 가짜.키 = lambda: 'k'; 가짜.표 = lambda t: t; 가짜.부르기 = lambda *a, **k: []

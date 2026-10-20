@@ -10,7 +10,7 @@
 import json, time, pathlib, urllib.parse, sys
 from playwright.sync_api import sync_playwright
 
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 이제 = int(time.time() * 1000)
 세션 = {"access_token": "zgtesttoken", "token_type": "bearer", "expires_in": 3600,
         "expires_at": int(time.time()) + 3600, "refresh_token": "zgtesttoken",

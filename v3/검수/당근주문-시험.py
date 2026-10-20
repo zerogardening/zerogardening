@@ -9,7 +9,7 @@
 import pathlib, shutil, subprocess, sys, tempfile, time
 from playwright.sync_api import sync_playwright
 
-원본 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+원본 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 표본 = pathlib.Path.home() / 'Downloads' / '당근_진행중_주문내역_202693.xlsx'
 # 로그인 문·서비스워커·새판 되받기를 끈다 (새판확인-시험.py 와 같은 수)
 심기 = ("localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"

@@ -5,7 +5,7 @@
 import json, sys, pathlib
 from playwright.sync_api import sync_playwright
 
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 샷 = pathlib.Path(__file__).resolve().parent / '샷-메모정비'
 샷.mkdir(exist_ok=True)
 주소 = (뿌리 / '메모.html').as_uri()

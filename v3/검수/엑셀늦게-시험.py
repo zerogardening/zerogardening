@@ -7,7 +7,7 @@
 import pathlib, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  ✅ ' if 참 else '  🔴 ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))

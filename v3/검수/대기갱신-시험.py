@@ -2,7 +2,7 @@
 """입고를 저장하면 「상세페이지 작업 대기」가 바로 갱신되는가 (제작요청-시험.py 틀을 그대로 쓴다)"""
 import json, time, pathlib
 from playwright.sync_api import sync_playwright
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 이제 = int(time.time() * 1000)
 세션 = {"access_token":"검수용","token_type":"bearer","expires_in":3600,
         "expires_at":int(time.time())+3600,"refresh_token":"검수용",

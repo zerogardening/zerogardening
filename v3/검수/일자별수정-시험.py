@@ -3,7 +3,7 @@
 import json, pathlib, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 
 품목 = [
   {'품목코드': 'AAA01-15', '접두': 'AAA01', '유통명': '몬스테라', '학명': 'Monstera', '규격': '15cm', '상태': '판매중'},

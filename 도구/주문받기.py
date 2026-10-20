@@ -14,7 +14,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-ROOT = Path("/Users/zerogardening/claude-projects/제로가드닝")
+ROOT = Path("/Users/woorambaik/claude-projects/제로가드닝")
 API = ROOT / "상품/_도구/카페24.py"
 실물 = ROOT / "통합관리/백업/카페24주문원본_20260806.csv"
 나갈곳 = Path.home() / "Desktop"

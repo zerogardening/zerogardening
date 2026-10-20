@@ -5,7 +5,7 @@
 import pathlib, sys
 from playwright.sync_api import sync_playwright
 
-뿌리 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 샷 = pathlib.Path(__file__).resolve().parent / '샷-탭아이콘'
 샷.mkdir(exist_ok=True)
 # 🔴 토큰이 없으면 01b-서버가 로그인으로 튕긴다 · 바깥 통신은 통째로 막아 로컬 전용으로 떨군다

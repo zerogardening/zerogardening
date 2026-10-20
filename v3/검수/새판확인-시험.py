@@ -6,7 +6,7 @@
 import io, os, re, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
-뿌리 = '/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3'
+뿌리 = '/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3'
 서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8777', '-d', 뿌리],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(1.2)

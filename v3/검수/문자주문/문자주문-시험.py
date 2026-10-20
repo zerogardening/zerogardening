@@ -3,7 +3,7 @@
 import pathlib, shutil, subprocess, sys, tempfile, time, json, urllib.parse
 from playwright.sync_api import sync_playwright
 
-원본 = pathlib.Path('/Users/zerogardening/claude-projects/제로가드닝/통합관리/v3')
+원본 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 샷 = 원본 / '검수' / '문자주문'
 샷.mkdir(parents=True, exist_ok=True)
 PORT = 8833
