@@ -33,7 +33,8 @@ window.ZG = window.ZG || {};
     return ZG.계산.날짜문자(t.getTime());
   }
 
-  function 전화숫자(값) { return String(값 == null ? '' : 값).replace(/\D/g, ''); }
+  /* +82 로 온 번호도 010 으로 펴서 견준다 — 같은 손님이 두 건으로 갈라지지 않게 (10/20 허브) */
+  function 전화숫자(값) { return String(ZG.ui ? ZG.ui.전화정리(값) : (값 == null ? '' : 값)).replace(/\D/g, ''); }
   function 주소압축(값) { return String(값 == null ? '' : 값).replace(/[\s-]/g, ''); }
 
   /* 이름·전화·주소가 모두 같으면 화면에서 한 건이다. 주문번호로 묶지 않는다 */
