@@ -61,7 +61,7 @@ async function 심폴(경로: string, 쿠키: string, 몸: Record<string, string
 
 /* ══ CSV — 🔴 split(',') 금지. 주소·전달사항에 콤마·따옴표·줄바꿈이 들어온다 ══ */
 
-function CSV파싱(글자: string): string[][] {
+export function CSV파싱(글자: string): string[][] {
   const 줄들: string[][] = [];
   let 행: string[] = [], 칸 = "", 따옴 = false;
   for (let i = 0; i < 글자.length; i++) {
@@ -112,26 +112,39 @@ async function 배송요청목록(쿠키: string, 일수: number): Promise<Recor
   return 있다;
 }
 
+/* 🔴 심폴 CSV 는 앞 0 을 지키려고 칸을 엑셀 수식 껍데기 `="45392501453"` 로 준다. 안 보낸 주문은 `=""`.
+   벗기지 않고 보면 `=""` 도 「비어 있지 않음」이라 **모든 주문이 「이미 송장 있음」으로 막혔다**(2026-10-20).
+   edge-심폴수집 껍데기벗기기와 같은 규칙 + 파서가 따옴표를 먹은 `=…` 꼴도 벗긴다 */
+export const 껍데기벗기기 = (v: unknown) => {
+  const s = 다듬기(v);
+  const m = s.match(/^="([\s\S]*)"$/) ?? s.match(/^=([\s\S]*)$/);
+  return m ? m[1].trim() : s;
+};
+
 /* ══ L3 — 쏘기 직전 송장칸 확인 ══
    🔴 한 거래번호에 상품이 여럿이면 「하나라도 송장이 차 있으면 통째로 안 보낸다」.
       deliinfoup2 는 거래번호 단위로 먹어 부분발송을 표현할 방법이 없다 */
-async function 송장칸보기(쿠키: string, 코드들: string[]) {
-  const csv = await 심폴("/vender/order_excel.php", 쿠키, { ordercodes: 코드들.join(",") + "," });
+export function 송장칸판정(csv: string) {
   const 줄들 = CSV파싱(csv);
   const 본것: Record<string, { 송장: string; 배송요청: boolean; 봤나: boolean }> = {};
   if (!줄들.length) return 본것;
   const 자리 = 자리찾기(줄들[0]);
+  const 칸 = (행: string[], 이름: string) => 자리[이름] == null ? "" : 껍데기벗기기(행[자리[이름]]);
   for (let n = 1; n < 줄들.length; n++) {
     const 행 = 줄들[n];
-    const 번호 = 다듬기(행[자리["거래번호"]]);
+    const 번호 = 칸(행, "거래번호");
     if (!번호) continue;
-    const 송장 = 자리["상품별송장번호"] == null ? "" : 다듬기(행[자리["상품별송장번호"]]);
-    const 처리 = 자리["상품별처리여부"] == null ? "" : 다듬기(행[자리["상품별처리여부"]]);
+    const 송장 = 칸(행, "상품별송장번호");
+    const 처리 = 칸(행, "상품별처리여부");
     const 것 = 본것[번호] ?? (본것[번호] = { 송장: "", 배송요청: true, 봤나: true });
     if (송장 && !것.송장) 것.송장 = 송장;
     if (처리 !== "배송요청") 것.배송요청 = false;
   }
   return 본것;
+}
+
+async function 송장칸보기(쿠키: string, 코드들: string[]) {
+  return 송장칸판정(await 심폴("/vender/order_excel.php", 쿠키, { ordercodes: 코드들.join(",") + "," }));
 }
 
 /* ══ 실발송 — 🔴 이 함수 하나만 심폴에 쏜다 ══ */

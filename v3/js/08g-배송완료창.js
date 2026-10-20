@@ -284,7 +284,8 @@ window.ZG = window.ZG || {};
     발새로(카드들.filter(켜졌나).length, 보류, 수.주);
   }
 
-  /* ── 발 줄 — 합 · 「카페24 송장 올리기」 체크 · [저장] ──
+  /* ── 발 줄 — 합 · 「카페24 송장 올리기」·「심폴 발송처리」 체크 · [저장] ──
+     🔴 두 체크는 따로 논다 — 카페24를 끄면 심폴까지 빠지던 것을 갈랐다(2026-10-20).
      🔴 PC는 체크가 켜져 있어도 여기서 보내지 않는다. [저장]이 08m 을 열고 미리보기·확인을 지나야 나간다.
         보류 줄은 판정이 「보류」라 대상뽑기에서 저절로 빠진다 */
   function 대상() {
@@ -292,68 +293,95 @@ window.ZG = window.ZG || {};
     return { 짝들: 뽑.짝들, 심폴짝들: 뽑.심폴짝들 || [], 섞임수: 뽑.섞임수, 전화수: 뽑.전화수 };
   }
   function 서버있나() { return !!(ZG.서버 && ZG.서버.클라이언트); }
-  /* 폰은 심폴을 안 보낸다(08m 이 PC 창이다) — 카페24 짝만 센다 */
-  function 올릴수(뽑) { return 뽑.짝들.length + (u.폰인가() ? 0 : 뽑.심폴짝들.length); }
-  function c24켬(뽑) { return 올릴수(뽑) > 0 && 서버있나() && !상태.c24끔; }
+  function c24켬(뽑) { return 뽑.짝들.length > 0 && 서버있나() && !상태.c24끔; }
+  function 심켬(뽑) { return 뽑.심폴짝들.length > 0 && 서버있나() && !상태.심끔; }
+  function 켠것(p) { return p.켬; }
+
+  function 체크단추(이름, 켬, 수, 덧, 끔키) {
+    var 단 = 만들기('button', { type: 'button', class: 'c24' }, [
+      만들기('span', { class: 'cb' + (켬 ? ' on' : '') }),
+      만들기('span', { text: 이름 })
+    ]);
+    단.title = (서버있나() ? '' : '서버에 연결돼 있지 않습니다 · ') + 수 + '건' + (덧.length ? ' · ' + 덧.join(' · ') + ' 제외' : '');
+    단.hidden = !수;
+    if (!서버있나()) 단.disabled = true;
+    단.addEventListener('click', function () { 상태[끔키] = !상태[끔키]; 요약새로(); });
+    return 단;
+  }
 
   function 발새로(완료, 보류, 주) {
-    var 발 = 참조.발, 폰 = u.폰인가(), 뽑 = 대상(), n = 올릴수(뽑);
+    var 발 = 참조.발, 폰 = u.폰인가(), 뽑 = 대상();
     u.비우기(발);
     var 완글 = 만들기('span', { class: 'n', html: '배송완료 <b>' + 완료 + '</b>' + (폰 ? '' : '건 <small>재고 −' + u.콤마(주) + '주</small>') });
     var 보글 = 만들기('span', { class: 'n hb', html: '⏸ 보류 <b>' + 보류 + '</b>' + (폰 ? '' : '건 <small>송장만 저장</small>') });
 
-    var 켬 = c24켬(뽑), 빠짐 = [];
+    var 빠짐 = [];
     if (뽑.섞임수) 빠짐.push('심폴·카페24 섞임 ' + 뽑.섞임수 + '건');
     if (뽑.전화수) 빠짐.push('전화주문 ' + 뽑.전화수 + '건');
-    var c24 = 만들기('button', { type: 'button', class: 'c24' }, [
-      만들기('span', { class: 'cb' + (켬 ? ' on' : '') }),
-      만들기('span', { text: '카페24 송장 올리기' })
-    ]);
-    c24.title = (서버있나() ? '' : '서버에 연결돼 있지 않습니다 · ') + n + '건' + (빠짐.length ? ' · ' + 빠짐.join(' · ') + ' 제외' : '');
-    c24.hidden = !n;
-    if (!서버있나()) c24.disabled = true;
-    c24.addEventListener('click', function () { 상태.c24끔 = !상태.c24끔; 요약새로(); });
+    var c24 = 체크단추('카페24 송장 올리기', c24켬(뽑), 뽑.짝들.length, 빠짐, 'c24끔');
+    var 심 = 체크단추('심폴 발송처리', 심켬(뽑), 뽑.심폴짝들.length, [], '심끔');
 
     var 저장단추 = 만들기('button', { type: 'button', class: 폰 ? 'bigbtn' : 'btn main', text: '저장' });
     저장단추.addEventListener('click', function () { 저장(저장단추); });
     if (폰) {
       발.className = 'ft selfix';
-      발.appendChild(만들기('div', { class: 'r1' }, [완글, 보글, c24]));
+      발.appendChild(만들기('div', { class: 'r1' }, [완글, 보글, c24, 심]));
       발.appendChild(저장단추);
     } else {
       발.className = 'ft savebar';
       발.appendChild(완글); 발.appendChild(만들기('span', { class: 'sep' })); 발.appendChild(보글);
-      발.appendChild(만들기('span', { class: 'rt' }, [c24, 저장단추]));
+      발.appendChild(만들기('span', { class: 'rt' }, [c24, 심, 저장단추]));
     }
   }
 
-  /* [저장] = 카페24 체크가 켜져 있으면 올리기 · 꺼져 있으면 닫기. 출고 확정의 뜻은 없다 */
+  /* [저장] = 체크가 켜진 쪽을 올리기 · 둘 다 꺼져 있으면 닫기. 출고 확정의 뜻은 없다 */
   function 저장(단) {
-    var 뽑 = 대상();
-    if (!c24켬(뽑)) { 닫기(); return; }
-    if (!u.폰인가()) { ZG.카페24발송창.열기({ 짝들: 뽑.짝들, 심폴짝들: 뽑.심폴짝들, 그다음: 닫기 }); return; }
-    /* 폰 — 08m 은 PC 창이라 안 띄운다. 묻고 바로 올린다 */
-    var 짝 = 뽑.짝들.filter(function (p) { return p.켬; }), 심 = 뽑.심폴짝들.length;
-    if (!짝.length) { 닫기(); return; }
+    var 뽑 = 대상(), 짝 = c24켬(뽑) ? 뽑.짝들 : [], 심 = 심켬(뽑) ? 뽑.심폴짝들 : [];
+    if (!u.폰인가()) {
+      if (!짝.length && !심.length) { 닫기(); return; }
+      ZG.카페24발송창.열기({ 짝들: 짝, 심폴짝들: 심, 그다음: 닫기 });
+      return;
+    }
+    /* 폰 — 08m 은 PC 창이라 안 띄운다. 확인창 하나 묻고 바로 올린다.
+       🔴 L1(이미 나감·같은 거래번호)로 잠긴 심폴 줄은 켬이 꺼져 있어 여기서 빠진다 */
+    짝 = 짝.filter(켠것); 심 = 심.filter(켠것);
+    if (!짝.length && !심.length) { 닫기(); return; }
+    var 말 = [];
+    if (짝.length) 말.push('카페24 송장 ' + 짝.length + '건');
+    if (심.length) 말.push('심폴 ' + 심.length + '건 발송');
     u.탈출풀기();
     u.확인({
-      제목: '카페24에 송장 ' + 짝.length + '건을 올릴까요',
-      본문: 심 ? '심폴 ' + 심 + '건은 PC에서' : '', 확인글: '올리기'
+      제목: 심.length ? 말.join(' · ') : '카페24에 송장 ' + 짝.length + '건을 올릴까요',
+      본문: 심.length ? '🔴 <b>손님에게 문자가 나가며 되돌릴 수 없습니다</b>' : '',
+      확인글: '올리기', 위험: !!심.length
     }, function (예) {
       u.탈출걸기(닫기);
       if (!예) return;
       단.disabled = true; 단.textContent = '올리는 중…';
-      H().카페24올리기(짝).then(function (c) {
+      폰올리기(짝, 심).then(function (r) {
         닫기();
-        u.토스트('카페24 송장 ' + c.됨 + '건 올림');
-        if (c.실패.length) u.확인({
-          제목: '올리지 못한 ' + c.실패.length + '건',
-          본문: c.실패.map(function (f) { return '<b>' + u.안전(f.수하인) + '</b> · ' + u.안전(f.송장) + ' — ' + u.안전(f.사유); }).join('<br>'),
-          확인글: '확인'
-        }, function () {});
+        u.토스트(r.글.join(' · ') || '올린 것이 없습니다');
+        if (r.실패.length) u.확인({ 제목: '올리지 못한 ' + r.실패.length + '건', 본문: r.실패.join('<br>'), 확인글: '확인' }, function () {});
       }, function (e) {
         단.disabled = false; 단.textContent = '저장';
         u.토스트('올리기 실패 — ' + String((e && e.message) || e).slice(0, 60));
+      });
+    });
+  }
+
+  /* 🔴 카페24 먼저, 끝나면 심폴(08m 과 같은 순서). 실패 사유는 08m 과 같은 글로 그대로 보인다 */
+  function 폰올리기(짝, 심) {
+    var r = { 글: [], 실패: [] }, C = ZG.카페24발송;
+    return H().카페24올리기(짝).then(function (c) {
+      if (짝.length) r.글.push('카페24 송장 ' + c.됨 + '건 올림');
+      c.실패.forEach(function (f) { r.실패.push('<b>' + u.안전(f.수하인) + '</b> · ' + u.안전(f.송장) + ' — ' + u.안전(f.사유)); });
+      if (!심.length) return r;
+      return C.심폴발송(심).then(function (n) {
+        r.글.push('심폴 ' + n.성공 + '건 발송처리');
+        심.forEach(function (p) {
+          if (!(p.결과 && p.결과.됨)) r.실패.push('<b>🌿 ' + u.안전(p.수하인) + '</b> · ' + u.안전(p.운송장번호) + ' — ' + u.안전(C.심폴결과글(p)));
+        });
+        return r;
       });
     });
   }

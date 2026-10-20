@@ -1549,6 +1549,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .pcsheet.dlv .selfix .r1 b{font-size:var(--font-xl); color:var(--color-text); font-variant-numeric:tabular-nums}
 .pcsheet.dlv .selfix .r1 .hb b{color:#4A4C52}
 .pcsheet.dlv .selfix .r1 .c24{margin-left:auto; padding:6px 10px}
+.pcsheet.dlv .selfix .r1{flex-wrap:wrap}
 
 /* ✋ 넘기기 확인창 안의 묶음 */
 .askbox .넘김표{display:flex; gap:var(--space-md); background:var(--color-ios-bg); border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg); margin-top:var(--space-md)}
