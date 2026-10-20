@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 개선 › 작업중 검색칸 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  .phone{height:auto; position:relative}
+  .twoup{display:flex; align-items:flex-start; gap:28px; margin-bottom:34px}
+  .twoup .col .cap{font-size:12px; margin-bottom:8px}
+  .phone .ph-body{gap:var(--space-md); min-height:640px; flex:1 0 auto}
+  .ph-top .왼{display:flex; align-items:center; gap:var(--space-sm)}
+
+  /* 바뀌는 자리 표시 — 시안에서만 */
+  .바뀜{outline:2px dashed #E8590C; outline-offset:4px; border-radius:var(--radius-md); position:relative}
+  .바뀜표{position:absolute; top:-13px; right:-6px; z-index:5; background:#E8590C; color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:9px; letter-spacing:0}
+
+  /* 상품.css — 갈래칩 · 사진 칩 */
+  .갈래칩{display:flex; gap:var(--space-sm)}
+  .갈래칩 .fchip{flex:1; justify-content:center; display:inline-flex}
+  .phone .갈래칩 .fchip{min-height:36px; align-items:center}
+  .chip.요청{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  .chip.요청::before{background:var(--color-accent)}
+  .chip.요청.진행{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+  .chip.요청.진행::before{background:#C88A00}
+  .chip.사진{background:var(--color-surface); color:var(--color-text-muted); border-color:var(--color-border); font-variant-numeric:tabular-nums}
+  .chip.사진::before{content:'📷'; background:none; width:auto; height:auto; border-radius:0; font-size:10px; line-height:1}
+  .chip.사진.일부{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+  .chip.사진.완{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  .사진머리{display:flex; align-items:center; gap:var(--space-sm); padding:0 var(--space-sm)}
+  .뺌{background:none; border:none; color:var(--color-text-faint); font-size:var(--font-sm); padding:var(--space-xs); font-family:inherit}
+  td.뺌칸{text-align:right}
+  td div.sci{font-size:var(--font-2xs); font-style:italic; color:var(--color-text-muted); margin-top:1px}
+  tr.끝남 td{opacity:.55}
+
+  /* 주문.css — 찾는 칸 */
+  .search{position:relative}
+  .search .inp{padding-left:34px; padding-right:34px}
+  .search .mag{position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:var(--font-md); opacity:.45}
+  .search .지움{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:20px; height:20px; border-radius:50%; border:none; background:#C7C7CC; color:#fff;
+    font-size:11px; font-weight:700; line-height:20px; text-align:center; padding:0; font-family:inherit;
+  }
+  .pc .search .inp{height:var(--h-btn); font-size:var(--font-sm); line-height:calc(var(--h-btn) - 2px)}
+  .pc .search .지움{width:18px; height:18px; line-height:18px; font-size:10px}
+  mark{background:#FFF2B8; color:inherit; border-radius:3px; box-shadow:0 0 0 1.5px #FFF2B8}
+
+  /* PC — 갈래칩 옆에 검색칸 */
+  .거름줄{display:flex; align-items:center; gap:var(--space-md)}
+  .거름줄 .갈래칩{width:280px; flex:0 0 auto}
+  .거름줄 .search{width:340px; flex:0 0 auto}
+  .거름줄 .셈{margin-left:auto; font-size:var(--font-sm); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
+  .거름줄 .셈 b{color:var(--color-accent-dark); font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════════════ 폰 ══════════════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 상품 › 작업중 · 검색칸 추가 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+
+  <div class="twoup">
+    <!-- ① 빈 검색칸 -->
+    <div class="col">
+      <div class="cap">① 검색칸 비어 있음 — 갈래칩 아래 한 칸</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><h1>작업중</h1></div><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-body">
+          <div class="toggle" style="height:36px"><button style="flex:1; padding:0">입고</button><button style="flex:1; padding:0">재고</button><button class="on" style="flex:1; padding:0">작업중</button></div>
+          <div class="갈래칩"><button class="fchip on">작업중 <span class="n">12</span></button><button class="fchip">완료 <span class="n">31</span></button></div>
+          <div class="search 바뀜"><span class="바뀜표">새로</span><span class="mag">🔍</span><input class="inp" placeholder="품목코드 · 유통명 · 학명"></div>
+          <div class="ph-list">
+            <div class="ph-card"><div class="r1"><div class="nm">휴케라 팰리스퍼플</div><div class="cd">HEP01-15</div></div><div class="sci">Heuchera micrantha 'Palace Purple'</div><div class="r2">15cm 포트<span class="amt"><span class="chip 사진 일부">5/7</span></span></div></div>
+            <div class="ph-card"><div class="r1"><div class="nm">구절초 노랑</div><div class="cd">CHR01-10</div></div><div class="sci">Chrysanthemum zawadskii</div><div class="r2">10cm 포트<span class="amt"><span class="chip 사진">2/7</span></span></div></div>
+            <div class="ph-card"><div class="r1"><div class="nm">용담 보라</div><div class="cd">GEN01-10</div></div><div class="sci">Gentiana scabra</div><div class="r2">10cm 포트<span class="amt"><span class="chip 요청 진행">제작 중</span></span></div></div>
+            <div class="ph-card"><div class="r1"><div class="nm">휴케라 라임마멀레이드</div><div class="cd">HEU03-10</div></div><div class="sci">Heuchera 'Lime Marmalade'</div><div class="r2">10cm 포트<span class="amt"><span class="chip 요청">요청함</span></span></div></div>
+            <div class="ph-card"><div class="r1"><div class="nm">무스카리 블루</div><div class="cd">MUS01-B</div></div><div class="sci">Muscari armeniacum</div><div class="r2">구근 10구<span class="amt"><span class="chip 사진 일부">3/4</span></span></div></div>
+            <div class="ph-card"><div class="r1"><div class="nm">청사초</div><div class="cd">CAR02-10</div></div><div class="sci">Carex breviculmis</div><div class="r2">10cm 포트<span class="amt"><span class="chip 사진">0/7</span></span></div></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div class="on"><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 「휴케」 친 상태 -->
+    <div class="col">
+      <div class="cap">② 「휴케」 — 칩 숫자도 찾은 것만 센다(완료 1) · 「완료」를 눌러도 같은 검색어가 걸린다</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><h1>작업중</h1></div><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-body">
+          <div class="toggle" style="height:36px"><button style="flex:1; padding:0">입고</button><button style="flex:1; padding:0">재고</button><button class="on" style="flex:1; padding:0">작업중</button></div>
+          <div class="갈래칩"><button class="fchip on">작업중 <span class="n">2</span></button><button class="fchip">완료 <span class="n">1</span></button></div>
+          <div class="search 바뀜"><span class="바뀜표">새로</span><span class="mag">🔍</span><input class="inp" value="휴케"><button class="지움">✕</button></div>
+          <div class="ph-list">
+            <div class="ph-card"><div class="r1"><div class="nm"><mark>휴케</mark>라 팰리스퍼플</div><div class="cd">HEP01-15</div></div><div class="sci">Heuchera micrantha 'Palace Purple'</div><div class="r2">15cm 포트<span class="amt"><span class="chip 사진 일부">5/7</span></span></div></div>
+            <div class="ph-card"><div class="r1"><div class="nm"><mark>휴케</mark>라 라임마멀레이드</div><div class="cd">HEU03-10</div></div><div class="sci">Heuchera 'Lime Marmalade'</div><div class="r2">10cm 포트<span class="amt"><span class="chip 요청">요청함</span></span></div></div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div class="on"><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ PC ══════════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 상품 › 작업중 · 검색칸 추가 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+
+  <div class="cap" style="margin-bottom:8px">① 검색칸 비어 있음 — 갈래칩 바로 옆</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a>
+        <a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 작업중</div></div>
+        <div class="pc-tabs"><span>입고</span><span>재고</span><span class="on">작업중</span><span>이미지</span><span>블로그</span></div>
+        <div class="거름줄">
+          <div class="갈래칩"><button class="fchip on">작업중 <span class="n">12</span></button><button class="fchip">완료 <span class="n">31</span></button></div>
+          <div class="search 바뀜"><span class="바뀜표">새로</span><span class="mag">🔍</span><input class="inp" placeholder="품목코드 · 유통명 · 학명"></div>
+        </div>
+        <div class="card table-card">
+          <div class="사진머리"><h3>작업중</h3></div>
+          <table>
+            <colgroup><col style="width:110px"><col><col style="width:110px"><col style="width:120px"><col style="width:56px"></colgroup>
+            <thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th>사진</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="code">HEP01-15</td><td>휴케라 팰리스퍼플<div class="sci">Heuchera micrantha 'Palace Purple'</div></td><td class="dim">15cm 포트</td><td><span class="chip 사진 일부">5/7</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">CHR01-10</td><td>구절초 노랑<div class="sci">Chrysanthemum zawadskii</div></td><td class="dim">10cm 포트</td><td><span class="chip 사진">2/7</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">GEN01-10</td><td>용담 보라<div class="sci">Gentiana scabra</div></td><td class="dim">10cm 포트</td><td><span class="chip 요청 진행">제작 중</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">HEU03-10</td><td>휴케라 라임마멀레이드<div class="sci">Heuchera 'Lime Marmalade'</div></td><td class="dim">10cm 포트</td><td><span class="chip 요청">요청함</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">MUS01-B</td><td>무스카리 블루<div class="sci">Muscari armeniacum</div></td><td class="dim">구근 10구</td><td><span class="chip 사진 일부">3/4</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">CAR02-10</td><td>청사초<div class="sci">Carex breviculmis</div></td><td class="dim">10cm 포트</td><td><span class="chip 사진">0/7</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">SED04-10</td><td>꿩의비름<div class="sci">Hylotelephium spectabile</div></td><td class="dim">10cm 포트</td><td><span class="chip 사진">1/7</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="margin-bottom:8px">② 「Heuchera」 — 학명으로도 걸린다 · 칩 숫자는 찾은 것만</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a>
+        <a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 작업중</div></div>
+        <div class="pc-tabs"><span>입고</span><span>재고</span><span class="on">작업중</span><span>이미지</span><span>블로그</span></div>
+        <div class="거름줄">
+          <div class="갈래칩"><button class="fchip on">작업중 <span class="n">2</span></button><button class="fchip">완료 <span class="n">1</span></button></div>
+          <div class="search 바뀜"><span class="바뀜표">새로</span><span class="mag">🔍</span><input class="inp" value="Heuchera"><button class="지움">✕</button></div>
+        </div>
+        <div class="card table-card">
+          <div class="사진머리"><h3>작업중</h3></div>
+          <table>
+            <colgroup><col style="width:110px"><col><col style="width:110px"><col style="width:120px"><col style="width:56px"></colgroup>
+            <thead><tr><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th>사진</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="code">HEP01-15</td><td>휴케라 팰리스퍼플<div class="sci"><mark>Heuchera</mark> micrantha 'Palace Purple'</div></td><td class="dim">15cm 포트</td><td><span class="chip 사진 일부">5/7</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+              <tr><td class="code">HEU03-10</td><td>휴케라 라임마멀레이드<div class="sci"><mark>Heuchera</mark> 'Lime Marmalade'</div></td><td class="dim">10cm 포트</td><td><span class="chip 요청">요청함</span></td><td class="뺌칸"><button class="뺌">✓</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

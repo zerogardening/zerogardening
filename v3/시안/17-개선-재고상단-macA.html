@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 개선 › 재고 상단 검색·업체 고르기 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  .phone{height:auto; position:relative}
+  .twoup{display:flex; align-items:flex-start; gap:28px; margin-bottom:34px}
+  .twoup .col .cap{font-size:12px; margin-bottom:8px}
+  .phone .ph-body{gap:var(--space-md); min-height:640px; flex:1 0 auto}
+  .ph-top .왼{display:flex; align-items:center; gap:var(--space-sm)}
+  .바뀜{outline:2px dashed #E8590C; outline-offset:4px; border-radius:var(--radius-md); position:relative}
+  .바뀜표{position:absolute; top:-13px; right:-6px; z-index:5; background:#E8590C; color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:9px; letter-spacing:0}
+
+  .search{position:relative}
+  .search .inp{padding-left:34px}
+  .search .mag{position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:var(--font-md); opacity:.45}
+
+  /* 업체 고르기 — 선택 상자 */
+  .업체고름{position:relative}
+  .고름상자{
+    width:100%; display:flex; align-items:center; gap:var(--space-sm);
+    height:var(--h-input); padding:0 var(--space-md) 0 var(--space-lg);
+    border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
+    background:var(--color-surface); box-shadow:inset 0 1px 1px rgba(0,0,0,.03);
+    font-family:inherit; font-size:var(--font-lg); color:var(--color-text); text-align:left;
+  }
+  .고름상자 .ic{font-size:var(--font-md); opacity:.55}
+  .고름상자 .v{flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .고름상자 .k{color:var(--color-text-muted); font-weight:var(--weight-semibold); font-size:var(--font-sm)}
+  .고름상자 .n{color:var(--color-text-muted); font-size:var(--font-sm); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+  .고름상자 .화살{color:var(--color-text-muted); font-size:11px; margin-left:2px}
+  .고름상자.열림{border-color:var(--color-accent); box-shadow:0 0 0 3px rgba(47,158,68,.16)}
+  .고름상자.걸림{background:var(--color-accent-bg); border-color:var(--color-accent-border); color:var(--color-accent-dark); font-weight:var(--weight-bold)}
+  .고름상자.걸림 .n{color:var(--color-accent-dark); opacity:.75}
+  .고름상자 .지움{
+    flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:none; padding:0;
+    background:var(--color-accent); color:#fff; font-size:11px; font-weight:700; line-height:22px; text-align:center; font-family:inherit;
+  }
+  .펼침{
+    position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0;
+    background:var(--color-surface); border:var(--border-width) solid var(--color-border);
+    border-radius:var(--radius-lg); box-shadow:0 14px 34px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04);
+    padding:var(--space-xs); display:flex; flex-direction:column;
+  }
+  .펼침 .it{
+    display:flex; align-items:center; gap:var(--space-sm); padding:9px var(--space-md);
+    border-radius:var(--radius-sm); font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text);
+  }
+  .펼침 .it .ck{width:14px; color:var(--color-accent-dark); font-weight:700}
+  .펼침 .it .n{margin-left:auto; color:var(--color-text-muted); font-variant-numeric:tabular-nums; font-size:var(--font-sm)}
+  .펼침 .it.on{background:var(--color-accent-bg); color:var(--color-accent-dark)}
+  .펼침 .it.hov{background:#F2F2F5}
+  .펼침 .sep{height:1px; background:var(--color-border-faint); margin:var(--space-3xs) var(--space-sm)}
+  .phone .펼침 .it{padding:12px var(--space-md); font-size:var(--font-lg)}
+
+  /* PC — 조건 줄 */
+  .조건{padding:0 var(--space-sm) var(--space-lg); display:flex; flex-direction:column; gap:var(--space-lg)}
+  .칩줄{display:flex; align-items:center; gap:14px}
+  .칩줄 .fchips{flex-wrap:nowrap}
+  .칩줄 .search{width:250px; flex:0 0 auto}
+  .칩줄 .업체고름{width:230px; flex:0 0 auto}
+  .pc .search .inp, .pc .고름상자{height:var(--h-btn); font-size:var(--font-sm); line-height:calc(var(--h-btn) - 2px)}
+  .pc .고름상자 .n, .pc .고름상자 .k{font-size:var(--font-xs)}
+  .pc .펼침 .it{font-size:var(--font-sm); padding:8px var(--space-md)}
+  td div.sci{font-size:var(--font-2xs); font-style:italic; color:var(--color-text-muted); margin-top:1px}
+  th.ck, td.ck{text-align:center}
+  .cbx{display:inline-block; width:15px; height:15px; border-radius:4px; border:var(--border-width) solid var(--color-border); background:var(--color-surface); vertical-align:-3px}
+  .chip.on{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  .chip.on::before{background:var(--color-accent)}
+  .dimrow td{opacity:.35}
+  .ph-card .days.big{margin-left:auto; font-size:var(--font-lg)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 상품 › 재고 · 검색칸 아래 업체 고르기 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+  <div class="twoup"><div class="col"><div class="cap">① 업체 상자를 누름 — 업체명 · 입고 건수, 많은 순</div><div class="phone"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><h1>재고</h1></div><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-body"><div class="toggle" style="height:36px"><button style="flex:1; padding:0">입고</button><button class="on" style="flex:1; padding:0">재고</button><button style="flex:1; padding:0">작업중</button></div><div class="search 바뀜"><span class="바뀜표">바뀜</span><span class="mag">🔍</span><input class="inp" placeholder="유통명 · 학명 · 품목코드"></div><div class="업체고름 바뀜"><span class="바뀜표">바뀜</span><button class="고름상자 열림"><span class="ic">🏢</span><span class="v"><span class="k">업체</span> 전체</span><span class="화살">▲</span></button><div class="펼침"><div class="it on"><span class="ck">✓</span>전체<span class="n">214</span></div><div class="sep"></div><div class="it"><span class="ck"></span>그린농원<span class="n">38건</span></div><div class="it hov"><span class="ck"></span>한국야생화농장<span class="n">31건</span></div><div class="it"><span class="ck"></span>들꽃마을<span class="n">27건</span></div><div class="it"><span class="ck"></span>청산원예<span class="n">19건</span></div><div class="it"><span class="ck"></span>화담식물원<span class="n">12건</span></div><div class="it"><span class="ck"></span>솔뫼농장<span class="n">8건</span></div><div class="it"><span class="ck"></span>김씨네 하우스<span class="n">4건</span></div></div></div><div class="fchips"><button class="fchip on">전체 <span class="n">214</span></button><button class="fchip">판매중 <span class="n">188</span></button><button class="fchip">품절 <span class="n">26</span></button><button class="fchip">일자별</button></div><div class="ph-sec">소진일 빠른 순 <span class="r">214종</span><button class="btn sm" style="margin-left:var(--space-sm)">선택</button></div><div class="ph-list"><div class="ph-card"><div class="r1"><div class="nm">휴케라 팰리스퍼플</div><div class="days big d0">4일</div><span class="chev">›</span></div><div class="sci">Heuchera micrantha 'Palace Purple'</div><div class="r2">HEP01-15 · <b>6</b>주 · 월 8주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">구절초 노랑</div><div class="days big d1">9일</div><span class="chev">›</span></div><div class="sci">Chrysanthemum zawadskii</div><div class="r2">CHR01-10 · <b>14</b>주 · 월 12주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">용담 보라</div><div class="days big d2">16일</div><span class="chev">›</span></div><div class="sci">Gentiana scabra</div><div class="r2">GEN01-10 · <b>22</b>주 · 월 16주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">청사초</div><div class="days big d2">23일</div><span class="chev">›</span></div><div class="sci">Carex breviculmis</div><div class="r2">CAR02-10 · <b>40</b>주 · 월 25주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">휴케라 라임마멀레이드</div><div class="days big d2">27일</div><span class="chev">›</span></div><div class="sci">Heuchera 'Lime Marmalade'</div><div class="r2">HEU03-10 · <b>31</b>주 · 월 20주 나감</div></div></div></div><div class="ph-nav">
+          <div class="on"><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div></div></div><div class="col"><div class="cap">② 「그린농원」 고름 — 상자가 초록으로, ✕ 로 풂</div><div class="phone"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><div class="왼"><h1>재고</h1></div><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-body"><div class="toggle" style="height:36px"><button style="flex:1; padding:0">입고</button><button class="on" style="flex:1; padding:0">재고</button><button style="flex:1; padding:0">작업중</button></div><div class="search 바뀜"><span class="바뀜표">바뀜</span><span class="mag">🔍</span><input class="inp" placeholder="유통명 · 학명 · 품목코드"></div><div class="업체고름 바뀜"><span class="바뀜표">바뀜</span><button class="고름상자 걸림"><span class="ic">🏢</span><span class="v">그린농원</span><span class="n">38건</span><span class="지움">✕</span></button></div><div class="fchips"><button class="fchip on">전체 <span class="n">214</span></button><button class="fchip">판매중 <span class="n">188</span></button><button class="fchip">품절 <span class="n">26</span></button><button class="fchip">일자별</button></div><div class="ph-sec">소진일 빠른 순 <span class="r">38종</span><button class="btn sm" style="margin-left:var(--space-sm)">선택</button></div><div class="ph-list"><div class="ph-card"><div class="r1"><div class="nm">휴케라 팰리스퍼플</div><div class="days big d0">4일</div><span class="chev">›</span></div><div class="sci">Heuchera micrantha 'Palace Purple'</div><div class="r2">HEP01-15 · <b>6</b>주 · 월 8주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">용담 보라</div><div class="days big d2">16일</div><span class="chev">›</span></div><div class="sci">Gentiana scabra</div><div class="r2">GEN01-10 · <b>22</b>주 · 월 16주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">휴케라 라임마멀레이드</div><div class="days big d2">27일</div><span class="chev">›</span></div><div class="sci">Heuchera 'Lime Marmalade'</div><div class="r2">HEU03-10 · <b>31</b>주 · 월 20주 나감</div></div><div class="ph-card"><div class="r1"><div class="nm">꿩의비름</div><div class="days big d0">—</div><span class="chev">›</span></div><div class="sci">Hylotelephium spectabile</div><div class="r2">SED04-10 · <b>0</b>주 · 월 5주 나감</div></div></div></div><div class="ph-nav">
+          <div class="on"><span class="ic">🌿</span>입고</div>
+          <div><span class="ic">🛒</span>주문</div>
+          <div><span class="ic">📝</span>메모</div>
+          <div><span class="ic">⋯</span>더보기</div>
+        </div></div></div></div>
+</div>
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 상품 › 재고 · 검색칸과 업체 상자를 같은 높이로 나란히 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+<div class="cap" style="margin-bottom:8px">① 업체 상자를 누름 — 검색칸 바로 옆, 같은 높이 · 비슷한 폭</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a>
+        <a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 재고</div></div>
+        <div class="pc-tabs"><span>입고</span><span class="on">재고</span><span>작업중</span><span>이미지</span><span>블로그</span></div>
+        <div class="card table-card" style="overflow:visible">
+          <h3 style="padding:0 var(--space-sm)">전체 품목 <span class="hint">소진일 빠른 순</span><span class="right" style="display:flex; gap:var(--space-sm)"><button class="btn sm">⬇ 엑셀 내려받기</button><button class="btn sm">인쇄</button></span></h3>
+          <div class="조건"><div class="칩줄"><div class="fchips"><button class="fchip on">전체 <span class="n">214</span></button><button class="fchip">판매중 <span class="n">188</span></button><button class="fchip">품절 <span class="n">26</span></button><button class="fchip">일자별</button></div><div style="flex:1"></div><div class="search 바뀜"><span class="바뀜표">바뀜</span><span class="mag">🔍</span><input class="inp" placeholder="유통명 · 학명 · 품목코드"></div><div class="업체고름 바뀜"><span class="바뀜표">바뀜</span><button class="고름상자 열림"><span class="ic">🏢</span><span class="v"><span class="k">업체</span> 전체</span><span class="화살">▲</span></button><div class="펼침"><div class="it on"><span class="ck">✓</span>전체<span class="n">214</span></div><div class="sep"></div><div class="it"><span class="ck"></span>그린농원<span class="n">38건</span></div><div class="it hov"><span class="ck"></span>한국야생화농장<span class="n">31건</span></div><div class="it"><span class="ck"></span>들꽃마을<span class="n">27건</span></div><div class="it"><span class="ck"></span>청산원예<span class="n">19건</span></div><div class="it"><span class="ck"></span>화담식물원<span class="n">12건</span></div><div class="it"><span class="ck"></span>솔뫼농장<span class="n">8건</span></div><div class="it"><span class="ck"></span>김씨네 하우스<span class="n">4건</span></div></div></div></div></div>
+          <table><colgroup><col style="width:38px"><col style="width:104px"><col><col style="width:100px"><col style="width:86px"><col style="width:76px"><col style="width:86px"><col style="width:104px"><col style="width:40px"></colgroup>
+<thead><tr><th class="ck"><span class="cbx"></span></th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th class="r">현재고</th><th class="r">소진일</th><th class="r">매입단가</th><th>상태</th><th></th></tr></thead><tbody><tr><td class="ck"><span class="cbx"></span></td><td class="code">HEP01-15</td><td>휴케라 팰리스퍼플<div class="sci">Heuchera micrantha 'Palace Purple'</div></td><td class="dim">15cm 포트</td><td class="r">6</td><td class="r"><span class="days d0">4일</span></td><td class="r">5,500</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">CHR01-10</td><td>구절초 노랑<div class="sci">Chrysanthemum zawadskii</div></td><td class="dim">10cm 포트</td><td class="r">14</td><td class="r"><span class="days d1">9일</span></td><td class="r">2,800</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">GEN01-10</td><td>용담 보라<div class="sci">Gentiana scabra</div></td><td class="dim">10cm 포트</td><td class="r">22</td><td class="r"><span class="days d2">16일</span></td><td class="r">4,200</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">CAR02-10</td><td>청사초<div class="sci">Carex breviculmis</div></td><td class="dim">10cm 포트</td><td class="r">40</td><td class="r"><span class="days d2">23일</span></td><td class="r">1,600</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">HEU03-10</td><td>휴케라 라임마멀레이드<div class="sci">Heuchera 'Lime Marmalade'</div></td><td class="dim">10cm 포트</td><td class="r">31</td><td class="r"><span class="days d2">27일</span></td><td class="r">3,900</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">SED04-10</td><td>꿩의비름<div class="sci">Hylotelephium spectabile</div></td><td class="dim">10cm 포트</td><td class="r zero">0</td><td class="r"><span class="days d0">—</span></td><td class="r">2,200</td><td><span class="chip out">품절</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">MUS01-B</td><td>무스카리 블루<div class="sci">Muscari armeniacum</div></td><td class="dim">구근 10구</td><td class="r">55</td><td class="r"><span class="days d2">41일</span></td><td class="r">3,300</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div><div class="cap" style="margin-bottom:8px">② 「그린농원」 고름 — 그 업체에서 들어온 품목만</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a>
+        <a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>상품</h2><div class="path">상품 › 재고</div></div>
+        <div class="pc-tabs"><span>입고</span><span class="on">재고</span><span>작업중</span><span>이미지</span><span>블로그</span></div>
+        <div class="card table-card" style="overflow:visible">
+          <h3 style="padding:0 var(--space-sm)">전체 품목 <span class="hint">소진일 빠른 순</span><span class="right" style="display:flex; gap:var(--space-sm)"><button class="btn sm">⬇ 엑셀 내려받기</button><button class="btn sm">인쇄</button></span></h3>
+          <div class="조건"><div class="칩줄"><div class="fchips"><button class="fchip on">전체 <span class="n">214</span></button><button class="fchip">판매중 <span class="n">188</span></button><button class="fchip">품절 <span class="n">26</span></button><button class="fchip">일자별</button></div><div style="flex:1"></div><div class="search 바뀜"><span class="바뀜표">바뀜</span><span class="mag">🔍</span><input class="inp" placeholder="유통명 · 학명 · 품목코드"></div><div class="업체고름 바뀜"><span class="바뀜표">바뀜</span><button class="고름상자 걸림"><span class="ic">🏢</span><span class="v">그린농원</span><span class="n">38건</span><span class="지움">✕</span></button></div></div></div>
+          <table><colgroup><col style="width:38px"><col style="width:104px"><col><col style="width:100px"><col style="width:86px"><col style="width:76px"><col style="width:86px"><col style="width:104px"><col style="width:40px"></colgroup>
+<thead><tr><th class="ck"><span class="cbx"></span></th><th>품목코드</th><th>유통명 · 학명</th><th>규격</th><th class="r">현재고</th><th class="r">소진일</th><th class="r">매입단가</th><th>상태</th><th></th></tr></thead><tbody><tr><td class="ck"><span class="cbx"></span></td><td class="code">HEP01-15</td><td>휴케라 팰리스퍼플<div class="sci">Heuchera micrantha 'Palace Purple'</div></td><td class="dim">15cm 포트</td><td class="r">6</td><td class="r"><span class="days d0">4일</span></td><td class="r">5,500</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">GEN01-10</td><td>용담 보라<div class="sci">Gentiana scabra</div></td><td class="dim">10cm 포트</td><td class="r">22</td><td class="r"><span class="days d2">16일</span></td><td class="r">4,200</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">HEU03-10</td><td>휴케라 라임마멀레이드<div class="sci">Heuchera 'Lime Marmalade'</div></td><td class="dim">10cm 포트</td><td class="r">31</td><td class="r"><span class="days d2">27일</span></td><td class="r">3,900</td><td><span class="chip on">판매중</span></td><td><span class="chev">›</span></td></tr><tr><td class="ck"><span class="cbx"></span></td><td class="code">SED04-10</td><td>꿩의비름<div class="sci">Hylotelephium spectabile</div></td><td class="dim">10cm 포트</td><td class="r zero">0</td><td class="r"><span class="days d0">—</span></td><td class="r">2,200</td><td><span class="chip out">품절</span></td><td><span class="chev">›</span></td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</body>
+</html>

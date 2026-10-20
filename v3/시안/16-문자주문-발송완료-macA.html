@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 문자주문 › 발송완료 안내 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+  /* ── 16-문자주문-macA 에서 그대로 이어 쓰는 것 ── */
+  .phone{height:auto; min-height:844px; position:relative}
+  .twoup{display:flex; align-items:flex-start; gap:28px; margin-bottom:34px}
+  .twoup .col .cap{font-size:12px; margin-bottom:8px}
+  .phone .ph-body{gap:var(--space-md)}
+  .subtabs{display:flex; gap:var(--space-3xs); background:var(--color-seg-bg); padding:var(--space-4xs); border-radius:var(--radius-md)}
+  .subtabs span{flex:1; text-align:center; padding:var(--space-2xs) 0; border-radius:var(--radius-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub); white-space:nowrap}
+  .subtabs span.on{background:var(--color-surface); color:var(--color-accent-dark); box-shadow:var(--shadow-seg)}
+
+  .st{display:inline-flex; align-items:center; gap:var(--space-3xs); padding:var(--pad-chip); border-radius:var(--radius-badge); font-size:var(--font-2xs); font-weight:var(--weight-bold); white-space:nowrap; border:var(--border-width) solid transparent}
+  .st::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:currentColor}
+  .st.done{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+  .st .no{font-family:var(--font-mono); font-weight:var(--weight-bold); margin-left:2px}
+
+  .말풍선틀{background:var(--color-surface); border-radius:var(--radius-xl); box-shadow:var(--shadow-card); padding:var(--space-lg) var(--space-lg) var(--space-xl)}
+  .말풍선틀 .to{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); text-align:center; margin-bottom:var(--space-md)}
+  .말풍선틀 .to b{color:var(--color-text); font-family:var(--font-mono)}
+  .말풍선{white-space:pre-wrap; background:#E9E9EB; color:var(--color-text); border-radius:18px 18px 18px 5px; padding:11px 14px; font-size:var(--font-md); line-height:1.5; font-weight:var(--weight-medium); max-width:100%; font-variant-numeric:tabular-nums}
+  .말풍선 .새줄{background:#FFF2B8; border-radius:4px; box-shadow:0 0 0 2px #FFF2B8}
+
+  .문카드 .r1{display:flex; align-items:center; gap:var(--space-sm)}
+  .문카드 .fx{font-size:var(--font-lg); color:var(--color-text-muted); font-weight:var(--weight-bold); width:14px}
+  .문카드 .tm{margin-left:auto; font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .문카드 .tel{font-family:var(--font-mono)}
+  .문카드 .act{display:flex; justify-content:flex-end; align-items:center; gap:var(--space-sm); margin-top:var(--space-md)}
+  .문카드 .act .btn{min-height:38px; font-size:var(--font-md)}
+  .문카드 .받는곳{font-size:var(--font-sm); color:var(--color-text-sub); margin-top:var(--space-xs); line-height:1.5}
+
+  .cols{display:flex; gap:var(--space-2xl); align-items:flex-start}
+  .cols > .cl{width:236px; flex:0 0 auto}
+  .cols > .lst{flex:1; min-width:0}
+  td .sub{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px}
+  td.tm{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-sub)}
+  td.fx{color:var(--color-text-muted); font-weight:var(--weight-bold); font-size:var(--font-lg); text-align:center}
+  .tblhd{display:flex; gap:var(--space-sm); align-items:center; margin-bottom:var(--space-lg); padding:0 var(--space-sm)}
+  .tblhd .d{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; white-space:nowrap}
+  .tblhd .d small{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-left:var(--space-xs)}
+  .calhd{display:flex; align-items:center; justify-content:center; gap:var(--space-lg); margin-bottom:var(--space-md)}
+  .calhd .m{white-space:nowrap; font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .calhd button{font-family:inherit; width:34px; height:34px; border-radius:50%; background:var(--color-surface); border:var(--border-width) solid var(--color-border); box-shadow:var(--shadow-btn); font-size:var(--font-lg); font-weight:var(--weight-bold); color:var(--color-text-sub)}
+  .cal{display:grid; grid-template-columns:repeat(7,1fr); gap:var(--space-3xs)}
+  .cal .wd{text-align:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-text-muted); padding-bottom:var(--space-3xs)}
+  .cal .wd.sun, .cal .d.sun{color:var(--color-danger)}
+  .cal .d{aspect-ratio:1/1; border-radius:var(--radius-md); background:var(--color-surface); box-shadow:0 0 0 1px rgba(0,0,0,.05); border:none; font-family:inherit; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-4xs); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text)}
+  .cal .d.off{background:transparent; box-shadow:none}
+  .cal .d i{width:5px; height:5px; border-radius:50%; background:var(--color-accent); display:block}
+  .cal .d i.none{background:transparent}
+  .cal .d.on{background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-btn-main)}
+  .cal .d.on i{background:var(--overlay-strong)}
+  .cal .d.today{box-shadow:0 0 0 2px var(--color-accent)}
+
+  /* ── 이번에 새로 생긴 것 ── */
+  /* 발송완료 칩 — 주문올림(연초록)보다 한 단 진하게 */
+  .st.ship{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
+  .st.ship::before{background:var(--overlay-strong)}
+
+  /* 송장 줄 */
+  .송장{display:flex; flex-direction:column; gap:3px; margin-top:var(--space-md); padding:var(--space-sm) var(--space-md); background:#F5F5F7; border-radius:var(--radius-md)}
+  .송장 .줄{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm)}
+  .송장 .사{color:var(--color-text-sub); font-weight:var(--weight-semibold); white-space:nowrap}
+  .송장 .번{font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:var(--font-md); letter-spacing:.01em}
+  .송장 .없음{color:var(--color-text-hint); font-weight:var(--weight-semibold); white-space:nowrap}
+  .송장 .inp{flex:1; min-width:0; height:30px; font-size:var(--font-md); font-family:var(--font-mono); line-height:28px}
+
+  /* 발송문자 보냄 표시 */
+  .보낸표{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-accent-dark); white-space:nowrap; margin-right:auto}
+  .보낸표::before{content:'✓ '; font-weight:var(--weight-bold)}
+  .보낸표 b{font-family:var(--font-mono)}
+
+  /* PC 상태칸 */
+  td.상태칸{vertical-align:top; padding-top:12px; padding-bottom:12px}
+  td.상태칸 .송장{margin-top:6px; padding:5px 8px; gap:2px}
+  td.상태칸 .송장 .줄{font-size:var(--font-2xs); gap:6px}
+  td.상태칸 .송장 .번{font-size:var(--font-xs)}
+  td.상태칸 .송장 .inp{height:26px; font-size:var(--font-xs); line-height:24px; padding:0 6px}
+  td.상태칸 .btn{margin-top:6px; width:100%}
+  td.상태칸 .보낸표{display:block; margin-top:6px; font-size:var(--font-2xs)}
+
+  .나란히{display:flex; gap:var(--space-xl); align-items:flex-start; flex-wrap:wrap}
+  .나란히 > div{width:262px}
+  .나란히 .hd{font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-text-sub); margin-bottom:var(--space-sm); text-align:center}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════════════════════ 폰 ══════════════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 주문 관리 › 문자주문 › 발송완료 안내 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+
+  <div class="twoup">
+    <!-- ① 세 가지 상태 -->
+    <div class="col">
+      <div class="cap">① 목록 카드 (달력 아래) — (가) 올림·아직 안 나감 / (나) 발송완료·문자 아직 / (다) 발송문자 보냄</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><h1>주문</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-sub"><span>10월 5일 (월) · <b>3</b>건</span><span>올림 <b>1</b> · 발송완료 <b>2</b></span></div>
+        <div class="ph-body">
+          <div class="subtabs"><span>주문 조회</span><span>견적 요청</span><span>고객</span><span class="on">문자주문</span></div>
+          <div class="ph-list">
+            <!-- (가) -->
+            <div class="ph-card 문카드">
+              <div class="r1"><span class="fx">＋</span><span class="nm">이수목</span><span class="st done">주문올림 <span class="no">261005-03</span></span><span class="tm">16:05</span></div>
+              <div class="r2"><span class="tel">010-5521-0093</span> · 1종 6개<span class="amt">34,500원</span></div>
+              <div class="받는곳">경기 양평군 서종면 북한강로 112</div>
+            </div>
+
+            <!-- (나) -->
+            <div class="ph-card 문카드">
+              <div class="r1"><span class="fx">＋</span><span class="nm">김정원</span><span class="st ship">발송완료</span><span class="tm">14:22</span></div>
+              <div class="r2"><span class="tel">010-2345-6789</span> · 2종 5개<span class="amt">31,500원</span></div>
+              <div class="송장"><div class="줄"><span class="사">로젠택배</span><span class="번">12345678901</span></div></div>
+              <div class="act"><button class="btn main">🚚 발송완료 문자</button></div>
+            </div>
+
+            <!-- (다) -->
+            <div class="ph-card 문카드">
+              <div class="r1"><span class="fx">＋</span><span class="nm">박하늘</span><span class="st ship">발송완료</span><span class="tm">10:40</span></div>
+              <div class="r2"><span class="tel">010-3411-2174</span> · 1종 10개<span class="amt">30,000원</span></div>
+              <div class="송장"><div class="줄"><span class="사">로젠택배</span><span class="번">12345678917</span></div></div>
+              <div class="act"><span class="보낸표">발송문자 보냄 <b>10/7 14:20</b></span><button class="btn">다시 보내기</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div><div><span class="ic">📦</span>재고</div>
+          <div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 송장 둘 · 송장 없음 -->
+    <div class="col">
+      <div class="cap">② 나눠 보냄 (송장 둘) / 손으로 배송완료 처리 (송장 없음 · 비워 두고 보내도 됨)</div>
+      <div class="phone">
+        <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+        <div class="ph-top"><h1>주문</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+        <div class="ph-sub"><span>10월 6일 (화) · <b>2</b>건</span><span>발송완료 <b>2</b></span></div>
+        <div class="ph-body">
+          <div class="subtabs"><span>주문 조회</span><span>견적 요청</span><span>고객</span><span class="on">문자주문</span></div>
+          <div class="ph-list">
+            <!-- 송장 둘 -->
+            <div class="ph-card 문카드">
+              <div class="r1"><span class="fx">＋</span><span class="nm">최다온</span><span class="st ship">발송완료</span><span class="tm">13:40</span></div>
+              <div class="r2"><span class="tel">010-8100-2309</span> · 3종 14개<span class="amt">96,000원</span></div>
+              <div class="송장">
+                <div class="줄"><span class="사">로젠택배</span><span class="번">12345678901</span></div>
+                <div class="줄"><span class="사">로젠택배</span><span class="번">12345678912</span></div>
+              </div>
+              <div class="act"><button class="btn main">🚚 발송완료 문자</button></div>
+            </div>
+
+            <!-- 송장 없음 -->
+            <div class="ph-card 문카드">
+              <div class="r1"><span class="fx">＋</span><span class="nm tel">010-7720-4411</span><span class="st ship">발송완료</span><span class="tm">11:30</span></div>
+              <div class="r2">1종 3개<span class="amt">27,000원</span></div>
+              <div class="송장"><div class="줄"><span class="없음">송장 없음</span><input class="inp num" style="text-align:left" placeholder="송장번호"></div></div>
+              <div class="act"><button class="btn main">🚚 발송완료 문자</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="ph-nav">
+          <div><span class="ic">🌿</span>입고</div><div><span class="ic">📦</span>재고</div>
+          <div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">⋯</span>더보기</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="margin-bottom:8px">③ 나가는 문자 — 기본 / 받는 분 없음 / 송장 둘 / 송장 비움</div>
+  <div class="나란히" style="margin-bottom:34px">
+    <div>
+      <div class="hd">김정원 · 송장 하나</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-2345-6789</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+김정원 님 주문하신 상품을 보냈습니다
+
+· 휴케라 '팰리스퍼플' 15cm 포트 3개
+· 청사초 10cm 포트 2개
+
+로젠택배 12345678901</div></div>
+    </div>
+    <div>
+      <div class="hd">받는 분 없음</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-7720-4411</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+<span class="새줄">주문하신 상품을 보냈습니다</span>
+
+· 휴케라 '팰리스퍼플' 15cm 포트 3개
+
+로젠택배 12345678923</div></div>
+    </div>
+    <div>
+      <div class="hd">송장 둘</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-8100-2309</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+최다온 님 주문하신 상품을 보냈습니다
+
+· 휴케라 '팰리스퍼플' 15cm 포트 6개
+· 청사초 10cm 포트 4개
+· 용담 보라 10cm 포트 4개
+
+<span class="새줄">로젠택배 12345678901
+로젠택배 12345678912</span></div></div>
+    </div>
+    <div>
+      <div class="hd">송장 비움</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-7720-4411</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+주문하신 상품을 보냈습니다
+
+· 휴케라 '팰리스퍼플' 15cm 포트 3개</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ PC ══════════════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 문자주문 › 발송완료 안내 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+
+  <div class="cap" style="margin-bottom:8px">① 목록 — (가) 올림 / (나) 발송완료·문자 아직 / (다) 발송문자 보냄 / 송장 둘 / 송장 없음 · 「발송완료 문자」는 복사 후 문자앱 열기</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+    <div class="pc-body">
+      <div class="pc-side">
+        <div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a>
+        <a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a>
+      </div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 문자주문 › 목록</div></div>
+        <div class="pc-tabs"><span>주문 조회</span><span>견적 요청</span><span>고객</span><span class="on">문자주문</span></div>
+        <div class="cols">
+          <div class="cl">
+            <div class="card">
+              <div class="calhd"><button>‹</button><div class="m">2026년 10월</div><button>›</button></div>
+              <div class="cal">
+                <div class="wd sun">일</div><div class="wd">월</div><div class="wd">화</div><div class="wd">수</div><div class="wd">목</div><div class="wd">금</div><div class="wd">토</div>
+                <div class="d off"></div><div class="d off"></div><div class="d off"></div><div class="d off"></div>
+                <button class="d">1<i></i></button><button class="d">2<i></i></button><button class="d">3<i class="none"></i></button>
+                <button class="d sun">4<i class="none"></i></button><button class="d on">5<i></i></button><button class="d">6<i></i></button><button class="d today">7<i></i></button><button class="d">8<i class="none"></i></button><button class="d">9<i class="none"></i></button><button class="d">10<i class="none"></i></button>
+                <button class="d sun">11<i class="none"></i></button><button class="d">12<i class="none"></i></button><button class="d">13<i class="none"></i></button><button class="d">14<i class="none"></i></button><button class="d">15<i class="none"></i></button><button class="d">16<i class="none"></i></button><button class="d">17<i class="none"></i></button>
+                <button class="d sun">18<i class="none"></i></button><button class="d">19<i class="none"></i></button><button class="d">20<i class="none"></i></button><button class="d">21<i class="none"></i></button><button class="d">22<i class="none"></i></button><button class="d">23<i class="none"></i></button><button class="d">24<i class="none"></i></button>
+                <button class="d sun">25<i class="none"></i></button><button class="d">26<i class="none"></i></button><button class="d">27<i class="none"></i></button><button class="d">28<i class="none"></i></button><button class="d">29<i class="none"></i></button><button class="d">30<i class="none"></i></button><button class="d">31<i class="none"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="lst card table-card">
+            <div class="tblhd">
+              <button class="btn sm">‹ 새 문자</button>
+              <span class="d">10월 5일 (월)<small>5건 · 219,000원</small></span>
+              <input class="inp" style="flex:1; height:30px; font-size:var(--font-sm)" placeholder="🔍 이름 · 전화 · 품목 · 메모 · 송장">
+              <button class="btn sm">🖨 출력</button>
+            </div>
+            <table>
+              <colgroup><col style="width:24px"><col style="width:48px"><col style="width:132px"><col><col style="width:66px"><col style="width:168px"></colgroup>
+              <thead><tr><th></th><th>시각</th><th>받는 분 · 전화</th><th>품목</th><th class="r">금액</th><th>상태</th></tr></thead>
+              <tbody>
+                <!-- (가) -->
+                <tr><td class="fx">＋</td><td class="tm">16:05</td><td>이수목<span class="sub">010-5521-0093</span></td><td>구절초 노랑 6<span class="sub">경기 양평군 서종면 북한강로 112</span></td><td class="r">34,500</td>
+                  <td class="상태칸"><span class="st done">주문올림</span><span class="sub" style="font-family:var(--font-mono); font-weight:var(--weight-bold); color:var(--color-accent-dark)">261005-03</span></td></tr>
+
+                <!-- (나) -->
+                <tr><td class="fx">＋</td><td class="tm">14:22</td><td>김정원<span class="sub">010-2345-6789</span></td><td>휴케라 '팰리스퍼플' 3 · 청사초 2<span class="sub">배송비 4,500</span></td><td class="r">31,500</td>
+                  <td class="상태칸"><span class="st ship">발송완료</span>
+                    <div class="송장"><div class="줄"><span class="사">로젠</span><span class="번">12345678901</span></div></div>
+                    <button class="btn sm main">🚚 발송완료 문자</button></td></tr>
+
+                <!-- (다) -->
+                <tr><td class="fx">＋</td><td class="tm">10:40</td><td>박하늘<span class="sub">010-3411-2174</span></td><td>청사초 10</td><td class="r">30,000</td>
+                  <td class="상태칸"><span class="st ship">발송완료</span>
+                    <div class="송장"><div class="줄"><span class="사">로젠</span><span class="번">12345678917</span></div></div>
+                    <span class="보낸표">발송문자 보냄 <b>10/7 14:20</b></span>
+                    <button class="btn sm">다시 보내기</button></td></tr>
+
+                <!-- 송장 둘 -->
+                <tr><td class="fx">＋</td><td class="tm">09:50</td><td>최다온<span class="sub">010-8100-2309</span></td><td>휴케라 '팰리스퍼플' 6 · 청사초 4 · 용담 보라 4<span class="sub">배송비 6,000</span></td><td class="r">96,000</td>
+                  <td class="상태칸"><span class="st ship">발송완료</span>
+                    <div class="송장">
+                      <div class="줄"><span class="사">로젠</span><span class="번">12345678901</span></div>
+                      <div class="줄"><span class="사">로젠</span><span class="번">12345678912</span></div>
+                    </div>
+                    <button class="btn sm main">🚚 발송완료 문자</button></td></tr>
+
+                <!-- 송장 없음 -->
+                <tr><td class="fx">＋</td><td class="tm">09:12</td><td><span style="font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold); white-space:nowrap">010-7720-4411</span></td><td>휴케라 '팰리스퍼플' 3<span class="sub">배송비 없음</span></td><td class="r">27,000</td>
+                  <td class="상태칸"><span class="st ship">발송완료</span>
+                    <div class="송장"><div class="줄"><span class="없음">송장 없음</span><input class="inp" placeholder="송장번호"></div></div>
+                    <button class="btn sm main">🚚 발송완료 문자</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap" style="margin-bottom:8px">② 나가는 문자 — 기본 / 받는 분 없음 / 송장 둘 / 송장 비움</div>
+  <div class="나란히">
+    <div>
+      <div class="hd">김정원 · 송장 하나</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-2345-6789</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+김정원 님 주문하신 상품을 보냈습니다
+
+· 휴케라 '팰리스퍼플' 15cm 포트 3개
+· 청사초 10cm 포트 2개
+
+로젠택배 12345678901</div></div>
+    </div>
+    <div>
+      <div class="hd">받는 분 없음</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-7720-4411</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+<span class="새줄">주문하신 상품을 보냈습니다</span>
+
+· 휴케라 '팰리스퍼플' 15cm 포트 3개
+
+로젠택배 12345678923</div></div>
+    </div>
+    <div>
+      <div class="hd">송장 둘</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-8100-2309</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+최다온 님 주문하신 상품을 보냈습니다
+
+· 휴케라 '팰리스퍼플' 15cm 포트 6개
+· 청사초 10cm 포트 4개
+· 용담 보라 10cm 포트 4개
+
+<span class="새줄">로젠택배 12345678901
+로젠택배 12345678912</span></div></div>
+    </div>
+    <div>
+      <div class="hd">송장 비움</div>
+      <div class="말풍선틀"><div class="to">받는 사람 <b>010-7720-4411</b></div>
+<div class="말풍선">🌱 [제로가드닝]
+주문하신 상품을 보냈습니다
+
+· 휴케라 '팰리스퍼플' 15cm 포트 3개</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

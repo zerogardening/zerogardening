@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 옵션이 품목인 상품 (짝짓기 창 · 주문 목록) (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<!--
+  🔴 그림 속 값에 대해
+  - 실제 품목코드는 HEG01-15(휴케라 골든제브라) 하나뿐이다.
+  - GGM02-0 ~ GGM06-0(구근 품종들), HEG02-15(휴케라 라임리키)는 그림을 위해 지어낸 임의 코드다.
+  - 구근 32종의 옵션 번호(2·7·11·15·21)와 입수(5개·3개)는 「2. 튤립 티스부츠 （5개）」만 실제, 나머지는 임의.
+  - 줄 수·받는 분·금액·청사초·구절초 상품코드(SS-CSC10·SS-CHR10)는 임의. 구절초 노랑 CHR01-10은 19번 시안의 예시를 그대로 썼다.
+  - 튤립 티스부츠·타이완·미스틱프린스 학명은 몰라서 「Tulipa」로만 적었다.
+-->
+<style>
+  /* ── 이 화면에서만 쓰는 것 ── */
+  .phone{height:auto; min-height:844px; position:relative}
+  .phone .ph-body{min-height:700px; flex:1 0 auto}
+  .twoup{display:flex; align-items:flex-start; gap:28px; margin-bottom:34px}
+  .장면띠{display:inline-block; background:#1D1D1F; color:#fff; font-size:12px; font-weight:700; padding:3px 10px; border-radius:6px; margin-bottom:8px}
+  .바뀜{outline:2px dashed #E8590C; outline-offset:3px; border-radius:var(--radius-md); position:relative}
+  .바뀜표{position:absolute; top:-12px; right:-6px; z-index:5; background:#E8590C; color:#fff; font-size:10px; font-weight:700; padding:1px 7px; border-radius:9px; line-height:1.4}
+  .nm, .on, .ov{word-break:keep-all; overflow-wrap:anywhere}
+
+  /* 현행 주문.css 에서 그대로 */
+  .mall{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:var(--color-seg-bg); color:var(--color-text-sub); border:var(--border-width) solid var(--color-border)}
+  .mul{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+  tr.gstart td{border-top:var(--border-width-thick) solid var(--color-border)}
+  td.who{vertical-align:top; background:#FAFAFC; border-right:var(--border-width) solid var(--color-border-faint); line-height:1.45}
+  td.who .n{font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  td.who .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+  td .sci2{font-size:var(--font-2xs); font-style:italic; color:var(--color-text-sub); margin-top:1px}
+  td.dim{color:var(--color-text-muted)}
+  .olines{margin-top:var(--space-sm); display:flex; flex-direction:column; gap:var(--space-xs)}
+  .oline{display:flex; align-items:baseline; gap:var(--space-sm); font-size:var(--font-md)}
+  .oline .nm{font-weight:var(--weight-semibold)}
+  .oline .rg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); white-space:nowrap}
+  .oline .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .oline .l{min-width:0}
+  .ph-card .r0{display:flex; align-items:center; gap:var(--space-sm); flex-wrap:wrap}
+  .ph-card .r0 .who{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .star{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#9A6B00; white-space:nowrap}
+  .chev{margin-left:var(--space-xs); color:var(--color-text-faint); font-weight:var(--weight-bold); font-size:var(--font-lg)}
+  .dline{display:flex; align-items:baseline; gap:var(--space-sm); padding:var(--space-md) 0; border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md)}
+  .dline:last-child{border-bottom:none}
+  .dline .nm{font-weight:var(--weight-semibold)}
+  .dline .rg{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+  .dline .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right}
+  .dline .q .mul{display:block; font-weight:var(--weight-medium)}
+
+  /* 짝짓기 상자 — 주문.css .needbox 결, 노랑·회색 톤은 08k 값 */
+  .needbox{background:var(--color-surface); border:var(--border-width) solid #F2DFA8; border-radius:var(--radius-lg); overflow:hidden}
+  .needbox > h4{display:flex; align-items:center; gap:var(--space-xs); background:#FFF8E6; color:#9A6400; padding:var(--space-lg) var(--space-2xl); border-bottom:var(--border-width) solid #F2DFA8; font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .needbox > h4 .why{margin-left:auto; font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+  .needbox.gray{border-color:var(--color-border)}
+  .needbox.gray > h4{background:var(--color-seg-bg); color:var(--color-text-sub); border-bottom-color:var(--color-border)}
+  .needbox .inner{padding:var(--space-sm) var(--space-2xl) var(--space-2xl)}
+  .allrow{display:flex; align-items:center; gap:var(--space-sm); margin-top:var(--space-lg); padding-top:var(--space-lg); border-top:var(--border-width) solid var(--color-border-faint)}
+  .allrow .l{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+  .allrow .note{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+  .allrow .note b{color:var(--color-text-sub)}
+  .sub{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+  .yl{color:#9A6400}
+
+  /* 상품 한 블록 */
+  .pblk{padding:var(--space-lg) 0; border-top:var(--border-width) solid var(--color-border)}
+  .pblk:first-child{border-top:none}
+  .phd{display:flex; align-items:baseline; gap:var(--space-sm); flex-wrap:wrap; margin-bottom:var(--space-sm)}
+  .phd b{font-size:var(--font-lg); letter-spacing:-.02em}
+  .phd .cd{font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+  .phd .esc{margin-left:auto; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); text-decoration:underline; text-underline-offset:2px}
+
+  /* 새 부품 ① 옵션 하위 줄 */
+  .orow{display:grid; grid-template-columns:300px 1fr; gap:var(--space-xl); align-items:center;
+    padding:var(--space-md) var(--space-lg); margin-left:var(--space-xl); border-left:3px solid #F2DFA8; background:#FFFCF3; border-radius:0 var(--radius-md) var(--radius-md) 0}
+  .orow + .orow{margin-top:var(--space-xs)}
+  .orow.done{border-left-color:var(--color-accent-border); background:var(--color-accent-bg)}
+  .orow .ov{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; line-height:1.35}
+  .orow .om{display:flex; gap:var(--space-xs); align-items:center; margin-top:3px; flex-wrap:wrap}
+  .orow .act{display:flex; gap:var(--space-sm); align-items:center; min-width:0}
+  .orow .act .inp{height:32px; font-size:var(--font-sm); line-height:30px}
+  .orow .act .q{flex:1; min-width:0}
+  .orow .act select.inp{width:104px; flex:0 0 auto}
+  .orow .act .spc{flex:1}
+  .orow .ck{width:20px; height:20px; border-radius:50%; background:var(--color-accent); color:var(--color-on-accent); display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex:0 0 auto}
+  .orow .pc2{font-family:var(--font-mono); font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-accent-dark); white-space:nowrap}
+  .orow .pn{font-size:var(--font-md); font-weight:var(--weight-semibold); white-space:nowrap}
+  .lk{font-size:var(--font-2xs); color:var(--color-accent-dark); font-weight:var(--weight-semibold); white-space:nowrap}
+
+  /* 새 부품 ② 입수 칩 */
+  .ip{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:#EEF3FB; color:#3A5A8C; border:var(--border-width) solid #CBD8EC; white-space:nowrap}
+  .ln{font-size:var(--font-2xs); color:#9A6400; font-weight:var(--weight-semibold); white-space:nowrap}
+  .orow.done .ln{color:var(--color-text-muted)}
+
+  /* 옛 짝 한 줄 */
+  .oldnote{margin:0 0 var(--space-sm) var(--space-xl); display:flex; align-items:center; gap:var(--space-sm);
+    font-size:var(--font-xs); font-weight:var(--weight-semibold); color:#9A6400; background:#FFF8E6; border:var(--border-width) dashed #E8C873; border-radius:var(--radius-md); padding:var(--space-sm) var(--space-lg)}
+  .oldnote .cd{font-family:var(--font-mono); font-weight:var(--weight-bold)}
+
+  /* 새 부품 ③ 주문 목록 옵션 줄 — 짝 전(노랑) / 짝 후(회색 보조줄) */
+  .optw{display:inline-block; margin-top:3px; background:#FFF2B8; color:#6E4A00; font-size:var(--font-sm); font-weight:var(--weight-bold); padding:1px 7px; border-radius:4px; line-height:1.45; word-break:keep-all}
+  .optw .k{font-weight:var(--weight-semibold); opacity:.7; margin-right:4px}
+  .opts{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px; word-break:keep-all}
+  .opts::before{content:'옵션 · '; color:var(--color-text-hint)}
+  .wait{display:inline-flex; align-items:center; margin-top:3px; font-family:var(--font-family); font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:#FFF8E6; color:#9A6400; border:var(--border-width) solid #F2DFA8}
+  td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+  .바뀜.tb{display:block; outline-offset:2px; padding:8px 6px 4px}
+  td.dim{white-space:nowrap}
+  .phone .optw{font-size:var(--font-md)}
+  .phone .opts{font-size:var(--font-xs)}
+
+  .tbar{display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-lg); padding:0 var(--space-sm)}
+  .tbar .d{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .tbar .spacer{flex:1}
+  .shd{display:flex; align-items:center; gap:var(--space-md); margin-bottom:var(--space-lg)}
+  .shd h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+  .shd .sp{flex:1}
+  .ph-sec .r{margin-left:auto}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ══════════ 폰 ══════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 주문 › 주문 조회 · 옵션이 품목인 줄 <span class="tag">20 · 옵션 품목</span></div>
+  <div class="twoup">
+    <div class="col"><div class="장면띠">③ 주문 목록 카드 — (a) 짝 전 · (b) 짝 후</div><div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top"><h1>주문</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+      <div class="ph-sub"><span>2026-10-14</span><span>준비중 <b>3</b>건</span></div>
+      <div class="ph-body">
+        <div class="ph-sec">10월 14일 (수) <span class="r">3건</span></div>
+        <div class="ph-list">
+          <div class="ph-card 바뀜"><span class="바뀜표">(a) 짝 전</span>
+            <div class="r0"><span class="who">김정원</span><span class="mall" style="margin-left:auto">스마트스토어</span><span class="chev">›</span></div>
+            <div class="olines">
+              <div class="oline"><span class="l"><span class="nm">구근 32종</span><br><span class="optw">2. 튤립 티스부츠 （5개）</span></span><span class="q">5주</span></div>
+              <div class="oline"><span class="nm">구절초 노랑</span><span class="rg">10cm 포트</span><span class="q">3주</span></div>
+            </div>
+          </div>
+          <div class="ph-card 바뀜"><span class="바뀜표">(b) 짝 후</span>
+            <div class="r0"><span class="who">박하늘</span><span class="star">⭐ 2</span><span class="mall" style="margin-left:auto">스마트스토어</span><span class="chev">›</span></div>
+            <div class="olines">
+              <div class="oline"><span class="l"><span class="nm">튤립 티스부츠</span> <span class="rg">규격 외</span><div class="opts">2. 튤립 티스부츠 （5개）</div></span><span class="q">5주</span></div>
+            </div>
+          </div>
+          <div class="ph-card">
+            <div class="r0"><span class="who">이수목</span><span class="mall" style="margin-left:auto">쿠팡</span><span class="chev">›</span></div>
+            <div class="olines">
+              <div class="oline"><span class="l"><span class="nm">휴케라 라임리키</span> <span class="rg">15cm 포트</span><div class="opts">3.휴케라 라임리키</div></span><span class="q">2주</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ph-nav"><div><span class="ic">🌿</span>입고</div><div><span class="ic">📦</span>재고</div><div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">⋯</span>더보기</div></div>
+    </div></div>
+
+    <div class="col"><div class="장면띠">③ 주문 상세 — (a) 짝 전</div><div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top"><h1>‹ 김정원</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+      <div class="ph-sub"><span>스마트스토어 · 10-14</span><span>010-2345-6789</span></div>
+      <div class="ph-body">
+        <div class="ph-sec">주문 품목 <span class="r">2품목</span></div>
+        <div class="ph-card 바뀜" style="padding:0 var(--space-2xl)"><span class="바뀜표">(a)</span>
+          <div class="dline">
+            <span><div class="nm">구근 32종</div><div><span class="optw">2. 튤립 티스부츠 （5개）</span></div><div class="rg" style="margin-top:3px">3,000원</div></span>
+            <span class="q">5주<span class="mul">1 × 5개입</span></span>
+          </div>
+          <div class="dline">
+            <span><div class="nm">구절초 노랑</div><div class="rg">10cm 포트 · 4,000원</div></span>
+            <span class="q">3주<span class="mul">1 × 3개입</span></span>
+          </div>
+        </div>
+        <div class="ph-sec">(b) 짝 후 같은 옵션</div>
+        <div class="ph-card 바뀜" style="padding:0 var(--space-2xl)"><span class="바뀜표">(b)</span>
+          <div class="dline">
+            <span><div class="nm">튤립 티스부츠</div><div class="rg">규격 외 · 3,000원</div><div class="opts">2. 튤립 티스부츠 （5개）</div></span>
+            <span class="q">5주<span class="mul">1 × 5개입</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="ph-nav"><div><span class="ic">🌿</span>입고</div><div><span class="ic">📦</span>재고</div><div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">⋯</span>더보기</div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ══════════ PC ══════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 주문 올리기 › 미리보기 · 🔗 품목 짝짓기 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="장면띠">① 품목 짝짓기 창 — 옵션마다 한 줄</div>
+  <div class="pc" style="margin-bottom:34px">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+    <div class="pc-body">
+      <div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 주문 올리기 › 미리보기</div></div>
+        <div class="card">
+          <div class="shd"><h3>🔗 품목 짝짓기</h3><span class="mall">스마트스토어 · 쿠팡 · 2026-10-14</span><span class="sp"></span><button class="btn">닫기</button></div>
+
+          <div class="needbox">
+            <h4><span>⚠️ 짝 못 지은 상품 3종</span><span class="sub yl" style="font-weight:700">· 옵션 4개</span></h4>
+            <div class="inner">
+
+              <!-- 예1 · 스마트스토어 구근 32종 -->
+              <div class="pblk 바뀜" style="outline-offset:6px"><span class="바뀜표">옵션별 줄</span>
+                <div class="phd"><b>구근 32종</b><span class="cd">GGM01-0</span><span class="mall">스마트스토어</span><span class="sub">품종 선택 · 옵션 5개</span><span class="esc">이 상품은 옵션 구분 없이 하나로</span></div>
+
+                <div class="orow">
+                  <div><div class="ov">2. 튤립 티스부츠 （5개）</div><div class="om"><span class="ip">5개입</span><span class="ln">이 파일에 7줄</span></div></div>
+                  <div class="act"><input class="inp q" value="튤립 티스부츠"><select class="inp"><option>규격 외</option></select><button class="btn main">짝 지어 저장</button><span class="lk">＋ 새로 등록</span></div>
+                </div>
+                <div class="orow">
+                  <div><div class="ov">7. 튤립 타이완 （5개）</div><div class="om"><span class="ip">5개입</span><span class="ln">이 파일에 3줄</span></div></div>
+                  <div class="act"><input class="inp q" placeholder="품목명 · 학명으로 찾기"><select class="inp"><option>규격</option></select><button class="btn main">짝 지어 저장</button><span class="lk">＋ 새로 등록</span></div>
+                </div>
+                <div class="orow">
+                  <div><div class="ov">11. 수선화 아이스킹 （3개）</div><div class="om"><span class="ip">3개입</span><span class="ln">이 파일에 2줄</span></div></div>
+                  <div class="act"><input class="inp q" placeholder="품목명 · 학명으로 찾기"><select class="inp"><option>규격</option></select><button class="btn main">짝 지어 저장</button><span class="lk">＋ 새로 등록</span></div>
+                </div>
+                <div class="orow done">
+                  <div><div class="ov">15. 튤립 타르다 （5개）</div><div class="om"><span class="ip">5개입</span><span class="ln">이 파일에 4줄</span></div></div>
+                  <div class="act"><span class="ck">✓</span><span class="pc2">GGM05-0</span><span class="pn">튤립 타르다</span><span class="sub">규격 외</span><span class="spc"></span><button class="btn sm">짝 풀기</button></div>
+                </div>
+                <div class="orow done">
+                  <div><div class="ov">21. 튤립 미스틱프린스 （5개）</div><div class="om"><span class="ip">5개입</span><span class="ln">이 파일에 1줄</span></div></div>
+                  <div class="act"><span class="ck">✓</span><span class="pc2">GGM06-0</span><span class="pn">튤립 미스틱프린스</span><span class="sub">규격 외</span><span class="spc"></span><button class="btn sm">짝 풀기</button></div>
+                </div>
+              </div>
+
+              <!-- 예2 · 쿠팡 휴케라 6종 — 옛 짝 있음 -->
+              <div class="pblk">
+                <div class="phd"><b>휴케라 6종</b><span class="cd">HEU01</span><span class="mall">쿠팡</span><span class="sub">색상 · 옵션 2개</span><span class="esc">이 상품은 옵션 구분 없이 하나로</span></div>
+                <div class="oldnote 바뀜"><span class="바뀜표">옛 짝</span>⚠ 예전에 옵션 구분 없이 <span class="cd">HEG01-15</span>로 지어 둔 짝이 있습니다 — 옵션별로 다시 지어 주세요</div>
+                <div class="orow done">
+                  <div><div class="ov">5.휴케라 골든제브라</div><div class="om"><span class="ln">이 파일에 6줄</span></div></div>
+                  <div class="act"><span class="ck">✓</span><span class="pc2">HEG01-15</span><span class="pn">휴케라 골든제브라</span><span class="sub">15cm 포트</span><span class="spc"></span><button class="btn sm">짝 풀기</button></div>
+                </div>
+                <div class="orow">
+                  <div><div class="ov">3.휴케라 라임리키</div><div class="om"><span class="ln">이 파일에 3줄</span><button class="btn sm 바뀜" style="outline-offset:2px; margin-left:4px">예전 짝 쓰기 · HEG01-15</button></div></div>
+                  <div class="act"><input class="inp q" placeholder="품목명 · 학명으로 찾기"><select class="inp"><option>규격</option></select><button class="btn main">짝 지어 저장</button><span class="lk">＋ 새로 등록</span></div>
+                </div>
+              </div>
+
+              <!-- 대비 · 개수 옵션뿐인 일반 상품 — 옵션 줄 없음 (지금과 같음) -->
+              <div class="pblk">
+                <div class="phd"><b>청사초 10cm 포트</b><span class="cd">SS-CSC10</span><span class="mall">스마트스토어</span><span class="sub">수량 · 개수 옵션</span><span class="sub yl">이 파일에 4줄</span></div>
+                <div style="display:flex; gap:var(--space-sm); align-items:center">
+                  <input class="inp" style="flex:1; height:32px; font-size:var(--font-sm); line-height:30px" placeholder="품목명 · 학명으로 찾기">
+                  <select class="inp" style="width:104px; height:32px; font-size:var(--font-sm)"><option>규격</option></select>
+                  <button class="btn main">짝 지어 저장</button>
+                </div>
+                <div style="margin-top:var(--space-sm)"><button class="fold" style="width:100%">＋ v3에 없는 식물이면 <b>여기서 새로 등록</b></button></div>
+              </div>
+
+              <div class="allrow"><span class="l">짝을 안 지어도 —</span><span class="note"><b>저장은 됩니다.</b> 품목코드 없이 들어갑니다</span></div>
+            </div>
+          </div>
+
+          <div class="needbox gray" style="margin-top:var(--space-xl)">
+            <h4><span>이미 짝 지어 둔 것 1종</span></h4>
+            <div class="inner" style="padding-top:var(--space-md)">
+              <table><colgroup><col><col style="width:200px"><col style="width:170px"><col style="width:220px"><col style="width:84px"></colgroup>
+                <tr><th>상품명</th><th>옵션</th><th>상품코드</th><th>붙는 v3 품목</th><th class="r"></th></tr>
+                <tr><td>구절초 노랑 포트<div class="sub">이 파일에 5줄</div></td><td class="dim">—</td><td class="code" style="color:var(--color-text-sub)">SS-CHR10</td><td><div class="code" style="font-family:var(--font-mono); font-weight:700; color:var(--color-accent-dark)">CHR01-10</div><div class="sub">구절초 노랑 · 10cm 포트</div></td><td class="r"><button class="btn sm">짝 풀기</button></td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 주문 조회 · 품목칸 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="장면띠">② 주문 목록 표 — (a) 짝 전 · (b) 짝 후 · (c) 쿠팡 짝 후 · (d) 개수 옵션(변화 없음)</div>
+  <div class="pc">
+    <div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+    <div class="pc-body">
+      <div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div>
+        <a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div>
+      <div class="pc-main">
+        <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 주문 조회</div></div>
+        <div class="pc-tabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+        <div class="card table-card">
+          <div class="tbar"><span class="d">10월 14일 (수)</span><span class="sub">3건</span><span class="spacer"></span><button class="btn sm">🔗 품목 짝짓기</button></div>
+          <table>
+            <colgroup><col style="width:28px"><col style="width:168px"><col style="width:88px"><col style="width:88px"><col><col style="width:84px"><col style="width:70px"><col style="width:62px"><col style="width:72px"></colgroup>
+            <tr><th></th><th>받는 분 · 전화 · 주소</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th><th class="r">단가</th><th class="r">금액</th></tr>
+
+            <tr class="gstart">
+              <td rowspan="2"><input type="checkbox"></td>
+              <td rowspan="2" class="who"><div class="n">김정원</div><div class="d">010-2345-6789</div><div class="d">경기 양평군 서종면 북한강로 112</div></td>
+              <td rowspan="2"><span class="mall">스마트스토어</span></td>
+              <td class="code"><span class="orig">GGM01-0</span><span class="wait">짝 대기</span></td>
+              <td><div class="바뀜 tb"><span class="바뀜표">(a) 짝 전</span>구근 32종<br><span class="optw"><span class="k">품종 선택</span>2. 튤립 티스부츠 （5개）</span></div></td>
+              <td class="dim"></td><td class="r">5<div class="mul">1 × 5개입</div></td><td class="r">3,000</td><td class="r">15,000</td>
+            </tr>
+            <tr>
+              <td class="code">CHR01-10</td>
+              <td><div class="바뀜 tb"><span class="바뀜표">(d) 그대로</span>구절초 노랑</div></td>
+              <td class="dim">10cm 포트</td><td class="r">3<div class="mul">1 × 3개입</div></td><td class="r">4,000</td><td class="r">12,000</td>
+            </tr>
+
+            <tr class="gstart">
+              <td><input type="checkbox"></td>
+              <td class="who"><div class="n">박하늘</div><div class="d">010-3411-2174</div><div class="d">충북 청주시 상당구 용암로 21</div></td>
+              <td><span class="mall">스마트스토어</span></td>
+              <td class="code">GGM02-0</td>
+              <td><div class="바뀜 tb"><span class="바뀜표">(b) 짝 후</span>튤립 티스부츠<div class="sci2">Tulipa</div><div class="opts">2. 튤립 티스부츠 （5개）</div></div></td>
+              <td class="dim">규격 외</td><td class="r">5<div class="mul">1 × 5개입</div></td><td class="r">3,000</td><td class="r">15,000</td>
+            </tr>
+
+            <tr class="gstart">
+              <td><input type="checkbox"></td>
+              <td class="who"><div class="n">이수목</div><div class="d">010-5521-0093</div><div class="d">서울 마포구 성미산로 8</div></td>
+              <td><span class="mall">쿠팡</span></td>
+              <td class="code">HEG02-15</td>
+              <td><div class="바뀜 tb"><span class="바뀜표">(c) 쿠팡 짝 후</span>휴케라 라임리키<div class="sci2">Heuchera 'Lime Rickey'</div><div class="opts">3.휴케라 라임리키</div></div></td>
+              <td class="dim">15cm 포트</td><td class="r">2</td><td class="r">6,500</td><td class="r">13,000</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

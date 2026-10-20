@@ -1,0 +1,137 @@
+<!doctype html><meta charset="utf-8"><title>사진 대기 빼기 시험</title>
+<body><pre id="out">돌기 전</pre><div id="붙일곳"></div>
+<script>
+/* 04-공통UI·01-저장소를 통째로 들이면 의존이 커진다 — 06g 가 실제로 쓰는 것만 같은 모양으로 심는다 */
+var 폰모드 = false, 토스트글 = [];
+var 품목표 = [], 요청표 = [];
+window.ZG = {
+  ui: {
+    만들기: function (태그, 속성, 자식) {
+      var e = document.createElement(태그);
+      if (속성) Object.keys(속성).forEach(function (k) {
+        if (k === 'class') e.className = 속성[k];
+        else if (k === 'html') e.innerHTML = 속성[k];
+        else if (k === 'text') e.textContent = 속성[k];
+        else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), 속성[k]);
+        else if (속성[k] != null) e.setAttribute(k, 속성[k]);
+      });
+      (자식 || []).forEach(function (c) { if (c) e.appendChild(c); });
+      return e;
+    },
+    비우기: function (요소) { while (요소.firstChild) 요소.removeChild(요소.firstChild); },
+    안전: function (문) { return String(문 == null ? '' : 문).replace(/&/g,'&amp;').replace(/</g,'&lt;'); },
+    폰인가: function () { return 폰모드; },
+    목록등장: function () {},
+    토스트: function (글) { 토스트글.push(글); },
+    탈출걸기: function () {},
+    콤마: function (수) { return String(수); }
+  },
+  저장소: {
+    키: { 품목: 'zg.v3.품목', 제작요청: 'zg.v3.제작요청' },
+    품목들: function () { return 품목표.filter(function (p) { return !p.삭제됨; }); },
+    읽기: function (k) { return k === 'zg.v3.제작요청' ? 요청표 : []; },
+    바꾸기: function (k, id, 변경) {
+      var 것 = 품목표.filter(function (p) { return p.품목코드 === id; })[0];
+      if (것) Object.assign(것, 변경);
+      return 것 || null;
+    }
+  },
+  서버: { 켜짐: true, 클라이언트: { storage: { from: function () {
+    return { list: function () { return Promise.resolve({ data: [] }); },
+             getPublicUrl: function () { return { data: { publicUrl: '' } }; } };
+  } } } }
+};
+</script>
+<script src="../js/06g-사진수집.js"></script>
+<script>
+var 통과=0, 실패=0, 줄=[];
+function T(설명, 실제, 기대){
+  var ok = JSON.stringify(실제)===JSON.stringify(기대);
+  if(ok){ 통과++; } else { 실패++; 줄.push('✗ '+설명+'\n    실제: '+JSON.stringify(실제)+'\n    기대: '+JSON.stringify(기대)); }
+}
+var 경계 = ZG.사진수집.경계;
+function 품목(코드, 때, 뺌){ return { 품목코드: 코드, 유통명: 코드+'이름', 학명: 'Sci '+코드, 규격: '규격 외', 등록일시: 때, 사진뺌: 뺌 }; }
+function 판깔기(){
+  품목표 = [
+    품목('TUB01-0', 경계 + 3000),
+    품목('TUL02-0', 경계 + 2000),
+    품목('ALA01-0', 경계 + 1000),
+    품목('OLD01-15', 경계 - 99999)      // 경계 밖 — 뜨면 안 된다
+  ];
+  요청표 = [];
+  토스트글 = [];
+  var 붙일곳 = document.getElementById('붙일곳');
+  붙일곳.innerHTML = '';
+  붙일곳.appendChild(ZG.사진수집.대기카드());
+  return 붙일곳;
+}
+function 줄수(곳){ return 곳.querySelectorAll(폰모드 ? '.ph-card' : 'tbody tr').length; }
+function 뺌단추들(곳){ return 곳.querySelectorAll('.뺌'); }
+function 토글(곳){ return 곳.querySelector('.뺌보기'); }
+function 코드들(곳){
+  return Array.prototype.map.call(곳.querySelectorAll(폰모드 ? '.ph-card .cd' : 'tbody tr td.code'),
+    function(e){ return e.textContent; });
+}
+
+/* ── PC ── */
+폰모드 = false;
+var 곳 = 판깔기();
+T('PC — 경계 안 3품목만 뜬다', 줄수(곳), 3);
+T('PC — 경계 밖은 안 뜬다', 코드들(곳).indexOf('OLD01-15'), -1);
+T('PC — 최신이 맨 위', 코드들(곳)[0], 'TUB01-0');
+T('PC — 줄마다 빼기 단추', 뺌단추들(곳).length, 3);
+T('PC — 처음엔 토글이 없다', !토글(곳), true);
+T('PC — 표 머리가 「상세페이지 작업 대기」', 곳.querySelector('h3').textContent, '상세페이지 작업 대기');
+
+뺌단추들(곳)[0].click();
+T('빼면 저장소에 사진뺌 기록', 품목표[0].사진뺌, true);
+T('빼면 수정일시가 찍힌다', typeof 품목표[0].수정일시, 'number');
+T('빼면 토스트', /뺐습니다/.test(토스트글[토스트글.length-1]||''), true);
+T('빼면 목록에서 사라진다', 줄수(곳), 2);
+T('  남은 건 나머지 둘', 코드들(곳), ['TUL02-0','ALA01-0']);
+T('빼면 토글이 생긴다', 토글(곳).textContent, '뺀 것 1개');
+T('빼도 사진창은 안 열린다(클릭 번짐 막음)', document.querySelectorAll('.사진덮개').length, 0);
+
+토글(곳).click();
+T('토글 — 뺀 것만 보인다', 코드들(곳), ['TUB01-0']);
+T('토글 — 머리가 「뺀 것」', 곳.querySelector('h3').textContent, '뺀 것');
+T('토글 — 단추가 ↺', 뺌단추들(곳)[0].textContent, '↺');
+T('토글 — 돌아가는 단추', 토글(곳).textContent, '← 대기로');
+
+뺌단추들(곳)[0].click();
+T('되돌리면 사진뺌이 꺼진다', 품목표[0].사진뺌, false);
+T('되돌리면 토스트', /되돌렸습니다/.test(토스트글[토스트글.length-1]||''), true);
+T('마지막 하나를 되돌리면 대기로 돌아온다', 곳.querySelector('h3').textContent, '상세페이지 작업 대기');
+T('  셋 다 돌아와 있다', 줄수(곳), 3);
+T('  토글도 사라진다', !토글(곳), true);
+
+/* 다 빼면 표가 빈다 — 설명문을 두지 않는다 */
+곳 = 판깔기();
+뺌단추들(곳)[0].click(); 뺌단추들(곳)[0].click(); 뺌단추들(곳)[0].click();
+T('셋 다 빼면 줄이 0', 줄수(곳), 0);
+T('  그래도 토글은 남는다', 토글(곳).textContent, '뺀 것 3개');
+
+/* ── 폰 ── */
+폰모드 = true;
+곳 = 판깔기();
+T('폰 — 경계 안 3품목', 줄수(곳), 3);
+T('폰 — 줄마다 빼기 단추', 뺌단추들(곳).length, 3);
+T('폰 — 머리 글', 곳.querySelector('.ph-sec').textContent.indexOf('상세페이지 작업 대기'), 0);
+뺌단추들(곳)[0].click();
+T('폰 — 빼면 사라진다', 줄수(곳), 2);
+T('폰 — 토글이 생긴다', 토글(곳).textContent, '뺀 것 1개');
+T('폰 — 빼도 사진창 안 열림', document.querySelectorAll('.사진덮개').length, 0);
+토글(곳).click();
+T('폰 — 뺀 것만', 코드들(곳), ['TUB01-0']);
+
+/* 이미 뺀 품목이 섞인 채 처음 그릴 때 */
+폰모드 = false;
+품목표 = [품목('A01-0', 경계+3000), 품목('B01-0', 경계+2000, true), 품목('C01-0', 경계+1000)];
+요청표 = [];
+var 곳2 = document.getElementById('붙일곳'); 곳2.innerHTML=''; 곳2.appendChild(ZG.사진수집.대기카드());
+T('처음부터 뺀 것은 빼고 그린다', 코드들(곳2), ['A01-0','C01-0']);
+T('  토글에 개수가 맞다', 토글(곳2).textContent, '뺀 것 1개');
+T('  「뺀 것」을 보다 화면을 새로 그리면 대기부터', 곳2.querySelector('h3').textContent, '상세페이지 작업 대기');
+
+document.getElementById('out').textContent = (줄.length? 줄.join('\n')+'\n\n':'') + '통과 ' + 통과 + ' · 실패 ' + 실패;
+</script></body>

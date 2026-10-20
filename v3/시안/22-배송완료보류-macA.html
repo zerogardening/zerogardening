@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>통합관리 v3 — 주문 관리 › 배송완료 보류 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+/* ── 이 화면만 쓰는 부품 ── */
+.phone{height:auto; min-height:844px; position:relative}
+.phone, .pc-body{position:relative}
+.twoup{display:flex; align-items:flex-start; gap:28px; margin-bottom:34px}
+.twoup .col .cap{font-size:12px; margin-bottom:8px}
+.phone .ph-body{gap:var(--space-md)}
+
+.subtabs{display:flex; gap:var(--space-3xs); background:var(--color-seg-bg); padding:var(--space-4xs); border-radius:var(--radius-md)}
+.subtabs span{flex:1; text-align:center; padding:var(--space-2xs) 0; border-radius:var(--radius-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub); white-space:nowrap}
+.subtabs span.on{background:var(--color-surface); color:var(--color-accent-dark); box-shadow:var(--shadow-seg)}
+
+.mall{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-semibold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:var(--color-seg-bg); color:var(--color-text-sub); border:var(--border-width) solid var(--color-border)}
+
+/* 네모칸 */
+.cb{display:inline-block; width:16px; height:16px; border-radius:4px; vertical-align:-3px; border:var(--border-width) solid var(--color-border); background:var(--color-surface); position:relative; flex:0 0 auto}
+.cb.on{background:var(--color-accent); border-color:var(--color-accent-dark)}
+.cb.on::after{content:'✓'; position:absolute; inset:0; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center}
+.cb.big{width:26px; height:26px; border-radius:7px}
+.cb.big.on::after{font-size:16px}
+
+/* 보류 배지 — 회색. 「송장만 저장」 */
+.hold{display:inline-flex; align-items:center; gap:4px; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:#E4E4E8; color:#4A4C52; border:var(--border-width) solid #CFCFD5}
+.hold::before{content:'⏸'; font-size:10px}
+.res{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; border:var(--border-width) solid var(--color-border); background:var(--color-surface); color:var(--color-text-sub)}
+.res.chk{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
+.res.dup{background:var(--color-seg-bg); color:var(--color-text-muted)}
+
+/* 줄마다 [배송완료 | 보류] */
+.dsel{display:inline-flex; background:var(--color-seg-bg); padding:2px; border-radius:var(--radius-sm); gap:2px}
+.dsel span{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-sub); padding:4px 10px; border-radius:5px; white-space:nowrap}
+.dsel span.on{background:var(--color-accent); color:#fff; box-shadow:var(--shadow-seg)}
+.dsel span.on.h{background:#5E6066; color:#fff}
+.dsel.off{opacity:.35}
+.phone .dsel span{font-size:var(--font-md); padding:8px 14px}
+
+.ttl{font-family:var(--font-mono); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text); white-space:nowrap; font-variant-numeric:tabular-nums}
+tr.held td{background:#F4F4F6}
+tr.held td .ttl{color:var(--color-text-sub)}
+tr.gx td{border-top:var(--border-width) solid var(--color-border-faint)}
+td.who .n{font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
+td.who .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
+td.age{font-size:var(--font-sm); color:var(--color-text-sub); white-space:nowrap}
+td.age i{font-style:normal; font-size:var(--font-2xs); color:var(--color-text-muted); margin-left:4px}
+td .q{font-variant-numeric:tabular-nums}
+
+/* 칩 「보류」 — 회색 결 */
+.fchip.보류.on{background:#5E6066; border-color:#4A4C52; color:#fff}
+.fsep{width:1px; height:20px; background:var(--color-border); margin:0 var(--space-xs)}
+.flbl{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.flbl.dim{color:var(--color-text-hint)}
+
+/* 선택 바 (PC 표 위·아래) */
+.selbar{display:flex; align-items:center; gap:var(--space-md); padding:var(--space-sm) var(--space-sm)}
+.selbar .n{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.selbar .n b{color:var(--color-text); font-variant-numeric:tabular-nums}
+.selbar .btn{margin-left:auto}
+
+/* 결과창 (PC) — 주문 조회 위에 뜬다 */
+.scrim{position:absolute; inset:0; background:rgba(0,0,0,.28); z-index:200}
+.resbox{position:absolute; z-index:201; left:50%; top:28px; transform:translateX(-50%); width:860px; background:var(--color-bg); border-radius:var(--radius-lg); box-shadow:var(--shadow-panel); padding:var(--space-3xl) var(--space-3xl) var(--space-2xl); display:flex; flex-direction:column; gap:var(--space-lg)}
+.resbox .hd{display:flex; align-items:baseline; gap:var(--space-md)}
+.resbox .hd h4{font-size:var(--font-2xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.resbox .hd .f{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.resbox .hd .x{margin-left:auto; font-size:var(--font-lg); color:var(--color-text-muted)}
+.cnts{display:flex; gap:var(--space-sm)}
+.cnts span{font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub); background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint); border-radius:var(--radius-md); padding:6px 12px; box-shadow:var(--shadow-card)}
+.cnts span b{font-size:var(--font-lg); color:var(--color-text); margin-left:4px; font-variant-numeric:tabular-nums}
+.cnts span.c b{color:var(--color-danger)}
+.cnts span.h{background:#ECECEF}
+.resbox .card{padding:var(--space-sm) var(--space-md) var(--space-3xs)}
+.resfoot{display:flex; align-items:center; gap:var(--space-lg)}
+.sum{display:flex; flex-direction:column; gap:3px; font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.sum b{color:var(--color-text); font-variant-numeric:tabular-nums}
+.c24{display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface); border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md); padding:8px 12px; font-size:var(--font-sm); font-weight:var(--weight-semibold); box-shadow:var(--shadow-btn)}
+.c24 b{font-variant-numeric:tabular-nums}
+.resfoot .btns{margin-left:auto; display:flex; gap:var(--space-sm)}
+
+/* 확인창 */
+.askbox{position:absolute; z-index:201; left:50%; top:44%; transform:translate(-50%,-50%); width:420px; background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-panel); padding:var(--pad-card); display:flex; flex-direction:column; gap:var(--space-lg)}
+.pc-body .askbox{left:calc(50% + 103px)}
+.phone .askbox{width:calc(100% - 36px); top:46%}
+.askbox h4{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.alines{display:flex; flex-direction:column; gap:6px; background:var(--color-ios-bg); border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg)}
+.alines .l{display:flex; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); align-items:baseline}
+.alines .l .w{color:var(--color-text-muted); width:44px; flex:0 0 auto}
+.alines .l .q{margin-left:auto; font-variant-numeric:tabular-nums}
+.anums{display:flex; gap:var(--space-sm)}
+.anums > div{flex:1; border:var(--border-width) solid var(--color-border-faint); border-radius:var(--radius-md); padding:8px 10px}
+.anums .k{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.anums .v{font-size:var(--font-3xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; margin-top:2px}
+.anums .v small{font-size:var(--font-xs); color:var(--color-text-muted); margin-left:2px}
+.askbox .c24{box-shadow:none}
+.askbox .btnrow{display:flex; gap:var(--space-sm); justify-content:flex-end}
+.askbox .btnrow .btn{min-width:96px}
+.phone .askbox .btnrow .btn{flex:1; min-height:48px; font-size:var(--font-lg)}
+.phone .alines .l{font-size:var(--font-md)}
+.phone .anums .k{font-size:var(--font-xs)}
+.phone .c24{font-size:var(--font-md)}
+
+/* 토스트 */
+.toast{position:absolute; left:50%; transform:translateX(-50%); bottom:150px; z-index:300; background:rgba(28,28,30,.93); color:#fff; font-size:var(--font-md); font-weight:var(--weight-semibold); padding:12px 18px; border-radius:14px; box-shadow:0 10px 28px rgba(0,0,0,.28); white-space:nowrap; display:flex; align-items:center; gap:var(--space-sm)}
+.pc-body .toast{bottom:28px; left:calc(50% + 103px)}
+.toast .g{color:#7BE08F; font-size:var(--font-lg)}
+.toast .dim{opacity:.7}
+
+/* 폰 — 주문 상세 */
+.dcard{background:var(--color-surface); border-radius:var(--radius-xl); padding:var(--space-lg) var(--space-2xl); box-shadow:var(--shadow-card)}
+.dcard .r0{display:flex; align-items:center; gap:var(--space-sm)}
+.dcard .r0 .who{font-size:var(--font-2xl); font-weight:var(--weight-bold)}
+.dcard .r0 .mall{margin-left:auto}
+.dcard .d2{font-size:var(--font-sm); color:var(--color-text-sub); margin-top:var(--space-xs); line-height:1.5}
+.dline{display:flex; align-items:center; gap:var(--space-sm); padding:var(--space-md) 0; border-top:var(--border-width) solid var(--color-border-faint)}
+.dline .nm{font-size:var(--font-lg); font-weight:var(--weight-bold)}
+.dline .rg{font-size:var(--font-xs); color:var(--color-text-muted); margin-top:2px}
+.dline .q{font-size:var(--font-lg); font-weight:var(--weight-bold); margin-left:auto; margin-right:var(--space-sm); font-variant-numeric:tabular-nums}
+.dline.held .nm{color:var(--color-text-sub)}
+.dline .hold{margin-top:4px}
+.tinp{display:flex; align-items:center; gap:var(--space-sm)}
+.tinp .inp{font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:var(--font-xl); letter-spacing:.02em}
+.bigbtn{width:100%; min-height:52px; font-size:var(--font-xl); font-weight:var(--weight-bold); border-radius:var(--radius-xl); background:var(--color-accent); color:#fff; border:none; box-shadow:var(--shadow-btn-main); font-family:inherit; display:flex; align-items:center; justify-content:center; gap:10px}
+.bigbtn .s{font-size:var(--font-sm); opacity:.85; font-weight:var(--weight-semibold)}
+
+/* 폰 — 보류 카드 */
+.hcard{display:flex; gap:var(--space-lg); align-items:flex-start; background:var(--color-surface); border-radius:var(--radius-xl); padding:var(--space-lg) var(--space-xl); box-shadow:var(--shadow-card)}
+.hcard.sel{box-shadow:0 0 0 2px var(--color-accent), var(--shadow-card)}
+.hcard .cb.big{margin-top:2px}
+.hcard .b{flex:1; min-width:0}
+.hcard .t1{display:flex; align-items:baseline; gap:var(--space-sm)}
+.hcard .t1 .nm{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.hcard .t1 .q{margin-left:auto; font-size:var(--font-xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.hcard .t2{font-size:var(--font-sm); color:var(--color-text-sub); margin-top:3px; font-weight:var(--weight-medium)}
+.hcard .t3{display:flex; align-items:center; gap:var(--space-sm); margin-top:var(--space-sm)}
+.hcard .t3 .ttl{font-size:var(--font-md)}
+.hcard .t3 .age{margin-left:auto; font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.phone .fchip.보류.on{background:#5E6066}
+
+/* 폰 하단 고정 바 */
+.selfix{display:flex; align-items:center; gap:var(--space-lg); padding:var(--space-md) var(--space-2xl); background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border)}
+.selfix .n{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub); white-space:nowrap}
+.selfix .n b{font-size:var(--font-2xl); color:var(--color-text)}
+.selfix .bigbtn{flex:1; min-height:50px; width:auto}
+.selfix .bigbtn.off{background:#C7C7CC; box-shadow:none}
+
+.확정{max-width:1120px; background:#F3EFFA; border:1px solid #DCD0F0; color:#4B2F82; border-radius:var(--radius-md); padding:10px 16px; font-size:12px; font-weight:600; line-height:1.6}
+.empty{text-align:center; color:var(--color-text-hint); font-size:var(--font-sm); padding:var(--space-2xl) 0 var(--space-lg); font-weight:var(--weight-semibold)}
+</style>
+</head>
+<body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+
+<!-- ═══════════════════ 폰 ═══════════════════ -->
+<div class="sec-phone">
+  <div class="cap">아이폰 <b>390px</b> — 주문 › 배송완료 보류 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+
+  <div class="twoup">
+    <!-- 폰 ① 주문 상세 — 줄마다 완료/보류 -->
+    <div class="col"><div class="cap">① 주문 상세 — 송장번호 넣고 줄마다 [완료 / 보류]</div>
+    <div class="phone">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top"><div><div class="ph-back">‹ 주문 조회</div><h1>주문 상세</h1></div><span class="pcbtn">🖥 PC화면으로</span></div>
+      <div class="ph-body">
+        <div class="dcard">
+          <div class="r0"><span class="who">정다온</span><span class="mall">카페24</span></div>
+          <div class="d2">010-5521-0934<br>경기 고양시 일산동구 정발산로 88</div>
+        </div>
+        <div class="field"><label>송장번호 · 로젠</label><div class="tinp"><input class="inp" value="31245678905"></div></div>
+        <div class="dcard">
+          <div class="dline" style="border-top:none"><div><div class="nm">무늬 몬스테라</div><div class="rg">10cm 포트</div></div><span class="q">×2</span><span class="dsel"><span class="on">완료</span><span>보류</span></span></div>
+          <div class="dline held"><div><div class="nm">무늬 접란</div><div class="rg">9cm 포트</div><span class="hold">보류 · 송장만 저장</span></div><span class="q">×3</span><span class="dsel"><span>완료</span><span class="on h">보류</span></span></div>
+        </div>
+        <div style="flex:1; min-height:120px"></div>
+        <button class="bigbtn">✋ 저장<span class="s">완료 1 · 보류 1</span></button>
+      </div>
+      <div class="ph-nav"><div><span class="ic">🌿</span>입고</div><div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">📝</span>메모</div><div><span class="ic">⋯</span>더보기</div></div>
+    </div></div>
+
+    <!-- 폰 ② 보류 모음 -->
+    <div class="col"><div class="cap">② 칩 「보류 3」 — 고르면 아래 바에 [보내기]</div>
+    <div class="phone" style="display:flex; flex-direction:column">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top"><h1>주문</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+      <div class="ph-sub"><span>보류 · 전체 기간</span><span><b>3</b>줄</span></div>
+      <div class="ph-body" style="flex:1">
+        <div class="subtabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+        <div class="fchips"><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류 on">⏸ 보류<span class="n">3</span></button></div>
+        <div class="ph-list">
+          <div class="hcard sel"><span class="cb big on"></span><div class="b"><div class="t1"><span class="nm">용담 보라</span><span class="q">×4</span></div><div class="t2">이수민 · 9cm 포트</div><div class="t3"><span class="ttl">31245678902</span><span class="age">10/13 · 2일</span></div></div></div>
+          <div class="hcard sel"><span class="cb big on"></span><div class="b"><div class="t1"><span class="nm">무늬 접란</span><span class="q">×3</span></div><div class="t2">정다온 · 9cm 포트</div><div class="t3"><span class="ttl">31245678905</span><span class="age">10/15 · 오늘</span></div></div></div>
+          <div class="hcard"><span class="cb big"></span><div class="b"><div class="t1"><span class="nm">박쥐란</span><span class="q">×1</span></div><div class="t2">한예린 · 판부착</div><div class="t3"><span class="ttl">31245678911</span><span class="age">10/15 · 오늘</span></div></div></div>
+        </div>
+      </div>
+      <div class="selfix"><span class="n"><b>2</b>건</span><button class="bigbtn">보내기</button></div>
+      <div class="ph-nav"><div><span class="ic">🌿</span>입고</div><div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">📝</span>메모</div><div><span class="ic">⋯</span>더보기</div></div>
+    </div></div>
+  </div>
+
+  <div class="twoup">
+    <!-- 폰 ③ 확인창 -->
+    <div class="col"><div class="cap">③ [보내기] → 확인창</div>
+    <div class="phone" style="display:flex; flex-direction:column">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top"><h1>주문</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+      <div class="ph-sub"><span>보류 · 전체 기간</span><span><b>3</b>줄</span></div>
+      <div class="ph-body" style="flex:1">
+        <div class="subtabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+        <div class="fchips"><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류 on">⏸ 보류<span class="n">3</span></button></div>
+        <div class="ph-list">
+          <div class="hcard sel"><span class="cb big on"></span><div class="b"><div class="t1"><span class="nm">용담 보라</span><span class="q">×4</span></div><div class="t2">이수민 · 9cm 포트</div><div class="t3"><span class="ttl">31245678902</span><span class="age">10/13 · 2일</span></div></div></div>
+          <div class="hcard sel"><span class="cb big on"></span><div class="b"><div class="t1"><span class="nm">무늬 접란</span><span class="q">×3</span></div><div class="t2">정다온 · 9cm 포트</div><div class="t3"><span class="ttl">31245678905</span><span class="age">10/15 · 오늘</span></div></div></div>
+          <div class="hcard"><span class="cb big"></span><div class="b"><div class="t1"><span class="nm">박쥐란</span><span class="q">×1</span></div><div class="t2">한예린 · 판부착</div><div class="t3"><span class="ttl">31245678911</span><span class="age">10/15 · 오늘</span></div></div></div>
+        </div>
+      </div>
+      <div class="selfix"><span class="n"><b>2</b>건</span><button class="bigbtn">보내기</button></div>
+      <div class="ph-nav"><div><span class="ic">🌿</span>입고</div><div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">📝</span>메모</div><div><span class="ic">⋯</span>더보기</div></div>
+      <div class="scrim"></div>
+      <div class="askbox">
+        <h4>배송완료로 보내기 · 2건</h4>
+        <div class="alines">
+          <div class="l"><span class="w">이수민</span>용담 보라<span class="q">×4</span></div>
+          <div class="l"><span class="w">정다온</span>무늬 접란<span class="q">×3</span></div>
+        </div>
+        <div class="anums"><div><div class="k">출고 기록</div><div class="v">2<small>건</small></div></div><div><div class="k">재고 차감</div><div class="v">−7<small>주</small></div></div></div>
+        <div class="c24"><span class="cb on"></span>카페24 송장 올리기 · <span>발송처리 <b>2</b>건</span></div>
+        <div class="btnrow"><button class="btn">취소</button><button class="btn main">보내기</button></div>
+      </div>
+    </div></div>
+
+    <!-- 폰 ④ 보낸 뒤 -->
+    <div class="col"><div class="cap">④ 보낸 뒤 — 토스트 · 보류 1</div>
+    <div class="phone" style="display:flex; flex-direction:column">
+      <div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div>
+      <div class="ph-top"><h1>주문</h1><span class="pcbtn">🖥 PC화면으로</span></div>
+      <div class="ph-sub"><span>보류 · 전체 기간</span><span><b>1</b>줄</span></div>
+      <div class="ph-body" style="flex:1">
+        <div class="subtabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+        <div class="fchips"><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류 on">⏸ 보류<span class="n">1</span></button></div>
+        <div class="ph-list">
+          <div class="hcard"><span class="cb big"></span><div class="b"><div class="t1"><span class="nm">박쥐란</span><span class="q">×1</span></div><div class="t2">한예린 · 판부착</div><div class="t3"><span class="ttl">31245678911</span><span class="age">10/15 · 오늘</span></div></div></div>
+        </div>
+      </div>
+      <div class="selfix"><span class="n"><b>0</b>건</span><button class="bigbtn off">보내기</button></div>
+      <div class="ph-nav"><div><span class="ic">🌿</span>입고</div><div class="on"><span class="ic">🛒</span>주문</div><div><span class="ic">📝</span>메모</div><div><span class="ic">⋯</span>더보기</div></div>
+      <div class="toast"><span class="g">✓</span>2건 배송완료 <span class="dim">· 재고 −7 · 카페24 2</span></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PC ═══════════════════ -->
+<div class="sec-pc">
+  <div class="cap">맥 <b>1440px</b> — 주문 관리 › 배송완료 보류 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+  <div class="확정" style="margin-bottom:24px">보류 = 송장번호만 저장 · 출고기록·재고차감·카페24 발송은 [보내기] 때 · 보류는 품목 줄 단위 · 「보류」 칩은 기간과 상관없이 전부 · 오늘 = 10월 15일 (목)</div>
+
+  <!-- PC ① 결과창 -->
+  <div class="cap" style="margin-bottom:8px">① 🚚 배송완료 → 로젠 엑셀 올림 → 결과창 — 줄마다 [배송완료 / 보류], 보류 줄은 회색 · 카페24 발송 건수에서 빠짐</div>
+  <div class="pc" style="margin-bottom:34px"><div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+  <div class="pc-body" style="min-height:800px">
+    <div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div><a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div>
+    <div class="pc-main">
+      <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 주문 조회</div></div>
+      <div class="pc-tabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+      <div class="fchips"><span class="flbl">배송</span><button class="fchip on">전체</button><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류">⏸ 보류<span class="n">1</span></button><span style="margin-left:auto"></span><button class="btn sm">🚚 배송완료</button></div>
+      <div class="card" style="height:470px"></div>
+    </div>
+    <div class="scrim"></div>
+    <div class="resbox" style="left:calc(50% + 103px)">
+      <div class="hd"><h4>🚚 배송완료</h4><span class="f">로젠_출력완료_1015.xlsx · 7줄</span><span class="x">✕</span></div>
+      <div class="cnts"><span>정상<b>5</b></span><span class="c">확인필요<b>1</b></span><span>이미<b>1</b></span><span class="h">⏸ 보류<b>2</b></span></div>
+      <div class="card">
+        <table>
+          <colgroup><col style="width:150px"><col style="width:120px"><col><col style="width:84px"><col style="width:52px"><col style="width:128px"><col style="width:76px"></colgroup>
+          <tr><th>처리</th><th>받는 분</th><th>품목</th><th>규격</th><th class="r">수량</th><th>송장번호</th><th>결과</th></tr>
+          <tr><td><span class="dsel"><span class="on">배송완료</span><span>보류</span></span></td><td class="who"><div class="n">김정원</div></td><td>무늬 몬스테라</td><td class="dim">10cm 포트</td><td class="r">2</td><td><span class="ttl">31245678901</span></td><td><span class="res">정상</span></td></tr>
+          <tr><td><span class="dsel"><span class="on">배송완료</span><span>보류</span></span></td><td class="who"><div class="n">김정원</div></td><td>청사초</td><td class="dim">10cm 포트</td><td class="r">3</td><td><span class="ttl">31245678901</span></td><td><span class="res">정상</span></td></tr>
+          <tr class="held gx"><td><span class="dsel"><span>배송완료</span><span class="on h">보류</span></span></td><td class="who"><div class="n">이수민</div></td><td>용담 보라 <span class="hold">송장만 저장</span></td><td class="dim">9cm 포트</td><td class="r">4</td><td><span class="ttl">31245678902</span></td><td><span class="res">정상</span></td></tr>
+          <tr class="gx"><td><span class="dsel"><span class="on">배송완료</span><span>보류</span></span></td><td class="who"><div class="n">정다온</div></td><td>무늬 몬스테라</td><td class="dim">10cm 포트</td><td class="r">2</td><td><span class="ttl">31245678905</span></td><td><span class="res">정상</span></td></tr>
+          <tr class="held"><td><span class="dsel"><span>배송완료</span><span class="on h">보류</span></span></td><td class="who"><div class="n">정다온</div></td><td>무늬 접란 <span class="hold">송장만 저장</span></td><td class="dim">9cm 포트</td><td class="r">3</td><td><span class="ttl">31245678905</span></td><td><span class="res">정상</span></td></tr>
+          <tr class="gx"><td><span class="dsel"><span class="on">배송완료</span><span>보류</span></span></td><td class="who"><div class="n">윤서진</div></td><td>아글라오네마 스노우</td><td class="dim">12cm 포트</td><td class="r">1</td><td><span class="ttl">31245678907</span></td><td><span class="res chk">확인필요</span></td></tr>
+          <tr class="gx"><td><span class="dsel off"><span>배송완료</span><span>보류</span></span></td><td class="who"><div class="n">오승철</div></td><td class="dim">호야 카노사</td><td class="dim">10cm 포트</td><td class="r">1</td><td><span class="ttl" style="color:var(--color-text-muted)">31245678899</span></td><td><span class="res dup">이미</span></td></tr>
+        </table>
+      </div>
+      <div class="resfoot">
+        <div class="sum"><span>배송완료 <b>4줄</b> · 재고 <b>−8주</b></span><span>⏸ 보류 <b>2줄</b> · 송장만 저장</span></div>
+        <div class="c24"><span class="cb on"></span><span>카페24 발송처리 <b>3</b>건</span></div>
+        <div class="btns"><button class="btn">닫기</button><button class="btn main">저장</button></div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- PC ② 보류 모음 -->
+  <div class="cap" style="margin-bottom:8px">② 칩 「⏸ 보류 3」 — 기간 꺼짐 · 고른 줄 수가 위·아래 [선택한 N건 보내기]에</div>
+  <div class="pc" style="margin-bottom:34px"><div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+  <div class="pc-body">
+    <div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div><a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div>
+    <div class="pc-main">
+      <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 주문 조회 › 보류</div></div>
+      <div class="pc-tabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+      <div class="fchips"><span class="flbl dim">기간</span><input class="inp" disabled style="width:126px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center; line-height:28px" value="전체 기간"><span class="fsep"></span><span class="flbl">배송</span><button class="fchip">전체</button><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류 on">⏸ 보류<span class="n">3</span></button><span style="margin-left:auto"></span><button class="btn sm">🚚 배송완료</button></div>
+      <div class="card table-card">
+        <div class="selbar"><span class="cb"></span><span class="n">⏸ 보류 <b>3</b>줄 · 선택 <b>2</b></span><button class="btn main sm" style="font-size:var(--font-sm)">선택한 2건 보내기</button></div>
+        <table>
+          <colgroup><col style="width:34px"><col style="width:170px"><col style="width:84px"><col style="width:84px"><col><col style="width:90px"><col style="width:56px"><col style="width:128px"><col style="width:104px"></colgroup>
+          <tr><th><span class="cb"></span></th><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th><th>송장번호</th><th>보류일</th></tr>
+          <tr><td><span class="cb on"></span></td><td class="who"><div class="n">이수민</div><div class="d">010-3381-4402</div></td><td><span class="mall">카페24</span></td><td class="code">GN-0412</td><td>용담 보라</td><td class="dim">9cm 포트</td><td class="r">4</td><td><span class="ttl">31245678902</span></td><td class="age">10/13<i>2일</i></td></tr>
+          <tr><td><span class="cb on"></span></td><td class="who"><div class="n">정다온</div><div class="d">010-5521-0934</div></td><td><span class="mall">카페24</span></td><td class="code">CH-0117</td><td>무늬 접란</td><td class="dim">9cm 포트</td><td class="r">3</td><td><span class="ttl">31245678905</span></td><td class="age">10/15<i>오늘</i></td></tr>
+          <tr><td><span class="cb"></span></td><td class="who"><div class="n">한예린</div><div class="d">010-9076-2218</div></td><td><span class="mall">스마트스토어</span></td><td class="code">PL-0031</td><td>박쥐란</td><td class="dim">판부착</td><td class="r">1</td><td><span class="ttl">31245678911</span></td><td class="age">10/15<i>오늘</i></td></tr>
+        </table>
+        <div class="selbar" style="border-top:var(--border-width) solid var(--color-border-faint); margin-top:var(--space-xs); padding-top:var(--space-md)"><span class="n">선택 <b>2</b> · 재고 <b>−7주</b></span><button class="btn main sm" style="font-size:var(--font-sm)">선택한 2건 보내기</button></div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- PC ③ 확인창 -->
+  <div class="cap" style="margin-bottom:8px">③ [선택한 2건 보내기] → 확인창</div>
+  <div class="pc" style="margin-bottom:34px"><div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+  <div class="pc-body">
+    <div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div><a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div>
+    <div class="pc-main">
+      <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 주문 조회 › 보류</div></div>
+      <div class="pc-tabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+      <div class="fchips"><span class="flbl dim">기간</span><input class="inp" disabled style="width:126px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center; line-height:28px" value="전체 기간"><span class="fsep"></span><span class="flbl">배송</span><button class="fchip">전체</button><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류 on">⏸ 보류<span class="n">3</span></button><span style="margin-left:auto"></span><button class="btn sm">🚚 배송완료</button></div>
+      <div class="card table-card">
+        <div class="selbar"><span class="cb"></span><span class="n">⏸ 보류 <b>3</b>줄 · 선택 <b>2</b></span><button class="btn main sm" style="font-size:var(--font-sm)">선택한 2건 보내기</button></div>
+        <table>
+          <colgroup><col style="width:34px"><col style="width:170px"><col style="width:84px"><col style="width:84px"><col><col style="width:90px"><col style="width:56px"><col style="width:128px"><col style="width:104px"></colgroup>
+          <tr><th><span class="cb"></span></th><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th><th>송장번호</th><th>보류일</th></tr>
+          <tr><td><span class="cb on"></span></td><td class="who"><div class="n">이수민</div><div class="d">010-3381-4402</div></td><td><span class="mall">카페24</span></td><td class="code">GN-0412</td><td>용담 보라</td><td class="dim">9cm 포트</td><td class="r">4</td><td><span class="ttl">31245678902</span></td><td class="age">10/13<i>2일</i></td></tr>
+          <tr><td><span class="cb on"></span></td><td class="who"><div class="n">정다온</div><div class="d">010-5521-0934</div></td><td><span class="mall">카페24</span></td><td class="code">CH-0117</td><td>무늬 접란</td><td class="dim">9cm 포트</td><td class="r">3</td><td><span class="ttl">31245678905</span></td><td class="age">10/15<i>오늘</i></td></tr>
+          <tr><td><span class="cb"></span></td><td class="who"><div class="n">한예린</div><div class="d">010-9076-2218</div></td><td><span class="mall">스마트스토어</span></td><td class="code">PL-0031</td><td>박쥐란</td><td class="dim">판부착</td><td class="r">1</td><td><span class="ttl">31245678911</span></td><td class="age">10/15<i>오늘</i></td></tr>
+        </table>
+        <div class="selbar" style="border-top:var(--border-width) solid var(--color-border-faint); margin-top:var(--space-xs); padding-top:var(--space-md)"><span class="n">선택 <b>2</b> · 재고 <b>−7주</b></span><button class="btn main sm" style="font-size:var(--font-sm)">선택한 2건 보내기</button></div>
+      </div>
+    </div>
+    <div class="scrim"></div>
+    <div class="askbox">
+      <h4>배송완료로 보내기 · 2건</h4>
+      <div class="alines">
+        <div class="l"><span class="w">이수민</span>용담 보라 · 9cm 포트<span class="q">×4</span></div>
+        <div class="l"><span class="w">정다온</span>무늬 접란 · 9cm 포트<span class="q">×3</span></div>
+      </div>
+      <div class="anums"><div><div class="k">출고 기록</div><div class="v">2<small>건</small></div></div><div><div class="k">재고 차감</div><div class="v">−7<small>주</small></div></div></div>
+      <div class="c24"><span class="cb on"></span>카페24 송장 올리기 · <span>발송처리 <b>2</b>건</span></div>
+      <div class="btnrow"><button class="btn">취소</button><button class="btn main">보내기</button></div>
+    </div>
+  </div></div>
+
+  <!-- PC ④ 보낸 뒤 -->
+  <div class="cap" style="margin-bottom:8px">④ 보낸 뒤 — 토스트 · 칩 「보류 1」 · 보낸 줄은 배송완료로</div>
+  <div class="pc" style="margin-bottom:34px"><div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 주문 관리</span></div>
+  <div class="pc-body">
+    <div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div><a><span class="ic">🌿</span>상품</a><a class="on"><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div>
+    <div class="pc-main" style="min-height:420px">
+      <div class="pc-head"><h2>주문 관리</h2><div class="path">주문 관리 › 주문 조회 › 보류</div></div>
+      <div class="pc-tabs"><span class="on">주문 조회</span><span>견적 요청</span><span>고객</span><span>문자주문</span></div>
+      <div class="fchips"><span class="flbl dim">기간</span><input class="inp" disabled style="width:126px; height:var(--h-btn-sm); font-size:var(--font-sm); text-align:center; line-height:28px" value="전체 기간"><span class="fsep"></span><span class="flbl">배송</span><button class="fchip">전체</button><button class="fchip">배송준비중<span class="n">12</span></button><button class="fchip">배송완료</button><button class="fchip 보류 on">⏸ 보류<span class="n">1</span></button><span style="margin-left:auto"></span><button class="btn sm">🚚 배송완료</button></div>
+      <div class="card table-card">
+        <div class="selbar"><span class="cb"></span><span class="n">⏸ 보류 <b>1</b>줄 · 선택 <b>0</b></span><button class="btn sm" disabled style="opacity:.45">선택한 0건 보내기</button></div>
+        <table>
+          <colgroup><col style="width:34px"><col style="width:170px"><col style="width:84px"><col style="width:84px"><col><col style="width:90px"><col style="width:56px"><col style="width:128px"><col style="width:104px"></colgroup>
+          <tr><th><span class="cb"></span></th><th>받는 분</th><th>주문한 곳</th><th>품목코드</th><th>품목</th><th>규격</th><th class="r">수량</th><th>송장번호</th><th>보류일</th></tr>
+          <tr><td><span class="cb"></span></td><td class="who"><div class="n">한예린</div><div class="d">010-9076-2218</div></td><td><span class="mall">스마트스토어</span></td><td class="code">PL-0031</td><td>박쥐란</td><td class="dim">판부착</td><td class="r">1</td><td><span class="ttl">31245678911</span></td><td class="age">10/15<i>오늘</i></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="toast"><span class="g">✓</span>2건 배송완료 <span class="dim">· 재고 −7주 · 카페24 발송처리 2건</span></div>
+  </div></div>
+</div>
+</body>
+</html>

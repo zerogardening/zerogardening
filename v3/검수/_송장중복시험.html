@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8"><title>송장중복 시험</title><body>
+<script src="../js/01-저장소.js"></script>
+<script src="../js/03-계산.js"></script>
+<script src="../js/04-공통UI.js"></script>
+<script src="../js/08a-주문자료.js"></script>
+<script src="../js/08i-로젠파일.js"></script>
+<script>
+/* 08h 에서 오려 온 진짜 거르개 */
+var 상태 = null;
+  function 로젠항목() {
+    if (상태.재발행) return 상태.항목들;
+    var 나감 = {};
+    ZG.저장소.읽기(ZG.저장소.키.주문).forEach(function (r) {
+      if (r.id && Number(r.출력번호)) 나감[r.id] = 1;
+    });
+    return 상태.항목들.filter(function (것) { return !(것.id && 나감[것.id]); });
+  }
+
+window.거르기 = function (항목들, 재발행) { 상태 = { 항목들: 항목들, 재발행: !!재발행 }; return 로젠항목(); };
+
+/* 27칸 한 줄 세우기 — 사람마다 우편번호가 달라 묶음이 1주문=1묶음이 된다 */
+window.칸 = function (n) {
+  var o = new Array(27).fill('');
+  o[2] = 'ORD' + n; o[3] = '2026-08-19'; o[4] = '테스트식물'; o[7] = 'TST01-15';
+  o[11] = '10000'; o[12] = '1'; o[13] = '손님' + n; o[14] = String(10000 + n); o[15] = '어디시 어디구';
+  o[18] = '0101234' + String(1000 + n);
+  return o;
+};
+window.항목 = function (n, 묶음id, id) {
+  return { 원본: 칸(n), id: id, 갈래: '새것',
+    줄: { id: id, 묶음id: 묶음id, 주문번호: 'ORD' + n, 주문일: '2026-08-19',
+          수령인: '손님' + n, 우편번호: String(10000 + n), 품목코드: 'TST01-15', 수량: 1,
+          핸드폰: '0101234' + String(1000 + n), 주소: '어디시 어디구' } };
+};
+/* 저장소에 주문줄을 심는다 (08i 가 출력번호를 되쓸 자리) */
+window.심기 = function (항목들) {
+  var 저 = ZG.저장소;
+  저.전체쓰기(저.키.주문, 저.읽기(저.키.주문).concat(항목들.map(function (것) { return 것.줄; })));
+};
+window.번호보기 = function () {
+  var 표 = {};
+  ZG.저장소.읽기(ZG.저장소.키.주문).forEach(function (r) { 표[r.주문번호] = r.출력번호 || 0; });
+  return 표;
+};
+/* 내보내기는 XLSX 를 부른다 — 파일은 안 만들고 번호되쓰기만 태운다 */
+window.XLSX = { utils: { book_new: function () { return {}; }, aoa_to_sheet: function (a) { return a; },
+                         book_append_sheet: function () {} }, writeFile: function () {} };
+</script>
+</body>

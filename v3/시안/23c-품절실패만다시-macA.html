@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>통합관리 v3 — 상품 › 품절 · 실패만 다시 (macOS A안)</title>
+<link rel="stylesheet" href="_공통-macA.css">
+<style>
+.twoup{display:flex; align-items:flex-start; gap:28px}
+.twoup .col .cap{font-size:12px; margin-bottom:8px}
+.phone{height:844px; position:relative}
+.phone .ph-body{gap:var(--space-md); overflow:hidden; padding-top:12px}
+.tabwrap{background:var(--color-ios-bar); padding:4px 16px 10px; border-bottom:var(--border-width) solid var(--color-border)}
+/* 속탭 — 폰 */
+.stabs{display:flex; gap:2px; background:var(--color-seg-bg); padding:2px; border-radius:var(--radius-md); height:38px}
+.stabs span{flex:1; display:flex; align-items:center; justify-content:center; gap:4px; border-radius:7px; font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
+.stabs span.on{background:var(--color-accent); color:var(--color-on-accent); box-shadow:var(--shadow-seg)}
+.bd{font-style:normal; display:inline-block; min-width:17px; padding:0 5px; border-radius:9px; background:#8E8E93; color:#fff; font-size:var(--font-2xs); line-height:17px; text-align:center; font-weight:var(--weight-bold); margin-left:5px; font-variant-numeric:tabular-nums}
+.bd.red{background:var(--color-danger)}
+.pc-tabs span{display:inline-flex; align-items:center}
+.stabs span.on .bd{box-shadow:0 0 0 1.5px #fff}
+/* 구분 꼬리표 */
+.ktag{flex-shrink:0; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:2px 7px; border-radius:var(--radius-badge); background:#E5E5EA; color:#3A3A3C; line-height:1.4}
+.ktag.back{background:var(--color-accent-bg); color:var(--color-accent-dark); box-shadow:inset 0 0 0 1px var(--color-accent-border)}
+/* 분수 */
+.frac{margin-left:auto; font-size:var(--font-md); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums; white-space:nowrap}
+.frac b{font-size:22px; color:var(--color-text); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.frac.done b{color:var(--color-accent-dark)}
+.frac.bad b{color:var(--color-danger)}
+.fn{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#fff; background:var(--color-danger); padding:1px 7px; border-radius:var(--radius-pill)}
+/* 막대 — 칸 7개 */
+.bar{display:flex; gap:3px; margin-top:10px}
+.bar i{flex:1; height:7px; border-radius:3px; background:#E3E3E8}
+.bar i.ok, .bar .sg.ok i{background:var(--color-accent)}
+.bar i.run, .bar .sg.run i{background:#F2A30F}
+.bar i.fail, .bar .sg.fail i{background:var(--color-danger)}
+.bar i.wait{background:#E3E3E8}
+/* 폰 카드 */
+.sc{background:var(--color-surface); border-radius:var(--radius-xl); padding:12px 16px 14px; box-shadow:var(--shadow-card)}
+.sc .r1{display:flex; align-items:center; gap:8px}
+.sc .nm{font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.sc .r2{display:flex; align-items:center; gap:8px; margin-top:3px; font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.sc .cd, .pcr .cd{font-family:var(--font-mono); font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
+.sc .tt{font-variant-numeric:tabular-nums}
+.sc .chev, .pcr .chev{margin-left:auto; color:var(--color-text-hint); font-size:var(--font-md)}
+.sc.bad{box-shadow:0 0 0 1.5px var(--color-danger), var(--shadow-card); background:#FFFBFB}
+.sc.done{opacity:.72}
+.sc.done .bar i{opacity:.55}
+.sc.open{padding-bottom:6px}
+.mlist{margin-top:12px; border-top:var(--border-width) solid var(--color-border-faint)}
+.mrow{display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md)}
+.mrow:last-child{border-bottom:none}
+.mrow .dot{width:9px; height:9px; border-radius:50%; background:#D1D1D6; flex-shrink:0}
+.mrow.ok .dot{background:var(--color-accent)} .mrow.run .dot{background:#F2A30F} .mrow.fail .dot{background:var(--color-danger)}
+.mrow .mk{font-weight:var(--weight-semibold); min-width:84px}
+.mrow .how{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
+.mrow .st{margin-left:auto}
+.mrow .tm{width:52px; text-align:right; font-size:var(--font-xs); color:var(--color-text-muted); font-variant-numeric:tabular-nums}
+.st{font-size:var(--font-xs); font-weight:var(--weight-bold); padding:2px 8px; border-radius:var(--radius-pill); white-space:nowrap}
+.st.ok{color:var(--color-accent-dark); background:var(--color-accent-bg)}
+.st.run{color:#9A5B00; background:#FFF3D6}
+.st.wait{color:var(--color-text-muted); background:#F0F0F3}
+.st.fail{color:#fff; background:var(--color-danger)}
+.why{margin:-4px 0 6px 17px; font-size:var(--font-sm); color:var(--color-danger); font-weight:var(--weight-semibold); padding-bottom:6px; border-bottom:var(--border-width) solid var(--color-border-faint)}
+.mlist .why:last-child{border-bottom:none}
+/* PC */
+.card .ch{display:flex; align-items:center; gap:16px; margin-bottom:14px}
+.card .ch h3{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em}
+.card .ch .srch{margin-left:auto; width:240px}
+.plist{display:flex; flex-direction:column; gap:8px}
+.pcr{border:var(--border-width) solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface)}
+.pcr .hd{display:grid; grid-template-columns:62px 220px 92px 1fr 118px 18px; align-items:center; gap:14px; padding:12px 16px}
+.pcr .ktag{justify-self:start}
+.pcr .who{display:flex; flex-direction:column; gap:2px; min-width:0}
+.pcr .nm{font-size:var(--font-lg); font-weight:var(--weight-bold); letter-spacing:-.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.pcr .tt{font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
+.pcr .bar{margin-top:0}
+.bar.lb{gap:4px}
+.bar .sg{flex:1; display:flex; flex-direction:column; gap:4px; align-items:stretch}
+.bar .sg i{height:7px; border-radius:3px; background:#E3E3E8}
+.bar .sg span{font-size:var(--font-3xs); color:var(--color-text-muted); text-align:center; font-weight:var(--weight-semibold); white-space:nowrap}
+.bar .sg.fail span{color:var(--color-danger); font-weight:var(--weight-bold)}
+.bar .sg.run span{color:#9A5B00}
+.pcr .rt{display:flex; align-items:center; justify-content:flex-end; gap:8px}
+.pcr .rt .frac{margin-left:0}
+.pcr.bad{border-color:var(--color-danger); box-shadow:0 0 0 1px var(--color-danger); background:#FFFBFB}
+.pcr.done{opacity:.72}
+.pcr .chev{margin-left:0}
+.mt{margin:0 16px 12px; width:calc(100% - 32px)}
+.mt td{padding:8px 12px}
+.mt td.mk{font-weight:var(--weight-semibold)}
+.mt td.why{color:var(--color-danger); font-weight:var(--weight-semibold)}
+.mt tr.fail td{background:#FFF1F0}
+/* 속탭 모양 모음 */
+.sect{margin-top:46px}
+.strip{display:flex; gap:20px; padding-left:10px}
+.mini-ph{width:256px!important; height:auto!important; border-radius:30px; padding-bottom:12px}
+.mini-ph .ph-top h1{font-size:22px}
+.mini-ph .tabwrap{padding:4px 12px 4px; border:none}
+.mini-ph .stabs span{font-size:var(--font-sm)}
+.cap2{font-size:12px; font-weight:var(--weight-bold); color:#45474D; margin-bottom:12px}
+.pcstrip{display:grid; grid-template-columns:1fr 1fr; gap:16px 24px}
+.pst-in{background:var(--color-bg); border-radius:var(--radius-win); padding:16px 20px; display:flex; flex-direction:column; gap:12px; box-shadow:var(--shadow-panel)}
+.pst-in .h2{font-size:22px; font-weight:var(--weight-bold); letter-spacing:-.03em}
+.bdemo{display:flex; align-items:center; gap:10px; margin-top:24px; background:var(--color-bg); padding:14px 20px; border-radius:var(--radius-win); align-self:flex-start; box-shadow:var(--shadow-panel)}
+.bdemo .k{font-size:12px; color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-right:18px}
+.sec-pc, .sec-phone{display:flex; flex-direction:column}
+/* 실패만 다시 */
+.btn.rd{color:var(--color-danger); border-color:#F2B8B3; font-weight:var(--weight-bold); justify-content:center}
+.phone .btn.rd{min-height:32px; font-size:var(--font-sm); padding:0 11px}
+.redo{display:flex; gap:8px; padding:10px 0 8px; border-top:var(--border-width) solid var(--color-border-faint)}
+.phone .redo .btn{flex:1; min-height:44px; font-size:var(--font-md); justify-content:center}
+.redo.redo-pc{justify-content:flex-end; padding:12px 16px 14px; margin-top:-4px}
+.redo .n{font-weight:var(--weight-medium); opacity:.85; margin-left:2px}
+.mt td.rdc{text-align:right}
+</style></head><body>
+<span id="shot-phone"></span><span id="shot-pc"></span>
+<div class="sec-phone">
+<div class="cap">아이폰 <b>390px</b> — 상품 › 품절 <span class="tag">macOS A안 · 브랜드 초록</span></div>
+<div class="twoup">
+<div class="col"><div class="cap">① 품절 목록 — 접힌 카드</div><div class="phone"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div><div class="ph-top"><h1>상품</h1><span class="pcbtn">🖥 PC화면으로</span></div><div class="tabwrap"><div class="stabs"><span class="">입고</span><span class="">재고</span><span class="on">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div><div class="ph-body"><div class="fchips"><span class="fchip on">전체<span class="n">5</span></span><span class="fchip">실패<span class="n">1</span></span><span class="fchip">진행중<span class="n">2</span></span><span class="fchip">완료<span class="n">2</span></span></div><div class="ph-list"><div class="sc bad"><div class="r1"><span class="ktag">품절</span><span class="nm">휴케라 '팰리스퍼플'</span><span class="frac bad"><b>5</b>/7</span></div><div class="r2"><span class="cd">HEP01-15</span><span class="tt">10/16 14:02</span><span class="fn">실패 2</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="fail"></i><i class="fail"></i></div></div><div class="sc "><div class="r1"><span class="ktag back">다시 판매</span><span class="nm">구절초 노랑 10cm</span><span class="frac "><b>2</b>/7</span></div><div class="r2"><span class="cd">CHR01-10</span><span class="tt">10/16 14:10</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="ok"></i><i class="run"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i></div></div><div class="sc "><div class="r1"><span class="ktag">품절</span><span class="nm">용담 보라 10cm</span><span class="frac "><b>1</b>/7</span></div><div class="r2"><span class="cd">GEN01-10</span><span class="tt">10/16 14:11</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i></div></div><div class="sc done"><div class="r1"><span class="ktag">품절</span><span class="nm">청사초</span><span class="frac done"><b>7</b>/7</span></div><div class="r2"><span class="cd">CAR01-10</span><span class="tt">10/16 11:40</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></div></div><div class="sc done"><div class="r1"><span class="ktag">품절</span><span class="nm">몬스테라 15cm화분</span><span class="frac done"><b>7</b>/7</span></div><div class="r2"><span class="cd">MON01-15</span><span class="tt">10/15 17:20</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i></div></div></div></div><div class="ph-nav"><div class="on"><span class="ic">🌿</span>상품</div><div><span class="ic">🛒</span>주문</div><div><span class="ic">📝</span>메모</div><div><span class="ic">⋯</span>더보기</div></div></div></div>
+<div class="col"><div class="cap">② 카드를 누르면 마켓 7곳이 펼쳐짐</div><div class="phone"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div><div class="ph-top"><h1>상품</h1><span class="pcbtn">🖥 PC화면으로</span></div><div class="tabwrap"><div class="stabs"><span class="">입고</span><span class="">재고</span><span class="on">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div><div class="ph-body"><div class="fchips"><span class="fchip on">전체<span class="n">5</span></span><span class="fchip">실패<span class="n">1</span></span><span class="fchip">진행중<span class="n">2</span></span><span class="fchip">완료<span class="n">2</span></span></div><div class="ph-list"><div class="sc bad open"><div class="r1"><span class="ktag">품절</span><span class="nm">휴케라 '팰리스퍼플'</span><span class="frac bad"><b>5</b>/7</span></div><div class="r2"><span class="cd">HEP01-15</span><span class="tt">10/16 14:02</span><span class="fn">실패 2</span><span class="chev">⌃</span></div><div class="bar"><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="ok"></i><i class="fail"></i><i class="fail"></i></div><div class="mlist"><div class="mrow ok"><span class="dot"></span><span class="mk">카페24</span><span class="how">재고 0</span><span class="st ok">완료</span><span class="tm">14:02</span></div><div class="mrow ok"><span class="dot"></span><span class="mk">심폴</span><span class="how">재고 0</span><span class="st ok">완료</span><span class="tm">14:04</span></div><div class="mrow ok"><span class="dot"></span><span class="mk">스마트스토어</span><span class="how">재고 0</span><span class="st ok">완료</span><span class="tm">14:05</span></div><div class="mrow ok"><span class="dot"></span><span class="mk">쿠팡</span><span class="how">판매중지</span><span class="st ok">완료</span><span class="tm">14:05</span></div><div class="mrow ok"><span class="dot"></span><span class="mk">G마켓</span><span class="how">판매중지</span><span class="st ok">완료</span><span class="tm">14:06</span></div><div class="mrow fail"><span class="dot"></span><span class="mk">롯데ON</span><span class="how">판매중지</span><span class="st fail">실패</span><span class="tm"><span class="btn sm rd">다시</span></span></div><div class="why">응답 없음 (시간 초과)</div><div class="mrow fail"><span class="dot"></span><span class="mk">11번가</span><span class="how">판매중지</span><span class="st fail">실패</span><span class="tm"><span class="btn sm rd">다시</span></span></div><div class="why">로그인이 풀려 있음</div></div><div class="redo"><span class="btn warn">실패만 다시<span class="n">(2곳)</span></span><span class="btn">품절 전체 다시</span></div></div><div class="sc "><div class="r1"><span class="ktag back">다시 판매</span><span class="nm">구절초 노랑 10cm</span><span class="frac "><b>2</b>/7</span></div><div class="r2"><span class="cd">CHR01-10</span><span class="tt">10/16 14:10</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="ok"></i><i class="run"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i></div></div><div class="sc "><div class="r1"><span class="ktag">품절</span><span class="nm">용담 보라 10cm</span><span class="frac "><b>1</b>/7</span></div><div class="r2"><span class="cd">GEN01-10</span><span class="tt">10/16 14:11</span><span class="chev">⌄</span></div><div class="bar"><i class="ok"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i><i class="wait"></i></div></div></div></div><div class="ph-nav"><div class="on"><span class="ic">🌿</span>상품</div><div><span class="ic">🛒</span>주문</div><div><span class="ic">📝</span>메모</div><div><span class="ic">⋯</span>더보기</div></div></div></div>
+</div>
+<div class="sect"><div class="cap">③ 상품 속탭 4개 — 입고 · 재고 · 품절 · 작업중</div><div class="strip"><div class="mini"><div class="cap2">입고</div><div class="phone mini-ph"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div><div class="ph-top"><h1>상품</h1><span class="pcbtn">🖥 PC화면으로</span></div><div class="tabwrap"><div class="stabs"><span class="on">입고</span><span class="">재고</span><span class="">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div></div></div><div class="mini"><div class="cap2">재고</div><div class="phone mini-ph"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div><div class="ph-top"><h1>상품</h1><span class="pcbtn">🖥 PC화면으로</span></div><div class="tabwrap"><div class="stabs"><span class="">입고</span><span class="on">재고</span><span class="">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div></div></div><div class="mini"><div class="cap2">품절</div><div class="phone mini-ph"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div><div class="ph-top"><h1>상품</h1><span class="pcbtn">🖥 PC화면으로</span></div><div class="tabwrap"><div class="stabs"><span class="">입고</span><span class="">재고</span><span class="on">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div></div></div><div class="mini"><div class="cap2">작업중</div><div class="phone mini-ph"><div class="ios-status"><span>9:41</span><span class="right"><span class="sig"><i></i><i></i><i></i><i></i></span><span class="bat"><i></i></span></span></div><div class="ph-top"><h1>상품</h1><span class="pcbtn">🖥 PC화면으로</span></div><div class="tabwrap"><div class="stabs"><span class="">입고</span><span class="">재고</span><span class="">품절<i class="bd red">3</i></span><span class="on">작업중</span></div></div></div></div></div></div>
+</div>
+<div class="sec-pc">
+<div class="cap">맥 <b>1440px</b> — 상품 › 품절 <span style="opacity:.65">(가로 1120px로 줄여 표시)</span></div>
+<div class="pc"><div class="titlebar"><span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="wtitle">제로가드닝 통합관리 — 상품</span></div><div class="pc-body"><div class="pc-side"><div class="logo">제로가드닝</div><div class="slogan">GARDENING FROM ZERO</div><a class="on"><span class="ic">🌿</span>상품</a><a><span class="ic">🛒</span>주문 관리</a><a><span class="ic">🏢</span>업체 관리</a><a><span class="ic">🌱</span>상품소싱</a><a><span class="ic">📝</span>메모</a><a><span class="ic">💬</span>지시함</a></div><div class="pc-main"><div class="pc-head"><h2>상품</h2><div class="path">상품 › 품절</div></div><div class="pc-tabs"><span class="">입고</span><span class="">재고</span><span class="on">품절<i class="bd red">3</i></span><span class="">작업중</span></div><div class="card"><div class="ch"><h3>품절 요청</h3><div class="fchips"><span class="fchip on">전체<span class="n">5</span></span><span class="fchip">실패<span class="n">1</span></span><span class="fchip">진행중<span class="n">2</span></span><span class="fchip">완료<span class="n">2</span></span></div><input class="inp srch" placeholder="품목코드 · 유통명 · 학명"></div><div class="plist"><div class="pcr bad open"><div class="hd"><span class="ktag">품절</span><div class="who"><span class="nm">휴케라 '팰리스퍼플'</span><span class="cd">HEP01-15</span></div><span class="tt">10/16 14:02</span><div class="bar lb"><div class="sg ok"><i></i><span>카페24</span></div><div class="sg ok"><i></i><span>심폴</span></div><div class="sg ok"><i></i><span>스마트스토어</span></div><div class="sg ok"><i></i><span>쿠팡</span></div><div class="sg ok"><i></i><span>G마켓</span></div><div class="sg fail"><i></i><span>롯데ON</span></div><div class="sg fail"><i></i><span>11번가</span></div></div><div class="rt"><span class="fn">실패 2</span><span class="frac bad"><b>5</b>/7</span></div><span class="chev">⌃</span></div><table class="mt"><colgroup><col style="width:150px"><col style="width:110px"><col style="width:110px"><col style="width:90px"><col><col style="width:90px"></colgroup><tr><th>마켓</th><th>방식</th><th>상태</th><th>시각</th><th>사유</th><th></th></tr><tr class="ok"><td class="mk">카페24</td><td class="dim">재고 0</td><td><span class="st ok">완료</span></td><td class="dim">14:02</td><td class="why"></td><td></td></tr><tr class="ok"><td class="mk">심폴</td><td class="dim">재고 0</td><td><span class="st ok">완료</span></td><td class="dim">14:04</td><td class="why"></td><td></td></tr><tr class="ok"><td class="mk">스마트스토어</td><td class="dim">재고 0</td><td><span class="st ok">완료</span></td><td class="dim">14:05</td><td class="why"></td><td></td></tr><tr class="ok"><td class="mk">쿠팡</td><td class="dim">판매중지</td><td><span class="st ok">완료</span></td><td class="dim">14:05</td><td class="why"></td><td></td></tr><tr class="ok"><td class="mk">G마켓</td><td class="dim">판매중지</td><td><span class="st ok">완료</span></td><td class="dim">14:06</td><td class="why"></td><td></td></tr><tr class="fail"><td class="mk">롯데ON</td><td class="dim">판매중지</td><td><span class="st fail">실패</span></td><td class="dim"></td><td class="why">응답 없음 (시간 초과)</td><td class="rdc"><span class="btn sm rd">다시</span></td></tr><tr class="fail"><td class="mk">11번가</td><td class="dim">판매중지</td><td><span class="st fail">실패</span></td><td class="dim"></td><td class="why">로그인이 풀려 있음</td><td class="rdc"><span class="btn sm rd">다시</span></td></tr></table><div class="redo redo-pc"><span class="btn">품절 전체 다시</span><span class="btn warn">실패만 다시<span class="n">(2곳)</span></span></div></div><div class="pcr "><div class="hd"><span class="ktag back">다시 판매</span><div class="who"><span class="nm">구절초 노랑 10cm</span><span class="cd">CHR01-10</span></div><span class="tt">10/16 14:10</span><div class="bar lb"><div class="sg ok"><i></i><span>카페24</span></div><div class="sg ok"><i></i><span>심폴</span></div><div class="sg run"><i></i><span>스마트스토어</span></div><div class="sg wait"><i></i><span>쿠팡</span></div><div class="sg wait"><i></i><span>G마켓</span></div><div class="sg wait"><i></i><span>롯데ON</span></div><div class="sg wait"><i></i><span>11번가</span></div></div><div class="rt"><span class="frac "><b>2</b>/7</span></div><span class="chev">⌄</span></div></div><div class="pcr "><div class="hd"><span class="ktag">품절</span><div class="who"><span class="nm">용담 보라 10cm</span><span class="cd">GEN01-10</span></div><span class="tt">10/16 14:11</span><div class="bar lb"><div class="sg ok"><i></i><span>카페24</span></div><div class="sg wait"><i></i><span>심폴</span></div><div class="sg wait"><i></i><span>스마트스토어</span></div><div class="sg wait"><i></i><span>쿠팡</span></div><div class="sg wait"><i></i><span>G마켓</span></div><div class="sg wait"><i></i><span>롯데ON</span></div><div class="sg wait"><i></i><span>11번가</span></div></div><div class="rt"><span class="frac "><b>1</b>/7</span></div><span class="chev">⌄</span></div></div><div class="pcr done"><div class="hd"><span class="ktag">품절</span><div class="who"><span class="nm">청사초</span><span class="cd">CAR01-10</span></div><span class="tt">10/16 11:40</span><div class="bar lb"><div class="sg ok"><i></i><span>카페24</span></div><div class="sg ok"><i></i><span>심폴</span></div><div class="sg ok"><i></i><span>스마트스토어</span></div><div class="sg ok"><i></i><span>쿠팡</span></div><div class="sg ok"><i></i><span>G마켓</span></div><div class="sg ok"><i></i><span>롯데ON</span></div><div class="sg ok"><i></i><span>11번가</span></div></div><div class="rt"><span class="frac done"><b>7</b>/7</span></div><span class="chev">⌄</span></div></div><div class="pcr done"><div class="hd"><span class="ktag">품절</span><div class="who"><span class="nm">몬스테라 15cm화분</span><span class="cd">MON01-15</span></div><span class="tt">10/15 17:20</span><div class="bar lb"><div class="sg ok"><i></i><span>카페24</span></div><div class="sg ok"><i></i><span>심폴</span></div><div class="sg ok"><i></i><span>스마트스토어</span></div><div class="sg ok"><i></i><span>쿠팡</span></div><div class="sg ok"><i></i><span>G마켓</span></div><div class="sg ok"><i></i><span>롯데ON</span></div><div class="sg ok"><i></i><span>11번가</span></div></div><div class="rt"><span class="frac done"><b>7</b>/7</span></div><span class="chev">⌄</span></div></div></div></div></div></div></div>
+<div class="sect"><div class="cap">상품 속탭 4개 — 입고 · 재고 · 품절 · 작업중</div><div class="pcstrip"><div class="pst"><div class="cap2">입고</div><div class="pst-in"><span class="h2">상품</span><div class="pc-tabs"><span class="on">입고</span><span class="">재고</span><span class="">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div></div><div class="pst"><div class="cap2">재고</div><div class="pst-in"><span class="h2">상품</span><div class="pc-tabs"><span class="">입고</span><span class="on">재고</span><span class="">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div></div><div class="pst"><div class="cap2">품절</div><div class="pst-in"><span class="h2">상품</span><div class="pc-tabs"><span class="">입고</span><span class="">재고</span><span class="on">품절<i class="bd red">3</i></span><span class="">작업중</span></div></div></div><div class="pst"><div class="cap2">작업중</div><div class="pst-in"><span class="h2">상품</span><div class="pc-tabs"><span class="">입고</span><span class="">재고</span><span class="">품절<i class="bd red">3</i></span><span class="on">작업중</span></div></div></div></div><div class="bdemo"><span class="pc-tabs"><span>품절<i class="bd red">3</i></span></span><span class="k">실패 있음</span><span class="pc-tabs"><span>품절<i class="bd">2</i></span></span><span class="k">진행중만</span><span class="pc-tabs"><span>품절</span></span><span class="k">전부 완료</span></div></div>
+</div>
+</body></html>
