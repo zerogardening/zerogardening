@@ -24,7 +24,7 @@ import 원고파일 as 원고                                        # noqa: E40
 창고 = 'https://vjqfhwrgrocapcyndgtx.supabase.co/storage/v1/'
 버킷 = 'product'
 뿌리 = Path(__file__).resolve().parents[2]
-RENDER = 뿌리 / '블로그' / '_도구' / 'render.py'
+상세렌더 = 뿌리 / '상품' / '_도구' / '상세렌더.py'
 내보낼방 = Path.home() / '상세페이지'   # 🔴 제작요청.py 와 같은 자리. 그쪽을 import 하지 않는다 — 아직 커밋 안 된 파일이라 죽는다
 # 🔴 2026-09-23 — 「다시 만들기」는 그림(렌더)만 한다. 카페24 반영은 절대 여기서 자동으로 안 쏜다.
 #    한 번 「이미 등록된 상품이면 뽑을 때마다 카페24 상세설명도 같이 올린다」로 만들었다가
@@ -155,7 +155,7 @@ def 맞추기(코드, 방, 줄들, 구근=False):
 # ══════════════════════════════════════════════ 다시 만들기
 
 def 뽑기(코드, 방):
-    """편집.py 1516-1545 의 render.py → sips → 복사 블록을 그대로 옮겼다"""
+    """편집.py 상세 다시 뽑기 블록과 같다 — 상세렌더.py(2배) → 복사 → 창고"""
     파일 = 원고.제작본(방, 코드)
     if not 파일.exists():
         return [], '제작.html 이 아직 없습니다 — 첫 조립은 사람·에이전트 몫입니다'
@@ -169,18 +169,18 @@ def 뽑기(코드, 방):
     for i in '123456':
         if 'id="s%s"' % i not in 원문:
             continue
-        png, jpg = 파일.parent / ('%s.png' % i), 파일.parent / ('%s.jpg' % i)
-        전 = png.stat().st_mtime if png.exists() else 0
-        r = subprocess.run(['python3', str(RENDER), str(파일), str(png), '--sel', '#s%s' % i, '--screen'],
+        jpg = 파일.parent / ('%s.jpg' % i)
+        전 = jpg.stat().st_mtime if jpg.exists() else 0
+        # 🔴 상세는 2배(폭 2000 · 2MB 이하)로 그린다 — 상세렌더.py 와 같은 그림 (10/21).
+        #    예전 render.py(1배)로 다시 그리면 10/20 에 2배로 올린 상세가 옛 화질로 덮였다
+        r = subprocess.run(['python3', str(상세렌더), str(파일), str(파일.parent), '--구역', i],
                            capture_output=True, text=True)
-        if not png.exists() or png.stat().st_mtime == 전:
+        if not jpg.exists() or jpg.stat().st_mtime == 전:
             끝 = [t for t in (r.stdout + r.stderr).strip().split('\n') if t.strip()]
             지적.append('%s: %s' % (i, 끝[-1][:90] if 끝 else '까닭 모름'))
             continue
         if r.returncode != 0:
-            지적 += ['%s — %s' % (i, t.strip(' ·')) for t in r.stdout.split('\n') if t.strip().startswith('·')]
-        subprocess.run(['sips', '-s', 'format', 'jpeg', '-s', 'formatOptions', '82',
-                        str(png), '--out', str(jpg)], capture_output=True)
+            지적 += ['%s — %s' % (i, t.split(':', 1)[-1].strip()) for t in r.stdout.split('\n') if '🔴' in t]
         if jpg.exists():
             shutil.copy2(jpg, 갈곳 / ('%s.jpg' % i))
             # 🔴 `발행` 이 아니라 `pub` 이다 — Supabase Storage 는 키에 한글을 못 쓴다
