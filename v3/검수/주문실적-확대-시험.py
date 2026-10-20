@@ -192,6 +192,8 @@ def PC시험(브, 이름, 심기함수, 인자, 기간칩=None):
     pc.evaluate("() => ZG.주문.다시그리기()"); pc.wait_for_timeout(300)
     pc.click('.pc-tabs button:has-text("주문실적")'); pc.wait_for_timeout(500)
     if 기간칩: pc.click('.기간줄 .fchip:has-text("%s")' % 기간칩); pc.wait_for_timeout(500)
+    # 이익 칸(27단계)이 위에 생겨 차트가 첫 화면 밖으로 내려갔다 — 차트까지 내려가서 마우스를 올린다
+    pc.locator('.주문실적 .추이').scroll_into_view_if_needed(); pc.wait_for_timeout(200)
     a = pc.evaluate(읽기); n = a['수']
     cx, cy = a['왼'] + a['안폭'] * 0.3, a['y'] + a['h'] * 0.5
     pc.mouse.move(cx, cy); pc.wait_for_timeout(150)
@@ -220,6 +222,7 @@ def PC시험(브, 이름, 심기함수, 인자, 기간칩=None):
     pc.mouse.wheel(0, 300); pc.wait_for_timeout(200)
     본다(이름 + ' PC 세로 휠은 페이지 스크롤', pc.evaluate("() => scrollY") != scroll0 and pc.evaluate(읽기)['수'] == d['수'])
     pc.evaluate("() => scrollTo(0, 0)"); pc.wait_for_timeout(100)
+    pc.locator('.주문실적 .추이').scroll_into_view_if_needed(); pc.wait_for_timeout(100)
     z = pc.evaluate(읽기)
     pc.mouse.dblclick(z['왼'] + z['안폭'] * 0.5, z['y'] + z['h'] * 0.5); pc.wait_for_timeout(150)
     z = pc.evaluate(읽기)
