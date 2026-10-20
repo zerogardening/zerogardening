@@ -93,9 +93,22 @@ window.ZG = window.ZG || {};
     });
     return 만들기('div', { class: '날짜줄' }, [칸, 저장]);
   }
+  /* 특이사항 메모가 있으면 이름 뒤 ★ — 눌러 볼 것 없이 손님 이름에서 바로 보이게 (10/20 우람님) */
+  function 이름(r) {
+    var 메모 = String(r.메모 || '').trim(), 글 = 자().제목(r).글;
+    var e = 만들기('b', { class: 'nm', text: 메모 && 글 !== 메모 ? 글 + ' ★' : 글 });
+    if (메모) e.title = 메모;
+    return e;
+  }
+  function 고치기(r) {
+    if (u.폰인가()) ZG.주문.열기('목록');
+    ZG.견적탭.탭으로('문자');   // 🔴 탭으로가 뷰를 새 문자로 돌린다 — 고침 판은 그 다음에
+    ZG.문자주문.고치기로(r.id);
+  }
   function 끝단추들(r, 못, 다시) {
     return [
       못 && !r.원본줄들 ? 단추('주소 입력', 'sm', function () { 주소열기(r, 다시); }) : null,
+      단추('고치기', 'sm', function () { 고치기(r); }),
       단추('지금 올리기', 'sm main', function () { 지금올리기(r, 다시); })
     ];
   }
@@ -111,7 +124,7 @@ window.ZG = window.ZG || {};
     var dd = 못 ? 만들기('span', { class: 'dd rd', text: '예약일 ' + 날요일(r.예약일) })
       : r.예약일 ? 만들기('span', { class: 'dd', text: 예().D글(r.예약일) }) : 만들기('span', { class: 'dd gr', text: '날짜 미정' });
     var 카드 = 만들기('div', { class: 'rc' + (못 ? ' bad' : r.예약일 ? '' : ' und') + (판.방금[r.id] ? ' 방금' : '') }, [
-      만들기('div', { class: 'r1' }, [만들기('b', { class: 'nm', text: 자().제목(r).글 }), dd]),
+      만들기('div', { class: 'r1' }, [이름(r), dd]),
       만들기('div', { class: 'ds', text: 품글(r) }),
       만들기('div', { class: 'r3' }, [만들기('span', { class: 'amt', text: 금액(r) }),
         r.예약일 && !못 ? 만들기('span', { class: 'dt', html: '예약일 <b>' + 날요일(r.예약일) + '</b>' }) : null])
@@ -127,7 +140,7 @@ window.ZG = window.ZG || {};
   function PC줄(r, 못, 다시) {
     var 사 = 못 ? 예().사유(r) : null;
     var 칸들 = [
-      만들기('b', { class: 'nm', text: 자().제목(r).글 }),
+      이름(r),
       만들기('span', { class: 'it', text: 품글(r) }),
       만들기('span', { class: 'am', text: 금액(r) })
     ];
