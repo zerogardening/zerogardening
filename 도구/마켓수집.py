@@ -95,9 +95,10 @@ def 한바퀴(억지=False):
     시작 = 지금()
     적기(dict(내용, 시작=시작, 끝='', 결과=''))
     # 🔴 다른 작업이 크롬을 쥐고 있으면 45초까지 기다린다 — 수집 25초를 더해도 v3 의 90초 안이다
-    자물쇠 = Path('/tmp/zg_마켓플러스.lock')
+    sys.path.insert(0, str(도구.parent))
+    from 크롬잠금 import 비었나            # 🔴 10/20 회사 공용 크롬 잠금
     for _ in range(9):
-        if not 자물쇠.exists():
+        if 비었나():
             break
         time.sleep(5)
     try:

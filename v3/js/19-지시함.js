@@ -186,7 +186,7 @@ window.ZG = window.ZG || {};
 
       var 상태 = c.상태 || '대기';
       if (상태 === '하는중') { 흐름칸.appendChild(기다림풍선()); return; }
-      if (상태 === '대기') return;              // 안내는 아래에 한 번만 단다
+      if (상태 === '대기' || 상태 === '허브로') return;   // 안내는 아래에 한 번만 단다
       if (!c.답장) return;
       흐름칸.appendChild(말풍선(c.답장, 상태 === '됨' ? '맥' : '맥 탈', c.답한때, c.커밋 || ''));
     });
@@ -200,6 +200,9 @@ window.ZG = window.ZG || {};
       흐름칸.appendChild(만들기('div', { class: '지시-날',
         text: 기다림 + '건 — 맥이 켜지면 시작합니다' }));
     }
+    // 품절·판매 말고는 허브 창이 받아 팀에 나눈다 (10/20) — 허브가 꺼져 있으면 여기서 기다린다
+    var 허브 = 담긴것.filter(function (줄) { return (줄.내용 || {}).상태 === '허브로'; }).length;
+    if (허브) 흐름칸.appendChild(만들기('div', { class: '지시-날', text: 허브 + '건 허브 대기 중' }));
   }
 
   function 바닥으로() { 흐름칸.scrollTop = 흐름칸.scrollHeight; }
@@ -229,7 +232,7 @@ window.ZG = window.ZG || {};
   function 기다리는수() {
     var n = 담긴것.filter(function (줄) {
       var s = (줄.내용 || {}).상태 || '대기';
-      return s === '대기' || s === '하는중';
+      return s === '대기' || s === '하는중' || s === '허브로';
     }).length;
     return n ? n + '건 기다리는 중' : '';
   }
