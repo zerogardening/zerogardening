@@ -108,10 +108,21 @@ window.ZG = window.ZG || {};
   /* 🔴 연결 부품(supabase-js)을 못 받으면 01b 가 조용히 로컬 전용으로 돈다 — 품절 단추가 서버에 안 닿았다 (10/7 타르다).
      1분 기다리지 않고 바로 띄운다. 누르면 새로고침해 부품을 다시 받는다 */
   function 끊김() { return !!(ZG.서버 && ZG.서버.로그인됨 && !ZG.서버.켜짐); }
+  /* 🔴 주문 수집 실패도 다음에 받을 때까지 띄워 둔다 — 심폴이 로그인 실패로 10/17~21 나흘을 토스트만 띄우고
+     멈춰 있었고, 그동안 들어온 주문이 안 나갔다. 새로고침해도 남게 이 기기에 적어 둔다 (10/21) */
+  var 수집키 = 'zg.v3.수집실패', 수집 = {};
+  try { 수집 = JSON.parse(localStorage.getItem(수집키) || '{}') || {}; } catch (e) { 수집 = {}; }
+  function 수집결과(이름, 실패글) {
+    if (실패글) 수집[이름] = String(실패글).slice(0, 40); else delete 수집[이름];
+    try { localStorage.setItem(수집키, JSON.stringify(수집)); } catch (e) {}
+    표시();
+  }
   function 띠글() {
     var n = 밀린건수(), 못씀 = 큐못씀 || (ZG.저장소 && ZG.저장소.저장실패 && ZG.저장소.저장실패() > 0);
     return [끊김() ? '⚠ 서버 연결 안 됨 — 눌러서 새로고침' : '', 못씀 ? '⚠ 이 기기에 저장 실패' : '',
-            n ? '⚠ 서버에 못 올라간 기록 ' + n + '건' : ''].filter(Boolean).join(' · ');
+            n ? '⚠ 서버에 못 올라간 기록 ' + n + '건' : '']
+      .concat(Object.keys(수집).map(function (k) { return '⚠ ' + k + ' 주문 수집 실패 — ' + 수집[k]; }))
+      .filter(Boolean).join(' · ');
   }
   function 표시() {
     var 글 = 띠글();
@@ -153,5 +164,5 @@ window.ZG = window.ZG || {};
     setTimeout(function () { if (띠 && scrollY > 0 && scrollY <= 띠.offsetHeight) scrollTo(0, 0); }, 0);
   });
 
-  ZG.보내기 = { 줄: 줄, 삭제: 삭제, 설정: 설정, 깨우기: 깨우기, 건수: 건수, 비우기: 비우기, 표시: 표시 };
+  ZG.보내기 = { 줄: 줄, 삭제: 삭제, 설정: 설정, 깨우기: 깨우기, 건수: 건수, 비우기: 비우기, 표시: 표시, 수집결과: 수집결과 };
 })(window.ZG);

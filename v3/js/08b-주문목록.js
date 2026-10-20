@@ -365,6 +365,9 @@ window.ZG = window.ZG || {};
      🔴 아이맥이 꺼져 있으면 120초 뒤 포기한다(다른 작업이 크롬을 쥐면 75초도 걸렸다). 남은 건 다음 자동수집(30분)이 메운다.
      🔴 내용을 통째로 덮지 않고 합친다 — 아이맥이 적은 「시작」(2분 안 재수집 막기)이 지워진다 */
   var 마켓중 = false;
+  /* 수집 실패는 맨 위 빨간 띠로 — 다음에 받으면 걷힌다 (01c 수집결과 · 10/21) */
+  function 수집알림(이름, 실패글) { if (ZG.보내기 && ZG.보내기.수집결과) ZG.보내기.수집결과(이름, 실패글 || null); }
+
   function 마켓수집(supa) {
     if (마켓중) return Promise.resolve(false);
     마켓중 = true;
@@ -387,11 +390,13 @@ window.ZG = window.ZG || {};
         });
       })();
     }).then(function (결과) {
-      if (결과.charAt(0) !== '❌') return true;
+      if (결과.charAt(0) !== '❌') { 수집알림('마켓'); return true; }
       u.토스트('마켓 수집 못 함 (' + 결과.slice(2, 50) + ')');
+      수집알림('마켓', 결과.slice(2, 50));
       return false;
     }).catch(function (e) {
       u.토스트('마켓 수집 못 함 — ' + String((e && e.message) || e).slice(0, 50));
+      수집알림('마켓', String((e && e.message) || e));
       return false;
     }).then(function (됐나) { 마켓중 = false; return 됐나; });
   }
@@ -403,6 +408,7 @@ window.ZG = window.ZG || {};
         if (r.error) throw r.error;
         var d = r.data || {};
         if (!d.ok) throw new Error(d.오류 || '알 수 없는 오류');
+        수집알림('카페24');
         if (조용히) { if (d.새것) u.토스트('📥 마켓에서 새 주문 ' + d.새것 + '줄을 받았습니다'); }
         else {
           var 말 = d.새것 ? ('새 주문 ' + d.새것 + '줄을 받았습니다')
@@ -420,6 +426,7 @@ window.ZG = window.ZG || {};
       })
       .catch(function (e) {
         u.토스트('주문수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
+        수집알림('카페24', String((e && e.message) || e));
       });
   }
 
@@ -454,6 +461,7 @@ window.ZG = window.ZG || {};
         if (r.error) throw r.error;
         var d = r.data || {};
         if (!d.ok) throw new Error(d.오류 || '알 수 없는 오류');
+        수집알림('심폴');
         u.토스트('🌿 ' + (d.새것 ? '심폴 새 주문 ' + d.새것 + '줄을 받았습니다'
                                 : '심폴에 새로 들어온 주문이 없습니다'));
         var 종 = (d.짝없음 || []).length;
@@ -467,6 +475,7 @@ window.ZG = window.ZG || {};
       })
       .catch(function (e) {
         u.토스트('심폴 수집 실패 — ' + String((e && e.message) || e).slice(0, 60));
+        수집알림('심폴', String((e && e.message) || e));
       });
   }
 
