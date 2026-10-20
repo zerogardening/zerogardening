@@ -23,6 +23,7 @@ window.ZG = window.ZG || {};
 
   function 표이름(k) { return String(k).replace('zg.v3.', ''); }
   function 키로(표) { return 'zg.v3.' + 표; }
+  var 설정행 = ['동봉카드설정', '키워드', '실적이익설정'];   // v3_공유설정 에서 로컬 객체 키로 받는 행
 
   function 상태() {
     return {
@@ -217,7 +218,7 @@ window.ZG = window.ZG || {};
           /* 사무실 크롬이 꺼져 있는 동안 폰이 보낸 동봉카드 인쇄 요청.
              여기서 바로 뽑지 않는다 — 품목·특성이 아직 안 내려왔을 수 있다. */
           if (r.id === '인쇄대기열') { 밀린인쇄 = r.내용; return; }
-          if (r.id !== '동봉카드설정' && r.id !== '키워드') return;
+          if (설정행.indexOf(r.id) < 0) return;
           저.조용히(true); 저.전체쓰기(키로(r.id), r.내용 || {}); 저.조용히(false);
         });
       })
@@ -265,7 +266,7 @@ window.ZG = window.ZG || {};
     }
 
     if (표 === '공유설정') {
-      if (행.id !== '동봉카드설정' && 행.id !== '키워드') return;
+      if (설정행.indexOf(행.id) < 0) return;
       var 새설정 = 지움 ? {} : (행.내용 || {});
       적어두기(열쇠, 새시각, 새지문);
       if (같은가(저.읽기(키로(행.id)), 새설정)) return;   // 이미 같다 — 메아리

@@ -8,6 +8,7 @@ window.ZG = window.ZG || {};
   var u = ZG.ui, 만들기 = u.만들기, 콤마 = u.콤마;
   function 실() { return ZG.주문실적; }
   function 차() { return ZG.주문실적차트; }
+  function 익() { return ZG.실적이익화면; }
 
   var 상태 = { 뷰: '목록', 기간칩: '최근 30일', 부터: '', 까지: '', 단위: '일', 지표: '매출', 정렬: '매출', 글: '', 폈다: {}, 쪽: 1, 보일수: 20 };
   var 결 = null, 칸 = {};
@@ -21,7 +22,6 @@ window.ZG = window.ZG || {};
   function 단위글() { return { 일: '일간', 주: '주간', 월: '월간' }[상태.단위]; }
   function 칸이름(c) { return c.이름 + (상태.단위 === '일' ? ' ' + c.요일 : ''); }
   function 점(색) { return 만들기('i', { class: 'md', style: 'background:' + 색 }); }
-  function 객단가() { return 결.합계.건수 ? Math.round(결.합계.매출 / 결.합계.건수) : 0; }
 
   /* ── 상태 바꾸기 ── */
   function 기간칩으로(이름) {
@@ -78,24 +78,17 @@ window.ZG = window.ZG || {};
     var 단 = 단위토글(); 단.style.marginLeft = 'auto';
     본문.appendChild(만들기('div', { class: 'fchips 기간줄' }, [
       만들기('span', { class: 'lab', text: '기간' }), 날칸('부터'), 만들기('span', { class: 'tilde', text: '~' }), 날칸('까지')
-    ].concat(기간칩단추들(), [단])));
-    본문.appendChild(만들기('div', { class: 'stat' }, [
-      만들기('div', { html: '<div class="k">매출</div><div class="v">' + 콤마(결.합계.매출) + '<small>원</small></div>' }),
-      만들기('div', { html: '<div class="k">주문</div><div class="v 검">' + 콤마(결.합계.건수) + '<small>건</small></div>' }),
-      만들기('div', { html: '<div class="k">객단가</div><div class="v 검">' + 콤마(객단가()) + '<small>원</small></div>' })
-    ]));
+    ].concat(기간칩단추들(), [단, 익().기어('btn sm')])));
+    익().위(본문, 결, false, 기간글());   // 요약(매출·이익)·마켓별 이익·상품별 이익 (27단계)
     칸.추이 = 본문.appendChild(만들기('div', { class: 'ccard 추이' }));
     칸.마켓 = 본문.appendChild(만들기('div', { class: 'card table-card 마켓표' }));
     칸.상품 = 본문.appendChild(만들기('div', { class: 'card table-card 상품표' }));
   }
 
   function 폰(본문) {
-    본문.appendChild(만들기('div', { class: 'hscroll' }, 기간칩단추들()));
+    본문.appendChild(만들기('div', { class: 'hscroll' }, 기간칩단추들().concat([익().기어('fchip')])));
+    익().위(본문, 결, true, 기간글());
     본문.appendChild(만들기('div', { class: '단위줄' }, [단위토글()]));
-    본문.appendChild(만들기('div', { class: 'sumcard', html:
-      '<div class="k">매출 · ' + 기간글() + '</div><div class="big">' + 콤마(결.합계.매출) + '<small>원</small></div>' +
-      '<div class="two"><div><div class="k">주문</div><div class="v">' + 콤마(결.합계.건수) + '<small>건</small></div></div>' +
-      '<div><div class="k">객단가</div><div class="v">' + 콤마(객단가()) + '<small>원</small></div></div></div>' }));
     칸.추이 = 본문.appendChild(만들기('div', { class: 'ccard 추이' }));
     칸.마켓 = 본문.appendChild(만들기('div', { class: 'ccard 마켓표' }));
     칸.상품 = 본문.appendChild(만들기('div', { class: '상품칸' }));
@@ -420,7 +413,7 @@ window.ZG = window.ZG || {};
       if (폈) 표.appendChild(만들기('tr', { class: 'det' }, [만들기('td', { colspan: '8' }, [PC펼침(p)])]));
     });
     몸.appendChild(표);
-    몸.appendChild(쪽줄(총쪽, 것들.length));
+    몸.appendChild(쪽줄(총쪽, 것들.length, 상태.쪽, function (쪽) { 상태.쪽 = 쪽; PC상품(); }));
   }
 
   function 펼침표(머리글, 줄들) {
@@ -458,21 +451,22 @@ window.ZG = window.ZG || {};
     ]);
   }
 
-  function 쪽줄(총쪽, 모두) {
+  /* 08x 상품별 이익도 같이 쓴다 — 지금 쪽과 옮겨 갈 곳은 부르는 쪽이 준다 */
+  function 쪽줄(총쪽, 모두, 지금, 갈때) {
     var 줄 = 만들기('div', { class: 'pager' });
     function 단추(글, 쪽, 막힘) {
       var b = 만들기('button', { type: 'button', text: 글, disabled: 막힘 ? 'disabled' : null });
-      b.addEventListener('click', function () { 상태.쪽 = 쪽; PC상품(); });
+      b.addEventListener('click', function () { 갈때(쪽); });
       return b;
     }
-    줄.appendChild(단추('‹', Math.max(1, 상태.쪽 - 1), 상태.쪽 <= 1));
+    줄.appendChild(단추('‹', Math.max(1, 지금 - 1), 지금 <= 1));
     var 앞 = 0;
     for (var i = 1; i <= 총쪽; i++) {
-      if (총쪽 > 7 && i > 2 && i < 총쪽 - 1 && Math.abs(i - 상태.쪽) > 1) { if (앞 !== -1) 줄.appendChild(만들기('i', { text: '…' })); 앞 = -1; continue; }
+      if (총쪽 > 7 && i > 2 && i < 총쪽 - 1 && Math.abs(i - 지금) > 1) { if (앞 !== -1) 줄.appendChild(만들기('i', { text: '…' })); 앞 = -1; continue; }
       앞 = i;
-      줄.appendChild(i === 상태.쪽 ? 만들기('b', { text: String(i) }) : 단추(String(i), i, false));
+      줄.appendChild(i === 지금 ? 만들기('b', { text: String(i) }) : 단추(String(i), i, false));
     }
-    줄.appendChild(단추('›', Math.min(총쪽, 상태.쪽 + 1), 상태.쪽 >= 총쪽));
+    줄.appendChild(단추('›', Math.min(총쪽, 지금 + 1), 지금 >= 총쪽));
     줄.appendChild(만들기('span', { text: '상품 ' + 모두 + '개', style: 'margin-left:var(--space-md)' }));
     return 줄;
   }
@@ -530,5 +524,5 @@ window.ZG = window.ZG || {};
   function 요약() { return { 왼: '', 오: '' }; }
   function 목록으로() { 다시(); }
 
-  ZG.주문실적화면 = { 그리기: 그리기, 상태: 상태, 제목: 제목, 요약: 요약, 목록으로: 목록으로 };
+  ZG.주문실적화면 = { 그리기: 그리기, 상태: 상태, 제목: 제목, 요약: 요약, 목록으로: 목록으로, 쪽줄: 쪽줄 };
 })(window.ZG);
