@@ -1090,21 +1090,9 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .dn{font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold); color:#5F3DA0; white-space:nowrap}
 .문자주문 .dn.due{color:#C2410C}
 .문자주문 .문카드 .r1 .dn{margin-left:auto}
-.문자주문 .문카드 .품{font-size:var(--font-sm); color:var(--color-text-sub); margin-top:var(--space-xs); font-weight:var(--weight-medium); cursor:pointer}
-.문자주문 .문카드.때됨{box-shadow:0 0 0 2px #F76707, var(--shadow-card)}
 .문자주문 .문카드 .nm.tel{white-space:nowrap; font-size:var(--font-lg)}
-.문자주문 .예약머리{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-md); font-weight:var(--weight-bold); color:var(--color-text); padding:var(--space-xs) var(--space-2xs) 0}
-.문자주문 .예약머리 .r{margin-left:auto; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
-.문자주문 .예약머리 .r b{color:var(--color-text); font-variant-numeric:tabular-nums}
-.문자주문 .예약머리 .dn{font-size:var(--font-sm)}
-.문자주문 .예약머리.때됨{color:#C2410C}
-.문자주문 .받은머리 .ago{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .문자주문 .btn.잠김:disabled{opacity:1; color:var(--color-text-hint); background:var(--color-seg-bg); box-shadow:none}
-.문자주문 .fchip.예약 .점{display:inline-block; width:7px; height:7px; border-radius:50%; background:#F76707; margin-left:5px; vertical-align:1px}
-.문자주문 .fchip.on.예약{background:#5F3DA0; border-color:#4B2F82}
-.문자주문 .fchip.on.예약 .점{background:#FFD8A8}
 .문자주문 .cols > .cl{display:flex; flex-direction:column; gap:var(--space-md)}
-.문자주문 .cal .d i.rv{background:#F76707}
 
 /* 펼친 판 예약칸 · 날짜판 */
 .문자주문 .예약필드{display:flex; flex-direction:column; gap:var(--space-sm)}
@@ -1140,32 +1128,8 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .날짜판 .cal .d.on{background:#5F3DA0; color:#fff; box-shadow:none}
 .문자주문 .날짜판 .cal .d.today{box-shadow:0 0 0 2px var(--color-accent)}
 
-/* 예약 갈래 두 구역 — 폰 */
-.문자주문 .구역머리{display:flex; align-items:center; gap:var(--space-sm); padding:10px 14px; border-radius:var(--radius-lg); background:#5F3DA0; color:#fff; font-weight:var(--weight-bold); font-size:var(--font-lg); letter-spacing:-.02em}
-.문자주문 .구역머리 .r{margin-left:auto; font-size:var(--font-xs); font-weight:var(--weight-semibold); opacity:.9; white-space:nowrap}
-.문자주문 .구역머리 .r b{font-variant-numeric:tabular-nums}
-.문자주문 .구역머리.미정{background:#F8F5FD; color:#5F3DA0; border:1.5px dashed #A992D6}
-.문자주문 .구역머리.미정 .r{opacity:1; color:#5F3DA0}
-.문자주문 .구역사이{border-top:3px double rgba(0,0,0,.18); margin:var(--space-lg) 0 var(--space-xs)}
-
-/* 예약 갈래 두 구역 — PC */
-.문자주문 tr.묶음 > td{background:#F4F4F6; font-weight:var(--weight-bold); font-size:var(--font-sm); padding-top:8px; padding-bottom:8px}
-.문자주문 tr.묶음 .r{float:right; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
-.문자주문 tr.묶음 .r b{color:var(--color-text)}
-.문자주문 tr.묶음 .dn{display:inline; margin-left:6px}
-.문자주문 tr.묶음 .ago{margin-left:6px; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
-.문자주문 tr.묶음.때됨 > td{background:#FFF0E0; color:#C2410C}
-.문자주문 tr.때됨 > td{background:#FFF8F0}
 .문자주문 td .dn{display:block; margin-top:1px}
-.문자주문 td.예약칸{white-space:nowrap}
-.문자주문 td .이름밑{margin-top:4px}
 .문자주문 td.상태칸 .예약표{margin-top:4px}
-.문자주문 tr.구역줄 > td{background:#5F3DA0; color:#fff; font-weight:var(--weight-bold); font-size:var(--font-md); padding:9px 12px; border-bottom:none}
-.문자주문 tr.구역줄 .r{float:right; font-size:var(--font-xs); font-weight:var(--weight-semibold); opacity:.9}
-.문자주문 tr.구역줄.미정 > td{background:#F8F5FD; color:#5F3DA0; border-top:1.5px dashed #A992D6; border-bottom:1.5px dashed #A992D6}
-.문자주문 tr.구역줄.미정 .r{opacity:1}
-.문자주문 tr.틈 > td{height:18px; padding:0; background:#fff; border-bottom:3px double rgba(0,0,0,.18)}
-.문자주문 tr.틈2 > td{height:10px; padding:0; background:#fff; border-bottom:none}
 
 /* 문자주문 내역 인쇄 — 널서리 출고 이력 인쇄 그대로(body 직계로 옮기고 클래스로 나머지를 끈다) */
 .doc문자{display:none}
@@ -1203,8 +1167,6 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 
 /* ── 18b ② 주문탭 → 예약 (시안 18b ③) — .넘김 은 주문 조회 화면, 팝업은 body 에 붙어 .askbox.넘김창 아래로 가둔다 ── */
 .문자주문 .옴{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:#EEF3FB; color:#3A5A8C; border:var(--border-width) solid #CBD8EC}
-.문자주문 tr.옮겨옴 > td{background:#F3EFFA}
-.문자주문 .문카드.옮겨옴{box-shadow:0 0 0 2px #5F3DA0, var(--shadow-card)}
 .btn.넘김{color:#5F3DA0; border-color:#CDBFE8}
 .btn.넘김:disabled{opacity:.4; color:var(--color-text-sub); border-color:var(--color-border)}
 .btn.넘김큰{width:100%; min-height:50px; font-size:var(--font-lg); font-weight:var(--weight-bold); border-radius:var(--radius-xl)}
@@ -1595,3 +1557,76 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .askbox .넘김표 .l{display:flex; gap:var(--space-sm); font-weight:var(--weight-semibold); color:var(--color-text)}
 .askbox .넘김표 .l .q{margin-left:auto; font-variant-numeric:tabular-nums}
 .askbox .넘김표 .t{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-muted)}
+
+/* ── 26 주문탭 「예약」 하위탭 (시안 26) — .rc .nm .dd .st 가 흔한 이름이라 .예약탭 아래에 가둔다 ── */
+.예약탭{--bl:#1A56C4; --blbg:#E8F0FE; display:flex; flex-direction:column; gap:10px}
+.예약탭 .ico{width:13px; height:13px; flex-shrink:0}
+.예약탭 .fchip{flex-shrink:0}
+.예약탭 .fchip.wc{color:var(--color-danger); border-color:var(--color-danger-border)}
+.예약탭 .fchip.wc.on{color:#fff; background:var(--color-danger); border-color:var(--color-danger)}
+.예약탭.폰 .fchips.칩넘침{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
+.예약탭 .hsec{font-size:13px; font-weight:var(--weight-bold); color:var(--color-text-muted); padding:6px 2px 0; display:flex; gap:6px; align-items:center}
+.예약탭 .hsec i{font-style:normal; background:#E4E4E8; color:var(--color-text-sub); border-radius:10px; padding:0 8px; font-size:12px}
+.예약탭 .hsec.rd{color:var(--color-danger)}
+.예약탭 .hsec.rd i{background:var(--color-danger); color:#fff}
+.예약탭 .빈{padding:var(--space-xl); text-align:center; color:var(--color-text-muted)}
+.예약탭 .nm{font-weight:var(--weight-bold); letter-spacing:-.02em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.예약탭 .dd{margin-left:auto; font-size:13px; font-weight:var(--weight-bold); color:var(--bl); background:var(--blbg); padding:2px 10px; border-radius:99px; white-space:nowrap}
+.예약탭 .dd.gr{color:#6E6E73; background:#ECECEF}
+.예약탭 .dd.rd{color:#fff; background:var(--color-danger)}
+.예약탭 .atag{display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:var(--weight-semibold); color:var(--color-accent-dark); background:var(--color-accent-bg); border:1px solid var(--color-accent-border); padding:3px 9px; border-radius:99px; white-space:nowrap}
+.예약탭 .atag.gr{color:#6E6E73; background:#F0F0F3; border-color:#E0E0E4}
+.예약탭 .wmsg{display:flex; align-items:center; gap:5px; color:var(--color-danger); font-weight:var(--weight-bold); font-size:13.5px; background:var(--color-danger-bg); border:1px solid var(--color-danger-border); padding:5px 9px; border-radius:8px}
+.예약탭 .wmsg .ico{width:16px; height:16px}
+.예약탭 .날짜줄{display:flex; gap:8px; align-items:center}
+.예약탭 .날짜줄 .inp{flex:1; min-width:0}
+.예약탭 .주소자리{margin-top:10px}
+/* 폰 카드 */
+.예약탭 .rc{background:#fff; border-radius:var(--radius-xl); padding:12px 14px 12px 17px; box-shadow:var(--shadow-card); position:relative; overflow:hidden}
+.예약탭 .rc::before{content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--bl)}
+.예약탭 .rc.und::before{background:#AEAEB2}
+.예약탭 .rc.bad::before{background:var(--color-danger)}
+.예약탭 .rc.bad{box-shadow:0 0 0 2px var(--color-danger), var(--shadow-card); background:#FFFBFA}
+.예약탭 .rc.방금{box-shadow:0 0 0 2px var(--bl), var(--shadow-card)}
+.예약탭 .rc .r1{display:flex; align-items:center; gap:8px}
+.예약탭 .rc .nm{font-size:18px}
+.예약탭 .rc .ds{margin-top:3px; font-size:15px; color:var(--color-text-muted)}
+.예약탭 .rc .r3{display:flex; gap:12px; align-items:center; margin-top:6px}
+.예약탭 .rc .amt{font-size:16px; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.예약탭 .rc .dt{font-size:14px; color:var(--color-text-sub)}
+.예약탭 .rc .wmsg{margin-top:8px}
+.예약탭 .rc .날짜줄{margin-top:10px}
+.예약탭 .rc .날짜줄 .btn{min-height:40px}
+.예약탭 .rc .r4{display:flex; align-items:center; gap:8px; margin-top:10px}
+.예약탭 .rc .r4 .btn{margin-left:auto; min-height:40px; font-size:14px; padding:0 18px}
+.예약탭 .rc .r4 .btn + .btn{margin-left:0}
+/* PC — 구역마다 상자 하나 · 7칸 격자 (시안 PC ①) */
+.card.table-card:has(> .예약탭){background:none; box-shadow:none; padding:0; border:none}
+.예약탭.PC .머리{display:flex; align-items:center; gap:var(--space-md)}
+.예약탭.PC .머리 .sum{margin-left:auto; font-size:13px; color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.예약탭.PC .머리 .sum b{color:var(--color-text)}
+.예약탭 .tbox{background:#fff; border-radius:14px; box-shadow:var(--shadow-card); overflow:hidden}
+.예약탭 .tbox .hsec{padding:12px 18px 8px; font-size:14px}
+.예약탭 .th, .예약탭 .tr{display:grid; grid-template-columns:96px minmax(0,1fr) 84px 100px 50px 210px 170px; gap:8px; align-items:center; padding:0 18px}
+.예약탭 .th{height:30px; font-size:12px; color:var(--color-text-hint); font-weight:var(--weight-semibold); border-bottom:1px solid var(--color-border-faint)}
+.예약탭 .tr{min-height:56px; border-bottom:1px solid var(--color-border-faint); font-size:14px}
+.예약탭 .tbox > :last-child{border-bottom:none}
+.예약탭 .tr > *{min-width:0}
+.예약탭 .tr .nm{font-size:15px}
+.예약탭 .tr .it{color:var(--color-text-sub)}
+.예약탭 .tr .am{text-align:right; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
+.예약탭 .tr .dd{margin:0; justify-self:start}
+.예약탭 .tr .dt.wd{grid-column:span 2}
+.예약탭 .tr .dt.wd .inp{height:32px; padding:0 8px; font-size:13px}
+.예약탭 .tr .bn{display:flex; gap:6px; justify-content:flex-end; white-space:nowrap}
+.예약탭 .tr.bad{background:#FFFBFA; box-shadow:inset 4px 0 0 var(--color-danger)}
+.예약탭 .tr.bad .wmsg{font-size:12.5px; padding:4px 8px}
+.예약탭 .tr.방금{background:var(--blbg)}
+.예약탭 .판줄{padding:0 18px 14px; border-bottom:1px solid var(--color-border-faint)}
+/* 주문탭 줄의 칩 · 확인창 · 토스트 둘째 줄 */
+.예약옴{display:inline-flex; align-items:center; font-size:12px; font-weight:var(--weight-bold); color:var(--color-accent-dark); background:var(--color-accent-bg); border:1px solid var(--color-accent-border); padding:2px 9px; border-radius:99px; white-space:nowrap}
+.askbox .예약누구{display:block; font-size:14px; color:var(--color-text-sub); background:#F5F5F7; border-radius:10px; padding:9px 12px; margin-bottom:12px; line-height:1.45}
+.askbox .예약누구 b{color:var(--color-text)}
+.askbox .예약날{color:#1A56C4}
+.toast.예약토스트{display:flex; flex-direction:column; gap:3px; border-radius:14px; pointer-events:auto; cursor:pointer}
+.toast.예약토스트 span{font-size:13px; color:#FFB4AE}

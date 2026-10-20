@@ -1,5 +1,5 @@
-/* 20f-예약화면 — 예약칩 · 펼친 판 예약칸 · 날짜판 · 예약 갈래 두 구역 (18단계 설계 §3-3 · 시안 18b ①②).
-   목록 한 줄(폰카드·PC줄)은 20c 것을 받아 쓴다 — 줄 모양이 두 벌로 갈라지지 않게. */
+/* 20f-예약화면 — 예약칩 · 펼친 판 예약칸 · 날짜판 · 주문 → 예약 넘기기창 · 원본판 (18단계 설계 §3-3·§4).
+   예약 목록은 주문탭 「예약」 하위탭(20g) 한 곳이다 (26단계) — 문자주문 탭의 예약 갈래는 걷었다. */
 window.ZG = window.ZG || {};
 (function (ZG) {
   'use strict';
@@ -133,89 +133,6 @@ window.ZG = window.ZG || {};
     b.title = 됨.된다 ? '' : 됨.까닭;
   }
 
-  /* ── 갈래 칩 [오늘 n] [예약 n ●] ── */
-  function 갈래칩(갈래, 오늘수, 고름) {
-    var 목 = 예().예약목록(), 예약들 = 목.지정.concat(목.미정);
-    var 점 = 목.지정.some(function (r) { return 예().때됨(r.예약일); });
-    var 오 = 만들기('button', { type: 'button', class: 'fchip' + (갈래 === '예약' ? '' : ' on'), html: '오늘<span class="n">' + 오늘수 + '</span>' });
-    var 약 = 만들기('button', { type: 'button', class: 'fchip 예약' + (갈래 === '예약' ? ' on' : ''),
-      html: '예약<span class="n">' + 예약들.length + '</span>' + (점 ? '<span class="점"></span>' : '') });
-    오.addEventListener('click', function () { 고름('오늘'); });
-    약.addEventListener('click', function () { 고름('예약'); });
-    return 만들기('div', { class: 'fchips' }, [오, 약]);
-  }
-
-  function 합(목록) { return 목록.reduce(function (a, r) { return a + 자().합계(r).합; }, 0); }
-  function 셈글(목록) { return '<b>' + 목록.length + '</b>건 · <b>' + u.콤마(합(목록)) + '</b>원'; }
-  /* 같은 열쇠끼리 차례를 지키며 묶는다 — 목록이 이미 그 열쇠로 정렬돼 있다 */
-  function 묶기(목록, 열쇠) {
-    var 무리 = [];
-    목록.forEach(function (r) {
-      var k = 열쇠(r), 끝 = 무리[무리.length - 1];
-      if (끝 && 끝.k === k) 끝.줄들.push(r); else 무리.push({ k: k, 줄들: [r] });
-    });
-    return 무리;
-  }
-
-  /* ── 폰 — 위 예약일 지정 / 아래 날짜 미정. 빈 구역은 통째로 안 그린다 ── */
-  function 폰구역(칸, 카드) {
-    var 목 = 예().예약목록(), 줄들 = [];
-    function 넣기(e) { 칸.appendChild(e); 줄들.push(e); }
-    if (목.지정.length) {
-      넣기(만들기('div', { class: '구역머리', html: '📅 예약일 지정<span class="r">' + 셈글(목.지정) + '</span>' }));
-      묶기(목.지정, function (r) { return r.예약일; }).forEach(function (g) {
-        var 됨 = 예().때됨(g.k);
-        넣기(만들기('div', { class: '예약머리' + (됨 ? ' 때됨' : ''),
-          html: 날글(g.k) + '<span class="dn' + (됨 ? ' due' : '') + '">' + 예().D글(g.k) + '</span><span class="r">' + 셈글(g.줄들) + '</span>' }));
-        g.줄들.forEach(function (r) { 넣기(카드(r)); });
-      });
-    }
-    if (목.미정.length) {
-      if (목.지정.length) 넣기(만들기('div', { class: '구역사이' }));
-      넣기(만들기('div', { class: '구역머리 미정', html: '날짜 미정<span class="r">' + 셈글(목.미정) + '</span>' }));
-      묶기(목.미정, function (r) { return String(r.날짜); }).forEach(function (g) {
-        넣기(만들기('div', { class: '예약머리 받은머리',
-          html: 날글(g.k) + ' 받음<span class="ago">' + 예().지난글(g.k) + '</span><span class="r">' + 셈글(g.줄들) + '</span>' }));
-        g.줄들.forEach(function (r) { 넣기(카드(r)); });
-      });
-    }
-    return 줄들;
-  }
-
-  /* ── PC — 시안 18b ② 마크업 순서 그대로 ── */
-  function PC구역(칸, 줄) {
-    var 목 = 예().예약목록(), 줄들 = [];
-    function 넣기(e) { 칸.appendChild(e); 줄들.push(e); }
-    function 한칸(결, html) { return 만들기('tr', { class: 결 }, [만들기('td', { colspan: '6', html: html || '' })]); }
-    if (목.지정.length) {
-      넣기(한칸('구역줄', '📅 예약일 지정<span class="r">' + 목.지정.length + '건 · ' + u.콤마(합(목.지정)) + '원</span>'));
-      넣기(한칸('틈2'));
-      묶기(목.지정, function (r) { return r.예약일; }).forEach(function (g) {
-        var 됨 = 예().때됨(g.k);
-        넣기(한칸('묶음' + (됨 ? ' 때됨' : ''), 날글(g.k) + ' <span class="dn' + (됨 ? ' due' : '') + '">' + 예().D글(g.k) + '</span>' +
-          '<span class="r">' + 셈글(g.줄들) + '</span>'));
-        g.줄들.forEach(function (r) { 줄(r).forEach(넣기); });
-      });
-    }
-    if (목.미정.length) {
-      if (목.지정.length) { 넣기(한칸('틈')); 넣기(한칸('틈2')); }
-      넣기(한칸('구역줄 미정', '날짜 미정<span class="r">' + 목.미정.length + '건 · ' + u.콤마(합(목.미정)) + '원</span>'));
-      넣기(한칸('틈2'));
-      묶기(목.미정, function (r) { return String(r.날짜); }).forEach(function (g) {
-        넣기(한칸('묶음', 날글(g.k) + ' 받음 <span class="ago">' + 예().지난글(g.k) + '</span><span class="r">' + 셈글(g.줄들) + '</span>'));
-        g.줄들.forEach(function (r) { 줄(r).forEach(넣기); });
-      });
-    }
-    return 줄들;
-  }
-
-  /* 폰 카드 둘째 줄 밑 — 품목 요약 · 배송비 */
-  function 품글(r) {
-    var 셈 = 자().합계(r);
-    return (r.품목 || []).map(function (p) { return p.유통명 + ' ' + u.콤마(p.수량); })
-      .concat(셈.배송비 ? ['배송비 ' + u.콤마(셈.배송비)] : []).join(' · ');
-  }
-
   /* ══ ② 주문탭 → 예약 확인 팝업 (§4-3 · 시안 ③ⓑ·PC③ⓐ) ══
      04 확인() 뼈대를 따라 여기서 짓는다 — u.확인 본문은 html 글뿐이라 예약 고름 칸을 못 넣는다 */
   function 흡수배송비(g) {
@@ -286,9 +203,7 @@ window.ZG = window.ZG || {};
         if (답.오류) { 누르는중 = false; 넘김.textContent = '예약으로 넘기기'; 판정(); u.토스트(답.오류); return; }
         닫기();
         if (끝) 끝();
-        if (u.폰인가()) ZG.주문.열기('목록');
-        ZG.견적탭.탭으로('문자');   // 🔴 탭으로가 뷰를 새 문자로 돌린다 — 예약으로는 그 다음에
-        ZG.문자주문.예약으로(답.새id들);
+        ZG.예약탭.보기(답.새id들);
         u.토스트('📅 예약 리스트로 옮김 · ' + (건들[0].수령인 || '') + (건들.length > 1 ? ' 외 ' + (건들.length - 1) + '건' : ''));
       });
     });
@@ -329,7 +244,6 @@ window.ZG = window.ZG || {};
 
   ZG.예약화면 = {
     날글: 날글, 예약칩: 예약칩, D칸: D칸, 날짜판: 날짜판, 예약칸: 예약칸, 잠그기: 잠그기,
-    갈래칩: 갈래칩, 폰구역: 폰구역, PC구역: PC구역, 품글: 품글,
     넘기기창: 넘기기창, 원본판: 원본판, 옴칩: 옴칩
   };
 })(window.ZG);

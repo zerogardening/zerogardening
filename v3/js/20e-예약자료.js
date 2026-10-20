@@ -32,12 +32,14 @@ window.ZG = window.ZG || {};
         .sort(function (a, b) { return 순(String(a.날짜), String(b.날짜)) || 등록순(a, b); })
     };
   }
-  function 예약점표(달) {
-    var 표 = {};
-    자().전부().forEach(function (r) {
-      if (자().예약중(r) && r.예약일 && r.예약일.slice(0, 7) === 달) 표[r.예약일] = true;
-    });
-    return 표;
+  /* 못 올라감 — 저장하지 않고 그때그때 본다. 주소를 채우면 저절로 빠진다 (26단계 §1)
+     원본줄들 줄도 받는분·주소는 옮길 때 첫 줄에서 받아 둔 값이라 같은 칸을 본다 */
+  function 사유(r) {
+    if (!때됨(r.예약일)) return null;
+    if (!String(r.받는분 || '').trim()) return { 짧은: '받는 분 이름 비어 있음', 긴: '받는 분 이름이 비어 있어 올라가지 못함' };
+    if (!자().온주소(r)) return { 짧은: '받는 분 주소 비어 있음', 긴: '받는 분 주소가 비어 있어 올라가지 못함' };
+    if (!(r.원본줄들 || r.품목 || []).length) return { 짧은: '품목 없음', 긴: '품목이 없어 올라가지 못함' };
+    return null;
   }
 
   /* ══ ② 주문탭 → 예약 「보관 이동」 · 되살림 (§4) ══ */
@@ -120,17 +122,22 @@ window.ZG = window.ZG || {};
   }
   /* 🔴 로컬 되읽기만으로는 모자란다 — 01 저장()은 localStorage 쓰기가 실패해도 캐시에 남고,
      큐는 표마다 따로 올라가 주문 삭제만 먼저 서버에 닿을 수 있다. 그래서 서버에서 되읽어 본다 */
-  function 서버확인(짝들) {
+  /* 돌려주는 값: Promise { id: 내용 } (지운 줄은 빠진다) · 서버가 없으면 null · 못 닿으면 거부 */
+  function 서버읽기(ids) {
     var 서 = ZG.서버;
-    if (!(서 && 서.켜짐 && 서.클라이언트)) return Promise.resolve(true);
-    var ids = 짝들.map(function (짝) { return 짝.id; });
+    if (!(서 && 서.켜짐 && 서.클라이언트)) return Promise.resolve(null);
     return Promise.resolve(ZG.보내기 && ZG.보내기.깨우기()).then(function () {
       return 제때(서.클라이언트.from('v3_문자주문').select('id,내용,삭제됨').in('id', ids));
     }).then(function (답) {
-      if (!답 || 답.error) return false;
+      if (!답 || 답.error) throw new Error('서버 답 없음');
       var 표 = {};
       (답.data || []).forEach(function (행) { if (!행.삭제됨) 표[행.id] = 행.내용 || {}; });
-      return 짝들.every(function (짝) { return 표[짝.id] && 다있나(표[짝.id].원본줄들, 짝.지금); });
+      return 표;
+    });
+  }
+  function 서버확인(짝들) {
+    return 서버읽기(짝들.map(function (짝) { return 짝.id; })).then(function (표) {
+      return !표 || 짝들.every(function (짝) { return 표[짝.id] && 다있나(표[짝.id].원본줄들, 짝.지금); });
     }).catch(function () { return false; });
   }
   function 확인되나(짝들, 남은) {
@@ -202,8 +209,74 @@ window.ZG = window.ZG || {};
     return { 번호: 번호 };
   }
 
+  /* ══ 자동 올림 (26단계 §3) — 앱이 뜰 때 · 📥 주문수집 때. 올리기는 손으로 누르는 것과 같은 함수다 ══ */
+  var 기기 = 'k_' + Math.random().toString(36).slice(2, 8);   // 이 창 하나 — 새로고침하면 새 기기다
+  var 도는중 = false;
+  function 사람(r) {
+    return { 받는분: r.받는분, 전화: r.전화, 주소: r.주소, 상세주소: r.상세주소, 우편: r.우편, 배송메시지: r.배송메시지 };
+  }
+  function 올리기(id) {
+    var r = 자().하나(id);
+    if (!r || !자().예약중(r)) return { 오류: '이미 올렸습니다' };
+    return r.원본줄들 ? 되살리기(id) : 자().주문올리기(id, 사람(r));
+  }
+  function 남이잡음(것) { return 것.자동 && 것.자동.기기 !== 기기 && Date.now() - (것.자동.때 || 0) < 60000; }
+  function 서버도때됨(것) { return 것.예약 === true && 것.상태 !== '올림' && 때됨(것.예약일); }
+  function 내것만(ids) {
+    return 서버읽기(ids).then(function (표) {
+      return ids.filter(function (id) { var 것 = 표[id]; return 것 && 서버도때됨(것) && 것.자동 && 것.자동.기기 === 기기; });
+    });
+  }
+  function 닿을때까지(ids, 남은) {
+    return 내것만(ids).then(function (내) {
+      if (내.length === ids.length || 남은 <= 0) return 내;
+      return 쉬기(1000).then(function () { return 닿을때까지(ids, 남은 - 1); });
+    });
+  }
+  /* 🔴 쓰기 전에 서버부터 읽는다 — 로컬이 낡았으면(남이 이미 올림) 그 낡은 줄로 서버를 덮는다
+     ponytail: 서버 잠금이 아니라 되읽기다. 두 기기 쓰기가 1.5초 넘게 엇갈리면 뚫린다 — 겪으면 조건부 update(RPC)로 */
+  function 잡기(후보) {
+    var ids = 후보.map(function (r) { return r.id; });
+    return 서버읽기(ids).then(function (표) {
+      if (!표) return ids;   // 서버 없음(로컬 시험) — 겹칠 남이 없다
+      var 잡을 = 후보.filter(function (r) {
+        var 것 = 표[r.id];
+        return 것 && 서버도때됨(것) && 것.수정일시 === r.수정일시 && !남이잡음(것);
+      }).map(function (r) { return r.id; });
+      if (!잡을.length) return [];
+      잡을.forEach(function (id) { 저().바꾸기(문키(), id, { 자동: { 기기: 기기, 때: Date.now() } }); });
+      return 닿을때까지(잡을, 3).then(function (내) {
+        return 내.length ? 쉬기(1500).then(function () { return 내것만(내); }) : [];
+      });
+    }).catch(function () { return []; });   // 서버에 못 닿으면 안 올린다 — 다음 번에
+  }
+  /* 돌려주는 값: Promise { 올림, 못 } · 이미 도는 중이면 null */
+  function 자동올리기() {
+    if (도는중) return Promise.resolve(null);
+    var 목 = 예약목록().지정.filter(function (r) { return 때됨(r.예약일); });
+    var 못 = 목.filter(사유).length, 후보 = 목.filter(function (r) { return !사유(r); });
+    if (!후보.length) return Promise.resolve({ 올림: 0, 못: 못 });
+    도는중 = true;
+    return 잡기(후보).then(function (ids) {
+      var 올림 = 0;
+      ids.forEach(function (id) {
+        if (!(ZG.서버 && ZG.서버.켜짐)) 저().바꾸기(문키(), id, { 자동: { 기기: 기기, 때: Date.now() } });
+        if (!올리기(id).오류) 올림++;
+      });
+      도는중 = false;
+      return { 올림: 올림, 못: 못 };
+    }, function () { 도는중 = false; return { 올림: 0, 못: 못 }; });
+  }
+  function 오늘자동수() {
+    var 오늘 = u.오늘문자();
+    return 자().전부().filter(function (r) {
+      return r.상태 === '올림' && r.자동 && ZG.계산.날짜문자(r.자동.때) === 오늘;
+    }).length;
+  }
+
   ZG.예약자료 = {
-    날수: 날수, 때됨: 때됨, D글: D글, 지난글: 지난글, 예약목록: 예약목록, 예약점표: 예약점표,
-    넘길수있나: 넘길수있나, 옮기기: 옮기기, 되살리기: 되살리기
+    날수: 날수, 때됨: 때됨, D글: D글, 지난글: 지난글, 예약목록: 예약목록, 사유: 사유,
+    넘길수있나: 넘길수있나, 옮기기: 옮기기, 되살리기: 되살리기, 올리기: 올리기,
+    자동올리기: 자동올리기, 오늘자동수: 오늘자동수
   };
 })(window.ZG);

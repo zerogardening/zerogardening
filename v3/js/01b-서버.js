@@ -287,7 +287,8 @@ window.ZG = window.ZG || {};
   }
 
   /* ── 시작 ─────────────────────────────────────────────────────────────────── */
-  supa.auth.getSession().then(function (r) {
+  // 서버.준비 — 첫 내려받기가 끝나면 풀린다(실패해도). 받은 뒤에 돌아야 하는 일(예약 자동 올림)이 기다린다
+  서버.준비 = supa.auth.getSession().then(function (r) {
     if (!r || !r.data || !r.data.session) {
       location.replace('../index.html?from=' + encodeURIComponent(location.href));
       throw new Error('세션 없음');

@@ -184,7 +184,7 @@ window.ZG = window.ZG || {};
     });
   }
   function 상태칩목록() {
-    return [['', '전체'], ['준비중', '배송준비중'], ['나감', '배송완료'], ['보류', '배송보류']];
+    return [['', '전체'], ['준비중', '배송준비중'], ['나감', '배송완료'], ['보류', '배송보류'], ['예약', '예약']];
   }
 
   /* 배송 상태 탭 (시안 22c .stabs). 수는 마켓·찾기를 안 본다 — 그 탭에 남은 일의 양이다 */
@@ -195,6 +195,7 @@ window.ZG = window.ZG || {};
       var 속 = [document.createTextNode(쌍[1])];
       if (쌍[0] === '준비중') 속.push(만들기('span', { class: 'n', text: String(준) }));
       if (쌍[0] === '보류' && 보) 속.push(만들기('span', { class: 'hn', text: String(보) }));
+      if (쌍[0] === '예약') 속.push(만들기('span', { class: 'n', text: String(ZG.예약탭.수()) }));
       var on = 상태.상태칩 === 쌍[0];
       var b = 만들기('button', { type: 'button', role: 'tab', class: on ? 'on' : '', 'aria-selected': on ? 'true' : 'false' }, 속);
       b.addEventListener('click', function () {
@@ -452,6 +453,7 @@ window.ZG = window.ZG || {};
 
   function 주문수집하기(단추) {
     if (수집중) return;
+    ZG.예약탭.자동();   // 예약일이 된 예약도 이때 올린다 (26단계 §3)
     var supa = ZG.서버 && ZG.서버.클라이언트;
     if (!supa) { u.토스트('서버에 연결돼 있지 않습니다 — 잠시 뒤 다시 눌러 주세요'); return; }
 
@@ -599,7 +601,8 @@ window.ZG = window.ZG || {};
     var 목록 = 만들기('div', { class: 'ph-list' });
     function 채우기() {
       날짜줄채우기(날바);          // 🔴 탭을 바꾸면 「무슨 기간을 보고 있는지」도 같이 바뀌어야 한다
-      날바.hidden = 상태.상태칩 === '보류';
+      날바.hidden = 상태.상태칩 === '보류' || 상태.상태칩 === '예약';
+      찾기.style.display = 마켓줄.style.display = 상태.상태칩 === '예약' ? 'none' : '';
       u.비우기(목록);
       var 건들 = 자.건으로묶기(줄들());
       회차줄채우기(회차줄, 채우기);      // 🔴 줄들() 이 사라진 회차를 풀 수 있다 — 반드시 그 뒤다
@@ -608,6 +611,7 @@ window.ZG = window.ZG || {};
       마켓칩들(채우기).forEach(function (b) { 마켓줄.appendChild(b); });
       마켓줄.scrollLeft = 밀림;          // 칩을 누를 때마다 맨 앞으로 튀지 않게
       u.비우기(합계칸);
+      if (상태.상태칩 === '예약') { 합계칸.hidden = true; ZG.예약탭.폰(목록, 다시그리기); return; }
       if (상태.상태칩 === '보류') { 합계칸.hidden = true; ZG.보류목록.폰(목록, 줄들(), 다시그리기); return; }
       합계칸.hidden = !건들.length;      // 빈 칸이 ph-body 의 gap 을 먹지 않게
       if (건들.length) 합계칸.appendChild(합계띠(건들, true));
@@ -623,7 +627,7 @@ window.ZG = window.ZG || {};
 
     var 회차줄 = 만들기('div', { class: 'fchips 나간칩줄', style: 'padding:0 var(--space-md) var(--space-xs)' });
     var 마켓줄 = 만들기('div', { class: 'hscroll 마켓줄' });
-    칸.appendChild(찾는칸('이름 · 전화번호 · 상품명으로 찾기', 채우기));
+    var 찾기 = 칸.appendChild(찾는칸('이름 · 전화번호 · 상품명으로 찾기', 채우기));
     칸.appendChild(상태탭(채우기));                // 🔴 통째로 다시 그리지 않는다 — 찾는칸의 한글 조합이 끊긴다
     칸.appendChild(마켓줄);
     var 합계칸 = 만들기('div');
@@ -773,8 +777,9 @@ window.ZG = window.ZG || {};
     if (별 > 0) 첫줄.push(만들기('span', { class: 'star', text: '⭐ ' + 별 }));
     var 폰배지 = 상태배지(g);
     if (폰배지) { 폰배지.style.marginLeft = 'auto'; 첫줄.push(폰배지); }
-    var 곳 = 마켓꼬리표(g);
-    if (!폰배지) 곳.style.marginLeft = 'auto';
+    var 곳 = 마켓꼬리표(g), 옴 = ZG.예약탭.옴칩(g);
+    if (!폰배지) (옴 || 곳).style.marginLeft = 'auto';
+    if (옴) 첫줄.push(옴);
     첫줄.push(곳);
     첫줄.push(만들기('span', { class: 'chev', text: '›' }));
     몸.appendChild(만들기('div', { class: 'r0' }, 첫줄));
@@ -943,8 +948,8 @@ window.ZG = window.ZG || {};
 
   /* 🔴 보류 탭에서 뽑으면 고른 게 없을 때 화면 전부(=보류 줄)가 출고리스트·카드에 찍힌다 — 보류는 아직 안 싼다 */
   function 보류탭막기() {
-    if (상태.상태칩 !== '보류') return false;
-    u.토스트('배송보류 탭에서는 뽑지 않습니다.');
+    if (상태.상태칩 !== '보류' && 상태.상태칩 !== '예약') return false;
+    u.토스트((상태.상태칩 === '보류' ? '배송보류' : '예약') + ' 탭에서는 뽑지 않습니다.');
     return true;
   }
 
@@ -972,6 +977,8 @@ window.ZG = window.ZG || {};
       u.비우기(마켓줄);
       마켓줄.appendChild(만들기('span', { class: 'lab', text: '마켓' }));
       마켓칩들(function () { 상태.쪽 = 1; 다시그리기(); }).forEach(function (b) { 마켓줄.appendChild(b); });
+      마켓줄.style.display = 상태.상태칩 === '예약' ? 'none' : '';
+      if (상태.상태칩 === '예약') { ZG.예약탭.PC(카드, 다시그리기); return; }
       if (상태.상태칩 === '보류') { ZG.보류목록.PC(카드, 줄들(), 다시그리기); return; }
       var 총쪽 = Math.max(1, Math.ceil(건들.length / 쪽크기));
       if (상태.쪽 > 총쪽) 상태.쪽 = 총쪽;
@@ -994,7 +1001,7 @@ window.ZG = window.ZG || {};
 
     var 마켓줄 = 만들기('div', { class: 'fchips 마켓줄' });
     칸.appendChild(상태탭(function () { 상태.쪽 = 1; 다시그리기(); }));
-    칸.appendChild(PC거르개(채우기));
+    if (상태.상태칩 !== '예약') 칸.appendChild(PC거르개(채우기));
     칸.appendChild(마켓줄);
     칸.appendChild(카드);
     채우기();
@@ -1165,7 +1172,8 @@ window.ZG = window.ZG || {};
             시각칸(g)
           ]));
           tr.appendChild(누구칸(g, n));
-          var 곳칸 = 만들기('td', { rowspan: n }, [마켓꼬리표(g)]);
+          var 곳칸 = 만들기('td', { rowspan: n }, [마켓꼬리표(g)]), 옴 = ZG.예약탭.옴칩(g);
+          if (옴) 곳칸.appendChild(만들기('div', {}, [옴]));
           var 배지 = 상태배지(g);          // 한 날짜 안에서도 나간 것과 안 나간 것이 구분된다
           if (배지) 곳칸.appendChild(만들기('div', {}, [배지]));
           tr.appendChild(곳칸);
