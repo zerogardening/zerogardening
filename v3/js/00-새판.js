@@ -43,12 +43,30 @@
 
   /* cache:'reload' 는 캐시를 무시하고 받아 **캐시까지 새것으로 갈아준다**.
      no-store 로 받으면 캐시가 그대로라 바로 뒤의 reload() 가 또 옛 HTML 을 쓴다 — 그래서 reload 다 */
+  /* 🔴 같은 파일끼리 견준다. 예전엔 「내 판」을 서버 HTML 의 **첫** `?v=`(늘 css)와 견줘 늘 어긋났다 —
+     열 때마다 두 번씩 새로고침해 화면이 30초 넘게 늦게 떴고, 진짜 새 판은 못 가렸다 (2026-10-20) */
+  var 파일판 = /([^"'\/?]+\.(?:js|css))\?v=(\d+)/g;
+  function 판표(글) {
+    var 표 = {}, m;
+    파일판.lastIndex = 0;
+    while ((m = 파일판.exec(글))) 표[m[1]] = m[2];
+    return 표;
+  }
+  function 지금판표() {
+    var 글 = '';
+    document.querySelectorAll('script[src],link[href]').forEach(function (e) {
+      try { 글 += ' "' + decodeURIComponent(e.getAttribute('src') || e.getAttribute('href')) + '"'; } catch (x) { /* 무시 */ }
+    });
+    return 판표(글);
+  }
+
   fetch(location.href, { cache: 'reload' }).then(function (답) {
     return 답 && 답.ok ? 답.text() : null;
   }).then(function (글) {
     if (!글) return;
-    var 서버판 = 글.match(판찾기);
-    if (!서버판 || 서버판[1] === 내판) {
+    var 서버 = 판표(글), 지금 = 지금판표();
+    var 다름 = Object.keys(지금).some(function (이름) { return 서버[이름] && 서버[이름] !== 지금[이름]; });
+    if (!다름) {
       try { sessionStorage.removeItem(열쇠); } catch (e) { /* 무시 */ }
       return;   // 이미 새것이다
     }
