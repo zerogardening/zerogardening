@@ -105,9 +105,13 @@ window.ZG = window.ZG || {};
     Object.keys(큐).forEach(function (열쇠) { if (이제 - (큐[열쇠].시각 || 0) > 60000) n++; });
     return n;
   }
+  /* 🔴 연결 부품(supabase-js)을 못 받으면 01b 가 조용히 로컬 전용으로 돈다 — 품절 단추가 서버에 안 닿았다 (10/7 타르다).
+     1분 기다리지 않고 바로 띄운다. 누르면 새로고침해 부품을 다시 받는다 */
+  function 끊김() { return !!(ZG.서버 && ZG.서버.로그인됨 && !ZG.서버.켜짐); }
   function 띠글() {
     var n = 밀린건수(), 못씀 = 큐못씀 || (ZG.저장소 && ZG.저장소.저장실패 && ZG.저장소.저장실패() > 0);
-    return [못씀 ? '⚠ 이 기기에 저장 실패' : '', n ? '⚠ 서버에 못 올라간 기록 ' + n + '건' : ''].filter(Boolean).join(' · ');
+    return [끊김() ? '⚠ 서버 연결 안 됨 — 눌러서 새로고침' : '', 못씀 ? '⚠ 이 기기에 저장 실패' : '',
+            n ? '⚠ 서버에 못 올라간 기록 ' + n + '건' : ''].filter(Boolean).join(' · ');
   }
   function 표시() {
     var 글 = 띠글();
@@ -124,7 +128,10 @@ window.ZG = window.ZG || {};
       띠.style.cssText = 'display:block;width:100%;margin:0;padding:9px 14px;border:0;border-radius:0;' +
         'font:inherit;font-size:14px;font-weight:700;line-height:1.35;text-align:center;' +
         'background:#D70015;color:#fff;cursor:pointer';
-      띠.addEventListener('click', function () { 띠.textContent = '☁ 보내는 중…'; 깨우기().then(표시); });
+      띠.addEventListener('click', function () {
+        if (끊김()) { location.reload(); return; }
+        띠.textContent = '☁ 보내는 중…'; 깨우기().then(표시);
+      });
       document.body.insertBefore(띠, document.body.firstChild);
     }
     띠.textContent = 글;
