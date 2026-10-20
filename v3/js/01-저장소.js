@@ -95,12 +95,17 @@ window.ZG = window.ZG || {};
   }
 
   /* 내부 전용. 밖으로 안 내보낸다 — 큐를 건드리지 않는다 */
+  /* 🔴 쓰기 실패는 캐시에만 남아 새로고침하면 사라진다 — 콘솔만으론 아무도 모른다(10/17 문자주문 2건).
+     표를 통째로 쓰므로 같은 키가 다음에 써지면 그때 다 들어간다 → 그 키는 풀어 준다 */
+  var 못쓴 = {};
   function 저장(k, 값) {
-    var s = JSON.stringify(값);
+    var s = JSON.stringify(값), 전 = !!못쓴[k];
     캐시[k] = s;
-    try { localStorage.setItem(k, s); }
-    catch (e) { console.warn('저장소에 못 썼습니다', k, e); }
+    try { localStorage.setItem(k, s); delete 못쓴[k]; }
+    catch (e) { 못쓴[k] = Date.now(); console.warn('저장소에 못 썼습니다', k, e); }
+    if (전 !== !!못쓴[k] && ZG.보내기) ZG.보내기.표시();
   }
+  function 저장실패() { return Object.keys(못쓴).length; }
 
   function 보내기() { return (!조용함 && ZG.보내기) ? ZG.보내기 : null; }
 
@@ -222,6 +227,7 @@ window.ZG = window.ZG || {};
     전부지우기: 전부지우기,
     키필드: 키필드,
     레코드키: 레코드키,
+    저장실패: 저장실패,
     부팅: 부팅
   };
 })(window.ZG);

@@ -11,8 +11,12 @@ window.ZG = window.ZG || {};
   var 예약 = null, 보내는중 = false, 보내기시작 = 0;
   var 굳음한계 = 60000;   // 보내기가 이만큼 지나도 안 끝나면 죽은 것으로 보고 다시 건다
 
+  var 큐못씀 = false;   // 큐도 못 쓰면 새로고침에 못 보낸 것까지 사라진다 — 띠에 같이 띄운다
   function 큐저장() {
-    try { localStorage.setItem(큐키, JSON.stringify(큐)); } catch (e) { console.warn('큐를 못 썼습니다', e); }
+    var 전 = 큐못씀;
+    try { localStorage.setItem(큐키, JSON.stringify(큐)); 큐못씀 = false; }
+    catch (e) { 큐못씀 = true; console.warn('큐를 못 썼습니다', e); }
+    if (전 !== 큐못씀) 표시();
   }
   function 표이름(k) { return String(k).replace('zg.v3.', ''); }
 
@@ -90,36 +94,40 @@ window.ZG = window.ZG || {};
   // 100건씩 끊어 보내므로 남은 게 있으면 곧바로 이어서 한 번 더
   function 담기0() { setTimeout(보내기, 100); }
 
-  /* ── 못 올린 게 오래 남으면 화면에 띄운다 (8/19 사고) ────────────────────────
-     8/9부터 24건이 아무 표시 없이 쌓여 있었다. 그게 이번 일의 본체다.
+  /* ── 못 올린 것 · 못 쓴 것을 맨 위 빨간 띠로 (8/19 · 10/17 사고) ─────────────────
+     8/9부터 24건이 아무 표시 없이 쌓였고, 10/17 문자주문 2건은 흔적 없이 사라졌다.
      방금 저장한 것이 잠깐 큐에 있는 건 정상이라 「1분 넘게 못 나간 것」만 센다.
+     body 맨 앞 보통 블록이다 — 폰 머리·PC 옆판이 top:0 에 붙어 있어 고정하면 그것을 가린다.
      누르면 그 자리서 다시 보낸다. */
-  var 알림칸 = null;
+  var 띠 = null;
   function 밀린건수() {
     var 이제 = Date.now(), n = 0;
     Object.keys(큐).forEach(function (열쇠) { if (이제 - (큐[열쇠].시각 || 0) > 60000) n++; });
     return n;
   }
+  function 띠글() {
+    var n = 밀린건수(), 못씀 = 큐못씀 || (ZG.저장소 && ZG.저장소.저장실패 && ZG.저장소.저장실패() > 0);
+    return [못씀 ? '⚠ 이 기기에 저장 실패' : '', n ? '⚠ 서버에 못 올라간 기록 ' + n + '건' : ''].filter(Boolean).join(' · ');
+  }
   function 표시() {
-    var n = 밀린건수();
-    if (!n) {
-      if (알림칸 && 알림칸.parentNode) 알림칸.parentNode.removeChild(알림칸);
-      알림칸 = null;
+    var 글 = 띠글();
+    if (!글) {
+      if (띠 && 띠.parentNode) 띠.parentNode.removeChild(띠);
+      띠 = null;
       return;
     }
-    if (!알림칸) {
+    if (!띠) {
       if (!document.body) return;
-      알림칸 = document.createElement('button');
-      알림칸.type = 'button';
-      알림칸.className = 'zg-못올림';
-      // 폰 아래 탭바를 가리지 않게 76px 띄운다
-      알림칸.style.cssText = 'position:fixed;right:12px;bottom:76px;z-index:70;padding:9px 13px;' +
-        'font-size:13px;line-height:1.3;border:1px solid #f59e0b;border-radius:9px;' +
-        'background:#fef3c7;color:#92400e;box-shadow:0 1px 5px rgba(0,0,0,.18)';
-      알림칸.addEventListener('click', function () { 알림칸.textContent = '☁ 보내는 중…'; 깨우기(); });
-      document.body.appendChild(알림칸);
+      띠 = document.createElement('button');
+      띠.type = 'button';
+      띠.className = 'zg-못올림';
+      띠.style.cssText = 'display:block;width:100%;margin:0;padding:9px 14px;border:0;border-radius:0;' +
+        'font:inherit;font-size:14px;font-weight:700;line-height:1.35;text-align:center;' +
+        'background:#D70015;color:#fff;cursor:pointer';
+      띠.addEventListener('click', function () { 띠.textContent = '☁ 보내는 중…'; 깨우기().then(표시); });
+      document.body.insertBefore(띠, document.body.firstChild);
     }
-    알림칸.textContent = '☁ 아직 못 올린 것 ' + n + '건 — 눌러서 다시 보내기';
+    띠.textContent = 글;
   }
 
   function 깨우기() { return 보내기(); }
@@ -132,6 +140,11 @@ window.ZG = window.ZG || {};
   setInterval(표시, 15000);
   // 열자마자 한 번 — 지난 판에서 못 올린 게 있으면 15초 기다리지 않고 바로 알린다
   if (document.body) 표시(); else document.addEventListener('DOMContentLoaded', 표시);
+  /* 새로고침하면 크롬이 「보던 줄」을 기준으로 스크롤을 되살려 딱 띠 높이만큼 내려가 띠가 숨는다(폰 실측 37px).
+     맨 위에 있던 것이니 맨 위로 돌린다 */
+  window.addEventListener('pageshow', function () {
+    setTimeout(function () { if (띠 && scrollY > 0 && scrollY <= 띠.offsetHeight) scrollTo(0, 0); }, 0);
+  });
 
-  ZG.보내기 = { 줄: 줄, 삭제: 삭제, 설정: 설정, 깨우기: 깨우기, 건수: 건수, 비우기: 비우기 };
+  ZG.보내기 = { 줄: 줄, 삭제: 삭제, 설정: 설정, 깨우기: 깨우기, 건수: 건수, 비우기: 비우기, 표시: 표시 };
 })(window.ZG);
