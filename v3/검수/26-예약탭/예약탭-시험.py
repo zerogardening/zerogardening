@@ -87,6 +87,9 @@ try:
             본다('못 올라감에 시험다솜 + 사유', 줄(쪽, 폰, '시험다솜').count() == 1 and '주소' in 줄(쪽, 폰, '시험다솜').inner_text())
             본다('탭 숫자 = 남은 예약 5', '예약5' in 쪽.inner_text('.stabs').replace('\n', '').replace(' ', ''), 쪽.inner_text('.stabs').replace('\n', ' '))
             본다('화면에 사용법 설명 문구 없음', '누르면' not in 글 and '하세요' not in 글)
+            if not 폰:
+                dd = 줄(쪽, 폰, '시험다솜').locator('.dd').inner_text()
+                본다('못 올라감 D-n 칸 빨간 「지남」', dd == '지남' and 'rd' in 줄(쪽, 폰, '시험다솜').locator('.dd').get_attribute('class'), dd)
             쪽.screenshot(path=str(여기 / ('3-예약탭-' + 이름 + '.png')), full_page=True)
 
             # ── 칩 거르기
@@ -122,6 +125,10 @@ try:
             올.click(); 쪽.wait_for_timeout(400)
             본다('G 올림', 쪽.evaluate(하나, m['G'])['상태'] == '올림')
 
+            # ── 못 올라감(C · 이름만 있고 주소 빔) — 지금 올리기도 받는 분 판을 연다(주소 없이 안 올라간다)
+            줄(쪽, 폰, '시험다솜').locator('button:has-text("지금 올리기")').click(); 쪽.wait_for_timeout(400)
+            본다('C 지금 올리기 → 받는 분 판 열림 · 안 올라감', 쪽.locator('.예약탭 .주소자리').count() == 1 and 쪽.evaluate(하나, m['C'])['상태'] != '올림')
+            쪽.screenshot(path=str(여기 / ('5b-주소빔판-' + 이름 + '.png')), full_page=True)
             # ── 못 올라감(C) — 주소 입력 → 올림
             줄(쪽, 폰, '시험다솜').locator('button:has-text("주소 입력")').click(); 쪽.wait_for_timeout(300)
             판 = 쪽.locator('.예약탭 .주소자리')
@@ -130,6 +137,28 @@ try:
             판.locator('button:has-text("주문올리기")').click(); 쪽.wait_for_timeout(400)
             r = 쪽.evaluate(하나, m['C'])
             본다('C 주소 넣고 올림', r['상태'] == '올림' and '다솜로' in (r.get('주소') or ''), r.get('주소'))
+
+            # ── 원본 줄 주소가 빈 예약(H) — 지금 올리기 → 묻는 창 · 취소면 그대로 · 올리기면 되살림
+            m['H'] = 쪽.evaluate("""() => { const 저 = ZG.저장소, p = 저.품목들()[0], 어제 = (() => { const d = new Date(); d.setDate(d.getDate() - 1);
+                return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
+              const 원줄 = { id: 'o_시험빈원본', 주문번호: '', 주문일: 어제, 판매처: '수동', 출처: '수동', 수령인: '시험빈원', 수령인전화: '01044445555',
+                수령인주소: '', 품목코드: p.품목코드, 유통명: p.유통명, 규격: p.규격 || '', 주문수량: 1, 단가: 3000 };
+              저.덧붙이기(저.키.문자주문, { id: 'sm_시험빈원본', 날짜: 어제, 상태: '저장', 받는분: '시험빈원', 전화: '01044445555', 주소: '', 상세주소: '',
+                품목: [{ 품목코드: p.품목코드, 유통명: p.유통명, 규격: p.규격 || '', 수량: 1, 단가: 3000 }], 배송비: 0,
+                예약: true, 예약일: 어제, 원본줄들: [원줄], 옮겨온일시: Date.now(), 등록일시: Date.now(), 수정일시: Date.now() });
+              ZG.주문.다시그리기(); return 'sm_시험빈원본'; }""")
+            쪽.wait_for_timeout(300)
+            h = 줄(쪽, 폰, '시험빈원')
+            본다('H 못 올라감 · 주소 입력 단추 없음', h.count() == 1 and h.locator('button:has-text("주소 입력")').count() == 0)
+            h.locator('button:has-text("지금 올리기")').click(); 쪽.wait_for_timeout(300)
+            창 = 쪽.inner_text('.askbox') if 쪽.locator('.askbox').count() else ''
+            본다('H 묻는 창 「원본 주문에 받는 분 주소가 비어 있습니다」', '원본 주문에 받는 분 주소가 비어 있습니다' in 창, 창.replace('\n', ' / '))
+            쪽.screenshot(path=str(여기 / ('5c-원본주소빔-' + 이름 + '.png')))
+            쪽.click('.askbox button:has-text("취소")'); 쪽.wait_for_timeout(300)
+            본다('H 취소 → 그대로 예약', 쪽.evaluate(하나, m['H'])['상태'] != '올림')
+            줄(쪽, 폰, '시험빈원').locator('button:has-text("지금 올리기")').click(); 쪽.wait_for_timeout(300)
+            쪽.click('.askbox .btnrow button.main'); 쪽.wait_for_timeout(400)
+            본다('H 올리기 → 되살림', 쪽.evaluate(하나, m['H'])['상태'] == '올림')
 
             # ── 날짜 미정(D) — 날짜 저장(5일 뒤) → 지정 구역으로
             d = 줄(쪽, 폰, '시험라온')
