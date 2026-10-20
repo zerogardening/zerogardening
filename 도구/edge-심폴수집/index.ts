@@ -93,7 +93,7 @@ const 심폴키 = (v: unknown) => 글(v).replace(/\s/g, "").replace(/\(.*$/, "")
 const 심폴필수 = ["일자", "받는사람", "거래번호", "상품코드", "갯수", "상품가격"];
 
 const 지도: (string | null)[] = [
-  "@심폴", null, "거래번호", "@일자", "상품명", "@상품코드", "@빈", "@상품코드",
+  "@심폴", null, "거래번호", "@일자", "상품명", "@상품코드", "@옵션", "@상품코드",
   null, null, "결제상태", "상품가격", "갯수", "받는사람", "우편번호", "주소",
   null, "비상전화", "전화번호", "전달사항", "주문자", null, null,
   null, "주문자전화", null, null,
@@ -105,6 +105,10 @@ function 자리찾기(머리행: string[]): Record<string, number> {
     const 이름 = 심폴키(v);
     if (이름 && 자리[이름] == null) 자리[이름] = i;
   });
+  /* 🔴 「옵션(특징포함)」(설명문)도 괄호를 떼면 「옵션」이 된다 — 품종이 든 진짜 「옵션」 칸은 머리글 글자 그대로 찾는다
+     (10/21 히아신스 4종 모음 4줄이 품종을 못 읽어 짝없음 · 08j-심폴.js 와 같이) */
+  const 옵 = (머리행 || []).findIndex((v) => 글(v).trim() === "옵션");
+  if (옵 >= 0) 자리["@옵션"] = 옵;
   const 없는 = 심폴필수.filter((k) => 자리[k] == null);
   if (없는.length) throw new Error("심폴 CSV 머리글을 못 읽었습니다 — 없는 칸: " + 없는.join(", "));
   return 자리;
@@ -151,6 +155,7 @@ function 스물일곱(행: string[], 자리: Record<string, number>): string[] |
     if (열 === "@심폴") return "심폴";
     if (열 === "@일자") return 날짜글(행[자리["일자"]]);
     if (열 === "@상품코드") return 코드;
+    if (열 === "@옵션") return 값("@옵션");
     return 값(열);
   });
 }
@@ -177,13 +182,68 @@ function 우편정규화(v: unknown): string {
   return s.length <= 5 ? s.padStart(5, "0") : s;
 }
 
-/* 🔴 「옵션(특징포함)」은 상품 설명문이라 27칸의 옵션은 언제나 빈 문자열이다(설계 §7-7) —
-   이 함수는 짝을 못 지어 판매단위를 모를 때만 쓰는 대비책이다. 늘 1이 나온다(2026-09-28) */
-function 옵션입수(옵션원문: unknown, 꼬리: number): number {
-  const m = 글(옵션원문).match(/수량\s*=\s*(\d+)\s*개/);
-  if (m) return Number(m[1]) || 1;
-  return 꼬리 > 0 ? 꼬리 : 1;
+/* ══ 옵션 풀이·짝 찾기·짝 뒤 입수 — 🔴 도구/edge-주문수집/index.ts 를 그대로 옮겼다(21단계 · 10/21).
+   v3/js/08j-심폴.js 옵션풀이 와 열쇠가 같아야 앱에서 손으로 지은 옵션 짝(`원본코드§옵션값`)을 여기서 알아본다 ══ */
+const 개수꼴 = [
+  /^\d+\s*(개|주|구|포기|묶음|세트|팩)?$/,
+  /^(단일상품|단품|기본)$/,
+  /^\d+(\.\d+)?\s*(cm|mm|센치)?\s*(화분|포트)?$/i,
+];
+
+function 옵션풀이(원본코드: unknown, 옵션원문: unknown) {
+  const 원 = 다듬기(옵션원문);
+  const 축들 = 원 ? 원.split(/\s*,\s*(?=[^,=]+=)/) : [];
+  const 품목축: { 이름: string; 값: string; 알: string }[] = [];
+  let 수량입수 = 0, 꼬리입수 = 0, 개수입수 = 0;
+  for (const 축 of 축들) {
+    const m = 축.match(/^\s*([^=]*?)\s*=\s*(.*)$/);
+    const 이름 = m ? m[1] : "";
+    const 값 = 다듬기(m ? m[2] : 축);
+    const t = 값.match(/\s*[(（]\s*(\d+)\s*개\s*[)）]\s*$/);
+    const 알 = (t ? 값.slice(0, t.index) : 값).replace(/\s+/g, " ").trim();
+    const 수량축 = 이름.replace(/\s/g, "") === "수량";
+    if (t && !꼬리입수) 꼬리입수 = Number(t[1]) || 0;
+    const n = 값.match(/^(\d+)\s*개/);   // `수량=3개입` 도 3
+    if (수량축 && n && !수량입수) 수량입수 = Number(n[1]) || 0;
+    const 개수 = 수량축 || !알 || 개수꼴.some((re) => re.test(알));
+    if (개수) {
+      const k = 알.match(/^(\d+)\s*개$/);
+      if (k && !개수입수) 개수입수 = Number(k[1]) || 0;
+      continue;
+    }
+    품목축.push({ 이름, 값, 알 });
+  }
+  const 코드 = 다듬기(원본코드) ? 글(원본코드) : "";
+  const 품목옵션 = 품목축.length > 0;
+  const 옵션값 = 품목축.map((x) => x.알).join(" / ");
+  return {
+    열쇠: !코드 ? "" : (품목옵션 ? 코드 + "§" + 옵션값 : 코드),
+    품목옵션,
+    입수: 수량입수 || 꼬리입수 || 개수입수 || 0,
+  };
 }
+
+/* 🔴 원본코드가 v3 마스터에 곧장 맞으면 옵션과 상관없이 그 품목이다 (옵션마다 자체품목코드를 따로 단
+   `HEL01-15`+「색상=3.휴케라 라임리키」). 옵션 열쇠는 마스터에 없는 코드(`GGM01-0`·쿠팡 `HEU01`)에만 쓴다 */
+/* 🔴 옵션이 품목인 줄은 옛 짝(id=원본코드)을 쓰지 않는다 — 그게 라임리키가 골든제브라로 붙은 길이다.
+   「옵션 구분 없이 하나로」(옵션무시) 로 지은 짝만 상품 전체를 덮는다. 색인 = id → 짝 레코드(내용) */
+function 짝찾기(원본코드: unknown, 풀: { 열쇠: string; 품목옵션: boolean }, 색인: Record<string, any>): any {
+  if (!풀.열쇠) return null;
+  if (!풀.품목옵션) return 색인[풀.열쇠] || null;
+  const 옛 = 색인[글(원본코드)];
+  if (옛 && 옛.옵션무시) return 옛;
+  return 색인[풀.열쇠] || null;
+}
+
+/* 짝이 붙은 뒤의 옵션입수 (설계 §4). 🔴 곱하지 않는다 — 판매단위 5 · 「(5개)」 가 25가 되면
+   재고 차감까지 다섯 배로 간다. 쿠팡은 쿠팡단위 방식이라 옵션 쪽(짝 전 값)을 그대로 둔다 */
+function 입수정하기(판매처글: string, 짝전입수: number, 품목: any, 풀: { 품목옵션: boolean; 입수: number }): number {
+  if (!품목 || 판매처글 === "쿠팡") return 짝전입수;
+  const 단위 = Number(품목.판매단위) || 1;
+  if (!풀.품목옵션) return 단위;
+  return Math.max(단위, 풀.입수 || 1);
+}
+
 
 function 날짜만들기(v: unknown): string {
   const m = 글(v).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
@@ -230,7 +290,7 @@ const 중복키 = (줄: any) =>
 /* 🔴 이름 매칭은 하지 않는다 — 유통명이 같은 품목이 여럿이라 엉뚱한 상품이 손님에게 나간다.
    짝표(v3_심폴짝) 열쇠 하나로만 붙인다. 못 붙으면 품목코드 빈칸으로 그대로 저장하고
    그 줄은 08b.짝못붙은수() 대기열에 자동으로 들어간다 */
-function 줄만들기(o: string[], 마스터: Record<string, any>, 짝표: Record<string, string>) {
+function 줄만들기(o: string[], 마스터: Record<string, any>, 짝색인: Record<string, any>) {
   const 주문번호 = 다듬기(o[자리["주문번호"]]);
   if (!주문번호) return null;
 
@@ -239,7 +299,9 @@ function 줄만들기(o: string[], 마스터: Record<string, any>, 짝표: Recor
   const 원본코드 = 다듬기(o[자리["자체품목코드"]]);
   const 옵션원문 = 다듬기(o[자리["옵션"]]);
   const 상품명 = 다듬기(o[자리["주문상품명"]]);
-  const 품목 = 마스터[짝표[원본코드] ?? ""] ?? null;
+  const 풀 = 옵션풀이(원본코드, 옵션원문);
+  const 짝 = 짝찾기(원본코드, 풀, 짝색인);
+  const 품목 = 짝 ? (마스터[다듬기(짝.붙인품목코드)] ?? null) : null;
 
   const 줄: any = {
     묶음id: "", 주문번호, 주문일: 날짜만들기(o[자리["발주일"]]),
@@ -251,7 +313,7 @@ function 줄만들기(o: string[], 마스터: Record<string, any>, 짝표: Recor
        판매단위(구근 5구 한 묶음 등)를 그대로 곱한다. 짝 전이면 예전 방식(옵션 텍스트)으로 버틴다
        (우람님 확인 9/28 — G마켓 전영희 5개×2세트가 2로 찍힌 사고) */
     주문수량: 숫자(o[자리["수량"]]),
-    옵션입수: 품목 ? (Number(품목.판매단위) || 1) : 옵션입수(옵션원문, 0),
+    옵션입수: 품목 ? 입수정하기("심폴", 풀.입수 || 1, 품목, 풀) : (풀.입수 || 1),
     옵션원문,
     단가: 숫자(o[자리["판매가"]]),
     수령인: 다듬기(o[자리["수령인"]]),
@@ -343,11 +405,10 @@ async function 수집(일수: number, 시험: boolean) {
   const 마스터: Record<string, any> = {};
   (품목들 ?? []).forEach((r: any) => { if (r.내용?.품목코드) 마스터[r.내용.품목코드] = r.내용; });
 
-  const 짝표: Record<string, string> = {};
+  const 짝색인: Record<string, any> = {};   // id → 짝 레코드(내용) — 옵션무시 까지 본다
   (짝줄들 ?? []).forEach((r: any) => {
     const 키 = 다듬기(r.내용?.id ?? r.id);
-    const 값 = 다듬기(r.내용?.붙인품목코드);
-    if (키 && 값) 짝표[키] = 값;
+    if (키 && 다듬기(r.내용?.붙인품목코드)) 짝색인[키] = r.내용;
   });
 
   const 기존들: Record<string, number> = {};
@@ -361,7 +422,7 @@ async function 수집(일수: number, 시험: boolean) {
   let 이미 = 0, 날짜오류 = 0;
 
   for (const o of 스물일곱행들) {
-    const 줄 = 줄만들기(o, 마스터, 짝표);
+    const 줄 = 줄만들기(o, 마스터, 짝색인);
     if (!줄) continue;
     const k = 중복키(줄);
     센수[k] = (센수[k] ?? 0) + 1;
