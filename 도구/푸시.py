@@ -54,14 +54,14 @@ def 열쇠():
 
 # ══════════════════════════════════════════════ VAPID — 「나는 이 맥이다」
 
-def 출입증(끝주소, 주인):
-    """ES256 로 서명한 JWT. 12시간짜리 — 푸시 서버가 「누가 보냈나」를 이걸로 본다"""
+def 출입증(끝주소, 주인, 시간=12):
+    """ES256 로 서명한 JWT. 기본 12시간(24시간 넘으면 푸시 서버가 거절) — 푸시 서버가 「누가 보냈나」를 이걸로 본다"""
     k = 열쇠()
     비밀 = ec.derive_private_key(int.from_bytes(b64풀기(k['비밀']), 'big'), ec.SECP256R1())
     쪽 = urllib.parse.urlparse(끝주소)
     머리 = b64(json.dumps({'typ': 'JWT', 'alg': 'ES256'}, separators=(',', ':')).encode())
     몸 = b64(json.dumps({'aud': '%s://%s' % (쪽.scheme, 쪽.netloc),
-                         'exp': int(time.time()) + 12 * 3600,
+                         'exp': int(time.time()) + 시간 * 3600,
                          'sub': 주인}, separators=(',', ':')).encode())
     쓸것 = ('%s.%s' % (머리, 몸)).encode()
     der = 비밀.sign(쓸것, ec.ECDSA(hashes.SHA256()))

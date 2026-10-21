@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- 5분마다 서버에 「살아있음」을 찍는다 (31단계 · 도구/살아있음.py).
+     15분 넘게 안 찍히면 서버(Edge imac-watch)가 폰에 알린다 — 10/21 멈춤을 아무도 몰랐던 일.
+     로그인 사용자 에이전트다. 재시동 뒤 로그인 전엔 못 찍는다 — 그게 곧 「꺼짐」 신호다.
+     넣는 법:  cp 통합관리/도구/com.zerogardening.살아있음.plist ~/Library/LaunchAgents/
+               launchctl load ~/Library/LaunchAgents/com.zerogardening.살아있음.plist
+     보는 법:  tail /tmp/zg-살아있음.log  ·  python3 통합관리/도구/살아있음.py 보기 -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.zerogardening.살아있음</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>/Users/woorambaik/claude-projects/제로가드닝/통합관리/도구/살아있음.py</string>
+	</array>
+	<key>StartInterval</key>
+	<integer>300</integer>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>/tmp/zg-살아있음.log</string>
+	<key>StandardErrorPath</key>
+	<string>/tmp/zg-살아있음.log</string>
+</dict>
+</plist>
