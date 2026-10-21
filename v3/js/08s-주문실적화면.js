@@ -80,6 +80,7 @@ window.ZG = window.ZG || {};
       만들기('span', { class: 'lab', text: '기간' }), 날칸('부터'), 만들기('span', { class: 'tilde', text: '~' }), 날칸('까지')
     ].concat(기간칩단추들(), [단, 익().기어('btn sm')])));
     익().위(본문, 결, false, 기간글());   // 요약(매출·이익)·마켓별 이익·상품별 이익 (27단계)
+    if (ZG.재구매화면) ZG.재구매화면.위(본문, false);   // 재구매 — 누적 (30단계)
     칸.추이 = 본문.appendChild(만들기('div', { class: 'ccard 추이' }));
     칸.마켓 = 본문.appendChild(만들기('div', { class: 'card table-card 마켓표' }));
     칸.상품 = 본문.appendChild(만들기('div', { class: 'card table-card 상품표' }));
@@ -88,6 +89,7 @@ window.ZG = window.ZG || {};
   function 폰(본문) {
     본문.appendChild(만들기('div', { class: 'hscroll' }, 기간칩단추들().concat([익().기어('fchip')])));
     익().위(본문, 결, true, 기간글());
+    if (ZG.재구매화면) ZG.재구매화면.위(본문, true);
     본문.appendChild(만들기('div', { class: '단위줄' }, [단위토글()]));
     칸.추이 = 본문.appendChild(만들기('div', { class: 'ccard 추이' }));
     칸.마켓 = 본문.appendChild(만들기('div', { class: 'ccard 마켓표' }));
@@ -452,7 +454,7 @@ window.ZG = window.ZG || {};
   }
 
   /* 08x 상품별 이익도 같이 쓴다 — 지금 쪽과 옮겨 갈 곳은 부르는 쪽이 준다 */
-  function 쪽줄(총쪽, 모두, 지금, 갈때) {
+  function 쪽줄(총쪽, 모두, 지금, 갈때, 글) {
     var 줄 = 만들기('div', { class: 'pager' });
     function 단추(글, 쪽, 막힘) {
       var b = 만들기('button', { type: 'button', text: 글, disabled: 막힘 ? 'disabled' : null });
@@ -467,7 +469,7 @@ window.ZG = window.ZG || {};
       줄.appendChild(i === 지금 ? 만들기('b', { text: String(i) }) : 단추(String(i), i, false));
     }
     줄.appendChild(단추('›', Math.min(총쪽, 지금 + 1), 지금 >= 총쪽));
-    줄.appendChild(만들기('span', { text: '상품 ' + 모두 + '개', style: 'margin-left:var(--space-md)' }));
+    줄.appendChild(만들기('span', { text: 글 || '상품 ' + 모두 + '개', style: 'margin-left:var(--space-md)' }));
     return 줄;
   }
 

@@ -255,7 +255,7 @@ try:
         폰.screenshot(path=str(샷 / '폰-2-쿠팡만.png'))
         폰.click('.subtabs button:has-text("실적")'); 폰.wait_for_timeout(500)
         본다('폰 요약줄(.ph-sub) 없음', 폰.locator('.ph-sub').count() == 0)
-        본다('폰 실적 — 요약·추이·마켓·상품', 폰.locator('.sumcard').count() == 1 and 폰.locator('.주문실적 .추이 svg').count() == 1
+        본다('폰 실적 — 요약·추이·마켓·상품', 폰.locator('.sumcard:not(.재구매)').count() == 1 and 폰.locator('.주문실적 .추이 svg').count() == 1
              and 폰.locator('.prow2').count() > 30 and 폰.locator('.pcard').count() > 0)
         폰.click('.주문실적 .추이 svg rect[data-i="10"]'); 폰.wait_for_timeout(200)
         폰.screenshot(path=str(샷 / '폰-3-실적-위.png'), full_page=False)

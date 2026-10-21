@@ -148,7 +148,7 @@ window.ZG = window.ZG || {};
         var 합 = 빈합(), 마켓표 = Object.create(null), 상품표 = Object.create(null), 상품순 = [], 쓴행 = {};
         건순.forEach(function (g) {
           g.덤 = 덤표[g.키] || [];
-          var c = 송장셈(g, 조, 쓴행);
+          var c = g.셈 = 송장셈(g, 조, 쓴행);   // 08y 재구매가 손님별로 더한다
           var mk = 마켓표[g.마켓] = 마켓표[g.마켓] || 빈합();
           [합, mk].forEach(function (o) {
             o.매출 += g.매출; o.건수++;
@@ -188,7 +188,7 @@ window.ZG = window.ZG || {};
           p.없음 = !p.이익매출;
           return 마무리(p);
         });
-        return { 합계: 합, 마켓들: 마켓들, 상품들: 상품들 };
+        return { 합계: 합, 마켓들: 마켓들, 상품들: 상품들, 건들: 건순 };
       }
     };
   }

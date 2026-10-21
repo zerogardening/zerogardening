@@ -1774,3 +1774,40 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .이익설정.폰 .sk .colh{font-size:var(--font-2xs); color:var(--color-text-muted)}
 .이익설정.폰 .sbar{display:flex; gap:8px; margin-top:auto}
 .이익설정.폰 .sbar .btn{flex:1; min-height:44px}
+
+/* ── 30 재구매 ── (시안 28-재구매-macA) 🔴 전부 .주문실적 아래로 가둔다 */
+.주문실적 .재구매 h3 .tg, .주문실적 .재구매 .head .tg{margin-left:6px; font-size:var(--font-3xs); padding:1px 6px; border-radius:5px; background:#EEF2FF; color:#3B4FB8; font-weight:var(--weight-bold); vertical-align:2px}
+.주문실적 .재구매 h3 .right{display:flex; gap:8px; align-items:center}
+.주문실적 .sumrow{display:flex; gap:28px; padding:10px var(--space-sm) 6px; align-items:stretch}
+.주문실적 .big3{display:flex; gap:26px; flex:1; align-items:center}
+.주문실적 .big3 .k{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.주문실적 .big3 .v{font-size:34px; font-weight:var(--weight-bold); letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.주문실적 .big3 .v small{font-size:var(--font-sm); color:var(--color-text-muted); margin-left:2px}
+.주문실적 .big3 .v.pf, .주문실적 .sumcard .v.pf{color:var(--color-accent-dark)}
+.주문실적 .dist{flex:1.3; border-left:1px solid var(--color-border-faint); padding-left:26px}
+.주문실적 .dh{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted); margin-bottom:6px}
+.주문실적 .dr{display:flex; align-items:center; gap:10px; padding:4px 0; font-size:var(--font-sm)}
+.주문실적 .dr .l{width:58px; font-weight:var(--weight-semibold); white-space:nowrap}
+.주문실적 .dr b{width:72px; text-align:right; font-variant-numeric:tabular-nums}
+.주문실적 .dr b small{font-size:var(--font-2xs); color:var(--color-text-muted); margin-left:2px}
+.주문실적 .dr .p{width:44px; text-align:right; color:var(--color-text-muted); font-size:var(--font-xs)}
+.주문실적 .dbar{flex:1; height:10px; background:var(--color-seg-bg); border-radius:5px; overflow:hidden}
+.주문실적 .dbar i{display:block; height:100%; min-width:3px; background:var(--color-accent); border-radius:5px}
+.주문실적 .dr.한번 .dbar i{background:var(--color-text-hint)}
+.주문실적 .ccard .dr .l{width:56px}
+.주문실적 .ccard .dr b{width:62px}
+.주문실적 .ccard .dr .p{width:40px}
+.주문실적 .cnt{display:inline-block; background:var(--color-accent-bg); color:var(--color-accent-dark); border:1px solid var(--color-accent-border); border-radius:99px; padding:1px 9px; font-size:var(--font-xs); font-weight:var(--weight-bold)}
+.주문실적 .cbar .율막대{display:block; flex:0 0 80px; height:8px; background:var(--color-seg-bg); border-radius:4px; overflow:hidden}
+.주문실적 .cbar .율막대 i{max-width:none; min-width:0; background:var(--color-accent)}
+.주문실적 .이익표 td.addr{color:var(--color-text-sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.주문실적 .딱지줄{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
+.주문실적 .재구매접기 .md{width:8px; height:8px; margin-right:4px}
+.주문실적 .foldbody .재구매마켓, .주문실적 .재구매손님칸{margin-top:var(--space-md)}
+.주문실적 .재구매손님칸{display:flex; flex-direction:column; gap:var(--space-md)}
+.주문실적 .pk .pf.검{color:var(--color-text)}
+.주문실적 .pk .t2 .이익{margin-left:auto}
+.주문실적 .pk .t2 b.prov{color:#3B4FB8}
+.주문실적 .pk .t2 b.흐림{color:var(--color-text-faint)}
+.주문실적 .pk .t3{margin-top:4px; font-size:var(--font-2xs); color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.주문실적 .재구매마켓 .mr .a .pf{margin-right:0}

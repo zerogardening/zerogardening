@@ -164,7 +164,7 @@ try:
         n = 쪽.evaluate(화면줄)
         쪽.evaluate("() => ZG.주문.다시그리기()"); 쪽.wait_for_timeout(300)
         쪽.click('.pc-tabs button:has-text("주문실적")'); 쪽.wait_for_timeout(600)
-        본다('넷칸 요약 · 분해줄 6칸 · 예외줄', 쪽.locator('.주문실적 .stat.five > div').count() == 4 and 쪽.locator('.주문실적 .eq .it').count() == 6
+        본다('넷칸 요약(+30단계 재구매율 한 칸) · 분해줄 6칸 · 예외줄', 쪽.locator('.주문실적 .stat.five > div').count() == 5 and 쪽.locator('.주문실적 .eq .it').count() == 6
              and 쪽.locator('.주문실적 .exrow .exc').count() == 2)
         수 = 쪽.evaluate("""() => { const s = ZG.주문실적화면.상태; const 결 = ZG.주문실적.읽어모으기({부터:s.부터, 까지:s.까지, 단위:'일'}); return 결.이익.합계; }""")
         글 = 쪽.eval_on_selector_all('.주문실적 .eq .v', 'els => els.map(e => e.textContent)')
@@ -210,8 +210,8 @@ try:
         폰.evaluate(화면줄)
         폰.evaluate("() => ZG.주문.다시그리기()"); 폰.wait_for_timeout(300)
         폰.click('.subtabs button:has-text("실적")'); 폰.wait_for_timeout(600)
-        본다('폰 — 이익 요약카드 · 분해 · 예외 둘 · 마켓 줄 · 상품 카드', 폰.locator('.sumcard .rate').count() == 1 and 폰.locator('.bd2 > div').count() == 6
-             and 폰.locator('.excs .exc').count() == 2 and 폰.locator('.주문실적 .mr').count() == 8 and 폰.locator('.주문실적 .pk').count() > 3)
+        본다('폰 — 이익 요약카드 · 분해 · 예외 둘 · 마켓 줄 · 상품 카드', 폰.locator('.sumcard.이익 .rate').count() == 1 and 폰.locator('.bd2 > div').count() == 6
+             and 폰.locator('.excs .exc').count() == 2 and 폰.locator('.주문실적 .이익마켓 .mr').count() == 8 and 폰.locator('.주문실적 .pk').count() > 3)
         본다('폰 — 기존 추이·마켓·상품 그대로', 폰.locator('.주문실적 .추이 svg').count() == 1 and 폰.locator('.pcard').count() > 0)
         폰.screenshot(path=str(샷 / '폰-1-이익.png'), full_page=False)
         폰.click('.주문실적 .이익상품칸 .fchip:has-text("원가율 높은순")'); 폰.wait_for_timeout(200)
