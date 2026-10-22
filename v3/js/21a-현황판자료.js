@@ -30,19 +30,21 @@ window.ZG = window.ZG || {};
     return '못 읽었습니다 — ' + (m || '까닭 모름');
   }
 
-  /* → {갱신, 항목[], 숨김:Set}. 숨긴 항목은 여기서 이미 뺀다 — 목록·숫자 어디에도 안 나온다 */
+  /* → {갱신, 항목[], 숨김:Set, 급함:Set}. 숨긴 항목은 여기서 이미 뺀다 — 목록·숫자 어디에도 안 나온다
+     급함 = 우람님이 카드에서 누른 「급함」('급함:{항목id}' 줄 · 삭제됨=false) — 허브가 지시함.py 허브 로 읽는다 */
   function 불러오기() {
     var t = 통();
     if (!t) return Promise.reject(new Error('오프라인'));
     return 제때(t.select('id,내용,삭제됨')).then(function (r) {
       if (r.error) throw r.error;
-      var 판 = null, 숨김 = new Set();
+      var 판 = null, 숨김 = new Set(), 급함 = new Set();
       (r.data || []).forEach(function (줄) {
         if (줄.id === '판') 판 = 줄.내용 || null;
         else if (!줄.삭제됨 && 줄.id.indexOf('숨김:') === 0 && 줄.내용) 숨김.add(줄.내용.항목);
+        else if (!줄.삭제됨 && 줄.id.indexOf('급함:') === 0 && 줄.내용) 급함.add(줄.내용.항목);
       });
       var 항목 = ((판 && 판.항목) || []).filter(function (h) { return !숨김.has(h.id); });
-      return { 갱신: (판 && 판.갱신) || '', 항목: 항목, 숨김: 숨김 };
+      return { 갱신: (판 && 판.갱신) || '', 항목: 항목, 숨김: 숨김, 급함: 급함 };
     });
   }
 
@@ -53,6 +55,17 @@ window.ZG = window.ZG || {};
       id: '숨김:' + 항목.id,
       내용: { 항목: 항목.id, 제목: 항목.제목, 숨긴때: new Date().toISOString() },
       삭제됨: false
+    }])).then(function (r) { if (r.error) throw r.error; });
+  }
+
+  /* 급함 켜기/끄기 — 한 항목 = 한 줄('급함:{id}'), 끄면 삭제됨=true(지우지 않는다) · '판' 줄은 안 건드린다 */
+  function 급함(항목, 켬) {
+    var t = 통();
+    if (!t) return Promise.reject(new Error('오프라인'));
+    return 제때(t.upsert([{
+      id: '급함:' + 항목.id,
+      내용: { 항목: 항목.id, 제목: 항목.제목, 설명: 항목.긴설명 || 항목.설명 || '', 팀: 항목.팀, 날: 항목.날, 누른때: new Date().toISOString() },
+      삭제됨: !켬
     }])).then(function (r) { if (r.error) throw r.error; });
   }
 
@@ -76,6 +89,6 @@ window.ZG = window.ZG || {};
 
   ZG.현황판자료 = {
     단계들: 단계들, 팀들: 팀들,
-    불러오기: 불러오기, 숨기기: 숨기기, 거르기: 거르기, 세기: 세기, 말썽: 말썽
+    불러오기: 불러오기, 숨기기: 숨기기, 급함: 급함, 거르기: 거르기, 세기: 세기, 말썽: 말썽
   };
 })(window.ZG);

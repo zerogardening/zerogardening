@@ -190,8 +190,33 @@ def 허브로넘기기(모두):
         모두[i] = 적기(i, 모두[i], 허브푸시=True)
 
 
+def 급함찍기():
+    """앱 현황판 카드에서 우람님이 「급함」을 누른 일 — 허브가 맨 먼저 본다 (10/23 우람님 · 표 v3_현황판 id='급함:…')"""
+    try:
+        sys.path.insert(0, str(뿌리 / '_도구'))
+        import 현황판올리기 as 올
+        목록 = 올.급함목록()
+    except Exception as e:
+        return print('🔴 급함 — 못 읽음: %s' % e)
+    if 목록 is None:
+        return print('🔴 급함 — 서버를 못 읽음')
+    if not 목록:
+        return print('급함 — 없음')
+    print('■ 🔴 급함(우람님 푸시) %d건 — 이것부터' % len(목록))
+    import datetime
+    def 때(v):
+        try:
+            return datetime.datetime.fromisoformat(str(v).replace('Z', '+00:00')).astimezone().strftime('%m/%d %H:%M')
+        except ValueError:
+            return str(v)[:16]
+    for c in 목록:
+        print('  %s · [%s] %s — %s' % (때(c.get('누른때', '')), c.get('팀') or '?',
+                                      c.get('제목') or '?', ' '.join(str(c.get('설명') or '').split())[:120]))
+
+
 def 허브목록():
-    """허브가 받을 일 — `python3 통합관리/도구/지시함.py 허브`"""
+    """허브가 받을 일 — `python3 통합관리/도구/지시함.py 허브` (맨 위 = 현황판 급함)"""
+    급함찍기()
     모두 = 줄들() or {}
     허브로넘기기(모두)
     받을 = sorted((i, c) for i, c in 모두.items() if c.get('상태') == '허브로')
@@ -985,6 +1010,7 @@ def 한건():
 
 
 def 보기():
+    급함찍기()
     모두 = 줄들()
     if 모두 is None:
         return print('🔴 v3_지시 표가 아직 없습니다 — v3/설계/16단계-지시함.sql 을 Supabase 에서 돌리십시오')

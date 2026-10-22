@@ -10,6 +10,7 @@ window.ZG = window.ZG || {};
   var 판 = null, 말 = '';            // 판 = {갱신, 항목[]} · 말 = 못 읽은 까닭
   var 단계 = null, 팀 = '전체';      // 단계 null = 완료 뺀 셋. 남기지 않는다 — 열 때마다 기본
   var 첫판 = true;
+  var 펼친 = {};                     // 카드 id → 펼침(설명·진행 보기)
 
   var 결 = { 준비: 'rd', 작업중: 'go', 컨펌대기: 'me', 완료: 'dn' };
   var 순서 = { 컨펌대기: 0, 작업중: 1, 준비: 2 };
@@ -68,7 +69,7 @@ window.ZG = window.ZG || {};
       return 겉;
     }
     var 단추 = 만들기('button', { type: 'button', class: 'btn sm cl', text: '정리' });
-    단추.addEventListener('click', function () { 정리(h, 몸); });
+    단추.addEventListener('click', function (e) { e.stopPropagation(); 정리(h, 몸); });
     단추자리.appendChild(단추);
     return 몸;
   }
@@ -101,9 +102,26 @@ window.ZG = window.ZG || {};
     return 줄;
   }
 
+  /* 급함 — 화면 먼저 바꾸고(낙관) 못 쓰면 되돌린다 */
+  function 급함누름(h) {
+    var 켬 = !판.급함.has(h.id);
+    if (켬) 판.급함.add(h.id); else 판.급함.delete(h.id);
+    u.햅틱(); 그리기();
+    자.급함(h, 켬).then(function () {
+      u.토스트(켬 ? '급함으로 올렸습니다' : '급함을 풀었습니다');
+    }).catch(function (e) {
+      if (켬) 판.급함.delete(h.id); else 판.급함.add(h.id);
+      그리기();
+      u.토스트('못 바꿨습니다 — ' + 자.말썽(e));
+    });
+  }
+
   function 카드(h) {
-    var k = 결[h.단계];
+    var k = 결[h.단계], 급 = 판.급함.has(h.id), 열림 = !!펼친[h.id];
+    var 푸시 = 만들기('button', { type: 'button', class: 'btn sm push' + (급 ? ' on' : ''), text: 급 ? '급함 해제' : '급함 푸시' });
+    푸시.addEventListener('click', function (e) { e.stopPropagation(); 급함누름(h); });
     var r1 = 만들기('div', { class: 'r1' }, [
+      급 ? 만들기('span', { class: 'urg', text: '급함' }) : null,
       만들기('span', { class: 'tt', text: h.제목 }),
       h.막힘 ? 만들기('span', { class: 'blkm', text: '막힘' }) : null,
       만들기('span', { class: 'sp ' + k, text: h.단계 })
@@ -118,15 +136,26 @@ window.ZG = window.ZG || {};
       만들기('div', { class: 'r3' }, [
         만들기('span', { class: 'team', text: h.팀 }),
         h.날 ? 만들기('span', { class: 'day', text: 월일(h.날) }) : null
-      ].concat(률))
+      ].concat(률, [푸시])),
+      열림 ? 만들기('div', { class: 'more' }, [
+        만들기('p', { class: 'long', text: h.긴설명 || h.설명 || h.제목 }),
+        h.진행 ? 만들기('p', { class: 'prog', text: h.진행 }) : null
+      ]) : null
     ]);
+    if (급) 몸.classList.add('urgent');
+    if (열림) 몸.classList.add('open');
+    몸.addEventListener('click', function () {
+      if (u.방금끌었나 && u.방금끌었나()) return;
+      펼친[h.id] = !펼친[h.id]; 그리기();
+    });
     return 정리붙이기(h, 몸, r1);
   }
 
   function 카드목록(항목들, 넓게) {
     var 판순 = 판.항목;
+    var 급 = 판.급함;
     var 줄 = 항목들.slice().sort(function (a, b) {
-      return (순서[a.단계] - 순서[b.단계]) || (b.날 || '').localeCompare(a.날 || '') || 판순.indexOf(a) - 판순.indexOf(b);
+      return ((급.has(b.id) ? 1 : 0) - (급.has(a.id) ? 1 : 0)) || (순서[a.단계] - 순서[b.단계]) || (b.날 || '').localeCompare(a.날 || '') || 판순.indexOf(a) - 판순.indexOf(b);
     });
     return 만들기('div', { class: 'tks' + (넓게 ? ' wide' : '') }, 줄.map(카드));
   }
