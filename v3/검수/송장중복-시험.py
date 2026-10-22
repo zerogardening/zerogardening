@@ -18,7 +18,9 @@ assert m, '08h 에서 로젠항목() 을 못 찾았다'
 로젠항목소스 = m.group(0)
 
 껍데기 = """<!doctype html><meta charset="utf-8"><title>송장중복 시험</title><body>
+<script>window.지금 = Date.UTC(2026, 7, 19, 2, 0); Date.now = function () { return window.지금; };</script>
 <script src="../js/01-저장소.js"></script>
+<script src="../js/02-품목코드.js"></script>
 <script src="../js/03-계산.js"></script>
 <script src="../js/04-공통UI.js"></script>
 <script src="../js/08a-주문자료.js"></script>
@@ -114,8 +116,9 @@ with sync_playwright() as p:
     재번호 = [r3['번호']['ORD%d' % i] for i in range(1, 11)]
     본다('재발행해도 번호가 안 바뀜 (인쇄한 카드와 안 어긋남)', sorted(재번호) == list(range(1, 11)), str(재번호))
 
-    # ── ④ 다음날은 다시 1번부터 ──
+    # ── ④ 다음날은 다시 1번부터 (10/23~ 뽑은 날 기준 — 시계를 하루 넘김) ──
     r4 = page.evaluate("""() => {
+      window.지금 += 24 * 3600 * 1000;
       const 것들 = []; for (let i = 21; i <= 23; i++) 것들.push(항목(i, '260820-01', 'n' + i));
       심기(것들);
       const 수 = ZG.로젠파일.내보내기(것들, '20260820-01.xlsx', { 묶음id: '260820-01' });
