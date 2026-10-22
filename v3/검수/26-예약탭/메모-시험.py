@@ -46,10 +46,11 @@ try:
         줄=쪽.locator(('.예약탭 .rc' if 폰 else '.예약탭 .tr')+':has-text("시험가람")').first
         줄.locator('button:has-text("고치기")').click(); 쪽.wait_for_timeout(800)
         값들=쪽.evaluate("() => [...document.querySelectorAll('input,textarea')].map(e=>e.value)")
-        본다('고치기 → 문자주문 고침 판(받는 분·메모가 채워짐)', '시험가람' in 값들 and '현관 앞에 두기' in 값들, [v for v in 값들 if v][:6])
+        본다('고치기 → 고침 판(받는 분·메모가 채워짐 · 10/23~ 예약 탭 안)', '시험가람' in 값들 and '현관 앞에 두기' in 값들, [v for v in 값들 if v][:6])
         메=쪽.locator('input[placeholder="메모"],textarea[placeholder="메모"]').first
         메.fill('문 앞 · 오후 배송'); 
         쪽.locator('button:has-text("저장")').last.click(); 쪽.wait_for_timeout(500)
+        if 쪽.locator('.askbox').count(): 쪽.click('.askbox .btnrow button.main'); 쪽.wait_for_timeout(500)   # 10/23~ 예약 탭 판은 확인창 뒤 저장
         r=쪽.evaluate("(id)=>ZG.문자주문자료.하나(id)", m['A'])
         본다('메모 고쳐 저장됨 · 예약 그대로', r.get('메모')=='문 앞 · 오후 배송' and r.get('예약') is True and r.get('받는분')=='시험가람', (r.get('메모'),r.get('예약'),r.get('예약일')))
         # 옮겨 온 예약 — 메모 칸이 있고 저장된다

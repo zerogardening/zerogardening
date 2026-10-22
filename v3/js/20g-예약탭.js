@@ -100,15 +100,18 @@ window.ZG = window.ZG || {};
     if (메모) e.title = 메모;
     return e;
   }
-  function 고치기(r) {
-    if (u.폰인가()) ZG.주문.열기('목록');
-    ZG.견적탭.탭으로('문자');   // 🔴 탭으로가 뷰를 새 문자로 돌린다 — 고침 판은 그 다음에
-    ZG.문자주문.고치기로(r.id);
+  /* 카드(줄)를 누르거나 [고치기] — 이 자리에서 문자주문 고침 판(20c)을 편다. 저장은 확인창 뒤 (10/23 우람님) */
+  function 고치기(r) { ZG.문자주문.예약열기(r.id); }
+  function 펼침(r) { return ZG.문자주문.예약열림(r.id); }
+  function 누르면펼침(e, r) {
+    e.style.cursor = 'pointer';
+    e.addEventListener('click', function () { 고치기(r); });
+    return e;
   }
   function 끝단추들(r, 못, 다시) {
     return [
       못 && !r.원본줄들 ? 단추('주소 입력', 'sm', function () { 주소열기(r, 다시); }) : null,
-      단추('고치기', 'sm', function () { 고치기(r); }),
+      단추(펼침(r) ? '접기' : '고치기', 'sm', function () { 고치기(r); }),
       단추('지금 올리기', 'sm main', function () { 지금올리기(r, 다시); })
     ];
   }
@@ -124,15 +127,16 @@ window.ZG = window.ZG || {};
     var dd = 못 ? 만들기('span', { class: 'dd rd', text: '예약일 ' + 날요일(r.예약일) })
       : r.예약일 ? 만들기('span', { class: 'dd', text: 예().D글(r.예약일) }) : 만들기('span', { class: 'dd gr', text: '날짜 미정' });
     var 카드 = 만들기('div', { class: 'rc' + (못 ? ' bad' : r.예약일 ? '' : ' und') + (판.방금[r.id] ? ' 방금' : '') }, [
-      만들기('div', { class: 'r1' }, [이름(r), dd]),
-      만들기('div', { class: 'ds', text: 품글(r) }),
-      만들기('div', { class: 'r3' }, [만들기('span', { class: 'amt', text: 금액(r) }),
-        r.예약일 && !못 ? 만들기('span', { class: 'dt', html: '예약일 <b>' + 날요일(r.예약일) + '</b>' }) : null])
+      누르면펼침(만들기('div', { class: 'r1' }, [이름(r), dd]), r),
+      누르면펼침(만들기('div', { class: 'ds', text: 품글(r) }), r),
+      누르면펼침(만들기('div', { class: 'r3' }, [만들기('span', { class: 'amt', text: 금액(r) }),
+        r.예약일 && !못 ? 만들기('span', { class: 'dt', html: '예약일 <b>' + 날요일(r.예약일) + '</b>' }) : null]), r)
     ]);
     if (사) 카드.appendChild(경고(사.긴));
     if (!r.예약일) 카드.appendChild(날짜줄(r, 다시, true));
     카드.appendChild(만들기('div', { class: 'r4' }, [못 ? null : 자동표(r, true)].concat(끝단추들(r, 못, 다시))));
     if (판.주소 === r.id) 카드.appendChild(주소판(r, true, 다시));
+    if (펼침(r)) 카드.appendChild(ZG.문자주문.예약판(r.id, true));
     return 카드;
   }
 
@@ -150,8 +154,9 @@ window.ZG = window.ZG || {};
     } else 칸들.push(만들기('span', { class: 'dt wd' }, [날짜줄(r, 다시, false)]));
     칸들.push(만들기('span', { class: 'au' }, [사 ? 경고(사.짧은) : 자동표(r, false)]));
     칸들.push(만들기('span', { class: 'bn' }, 끝단추들(r, 못, 다시)));
-    var 줄 = [만들기('div', { class: 'tr' + (못 ? ' bad' : '') + (판.방금[r.id] ? ' 방금' : '') }, 칸들)];
+    var 줄 = [누르면펼침(만들기('div', { class: 'tr' + (못 ? ' bad' : '') + (판.방금[r.id] ? ' 방금' : '') }, 칸들), r)];
     if (판.주소 === r.id) 줄.push(만들기('div', { class: '판줄' }, [주소판(r, false, 다시)]));
+    if (펼침(r)) 줄.push(만들기('div', { class: '판줄' }, [ZG.문자주문.예약판(r.id, false)]));
     return 줄;
   }
   var 머리글 = ['받는 분', '품목', '금액', '예약일', 'D-n', '자동 올라감', ''];
