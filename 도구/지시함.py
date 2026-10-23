@@ -33,6 +33,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from 제작요청 import 키, 부르기, 표                     # noqa: E402
+from 줄캐시 import 줄들 as 캐시줄들                     # noqa: E402  🔴 1분마다 통째로 받지 않는다(10/23 전송량 초과)
 
 뿌리 = Path(__file__).resolve().parents[2]              # 제로가드닝/ — ops 저장소이자 Claude 가 일할 창
 주소 = 'https://vjqfhwrgrocapcyndgtx.supabase.co/rest/v1/'
@@ -133,7 +134,7 @@ def 줄들():
     🔴 표가 아직 없으면(404) None 을 준다 — 조용히 넘어가야 한다.
        우람님이 `16단계-지시함.sql` 을 돌리시기 전까지 1분마다 빨간 줄이 쌓이면 로그를 못 읽는다."""
     try:
-        답 = 부르기(표('v3_지시') + '?select=id,내용,삭제됨') or []
+        답 = 캐시줄들('v3_지시')
     except urllib.error.HTTPError as e:
         if e.code == 404:
             return None
@@ -263,7 +264,7 @@ def 착수할것():
     🔴 경계(9/1) 뒤 신규만. 옛 품목은 소급하지 않는다 — 06g-사진수집.js 와 같은 날이다."""
     from 제작요청 import 폴더명, 원본사진방, 품목방, 필수사진, 구근인가
     것들 = []
-    for r in 부르기(표('v3_품목') + '?select=id,내용') or []:
+    for r in 캐시줄들('v3_품목'):
         c = r.get('내용') or {}
         유통명 = c.get('유통명') or ''
         if not 유통명 or (c.get('등록일시') or 0) < 경계:

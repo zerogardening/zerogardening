@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import 원고파일 as 원고          # noqa: E402  🔴 규격이름() — 0 은 규격이 아니다 (2026-09-28)
+from 줄캐시 import 줄들 as 캐시줄들   # noqa: E402  🔴 일꾼이 1분마다 부른다 — 통째로 받지 않는다(10/23 전송량 초과)
 
 주소 = 'https://vjqfhwrgrocapcyndgtx.supabase.co/rest/v1/'
 뿌리 = Path(__file__).resolve().parents[2]          # 제로가드닝/
@@ -68,8 +69,8 @@ def 표(이름):
 
 
 def 요청들(상태):
-    """v3_제작요청 에서 그 상태인 것만. 표가 작아 통째로 받아 파이썬에서 거른다"""
-    줄 = 부르기(표('v3_제작요청') + '?select=id,내용,삭제됨') or []
+    """v3_제작요청 에서 그 상태인 것만. 바뀐 줄만 받아 캐시에 합친 것에서 거른다(일꾼이 1분마다 부른다 · 10/23)"""
+    줄 = 캐시줄들('v3_제작요청')
     return [r for r in 줄 if not r.get('삭제됨') and (r.get('내용') or {}).get('상태') == 상태]
 
 
@@ -320,7 +321,7 @@ def 대기줄넣기(줄들):
 
 
 def 식물정보받기(행들):
-    품목 = {r['id']: (r.get('내용') or {}) for r in (부르기(표('v3_품목') + '?select=id,내용') or [])}
+    품목 = {r['id']: (r.get('내용') or {}) for r in 캐시줄들('v3_품목')}
     묶음 = {'고를수있는값': 고를수있는값, '품목': []}
     if 대기파일.exists():
         try:
@@ -358,7 +359,7 @@ def 받기():
     if 상세:
         print('📄 상세페이지', len(상세), '종')
         # 기본정보를 입력.md 에 같이 실어 준다 (2026-08-21 우람님) — 표가 작아 통째로 한 번 받는다
-        품목 = {r['id']: (r.get('내용') or {}) for r in (부르기(표('v3_품목') + '?select=id,내용') or [])}
+        품목 = {r['id']: (r.get('내용') or {}) for r in 캐시줄들('v3_품목')}
         줄들 = []
         for 행 in 상세:
             이름 = 상세페이지받기(행, 오늘, 품목.get(행['내용'].get('품목코드'), {}).get('특성'))
@@ -380,7 +381,7 @@ def 올리기():
     if not 대기파일.exists():
         sys.exit('❌ ' + str(대기파일) + ' 이 없다 — 먼저 「받기」를 돌린다')
     묶음 = json.loads(대기파일.read_text(encoding='utf-8'))
-    품목 = {r['id']: r for r in (부르기(표('v3_품목') + '?select=id,내용') or [])}
+    품목 = {r['id']: r for r in 캐시줄들('v3_품목')}
     요청 = {r['id']: r for r in 요청들('받음')}
 
     남은것, 올린수 = [], 0

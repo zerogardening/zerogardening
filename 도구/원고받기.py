@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from 제작요청 import 키, 부르기, 표, 폴더명, 품목방, 구근인가    # noqa: E402
+from 줄캐시 import 줄들 as 캐시줄들                              # noqa: E402  🔴 1분마다 통째로 받지 않는다(10/23 전송량 초과)
 import 원고파일 as 원고                                        # noqa: E402
 
 창고 = 'https://vjqfhwrgrocapcyndgtx.supabase.co/storage/v1/'
@@ -51,7 +52,7 @@ def 올리기(행들):
 
 
 def 원고줄들():
-    줄 = 부르기(표('v3_원고') + '?select=id,내용,삭제됨') or []
+    줄 = 캐시줄들('v3_원고')
     return {r['id']: (r.get('내용') or {}) for r in 줄 if not r.get('삭제됨')}
 
 
@@ -68,7 +69,7 @@ def 품목표():
     """({품목코드: (품목폴더, 구근인가)}, 못찾음). 경계 뒤 신규 품목만.
     🔴 폴더를 못 찾은 코드는 **버리지 않고 돌려준다** — 조용히 건너뛰다가 4품목이 넉 달을 굶었다 (§2).
     🔴 구근이냐가 곧 칸 수다(3구역이 셋으로 갈리고 6구역이 생긴다) — 화면(02-품목코드.js)과 같은 자로 가른다"""
-    줄 = 부르기(표('v3_품목') + '?select=id,내용') or []
+    줄 = 캐시줄들('v3_품목')
     표들, 못찾음 = {}, []
     for r in 줄:
         내용 = r.get('내용') or {}

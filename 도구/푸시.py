@@ -97,7 +97,8 @@ def 봉하기(글, p256dh, auth):
 # ══════════════════════════════════════════════ 구독 (v3_지시 표에 얹어 둔다)
 
 def 구독들():
-    답 = 부르기(표('v3_지시') + '?select=id,내용,삭제됨') or []
+    from 줄캐시 import 줄들 as 캐시줄들     # 🔴 살아있음.py 가 5분마다 부른다 — 통째로 받지 않는다(10/23)
+    답 = 캐시줄들('v3_지시')
     return [(r['id'], r['내용']) for r in 답
             if not r.get('삭제됨') and (r.get('내용') or {}).get('갈래') == '구독']
 
@@ -112,6 +113,8 @@ def 구독지우기(줄id):
         urllib.request.urlopen(req, timeout=30).read()
     except urllib.error.HTTPError:
         pass
+    from 줄캐시 import 빼기
+    빼기('v3_지시', 줄id)
 
 
 # ══════════════════════════════════════════════ 보내기
