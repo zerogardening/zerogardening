@@ -915,6 +915,22 @@ def 알림(내용, 됐나, 답):
         print('  ⚠️ 알림은 못 보냈습니다 — %s' % e)
 
 
+def 그림검사(내용):
+    """올릴 발행이미지에 빈 사진 칸이 있으면 그 줄들(문자열) · 없거나 해당 없으면 ''.
+    🔴 10/23 바르젤라(PAB01-0) 1.jpg 가 맨 위 꽃 사진 없이(깨진 그림) 뽑힌 채 「상세페이지 갱신」이 쌓였다 —
+       상세설명-올리기.py 는 jpg 를 그대로 올리니 여기서 막는다. 검사 도구가 못 돌면(크롬 등) 막지 않는다"""
+    if 내용.get('갈래') not in ('상세페이지갱신', '카페24올리기') or not 내용.get('폴더'):
+        return ''
+    try:
+        r = subprocess.run(['python3', str(뿌리 / '상품' / '_도구' / '상세그림검사.py'), 내용['폴더']],
+                           capture_output=True, text=True, timeout=180, env=돌릴환경())
+    except Exception as e:
+        print('  ⚠️ 그림 검사를 못 돌렸습니다 — %s' % e); return ''
+    if r.returncode == 1 and '🔴' in r.stdout:
+        return '\n'.join(t for t in r.stdout.split('\n') if '🔴' in t)
+    return ''
+
+
 # ══════════════════════════════════════════════ 한 건
 
 def 한건():
@@ -942,6 +958,12 @@ def 한건():
     if not 글:
         적기(줄id, 내용, 상태='실패', 답장='지시가 비어 있습니다', 답한때=int(time.time() * 1000))
         print('⚠️ %s — 빈 지시' % 줄id); return '빈지시'
+    빈칸 = 그림검사(내용)
+    if 빈칸:
+        답 = ('%s 상세 그림에 빈 사진 칸 — 올리지 않았습니다\n%s' % (내용.get('폴더') or 줄id, 빈칸))[:답장상한]
+        적기(줄id, 내용, 상태='실패', 답장=답, 답한때=int(time.time() * 1000))
+        알림(내용, False, 답)
+        print('❌ %s — 그림 검사 걸림' % 줄id); return '그림검사'
 
     내용 = 적기(줄id, 내용, 상태='하는중', 집은때=int(time.time() * 1000))
     print('🛠  %s — %s' % (줄id, 글[:60]))
