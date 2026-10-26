@@ -1819,7 +1819,9 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .출고목록 .규{color:var(--color-text-sub); white-space:nowrap; font-size:var(--font-xs)}
 .출고목록 .n{margin-left:auto; padding-left:8px; white-space:nowrap; font-variant-numeric:tabular-nums}
 @media print{
-  body.인쇄중 .출고목록{font-size:10pt; column-gap:10mm}
-  body.인쇄중 .출고목록 li{padding:2px 0}
-  body.인쇄중 .출고목록 .규{font-size:9pt}
+  /* 10/26 우람님 「다닥다닥해서 보기 힘들다」 — 글자 키우고 줄·열 사이를 넓힘(한 장 약 55품목) */
+  body.인쇄중 .출고목록{font-size:12.5pt; column-gap:16mm}
+  body.인쇄중 .출고목록 li{padding:6px 2px; gap:8px}
+  body.인쇄중 .출고목록 .규{font-size:10.5pt}
+  body.인쇄중 .출고목록 .n{font-size:13.5pt}
 }
