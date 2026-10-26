@@ -1494,6 +1494,10 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .ogrid.보류판{align-items:start}
 .보류넘김{font-family:inherit; display:inline-flex; align-items:center; justify-content:center; gap:5px; white-space:nowrap; cursor:pointer; font-size:var(--font-xs); font-weight:var(--weight-bold); padding:5px 10px; border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-accent-dark); border:var(--border-width) solid var(--color-accent-border); box-shadow:var(--shadow-btn)}
 .보류넘김:active{background:var(--color-accent-bg); box-shadow:0 0 0 3px var(--color-accent-bg)}
+.보류단추{display:flex; align-items:center; gap:var(--space-sm); margin-left:auto}
+.보류단추 .보류넘김{margin-left:0}
+.보류취소{font-family:inherit; display:inline-flex; align-items:center; justify-content:center; white-space:nowrap; cursor:pointer; font-size:var(--font-xs); font-weight:var(--weight-semibold); padding:5px 10px; border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-danger); border:var(--border-width) solid var(--color-danger-border)}
+.보류취소:active{background:var(--color-danger-bg)}
 .table-card .ogrid.보류판{padding:var(--space-xs) var(--space-sm) var(--space-sm)}
 .table-card > .empty{padding:var(--space-2xl); text-align:center; color:var(--color-text-muted)}
 .ph-shell .oc{border-radius:var(--radius-xl); padding:13px 15px; gap:9px}
@@ -1507,6 +1511,9 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .ph-shell .oc .tv .inp{height:40px; font-size:var(--font-lg)}
 .ph-shell .oc .h .hold, .ph-shell .oc .h .age{font-size:var(--font-xs)}
 .ph-shell .보류넘김{width:100%; min-height:46px; font-size:var(--font-lg); border-radius:var(--radius-lg); border-width:1.5px}
+.ph-shell .보류단추{width:100%; margin-left:0}
+.ph-shell .보류단추 .보류넘김{flex:1; width:auto}
+.ph-shell .보류취소{min-height:46px; font-size:var(--font-md); border-radius:var(--radius-lg); padding:0 14px}
 
 /* 🚚 팝업 — PC 모달 800px · 폰 아래 시트. 머리·도구·발은 붙박고 카드 판만 굴린다 */
 .pcsheet.dlv.pop{width:min(800px, 94vw); max-height:86vh; top:4vh; display:flex; flex-direction:column; overflow:hidden; border-radius:14px}

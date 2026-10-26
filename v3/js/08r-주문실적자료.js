@@ -62,6 +62,7 @@ window.ZG = window.ZG || {};
 
   /* ── 매출 줄 판정 — 금액·수량·건수가 모두 같은 대상을 본다 ── */
   function 취소인가(r) {
+    if (r.취소 === true) return true;                         // v3 에서 주문취소(08u) — 카페24상태는 수집이 덮으니 따로 칸
     var s = String(r.카페24상태 || '');
     return /취소|반품|환불/.test(s) || /^[CR]\d/.test(s);   // 상태글이 없으면 edge 가 order_status 코드를 넣는다
   }

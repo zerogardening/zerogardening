@@ -119,6 +119,8 @@ window.ZG = window.ZG || {};
     var 나 = 나이글(g.보류일);
     var 넘김 = 만들기('button', { type: 'button', class: '보류넘김', text: '✋ 배송완료로 넘기기' });
     넘김.addEventListener('click', function () { 넘기기(g, function () {}); });
+    var 취소 = 만들기('button', { type: 'button', class: '보류취소', text: '주문취소' });
+    취소.addEventListener('click', function () { 주문취소(g); });
     var 배지 = [만들기('span', { class: 'hold', text: '배송보류' }),
       만들기('span', { class: 'age' + (나[2] >= 3 ? ' old' : ''), text: 나[0] + ' · ' + 나[1] })];
     return 묶음카드({ 수령인: g.수령인, 전화: g.전화, 줄들: g.줄들 }, {
@@ -126,7 +128,7 @@ window.ZG = window.ZG || {};
       머리배지: 폰 ? [] : 배지, 오른쪽: 폰 ? 배지 : [], 마켓오른쪽: 폰,
       송장: '글', 송장값: g.송장,
       송장바꿈: function (새) { H().걸기(g.줄들, 새, g.보류일); 다시(); },
-      아래단추: 넘김, 단추한줄: !폰
+      아래단추: 만들기('span', { class: '보류단추' }, [취소, 넘김]), 단추한줄: !폰
     });
   }
 
@@ -159,10 +161,7 @@ window.ZG = window.ZG || {};
       }, function () {});
       끝(false); return;
     }
-    var 표 = '<span class="넘김표"><span class="w">' + u.안전(건.수령인 || '') + '</span><span class="ls">' +
-      상품.map(function (r) {
-        return '<span class="l"><span>' + u.안전(품목줄(r)) + '</span><span class="q">×' + 수량(r) + '</span></span>';
-      }).join('') + '<span class="t">' + u.안전(건.송장) + '</span></span></span>';
+    var 표 = 넘김표(건);
     u.확인({
       제목: 상품.length + '건을 배송완료로 넘길까요',
       본문: '재고 <b>−' + u.콤마(셈.주) + '주</b>' + (카페 ? ' · 카페24 송장 올림' : '') + 표,
@@ -183,6 +182,30 @@ window.ZG = window.ZG || {};
     });
   }
 
+  function 넘김표(건) {
+    return '<span class="넘김표"><span class="w">' + u.안전(건.수령인 || '') + '</span><span class="ls">' +
+      상품만(건.줄들).map(function (r) {
+        return '<span class="l"><span>' + u.안전(품목줄(r)) + '</span><span class="q">×' + 수량(r) + '</span></span>';
+      }).join('') + '<span class="t">' + u.안전(건.송장) + '</span></span></span>';
+  }
+
+  /* ══ 주문취소 (10/26 우람님) — v3 안에서만: 보류 풀고 취소 표시(08u). 출고·재고·카페24 송장은 그대로.
+     🔴 카페24·마켓 취소는 보내지 않는다 — 각 마켓에서 손으로 */
+  function 주문취소(건) {
+    var 상품 = 상품만(건.줄들);
+    u.확인({
+      제목: 상품.length + '건을 주문취소할까요',
+      본문: '보류를 풀고 매출·재구매에서 뺍니다 · 재고는 그대로' + 넘김표(건) +
+        '<br>카페24·마켓 주문취소는 각 마켓에서 직접 해 주세요',
+      확인글: '주문취소', 취소글: '그대로 두기', 위험: true
+    }, function (예) {
+      if (!예) return;
+      var n = H().취소하기(건.줄들);
+      ZG.주문.다시그리기();
+      u.토스트('✓ ' + (건.수령인 ? 건.수령인 + ' ' : '') + n + '건 주문취소 · 카페24·마켓에서도 취소해 주세요');
+    });
+  }
+
   function 결과알림(누구, 건수, 결, 카페) {
     u.토스트('✓ ' + (누구 ? 누구 + ' ' : '') + 건수 + '건 배송완료 · 재고 −' + u.콤마(결.주) + '주' + (카페 ? ' · 카페24 송장 올림' : ''));
     if (결.품목없음) u.토스트('품목코드가 없어 재고를 못 깎은 줄 ' + 결.품목없음 + '개');
@@ -199,5 +222,5 @@ window.ZG = window.ZG || {};
     }, function () {});
   }
 
-  ZG.보류목록 = { 묶음카드: 묶음카드, PC: PC, 폰: 폰, 넘기기: 넘기기, 결과알림: 결과알림 };
+  ZG.보류목록 = { 묶음카드: 묶음카드, PC: PC, 폰: 폰, 넘기기: 넘기기, 주문취소: 주문취소, 결과알림: 결과알림 };
 })(window.ZG);

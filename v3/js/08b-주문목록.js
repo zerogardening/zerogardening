@@ -79,6 +79,7 @@ window.ZG = window.ZG || {};
      지난 심폴 주문(10/14 보충)이 배송준비중에 쏟아지지 않게 (출고를 만들면 재고가 또 빠진다) */
   function 심폴끝(r) { return 심폴인가(r) && r.심폴상태 === '배송완료'; }
   function 준비중인가(r, 표) {
+    if (r.취소 === true) return false;          // v3 에서 주문취소(08u) — 카페24상태가 아직 배송준비중이어도
     if (심폴끝(r)) return false;
     if (심폴인가(r) || r.판매처 === '문자') return !출고로나갔나(r, 표);
     return r.카페24상태 === '배송준비중' && !출고로나갔나(r, 표);
@@ -108,6 +109,8 @@ window.ZG = window.ZG || {};
     /* 같은 날 송장을 아직 안 뽑은 상품 줄이 남아 있으면 「일부 보류」 — 그 줄은 배송준비중에서 나가야 한다 */
     var 색 = 출고색인(), 표 = 상품기준(g.줄들 || []);
     function 보류됨(r) { return ZG.배송보류.보류인가(r) && !색[r.id]; }
+    var 상품 = (g.줄들 || []).filter(function (r) { return r.서비스 !== true; });
+    if (상품.length && 상품.every(function (r) { return r.취소 === true; })) return 만들기('span', { class: 'hold', text: '주문취소' });
     if ((g.줄들 || []).some(보류됨)) {
       var 남음 = g.줄들.some(function (r) { return r.서비스 !== true && !보류됨(r) && 준비중인가(r, 표); });
       return 만들기('span', { class: 'hold', text: 남음 ? '일부 보류' : '배송보류' });
@@ -166,7 +169,7 @@ window.ZG = window.ZG || {};
     var 표 = 상품기준(목록), 색 = 출고색인(), 보번호 = Object.create(null), 보날 = Object.create(null), 상품남음 = Object.create(null);
     function 보류됨(r) { return ZG.배송보류.보류인가(r) && !색[r.id]; }
     ZG.저장소.읽기(ZG.저장소.키.주문).forEach(function (r) {
-      if (보류됨(r)) { 보번호[번호열쇠(r)] = 1; 보날[보류열쇠(r)] = 1; }
+      if (보류됨(r) || r.취소 === true) { 보번호[번호열쇠(r)] = 1; 보날[보류열쇠(r)] = 1; }   // 취소 건에 딸린 서비스 줄도 뺀다
     });
     var 남 = 목록.filter(function (r) { return 준비중인가(r, 표) && !보류됨(r); });
     남.forEach(function (r) { if (r.서비스 !== true) 상품남음[보류열쇠(r)] = 1; });
