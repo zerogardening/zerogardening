@@ -974,32 +974,20 @@ window.ZG = window.ZG || {};
     Array.prototype.forEach.call(것들, function (x) { x.remove(); });
   }
 
+  /* 🔴 종이 한 장에 품목이 더 많이 들어가게 — 「품목명 규격 ··· 필요」 한 줄 · 2열 (10/26 우람님).
+     품목코드·재고·상태는 뺐다(포장할 때 보는 건 무엇을 몇 개뿐). 폰 화면(폰표)은 그대로 */
   function PC표(것들) {
-    var 표 = 만들기('table');
-    표.innerHTML = '<colgroup><col style="width:110px"><col><col style="width:70px"><col style="width:70px"><col style="width:96px"></colgroup>';
-    표.appendChild(만들기('tr', {}, [
-      만들기('th', { text: '품목코드' }), 만들기('th', { text: '품목 · 규격' }),
-      만들기('th', { class: 'r', text: '필요' }), 만들기('th', { class: 'r', text: '재고' }),
-      만들기('th', { text: '상태' })
-    ]));
-    if (!것들.length) {
-      표.appendChild(만들기('tr', {}, [만들기('td', { colspan: '5', class: 'dim', text: '나갈 품목이 없습니다.' })]));
-      return 표;
-    }
+    if (!것들.length) return 만들기('p', { class: 'dim', text: '나갈 품목이 없습니다.' });
+    var 목록 = 만들기('ol', { class: '출고목록' });
     것들.forEach(function (t) {
-      표.appendChild(만들기('tr', { class: t.부족 ? 'short' : '' }, [
-        만들기('td', { class: 'code', text: t.품목코드 }),
-        만들기('td', {}, [
-          document.createTextNode(t.유통명 || '(품목 없음)'),
-          만들기('div', { class: 'rgs', text: t.규격 || '' })
-        ]),
-        만들기('td', { class: 'r' + (t.부족 ? ' zero' : ''), text: String(t.필요) }),
-        만들기('td', { class: 'r' + (t.부족 ? ' zero' : '') + (t.지남 ? ' dim' : ''), text: t.지남 ? '—' : String(t.재고) }),
-        만들기('td', {}, [만들기('span', { class: 'chip' + (t.부족 ? ' out' : ''),
-          text: t.지남 ? '나감' : (t.부족 ? '재고부족' : '충분') })])
+      var 규격 = String(t.규격 || '').replace(/\s*포트$/, '');
+      목록.appendChild(만들기('li', {}, [
+        만들기('span', { class: '이름', text: t.유통명 || '(품목 없음)' }),
+        만들기('span', { class: '규', text: 규격 === '규격 외' ? '' : 규격 }),
+        만들기('b', { class: 'n', text: String(t.필요) })
       ]));
     });
-    return 표;
+    return 목록;
   }
 
   ZG.주문입력 = {

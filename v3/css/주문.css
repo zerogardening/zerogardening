@@ -1811,3 +1811,15 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .pk .t2 b.흐림{color:var(--color-text-faint)}
 .주문실적 .pk .t3{margin-top:4px; font-size:var(--font-2xs); color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .주문실적 .재구매마켓 .mr .a .pf{margin-right:0}
+
+/* ── 출고리스트 (PC 창 · 종이) — 「품목명 규격 ··· 필요」 한 줄 · 2열로 흘러 한 장에 더 많이 (10/26 우람님) ── */
+.출고목록{list-style:none; margin:0; padding:0; column-count:2; column-gap:28px; font-size:var(--font-sm)}
+.출고목록 li{display:flex; align-items:baseline; gap:6px; padding:5px 2px; border-bottom:var(--border-width) solid var(--color-border); break-inside:avoid}
+.출고목록 .이름{min-width:0; overflow-wrap:anywhere}
+.출고목록 .규{color:var(--color-text-sub); white-space:nowrap; font-size:var(--font-xs)}
+.출고목록 .n{margin-left:auto; padding-left:8px; white-space:nowrap; font-variant-numeric:tabular-nums}
+@media print{
+  body.인쇄중 .출고목록{font-size:10pt; column-gap:10mm}
+  body.인쇄중 .출고목록 li{padding:2px 0}
+  body.인쇄중 .출고목록 .규{font-size:9pt}
+}
