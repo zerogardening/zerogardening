@@ -125,8 +125,10 @@ async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boo
 
   const 새수량 = 품절 ? 0 : 되돌릴재고;
   if (시험) {
-    return { 됨: true, 상품명, 번호, 옵션수: 옵션들.length,
-             사유: `시험 — ${번호}번 옵션 ${옵션들.length}개를 재고 ${새수량} 로 바꿀 참이었습니다` };
+    const 볼 = 품절 ? await 모음옵션품절(번호, 상품명, token, true).catch(() => null) : null;
+    return { 됨: true, 상품명, 번호, 옵션수: 옵션들.length, 모음: 볼,
+             사유: `시험 — ${번호}번 옵션 ${옵션들.length}개를 재고 ${새수량} 로 바꿀 참이었습니다` +
+                   (볼 ? ` · 모음 옵션 ${볼.바꿈.length}개(${볼.바꿈.join(", ")})` + (볼.손으로.length ? ` · 손으로 ${볼.손으로.join(", ")}` : "") : "") };
   }
 
   for (const v of 옵션들) {
@@ -147,7 +149,54 @@ async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boo
     await 카페24("PUT", `products/${번호}`, token, { request: { shop_no: 1, selling: "T" } });
   }
 
-  return { 됨: true, 사유: "", 상품명, 번호, 옵션수: 옵션들.length, 재고: 새수량 };
+  /* 🔴 품절이면 모음 상품의 같은 품종 옵션도 재고 0 (10/27 우람님 「품절 요청 품종은 모음 옵션도 전부 품절」).
+     품절 뒤 샌 주문이 모음 옵션으로 들어왔다. 되살릴 때는 모음을 건드리지 않는다(모음 재고는 사람이 본다). */
+  const 모음 = 품절 ? await 모음옵션품절(번호, 상품명, token).catch((e) => ({ 바꿈: [], 손으로: [], 오류: String(e.message).slice(0, 80) })) : null;
+  const 모음글 = !모음 ? "" : [
+    모음.바꿈.length ? `모음 옵션 ${모음.바꿈.length}개 품절(${모음.바꿈.join(", ")})` : "",
+    모음.손으로.length ? `🔴 손으로: ${모음.손으로.join(", ")} — 카페24 저장 금지(쿠팡 옛 값 덮임)` : "",
+    모음.오류 ? `🔴 모음 옵션 못 봄 — ${모음.오류}` : "",
+  ].filter(Boolean).join(" · ");
+
+  return { 됨: true, 사유: 모음글, 상품명, 번호, 옵션수: 옵션들.length, 재고: 새수량, 모음 };
+}
+
+/* 모음 상품 = 판매중 + 옵션 2개↑ (번호 목록은 낡는다 — 263·274 삭제됨).
+   옵션값 「3. 튤립 갈리레오 (5개)」 → 품종 「튤립 갈리레오」. 단품 이름이 그 품종이거나 「품종 + 띄어쓰기」로 시작하면 같은 품종.
+   🔴 맥 쪽 `상품/_도구/모음옵션품절.py` 와 같은 규칙이다 — 둘을 같이 고친다.
+   🔴 276·279·280 은 카페24에 저장하지 않는다 — 저장하면 마켓플러스가 쿠팡 옛 값(33,600 무료)으로 덮는다(10/26 작약). 「손으로」로 돌려준다.
+   🔴 이미 재고 0 인 옵션은 다시 안 쓴다 — 카페24 저장 한 번이 마켓 재전송 한 번이다. */
+const 저장금지 = new Set([276, 279, 280]);
+const 품종 = (값: string) => 글(값).replace(/^\s*\d+\s*\.\s*/, "").replace(/\s*[(（]\s*\d+\s*개\s*[)）]\s*$/, "").trim();
+const 같은품종 = (단품이름: string, 값: string) => {
+  const p = 품종(값), 이름 = 글(단품이름).split(/\s+/).filter(Boolean).join(" ");
+  return !!p && (이름 === p || 이름.startsWith(p + " "));
+};
+
+async function 모음옵션품절(단품번호: number, 단품이름: string, token: string, 보기 = false) {
+  const 바꿈: string[] = [], 손으로: string[] = [];
+  for (let 앞 = 0; ; 앞 += 100) {
+    const d = await 카페24("GET", `products?limit=100&offset=${앞}&embed=variants` +
+      `&fields=product_no,product_name,selling,variants`, token);
+    const 줄 = d.products ?? [];
+    for (const p of 줄) {
+      const vs = p.variants ?? [];
+      if (p.product_no === 단품번호 || 글(p.selling) !== "T" || vs.length < 2) continue;
+      for (const v of vs) {
+        const 값 = (v.options ?? []).map((o: any) => 글(o.value)).join(" ");
+        if (!같은품종(단품이름, 값)) continue;
+        if (글(v.use_inventory) === "T" && Number(v.quantity ?? 0) <= 0) continue;   // 이미 품절
+        const 이름 = `${p.product_no} 「${품종(값)}」`;
+        if (저장금지.has(p.product_no)) { 손으로.push(이름); continue; }
+        if (!보기) await 카페24("PUT", `products/${p.product_no}/variants/${v.variant_code}`, token, {
+          request: { shop_no: 1, use_inventory: "T", quantity: 0, display_soldout: "T", safety_inventory: 0 },
+        });
+        바꿈.push(이름);
+      }
+    }
+    if (줄.length < 100) break;
+  }
+  return { 바꿈, 손으로, 오류: "" };
 }
 
 /* ══ 들어오는 문 ══ */
