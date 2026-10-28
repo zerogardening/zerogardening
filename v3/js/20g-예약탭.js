@@ -9,7 +9,7 @@ window.ZG = window.ZG || {};
   function 자() { return ZG.문자주문자료; }
   function 예() { return ZG.예약자료; }
   // 주소 = 받는 분 판을 연 줄 id · 사본은 다시 그려도 치던 값이 남게 여기 둔다 (20c 와 같은 까닭)
-  var 판 = { 거름: '', 주소: null, 사본: null, 방금: {} };
+  var 판 = { 거름: '', 주소: null, 사본: null, 방금: {}, 송장: {} };
 
   var 시계 = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
   var 세모 = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.5 20h19Z"/><path d="M12 10v4.5M12 17.5v.01"/></svg>';
@@ -163,7 +163,8 @@ window.ZG = window.ZG || {};
 
   /* ── 공통 — 칩 · 구역 ── */
   function 칩줄(구, 다시, 폰) {
-    var 쌍들 = [['', '전체', 구.못.length + 구.지정.length + 구.미정.length], ['지정', '예약일 지정', 구.지정.length],
+    // 📦 예약 발송은 맨 앞 — 폰 390 에서 칩이 넘쳐 끝에 두면 안 보인다
+    var 쌍들 = [['발송', '📦 예약 발송', 발송목록().보낼.length], ['', '전체', 구.못.length + 구.지정.length + 구.미정.length], ['지정', '예약일 지정', 구.지정.length],
                ['미정', '날짜 미정', 구.미정.length], ['못', '못 올라감', 구.못.length]];
     return 만들기('div', { class: 'fchips' + (폰 ? ' 칩넘침' : '') }, 쌍들.map(function (쌍) {
       var b = 만들기('button', { type: 'button', class: 'fchip' + (쌍[0] === '못' ? ' wc' : '') + (판.거름 === 쌍[0] ? ' on' : ''),
@@ -175,7 +176,71 @@ window.ZG = window.ZG || {};
   function 구역머리(글, n, 빨강) {
     return 만들기('div', { class: 'hsec' + (빨강 ? ' rd' : ''), html: 글 + ' <i>' + n + '</i>' });
   }
+  /* ══ 📦 예약 발송 (10/28 우람님) — 주문탭에 올라간 예약을 한 곳에 모아 송장 넣고 배송완료.
+     배송완료 = (로젠으로 아직 안 나갔으면) 08f 관문 거친 수동 출고 + 손송장 + 문자주문 「발송문자 보냄」 표시.
+     예약은 수동·문자 주문뿐이다(20e 넘길수있나) — 마켓 주문은 여기 안 온다 */
+  var 이레 = 7 * 86400000;
+  function 발송목록() {
+    var 다 = 자().전부().filter(function (r) { return r.예약 === true && r.상태 === '올림'; }), 이제 = Date.now();
+    function 순(a, b) { return String(a.예약일 || '').localeCompare(String(b.예약일 || '')) || String(a.받는분 || '').localeCompare(String(b.받는분 || '')); }
+    return {
+      보낼: 다.filter(function (r) { return !r.발송문자보냄일시; }).sort(순),
+      끝: 다.filter(function (r) { return r.발송문자보냄일시 && 이제 - r.발송문자보냄일시 < 이레; }).sort(순)
+    };
+  }
+  function 송장들(글) { return String(글 || '').split(/[\s,]+/).map(자().숫자만).filter(Boolean); }
+  function 배송완료(r, 다시) {
+    var 값 = 송장들(판.송장[r.id] != null ? 판.송장[r.id] : 자().발송정보(r).송장.join(' '));
+    if (!값.length) { u.토스트('송장번호를 넣어 주세요'); return; }
+    var 정보 = 자().발송정보(r), B = ZG.배송완료, 색인 = B.색인만들기();
+    var 넘길 = 정보.됨 ? [] : B.넘길줄만(자().지울줄(r), 색인).넘길;
+    if (!정보.됨 && !넘길.length) { u.토스트('넘길 줄이 없습니다 — 품목코드·보류를 확인하세요'); return; }
+    u.확인({
+      제목: '배송완료', 확인글: '배송완료',
+      본문: '<b>' + u.안전(자().제목(r).글) + '</b> · 송장 ' + u.안전(값.join(', ')) +
+        (정보.됨 ? '' : '<br>재고가 그만큼 줄어듭니다') + '<br>문자주문은 「발송문자 보냄」으로 바뀝니다'
+    }, function (했다) {
+      if (!했다) return;
+      if (넘길.length) B.출고넣기(넘길, u.오늘문자(), 색인, { 수동: true, 배치: B.새배치(), 운송장번호: 값[0] });
+      자().손송장저장(r.id, 값);
+      자().발송문자표시(r.id);
+      delete 판.송장[r.id];
+      u.토스트('배송완료 · ' + (r.받는분 || ''));
+      다시();
+    });
+  }
+  function 발송카드(r, 끝, 다시) {
+    var 정보 = 자().발송정보(r);
+    var 칸 = 만들기('input', { class: 'inp', type: 'text', inputmode: 'numeric', placeholder: '송장번호', 'aria-label': '송장번호',
+      value: 판.송장[r.id] != null ? 판.송장[r.id] : 정보.송장.join(' ') });
+    칸.addEventListener('input', function () { 판.송장[r.id] = 칸.value; });
+    if (끝) 칸.readOnly = true;
+    var 표 = 끝 ? 만들기('span', { class: 'atag', text: '문자 보내기 완료 ' + ZG.계산.날짜문자(r.발송문자보냄일시).slice(5).replace('-', '/') })
+      : 정보.됨 ? 만들기('span', { class: 'atag gr', text: '로젠 배송완료됨' }) : null;
+    return 만들기('div', { class: 'rc 발송' + (끝 ? ' und' : '') }, [
+      만들기('div', { class: 'r1' }, [이름(r), r.예약일 ? 만들기('span', { class: 'dd' + (끝 ? ' gr' : ''), text: '예약 ' + 짧은날(r.예약일) }) : null]),
+      만들기('div', { class: 'ds', text: 품글(r) + ' · ' + 금액(r) }),
+      만들기('div', { class: '날짜줄' }, [칸, 끝 ? null : 단추('배송완료', 'main', function () { 배송완료(r, 다시); })]),
+      표 ? 만들기('div', { class: 'r4' }, [표]) : null
+    ]);
+  }
+  function 발송그리기(판칸, 다시) {
+    var 목 = 발송목록();
+    if (!목.보낼.length && !목.끝.length) { 판칸.appendChild(만들기('div', { class: '빈', text: '주문탭에 올라간 예약이 없습니다' })); return; }
+    [['보낼 것', 목.보낼, false], ['보낸 것 (7일)', 목.끝, true]].forEach(function (쌍) {
+      if (!쌍[1].length) return;
+      판칸.appendChild(구역머리(쌍[0], 쌍[1].length));
+      쌍[1].forEach(function (r) { 판칸.appendChild(발송카드(r, 쌍[2], 다시)); });
+    });
+  }
+
   function 그리기(칸, 폰, 다시) {
+    if (판.거름 === '발송') {
+      var 발 = 만들기('div', { class: '예약탭 발송판' + (폰 ? ' 폰' : ' PC') }, [칩줄(구역들(), 다시, 폰)]);
+      발송그리기(발, 다시);
+      칸.appendChild(발);
+      return;
+    }
     var 구 = 구역들(), 보일 = [['못', '못 올라감', 구.못], ['지정', '예약일 지정', 구.지정], ['미정', '날짜 미정', 구.미정]]
       .filter(function (쌍) { return 쌍[2].length && (!판.거름 || 판.거름 === 쌍[0]); });
     var 판칸 = 만들기('div', { class: '예약탭' + (폰 ? ' 폰' : ' PC') });

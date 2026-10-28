@@ -1628,6 +1628,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .예약탭 .tr .dt.wd .inp{height:32px; padding:0 8px; font-size:13px}
 .예약탭 .tr .bn{display:flex; gap:6px; justify-content:flex-end; white-space:nowrap}
 .예약탭 .tr.bad{background:#FFFBFA; box-shadow:inset 4px 0 0 var(--color-danger)}
+.예약탭.PC.발송판 .rc{max-width:760px}
 .예약탭 .tr.bad .wmsg{font-size:12.5px; padding:4px 8px}
 .예약탭 .tr.방금{background:var(--blbg)}
 .예약탭 .판줄{padding:0 18px 14px; border-bottom:1px solid var(--color-border-faint)}
