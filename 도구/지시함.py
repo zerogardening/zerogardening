@@ -608,6 +608,8 @@ def 도구실패줄(기록):
             o = json.loads(L)
         except ValueError:
             continue
+        if not isinstance(o, dict):   # 기록 한 줄이 JSON 문자열이면 o.get 에서 죽는다(10/30 01:4x 일꾼 멈춤)
+            continue
         for c in (o.get('message') or {}).get('content') or []:
             if not isinstance(c, dict):
                 continue
@@ -655,6 +657,8 @@ def 마켓결과(기록, 대상=None):
         try:
             o = json.loads(L)
         except ValueError:
+            continue
+        if not isinstance(o, dict):   # 기록 한 줄이 JSON 문자열이면 o.get 에서 죽는다(10/30 01:4x 일꾼 멈춤)
             continue
         for c in (o.get('message') or {}).get('content') or []:
             if not isinstance(c, dict):
