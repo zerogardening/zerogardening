@@ -3,13 +3,16 @@
    옛 줄(마켓 칸 없음)은 답장 글에서 마켓 이름이 찍힌 것만 뽑아 칸을 채운다 — 23단계 후속.
    🔴 01-저장소·01b-서버를 안 고친다 — `v3_지시` 를 01b 표들에 넣으면 채널 하나에 다 걸린다(16단계 §1-3).
       19-지시함처럼 ZG.서버.클라이언트 로 직접 읽는다.
-   🔴 마켓 칸은 쓰는 이가 둘이다 — 카페24 는 06k 가 줄을 만들 때, 나머지 여섯은 맥(지시함.py)이 끝날 때. */
+   🔴 마켓 칸은 쓰는 이가 둘이다 — 카페24 는 06k 가 줄을 만들 때, 나머지 여섯은 맥(지시함.py)이 끝날 때.
+   🔴 10/23 — 15초마다 통째로 다시 받지 않는다(Supabase 전송량 초과로 앱 정지). 01d-지시구독이 알려 준
+      바뀐 줄이 품절·판매(또는 업로드) 줄일 때만 다시 받는다. 15초 타이머는 첫 받기가 안 됐을 때만. */
 window.ZG = window.ZG || {};
 (function (ZG) {
   'use strict';
 
   var 마켓들 = ['카페24', '심폴', '스마트스토어', '쿠팡', 'G마켓', '롯데ON', '11번가'];
   var 폴링초 = 15, 날수 = 30;
+  var 품절갈래 = ['마켓품절', '마켓판매'];
   // 🔴 이때부터 낸 지시만 보인다 — 그 전 것은 우람님이 「다 정리하고 앞으로 지시한 것만」 (2026-10-16 23:5x). 표에서 지우지 않는다
   var 시작점 = 1792162504808;
   var 줄들 = [], 오류 = '', 읽음 = false, 서명 = '', 타이머 = null, 읽는중 = false, 또 = false;
@@ -39,7 +42,7 @@ window.ZG = window.ZG || {};
     if (!c) return Promise.reject(new Error('오프라인'));
     // id 앞 13자리 = 보낸때 ms — 문자열 비교가 곧 시간 비교다
     return 제때(c.from('v3_지시').select('id,내용,삭제됨')
-      .eq('삭제됨', false).in('내용->>갈래', ['마켓품절', '마켓판매'])
+      .eq('삭제됨', false).in('내용->>갈래', 품절갈래)
       .gte('id', String(Math.max(시작점, Date.now() - 날수 * 864e5)))
       .order('id', { ascending: false }).limit(300))
       .then(function (답) {
@@ -91,10 +94,16 @@ window.ZG = window.ZG || {};
     새로();
     타이머 = setInterval(function () {
       if (document.hidden) return;
-      새로();
-      if (보이나()) 업로드새로();
+      if (!읽음) 새로();
+      if (보이나() && !올.읽음) 업로드새로();
     }, 폴링초 * 1000);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) 새로(); });
+    ZG.지시구독.듣기(function (바뀐) {
+      var 갈래 = 바뀐.map(function (r) { return (r.내용 || {}).갈래; });
+      // 지운 줄(DELETE)은 갈래를 모른다 — 그땐 둘 다 다시
+      var 모름 = 바뀐.some(function (r) { return !r.내용; });
+      if (모름 || 갈래.some(function (g) { return 품절갈래.indexOf(g) >= 0; })) 새로();
+      if (보이나() && (모름 || 갈래.indexOf('카페24올리기') >= 0)) 업로드새로();
+    });
   }
 
   /* ── 파생 ── */

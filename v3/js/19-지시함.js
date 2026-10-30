@@ -4,20 +4,20 @@
    🔴 01-저장소.js·01b-서버.js 를 안 고친다. ZG.서버.클라이언트 로 직접 읽고 쓴다 —
       06h-원고자료.js 가 고른 길과 같다. 공통 파일을 고치면 주문·업체·소싱·메모 html 이
       묵은 사본을 물고 갈라진다.
-   🔴 답장은 폴링으로 받는다(5초). Realtime 을 따로 붙이지 않는다 —
-      건수가 하루 몇 줄이고, 폴링 하나면 「맥이 아직 안 깼다」까지 같은 길로 보인다. */
+   🔴 답장은 01d-지시구독으로 바뀐 줄만 받는다(10/23). 예전엔 5초마다 200줄(230KB)을 통째로 다시 받아
+      Supabase 무료 전송량을 넘겨 앱이 멈췄다. 통째 받기는 처음 한 번(과 처음이 실패했을 때)만. */
 window.ZG = window.ZG || {};
 (function (ZG) {
   'use strict';
 
   var 표이름 = 'v3_지시';
-  var 폴링초 = 5;
+  var 폴링초 = 5;            // 첫 받기가 실패했을 때만 다시 시도하는 간격
   var 최대줄 = 200;
 
   var u, 만들기;
   var 뿌리, 흐름칸, 입력칸, 보냄단추, 상태칸, 알림단추;
   var 담긴것 = [];          // [{id, 내용}] — id 오름차순이 곧 시간순
-  var 첫판 = true, 타이머 = null, 읽는중 = false;
+  var 첫판 = true, 타이머 = null, 읽는중 = false, 읽음 = false;
 
   /* ══════════════════════════════════════ 자료 ══════════════════════════════════════ */
 
@@ -213,20 +213,36 @@ window.ZG = window.ZG || {};
     if (읽는중) return;
     읽는중 = true;
     불러오기().then(function (것들) {
-      읽는중 = false;
-      var 달라졌나 = 것들.length !== 담긴것.length ||
-        JSON.stringify(것들) !== JSON.stringify(담긴것);
-      담긴것 = 것들;
-      상태쓰기(기다리는수());
-      if (!달라졌나 && !바닥까지) return;
-      var 바닥에있었나 = 흐름칸.scrollTop + 흐름칸.clientHeight >= 흐름칸.scrollHeight - 40;
-      흐름그리기();
-      if (바닥까지 || 바닥에있었나 || 첫판) 바닥으로();
-      첫판 = false;
+      읽는중 = false; 읽음 = true;
+      반영(것들, 바닥까지);
     }).catch(function (e) {
       읽는중 = false;
       상태쓰기(말썽(e));
     });
+  }
+
+  /* 01d 가 알려 준 바뀐 줄을 담긴것에 합친다 — 지운 줄·구독 줄은 뺀다 */
+  function 바뀐줄(줄들) {
+    if (!읽음) return 새로고침(false);
+    var 표 = {};
+    담긴것.forEach(function (줄) { 표[줄.id] = 줄; });
+    줄들.forEach(function (r) {
+      if (r.삭제됨 || (r.내용 || {}).갈래 === '구독') delete 표[r.id];
+      else 표[r.id] = { id: r.id, 내용: r.내용 || {} };
+    });
+    반영(Object.keys(표).sort().slice(-최대줄).map(function (k) { return 표[k]; }), false);
+  }
+
+  function 반영(것들, 바닥까지) {
+    var 달라졌나 = 것들.length !== 담긴것.length ||
+      JSON.stringify(것들) !== JSON.stringify(담긴것);
+    담긴것 = 것들;
+    상태쓰기(기다리는수());
+    if (!달라졌나 && !바닥까지) return;
+    var 바닥에있었나 = 흐름칸.scrollTop + 흐름칸.clientHeight >= 흐름칸.scrollHeight - 40;
+    흐름그리기();
+    if (바닥까지 || 바닥에있었나 || 첫판) 바닥으로();
+    첫판 = false;
   }
 
   function 기다리는수() {
@@ -310,13 +326,11 @@ window.ZG = window.ZG || {};
     지금구독().then(function (있나) {
       if (!있나 && 알림될까()) 알림단추.style.display = '';
     }).catch(function () {});
-    // 🔴 서버가 늦게 켜지거나(로그인) 답장이 늦게 와도 이 한 줄이 다 받는다
+    // 🔴 서버가 늦게 켜지면(로그인) 첫 받기가 될 때까지만 다시 — 그 뒤로는 바뀐 줄만(01d)
     타이머 = setInterval(function () {
-      if (!document.hidden) 새로고침(false);
+      if (!document.hidden && !읽음) 새로고침(false);
     }, 폴링초 * 1000);
-    document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) 새로고침(false);
-    });
+    ZG.지시구독.듣기(바뀐줄);
   }
 
   ZG.지시함 = {
