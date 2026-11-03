@@ -13,6 +13,7 @@ window.ZG = window.ZG || {};
   var 상태 = { 뷰: '새문자', 날짜: '', 달: '', 검색: '', 열린: null, 송장고침: null };   // 예약 목록은 주문탭 「예약」 하위탭(20g) 한 곳   // 열린 = { id, 종류: '고침'|'올림', 사본 } · 송장고침 = { id, 값들 }
   var 참조 = {};
   var 요일 = ['일', '월', '화', '수', '목', '금', '토'];
+  var 트럭 = '<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>';
   var 휴지통 = '<path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>';
 
   function 두자리(n) { return (n < 10 ? '0' : '') + n; }
@@ -113,6 +114,13 @@ window.ZG = window.ZG || {};
       다시();
     });
   }
+  /* 손으로 발송완료 — 로젠 파일 없이 따로 보낸 건 (11/03 우람님) · 주문탭 「✋ 배송완료로 넘기기」와 같은 관문(08n)을 쓴다 */
+  function 손발송완료(r) {
+    var 줄들 = 자().발송대상줄(r, 자().발송색인());
+    if (!줄들.length) { u.토스트('주문 탭에 이 주문 줄이 없습니다'); return; }
+    ZG.수동배송완료.넘기기([{ 수령인: r.받는분 || 자().제목(r).글, 줄들: 줄들 }], function (했다) { if (했다) 다시(); });
+  }
+
   /* 올린 뒤 삭제 — 주문탭 줄·서비스 출고까지 지운다 (17단계 §3-2)
      🔴 나간 줄이 있으면 확인창 전에 막는다(08c 건삭제와 같은 순서). 20a 가 한 번 더 막는다 */
   function 올림삭제(r) {
@@ -419,8 +427,9 @@ window.ZG = window.ZG || {};
       } else if (자().온주소(r)) 카드.appendChild(만들기('div', { class: '받는곳', text: 자().온주소(r) }));
       // 발송완료 카드도 밀린다 — 누르면 나간 줄 검사에서 토스트로 막힌다
       var 올림삭제단추 = u.쓸기단추('삭제', 'del', function () { 올림삭제(r); }, 휴지통);
-      u.쓸기붙이기(카드, 76);
-      return 만들기('div', { class: '쓸줄' }, [만들기('div', { class: '쓸단추' }, [올림삭제단추]), 카드]);
+      var 밀단추 = 정보.됨 ? [올림삭제단추] : [u.쓸기단추('발송완료', 'ship', function () { 손발송완료(r); }, 트럭), 올림삭제단추];
+      u.쓸기붙이기(카드, 76 * 밀단추.length);
+      return 만들기('div', { class: '쓸줄' }, [만들기('div', { class: '쓸단추' }, 밀단추), 카드]);
     }
     [r1, r2].forEach(function (e) {
       e.addEventListener('click', function () { if (u.방금끌었나()) return; 열기(r, '고침'); });
@@ -468,6 +477,7 @@ window.ZG = window.ZG || {};
     if (됨) [송장칸(r, 정보, false)].concat(발송단추(r, 정보, true)).forEach(function (e) { 상태칸.appendChild(e); });
     else if (올림됨) {
       상태칸.appendChild(만들기('span', { class: 'sub 번호', text: r.올린주문번호 || '' }));
+      상태칸.appendChild(단추('발송완료', 'sm 꽉', function () { 손발송완료(r); }));
       상태칸.appendChild(단추('삭제', 'sm del 꽉', function () { 올림삭제(r); }));   // 발송완료 줄엔 안 단다 — 어차피 못 지운다
     } else if (!열린) {
       상태칸.appendChild(단추('💬 문자', 'sm 꽉', function () { 문자보내기(r.id); }, !자().문자되나(r.전화)));
