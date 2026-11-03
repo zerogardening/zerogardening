@@ -138,7 +138,11 @@ window.ZG = window.ZG || {};
     if (!u.폰인가() && navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(글).catch(function () { /* 무시 — 링크는 그래도 연다 */ });
     }
-    location.href = 'sms:' + 전화저장(전화) + '?body=' + encodeURIComponent(글);
+    // 🔴 아이폰 홈화면 앱은 location.href 로 sms: 를 열면 아무 일도 안 일어난다 — 진짜 링크를 눌러 연다 (11/03)
+    var a = document.createElement('a');
+    a.href = 'sms:' + 전화저장(전화) + '?body=' + encodeURIComponent(글);
+    a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
   }
 
   /* ── 발송완료 (16단계-2 §2) — 저장하지 않고 주문 줄·출고에서 그때그때 판정한다 ── */
