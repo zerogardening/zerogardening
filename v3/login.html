@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>제로가드닝 로그인</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --primary:#2d6a4f;
+  --primary-dark:#1b4332;
+  --primary-light:#d8f3dc;
+  --bg-soft:#f5f7f5;
+  --text:#1a1a1a;
+  --muted:#666;
+  --border:#e0e0e0;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  min-height:100vh;background:linear-gradient(135deg,#d8f3dc 0%,#95d5b2 100%);
+  display:flex;align-items:center;justify-content:center;padding:20px;color:var(--text);
+}
+.login-card{
+  background:#fff;padding:48px 40px;border-radius:16px;
+  width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.15);
+}
+.brand{display:flex;justify-content:center;margin-bottom:8px}
+.brand-logo{max-width:240px;width:100%;height:auto;display:block}
+h1{font-size:18px;color:var(--primary-dark);text-align:center;margin:14px 0 6px;font-weight:500}
+.sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:28px}
+label{display:block;margin-bottom:14px;font-size:13px;color:#444}
+label span{display:block;margin-bottom:6px;font-weight:500}
+input{
+  width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:7px;
+  font-size:14px;transition:border-color .15s;
+}
+input:focus{outline:none;border-color:var(--primary)}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn-row button{
+  flex:1;padding:11px;border:none;border-radius:7px;font-size:14px;font-weight:600;
+  cursor:pointer;transition:background .15s;
+}
+.btn-login{background:var(--primary);color:#fff}
+.btn-login:hover{background:var(--primary-dark)}
+.login-note{margin-top:14px;text-align:center;font-size:12px;color:var(--muted)}
+.msg-error{margin-top:14px;padding:10px;background:#fee;color:#c33;font-size:13px;border-radius:6px;min-height:18px;display:none}
+.msg-error.show{display:block}
+.msg-info{margin-top:14px;padding:10px;background:#e0f7e9;color:#0a7;font-size:13px;border-radius:6px;min-height:18px;display:none}
+.msg-info.show{display:block}
+.loading{text-align:center;color:var(--muted);font-size:13px;margin-top:14px;display:none}
+.loading.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="brand">
+    <img class="brand-logo" src="../logo.png" alt="ZERO GARDENING">
+  </div>
+  <h1>통합관리 프로그램</h1>
+  <div class="sub">로그인하여 시작하세요</div>
+
+  <form id="login-form">
+    <label>
+      <span>이메일</span>
+      <input type="email" id="email" autocomplete="username" required placeholder="example@email.com">
+    </label>
+    <label>
+      <span>비밀번호</span>
+      <input type="password" id="password" autocomplete="current-password" required minlength="6" placeholder="6자 이상">
+    </label>
+    <div class="btn-row">
+      <button type="submit" class="btn-login" id="btn-login">로그인</button>
+    </div>
+    <div class="login-note">계정이 필요하면 관리자에게 문의하세요</div>
+  </form>
+  <div class="msg-error" id="msg-error"></div>
+  <div class="msg-info" id="msg-info"></div>
+  <div class="loading" id="loading">처리 중...</div>
+</div>
+
+<script>
+'use strict';
+const SUPABASE_URL = 'https://vjqfhwrgrocapcyndgtx.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ds8hYFdqgj-vsotoaqtv4w_XhkL_DN2';
+const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+});
+
+const $err = document.getElementById('msg-error');
+const $info = document.getElementById('msg-info');
+const $loading = document.getElementById('loading');
+const $email = document.getElementById('email');
+const $password = document.getElementById('password');
+const $btnLogin = document.getElementById('btn-login');
+
+function showError(msg){
+  $err.textContent = msg; $err.classList.add('show');
+  $info.classList.remove('show');
+  $loading.classList.remove('show');
+}
+function showInfo(msg){
+  $info.textContent = msg; $info.classList.add('show');
+  $err.classList.remove('show');
+  $loading.classList.remove('show');
+}
+function showLoading(){
+  $loading.classList.add('show');
+  $err.classList.remove('show');
+  $info.classList.remove('show');
+}
+function getRedirectTarget(){
+  const params = new URLSearchParams(location.search);
+  const from = params.get('from');
+  if(from){
+    try{
+      const url = new URL(decodeURIComponent(from));
+      // 같은 origin만 허용 (open redirect 방지)
+      if(url.origin === location.origin) return url.href;
+    }catch(e){}
+  }
+  return './index.html';
+}
+
+// 이미 로그인된 상태면 바로 app으로
+(async () => {
+  const { data: { session } } = await supa.auth.getSession();
+  if(session){
+    location.replace(getRedirectTarget());
+  }
+})();
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  showLoading();
+  const { data, error } = await supa.auth.signInWithPassword({
+    email: $email.value.trim(),
+    password: $password.value
+  });
+  if(error){ showError(error.message); return; }
+  location.replace(getRedirectTarget());
+});
+
+</script>
+
+</body>
+</html>

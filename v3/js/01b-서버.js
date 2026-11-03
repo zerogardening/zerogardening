@@ -37,7 +37,7 @@ window.ZG = window.ZG || {};
   var 토큰 = null;
   try { 토큰 = localStorage.getItem(토큰키); } catch (e) {}
   if (!토큰) {
-    location.replace('../index.html?from=' + encodeURIComponent(location.href));
+    location.replace('login.html?from=' + encodeURIComponent(location.href));
     return;
   }
   서버.로그인됨 = true;
@@ -291,7 +291,7 @@ window.ZG = window.ZG || {};
   // 서버.준비 — 첫 내려받기가 끝나면 풀린다(실패해도). 받은 뒤에 돌아야 하는 일(예약 자동 올림)이 기다린다
   서버.준비 = supa.auth.getSession().then(function (r) {
     if (!r || !r.data || !r.data.session) {
-      location.replace('../index.html?from=' + encodeURIComponent(location.href));
+      location.replace('login.html?from=' + encodeURIComponent(location.href));
       throw new Error('세션 없음');
     }
     return 서버상태읽기();
