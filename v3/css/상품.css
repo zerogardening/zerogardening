@@ -1,17 +1,5 @@
 /* 상품 화면(입고 · 재고) 전용 — 시안 <style> 에 갇혀 있던 것 (설계 §2 ②) */
 
-/* 입고 내역 합계줄 */
-.totrow td{
-  background:#F7F7F9; font-weight:var(--weight-bold); color:var(--color-text);
-  border-bottom:none; border-top:var(--border-width) solid var(--color-border);
-}
-
-/* 입고 내역 검색줄 */
-.qbar{display:flex; align-items:flex-end; gap:var(--space-lg); flex-wrap:wrap}
-.qbar .dash{padding-bottom:var(--space-lg); color:var(--color-text-muted)}
-/* 폰에서는 두 줄로 접혀 「~」가 첫 줄 끝에 홀로 남는다 — 그때는 감춘다 */
-@media (max-width:700px){ .입고거르개 .dash{display:none} }
-
 /* 앞자리가 같은 다른 규격 — 품목코드 칸 왼쪽 초록 띠 */
 td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 
@@ -26,7 +14,6 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 /* 표를 감싸는 가로 스크롤 — 창을 좁혀도 칸이 무너지지 않게 */
 .tablewrap{overflow-x:auto}
 .tablewrap > table{min-width:880px}
-.tablewrap > table.입고내역{min-width:980px}
 
 /* 재입고 요청 접기칸 (설계 §16-7) — .fold/.foldbody 를 알림 상자 안에서 다시 쓴다 */
 .alert > .fold{
@@ -48,7 +35,6 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 .alert > .foldbody.open{transition:grid-template-rows var(--dur-enter) var(--ease-ios), opacity var(--dur-enter) var(--ease-ios)}
 .재입고속{padding-top:var(--space-md)}
 .재입고속 > .ucards{margin-top:0}
-.재입고끝{margin-top:var(--space-lg)}
 
 /* 재입고 요청 카드가 좁은 PC 폭에서 두 줄로 */
 @media (max-width:1180px){ .ucards{grid-template-columns:repeat(2, 1fr)} }
@@ -69,10 +55,6 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 /* 여러 줄 입력 — 관리 특이사항 */
 .inp.multi{height:auto; min-height:76px; line-height:1.6; padding:9px 11px; resize:vertical; font-size:var(--font-md)}
 
-/* 입고 내역 줄의 수정 · 삭제 */
-.rowacts{display:flex; gap:var(--space-3xs); justify-content:flex-end}
-.rowacts .btn{padding:3px 8px; min-height:24px; font-size:var(--font-2xs)}
-.ph-card .rowacts{margin-top:var(--space-sm); justify-content:flex-start}
 .ph-card .memo, .memo{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
 
 /* 시안의 .fchip.alert 이 .alert 상자 스타일을 덮어써 칩 모양을 잃는다 — 칩 모양을 되돌린다 */
@@ -92,13 +74,6 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 /* 상세페이지 작업 대기 — 끝났거나 할 필요 없는 것을 손으로 뺀다 (2026-09-14 우람님) */
 .사진머리{display:flex; align-items:center; gap:var(--space-sm); padding:0 var(--space-sm)}
 .사진머리 h3{margin:0}
-.뺌보기{
-  margin-left:auto; background:none; border:none; cursor:pointer;
-  font-family:inherit; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
-  color:var(--color-text-muted); padding:var(--space-xs) var(--space-sm); border-radius:var(--radius-pill);
-}
-.뺌보기:hover{background:var(--color-btn-bg-hover); color:var(--color-text)}
-.ph-sec .뺌보기{margin-left:var(--space-xs)}
 .뺌{
   background:none; border:none; cursor:pointer; color:var(--color-text-faint);
   font-size:var(--font-sm); line-height:1; padding:var(--space-xs); border-radius:var(--radius-pill);

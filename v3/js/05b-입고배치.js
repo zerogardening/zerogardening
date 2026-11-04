@@ -81,7 +81,6 @@ window.ZG = window.ZG || {};
     var 저장 = 만들기('button', { class: 'ph-save', type: 'button', text: '저장' });
     저장.addEventListener('click', function () { ZG.입고.단추('계속'); });
     참조.저장단추들 = [저장];
-    참조.내역칸 = null;          // 🔴 내역은 「재고」 탭으로 갔다 — 내역다시() 는 이게 없으면 조용히 넘어간다
 
     return [
       내.필드('입고업체 <span class="req">*</span> <span class="auto">오늘 계속 이 업체입니다</span>', 업체칸(), null, '입고업체'),
