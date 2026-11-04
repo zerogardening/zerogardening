@@ -660,7 +660,10 @@ def 마켓결과(기록, 대상=None):
             continue
         if not isinstance(o, dict):   # 기록 한 줄이 JSON 문자열이면 o.get 에서 죽는다(10/30 01:4x 일꾼 멈춤)
             continue
-        for c in (o.get('message') or {}).get('content') or []:
+        msg = o.get('message')
+        if not isinstance(msg, dict):   # message 가 글자인 줄(11/04 23:0x ALP03 일꾼 멈춤)
+            continue
+        for c in msg.get('content') or []:
             if not isinstance(c, dict):
                 continue
             if o.get('type') == 'assistant' and c.get('type') == 'tool_use' and c.get('name') == 'Bash':
