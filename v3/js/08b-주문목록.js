@@ -394,12 +394,14 @@ window.ZG = window.ZG || {};
       })();
     }).then(function (결과) {
       if (결과.charAt(0) !== '❌') { 수집알림('마켓'); return true; }
+      /* 🔴 마켓 실패는 빨간 띠에 올리지 않는다(11/04 우람님) — 대부분 「크롬을 다른 일이 쓰고 있다」이고,
+         마켓플러스가 30분마다 스스로 수집하니 주문이 빠지지 않는다. 토스트로만 알리고 예전 띠도 걷는다 */
       u.토스트('마켓 수집 못 함 (' + 결과.slice(2, 50) + ')');
-      수집알림('마켓', 결과.slice(2, 50));
+      수집알림('마켓');
       return false;
     }).catch(function (e) {
       u.토스트('마켓 수집 못 함 — ' + String((e && e.message) || e).slice(0, 50));
-      수집알림('마켓', String((e && e.message) || e));
+      수집알림('마켓');
       return false;
     }).then(function (됐나) { 마켓중 = false; return 됐나; });
   }
