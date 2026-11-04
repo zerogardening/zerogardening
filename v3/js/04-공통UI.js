@@ -710,6 +710,27 @@ window.ZG = window.ZG || {};
     return { 닫기: 닫기 };
   }
 
+  /* supabase-js 는 인터넷이 끊기면 약속을 영영 안 끝낼 때가 있다 — 10초에 끊는다 (06h·06l·19·20e·21a 가 같이 쓴다) */
+  function 제때(p) {
+    return Promise.race([p, new Promise(function (_, 깨기) {
+      setTimeout(function () { 깨기(new Error('오프라인')); }, 10000);
+    })]);
+  }
+
+  /* 사진 파일 → 그림. 회전을 먼저 편다 — 안 하면 아이폰 세로 사진이 눕는다 (06g·17a 가 같이 쓴다) */
+  function 그림읽기(파일) {
+    if (window.createImageBitmap) {
+      try { return createImageBitmap(파일, { imageOrientation: 'from-image' }); } catch (e) { /* 아래 <img> 로 떨어진다 */ }
+    }
+    return new Promise(function (좋다, 안된다) {
+      var 주소 = URL.createObjectURL(파일);
+      var g = new Image();
+      g.onload = function () { URL.revokeObjectURL(주소); 좋다(g); };
+      g.onerror = function () { URL.revokeObjectURL(주소); 안된다(new Error('사진을 못 읽었습니다')); };
+      g.src = 주소;
+    });
+  }
+
   ZG.ui = {
     만들기: 만들기, 비우기: 비우기, 안전: 안전,
     콤마: 콤마, 숫자: 숫자, 오늘문자: 오늘문자, 전화정리: 전화정리,
@@ -718,6 +739,7 @@ window.ZG = window.ZG || {};
     탈출걸기: 탈출걸기, 탈출풀기: 탈출풀기,
     스테퍼: 스테퍼, 자동완성: 자동완성, 후보찾기: 후보찾기,
     조합안전입력: 조합안전입력,
-    방금끌었나: 방금끌었나, 열린줄인가: 열린줄인가, 열린줄잊기: 열린줄잊기, 쓸기붙이기: 쓸기붙이기, 쓸기단추: 쓸기단추
+    방금끌었나: 방금끌었나, 열린줄인가: 열린줄인가, 열린줄잊기: 열린줄잊기, 쓸기붙이기: 쓸기붙이기, 쓸기단추: 쓸기단추,
+    제때: 제때, 그림읽기: 그림읽기
   };
 })(window.ZG);

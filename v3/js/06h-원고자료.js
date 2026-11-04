@@ -74,11 +74,7 @@ window.ZG = window.ZG || {};
   /* 🔴 supabase-js 는 인터넷이 끊기거나 세션이 상하면 약속을 영영 안 끝낼 때가 있다.
      그대로 두면 원고 갈래가 「불러오는 중…」에 멈춰 선다 — 조용히 실패하지 않는다 (설계 §2).
      10초가 지나면 오프라인으로 보고 말썽()이 사람 말로 바꿔 준다. */
-  function 제때(p) {
-    return Promise.race([p, new Promise(function (_, 깨기) {
-      setTimeout(function () { 깨기(new Error('오프라인')); }, 10000);
-    })]);
-  }
+  function 제때(p) { return ZG.ui.제때(p); }   // 10초에 끊는다 — 04-공통UI
 
   function 통() {
     var 서 = ZG.서버;

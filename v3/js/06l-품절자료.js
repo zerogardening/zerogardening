@@ -22,12 +22,7 @@ window.ZG = window.ZG || {};
     return 서 && 서.켜짐 && 서.클라이언트 ? 서.클라이언트 : null;
   }
 
-  /* supabase-js 는 인터넷이 끊기면 약속을 영영 안 끝낼 때가 있다 — 10초에 끊는다 (19 와 같다) */
-  function 제때(p) {
-    return Promise.race([p, new Promise(function (_, 깨기) {
-      setTimeout(function () { 깨기(new Error('오프라인')); }, 10000);
-    })]);
-  }
+  function 제때(p) { return ZG.ui.제때(p); }   // 10초에 끊는다 — 04-공통UI
 
   function 말썽(e) {
     var m = (e && (e.message || e.msg)) || '';

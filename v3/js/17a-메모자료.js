@@ -184,21 +184,8 @@ window.ZG = window.ZG || {};
      일지 id 는 '일지-2026-08-18' 이라 경로에서만 'diary-' 로 바꿔 쓴다 */
   function 경로키(id) { return id.indexOf('일지-') === 0 ? 'diary-' + id.slice(3) : id; }
 
-  function 그림읽기(파일) {
-    // 회전을 먼저 편다 — 안 하면 아이폰 세로 사진이 눕는다
-    if (window.createImageBitmap) {
-      try {
-        return createImageBitmap(파일, { imageOrientation: 'from-image' });
-      } catch (e) { /* 아래 <img> 로 떨어진다 */ }
-    }
-    return new Promise(function (좋다, 안된다) {
-      var 주소 = URL.createObjectURL(파일);
-      var g = new Image();
-      g.onload = function () { URL.revokeObjectURL(주소); 좋다(g); };
-      g.onerror = function () { URL.revokeObjectURL(주소); 안된다(new Error('사진을 못 읽었습니다')); };
-      g.src = 주소;
-    });
-  }
+  function 그림읽기(파일) { return ZG.ui.그림읽기(파일); }   // 회전 펴서 읽기 — 04-공통UI
+
 
   /* 아이폰 원본은 한 장에 3~5MB 다. 올리기 전에 긴 변 1600 · JPEG 0.8 로 줄인다 */
   function 줄이기(파일) {

@@ -51,19 +51,8 @@ window.ZG = window.ZG || {};
 
   /* ══════════ 사진 올리기 — 17a-메모자료.js 의 줄이기/올리기를 버킷만 바꿔 가져왔다 ══════════ */
 
-  function 그림읽기(파일) {
-    // 회전을 먼저 편다 — 안 하면 아이폰 세로 사진이 눕는다
-    if (window.createImageBitmap) {
-      try { return createImageBitmap(파일, { imageOrientation: 'from-image' }); } catch (e) {}
-    }
-    return new Promise(function (좋다, 안된다) {
-      var 주소 = URL.createObjectURL(파일);
-      var g = new Image();
-      g.onload = function () { URL.revokeObjectURL(주소); 좋다(g); };
-      g.onerror = function () { URL.revokeObjectURL(주소); 안된다(new Error('사진을 못 읽었습니다')); };
-      g.src = 주소;
-    });
-  }
+  function 그림읽기(파일) { return ZG.ui.그림읽기(파일); }   // 회전 펴서 읽기 — 04-공통UI
+
 
   /* 자른것 = {그림, 잘:{x,y,변}} — 우람님이 쓰시는 사진은 다 1:1 이라 정사각으로만 만든다 */
   function 판그리기(자른것, 최대) {

@@ -117,9 +117,7 @@ window.ZG = window.ZG || {};
   }
 
   function 쉬기(ms) { return new Promise(function (풀) { setTimeout(풀, ms); }); }
-  function 제때(p) {
-    return Promise.race([p, new Promise(function (_, 깨기) { setTimeout(function () { 깨기(new Error('오프라인')); }, 10000); })]);
-  }
+  function 제때(p) { return ZG.ui.제때(p); }   // 10초에 끊는다 — 04-공통UI
   /* 🔴 로컬 되읽기만으로는 모자란다 — 01 저장()은 localStorage 쓰기가 실패해도 캐시에 남고,
      큐는 표마다 따로 올라가 주문 삭제만 먼저 서버에 닿을 수 있다. 그래서 서버에서 되읽어 본다 */
   /* 돌려주는 값: Promise { id: 내용 } (지운 줄은 빠진다) · 서버가 없으면 null · 못 닿으면 거부 */
