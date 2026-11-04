@@ -52,10 +52,6 @@ window.ZG = window.ZG || {};
     var 틀 = 만들기('div', {});
     var 준비 = null;
 
-    function 손질행(g) {
-      return ZG.운임손질.찾기(옵션.묶음id, g.키, g.차수 || 1);
-    }
-
     function 손에든값(g) {
       var k = 줄키(g);
       if (!편집[k]) {

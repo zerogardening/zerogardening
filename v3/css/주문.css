@@ -693,19 +693,6 @@ tr.editing td{background:var(--color-accent-bg)}
   background:var(--color-bg); color:var(--color-text);
   border-bottom-color:var(--color-border-faint);
 }
-.pcsheet.dlv .c24row{
-  display:flex; align-items:center; gap:var(--space-md); flex-wrap:wrap;
-  font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-medium); line-height:1.6;
-}
-.pcsheet.dlv .c24row > span:first-child{flex:1; min-width:240px}
-.pcsheet.dlv .c24row b{color:var(--color-text)}
-/* 진짜로 올리면 되돌릴 수 없다 — 이 경고는 모달 맨 위에 늘 붙어 있다 */
-.pcsheet.dlv .c24warn{
-  background:var(--color-danger-bg); border:var(--border-width) solid var(--color-danger-border);
-  border-radius:var(--radius-md); padding:var(--space-md) var(--space-2xl);
-  font-size:var(--font-xs); color:var(--color-danger); font-weight:var(--weight-medium); line-height:1.6;
-}
-.pcsheet.dlv .c24note{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
 
 /* ── 📦 로젠에 나갈 묶음 줄 (10단계 설계 §5-2·§5-4) ──
    🔴 상태를 말하는 것은 줄 색뿐이다 — 빨강(확인요망) · 초록(손댐). 배지·안내글을 쓰지 않는다 */

@@ -98,24 +98,6 @@ window.ZG = window.ZG || {};
     };
   }
 
-  /* 정렬 기본값 — 소진일 빠른 순 (설계 §7) */
-  function 순서값(요) {
-    var 종류 = 요.소진.종류;
-    if (종류 === '소진') return [0, 0];
-    if (종류 === '일수') return [1, 요.소진.일수];
-    if (종류 === '출고없음') return [2, 0];
-    return [3, 0];
-  }
-
-  function 소진순정렬(요약목록) {
-    return 요약목록.slice().sort(function (a, b) {
-      var x = 순서값(a), y = 순서값(b);
-      if (x[0] !== y[0]) return x[0] - y[0];
-      if (x[1] !== y[1]) return x[1] - y[1];
-      return a.품목.품목코드 < b.품목.품목코드 ? -1 : 1;
-    });
-  }
-
   ZG.계산 = {
     장부: 장부,
     현재고: 현재고,
@@ -125,7 +107,6 @@ window.ZG = window.ZG || {};
     소진등급: 소진등급,
     재입고필요: 재입고필요,
     요약: 요약,
-    소진순정렬: 소진순정렬,
     날짜문자: 날짜문자
   };
 })(window.ZG);
