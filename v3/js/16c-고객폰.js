@@ -170,9 +170,9 @@ window.ZG = window.ZG || {};
     문자칸(칸, g);
 
     var 견적 = 만들기('button', { class: 'btn', type: 'button', text: '📝 견적요청' });
-    견적.addEventListener('click', function () { 견적만들기(g); });
+    견적.addEventListener('click', function () { ZG.고객PC.견적만들기(g); });
     var 주문 = 만들기('button', { class: 'btn', type: 'button', text: '🛒 수동주문' });
-    주문.addEventListener('click', function () { 수동주문(g); });
+    주문.addEventListener('click', function () { ZG.고객PC.수동주문(g); });
     칸.appendChild(만들기('div', { class: 'twobtn' }, [견적, 주문]));
   }
 
@@ -215,7 +215,7 @@ window.ZG = window.ZG || {};
       var 지움 = 만들기('button', {
         class: 'btn sm del', type: 'button', text: '🗑', 'aria-label': m.날 + ' 메모 지우기'
       });
-      지움.addEventListener('click', function () { 메모지우기(g, m, i); });
+      지움.addEventListener('click', function () { ZG.고객PC.메모지우기(g, m, i); });
       상자.appendChild(만들기('div', { class: 'kv' }, [
         만들기('span', { class: 'k', text: m.날 || '' }),
         만들기('span', { class: 'v', text: m.글 || '' }),
@@ -247,19 +247,6 @@ window.ZG = window.ZG || {};
     칸.appendChild(저장);
   }
 
-  function 메모지우기(g, m, i) {
-    u.확인({
-      제목: '이 메모를 지울까요?',
-      본문: u.안전(m.날 || '') + ' · ' + u.안전(String(m.글 || '').slice(0, 40)) +
-            '<br><b>되돌릴 수 없습니다.</b>',
-      확인글: '삭제', 위험: true
-    }, function (예) {
-      if (!예) return;
-      자.메모삭제(g, i);
-      u.토스트('메모를 지웠습니다');
-      다시();
-    });
-  }
 
   function 문자칸(칸, g) {
     칸.appendChild(만들기('div', { class: 'ph-sec', text: '받은 문자 (' + g.문자수 + '회)' }));
@@ -332,24 +319,7 @@ window.ZG = window.ZG || {};
     return 만들기('div', { class: 'field' }, [만들기('label', { html: 라벨 }), i]);
   }
 
-  /* ── 두 버튼 — 16b 와 같은 코드다 (세부설계 §2-4 · §3) ── */
-  function 견적만들기(g) {
-    u.물음({
-      제목: '견적 요청 만들기',
-      본문: u.안전(g.이름 || '') + (g.전화 ? ' · ' + u.안전(g.전화) : ''),
-      자리표시: '예: 라벤더 20주 견적', 최대: 80, 확인글: '만들기'
-    }, function (글) {
-      if (!글) return;
-      ZG.견적자료.추가({ 요청일: u.오늘문자(), 고객명: g.이름, 연락처: g.전화, 내용: 글 });
-      u.토스트('견적 요청 탭에 넣었습니다');
-      ZG.견적탭.탭으로('견적');
-    });
-  }
-
-  function 수동주문(g) {
-    ZG.주문.상태.채울값 = { 수령인: g.이름, 전화: g.전화, 주소: g.주소, 우편번호: g.우편번호 };
-    ZG.주문.열기('수동');
-  }
+  /* 견적 만들기 · 수동주문 · 메모 지우기는 16b 와 같은 코드라 16b 것을 쓴다 (11/04 중복 걷기) */
 
   function 그리기(칸) {
     자 = ZG.고객자료;
