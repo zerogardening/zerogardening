@@ -128,7 +128,7 @@ async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boo
     const 볼 = 품절 ? await 모음옵션품절(번호, 상품명, token, true).catch(() => null) : null;
     return { 됨: true, 상품명, 번호, 옵션수: 옵션들.length, 모음: 볼,
              사유: `시험 — ${번호}번 옵션 ${옵션들.length}개를 재고 ${새수량} 로 바꿀 참이었습니다` +
-                   (볼 ? ` · 모음 옵션 ${볼.바꿈.length}개(${볼.바꿈.join(", ")})` + (볼.손으로.length ? ` · 손으로 ${볼.손으로.join(", ")}` : "") : "") };
+                   (볼 ? ` · 모음 옵션 ${볼.바꿈.length}개(${볼.바꿈.join(", ")})` + (볼.손으로.length ? ` · 손으로 ${볼.손으로.map(이름표).join(", ")}` : "") : "") };
   }
 
   for (const v of 옵션들) {
@@ -151,10 +151,12 @@ async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boo
 
   /* 🔴 품절이면 모음 상품의 같은 품종 옵션도 재고 0 (10/27 우람님 「품절 요청 품종은 모음 옵션도 전부 품절」).
      품절 뒤 샌 주문이 모음 옵션으로 들어왔다. 되살릴 때는 모음을 건드리지 않는다(모음 재고는 사람이 본다). */
-  const 모음 = 품절 ? await 모음옵션품절(번호, 상품명, token).catch((e) => ({ 바꿈: [], 손으로: [], 오류: String(e.message).slice(0, 80) })) : null;
+  const 모음: any = 품절 ? await 모음옵션품절(번호, 상품명, token).catch((e) => ({ 바꿈: [], 손으로: [], 오류: String(e.message).slice(0, 80) })) : null;
+  if (모음?.손으로.length) 모음.일감 = await 허브일감(품목코드, 상품명, 모음.손으로).catch((e) => `🔴 허브 일감 못 만듦 — ${String(e.message).slice(0, 80)}`);
   const 모음글 = !모음 ? "" : [
     모음.바꿈.length ? `모음 옵션 ${모음.바꿈.length}개 품절(${모음.바꿈.join(", ")})` : "",
-    모음.손으로.length ? `🔴 손으로: ${모음.손으로.join(", ")} — 카페24 저장 금지(쿠팡 옛 값 덮임)` : "",
+    모음.손으로.length ? `🔴 손으로: ${모음.손으로.map(이름표).join(", ")} — 카페24 저장 금지(쿠팡 통째 재전송·승인대기) · ` +
+      (typeof 모음.일감 === "number" ? `허브 일감 ${모음.일감}줄 만듦` : 모음.일감) : "",
     모음.오류 ? `🔴 모음 옵션 못 봄 — ${모음.오류}` : "",
   ].filter(Boolean).join(" · ");
 
@@ -164,7 +166,9 @@ async function 카페24밀기(품목코드: string, 품절: boolean, 시험: boo
 /* 모음 상품 = 판매중 + 옵션 2개↑ (번호 목록은 낡는다 — 263·274 삭제됨).
    옵션값 「3. 튤립 갈리레오 (5개)」 → 품종 「튤립 갈리레오」. 단품 이름이 그 품종이거나 「품종 + 띄어쓰기」로 시작하면 같은 품종.
    🔴 맥 쪽 `상품/_도구/모음옵션품절.py` 와 같은 규칙이다 — 둘을 같이 고친다.
-   🔴 276·279·280 은 카페24에 저장하지 않는다 — 저장하면 마켓플러스가 쿠팡 옛 값(33,600 무료)으로 덮는다(10/26 작약). 「손으로」로 돌려준다.
+   🔴 276·279·280 은 카페24에 저장하지 않는다 — 저장하면 마켓플러스가 쿠팡에 통째 재전송 → 쿠팡 「승인대기」 + WING 에서 넣은 옵션 사진을 덮는다
+      (11/05 실측 · 옛 「가격 덮임」은 이제 없음). 쿠팡·11번가 280 옵션 재고는 카페24를 안 따라간다.
+      「손으로」로 돌려주고 `v3_지시` 에 「허브로」 일감 줄을 만든다(허브일감 · 11/05 — 글자로만 돌려줬더니 아무도 안 했다 · 찰스화이트).
    🔴 이미 재고 0 인 옵션은 다시 안 쓴다 — 카페24 저장 한 번이 마켓 재전송 한 번이다. */
 const 저장금지 = new Set([276, 279, 280]);
 const 품종 = (값: string) => 글(값).replace(/^\s*\d+\s*\.\s*/, "").replace(/\s*[(（]\s*\d+\s*개\s*[)）]\s*$/, "").trim();
@@ -172,9 +176,34 @@ const 같은품종 = (단품이름: string, 값: string) => {
   const p = 품종(값), 이름 = 글(단품이름).split(/\s+/).filter(Boolean).join(" ");
   return !!p && (이름 === p || 이름.startsWith(p + " "));
 };
+type 손 = { 번호: number; 모음이름: string; 품종: string };
+const 이름표 = (x: 손) => `${x.번호} 「${x.품종}」`;
+const 기록 = "매뉴얼/품절-처리/지시로그/2026-11-05_작약모음-찰스화이트_280.md";
+const 일감글 = (x: 손) => `${x.모음이름}(${x.번호}) — ${x.품종} 옵션 손으로 품절: 카페24 저장 금지(쿠팡 통째 재전송·승인대기·옵션 사진 덮임) · ` +
+  `쿠팡 WING 옵션 판매중지 · 11번가 마켓플러스 빠른수정 옵션 재고 0 · 스스·G·롯데는 카페24 재고를 따라가 저장 없이는 안 내려감 → 손님 화면 되읽고 허브가 정함 · 기록 ${기록}`;
+
+/* 맥 `모음옵션품절.py` 허브일감 과 같은 줄 — 같은 모음·품종 줄이 열려 있으면 또 안 만든다. 만든 개수 */
+async function 허브일감(코드: string, 단품이름: string, 손들: 손[]) {
+  const { data, error } = await db.from("v3_지시").select("내용").eq("삭제됨", false)
+    .eq("내용->>갈래", "모음손품절").eq("내용->>품목코드", 코드);
+  if (error) throw new Error(error.message);
+  const 열린 = new Set((data ?? []).filter((r: any) => ["대기", "허브로", "하는중"].includes(r.내용?.상태))
+    .map((r: any) => `${r.내용.모음}|${r.내용.품종}`));
+  const 이제 = Date.now(), 새: any[] = [];
+  for (const x of 손들) {
+    const k = `${x.번호}|${x.품종}`;
+    if (열린.has(k)) continue;
+    열린.add(k);
+    새.push({ id: `${이제 + 새.length}-${코드.slice(0, 8)}`, 삭제됨: false, 내용: {
+      누가: "시스템", 보낸때: 이제, 넘긴때: 이제, 상태: "허브로", 갈래: "모음손품절",
+      품목코드: 코드, 폴더: 단품이름, 모음: x.번호, 품종: x.품종, 글: 일감글(x) } });
+  }
+  if (새.length) { const { error: e } = await db.from("v3_지시").insert(새); if (e) throw new Error(e.message); }
+  return 새.length;
+}
 
 async function 모음옵션품절(단품번호: number, 단품이름: string, token: string, 보기 = false) {
-  const 바꿈: string[] = [], 손으로: string[] = [];
+  const 바꿈: string[] = [], 손으로: 손[] = [];
   for (let 앞 = 0; ; 앞 += 100) {
     const d = await 카페24("GET", `products?limit=100&offset=${앞}&embed=variants` +
       `&fields=product_no,product_name,selling,variants`, token);
@@ -187,7 +216,7 @@ async function 모음옵션품절(단품번호: number, 단품이름: string, to
         if (!같은품종(단품이름, 값)) continue;
         if (글(v.use_inventory) === "T" && Number(v.quantity ?? 0) <= 0) continue;   // 이미 품절
         const 이름 = `${p.product_no} 「${품종(값)}」`;
-        if (저장금지.has(p.product_no)) { 손으로.push(이름); continue; }
+        if (저장금지.has(p.product_no)) { 손으로.push({ 번호: p.product_no, 모음이름: 다듬기(p.product_name), 품종: 품종(값) }); continue; }
         if (!보기) await 카페24("PUT", `products/${p.product_no}/variants/${v.variant_code}`, token, {
           request: { shop_no: 1, use_inventory: "T", quantity: 0, display_soldout: "T", safety_inventory: 0 },
         });
