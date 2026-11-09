@@ -324,6 +324,8 @@ window.ZG = window.ZG || {};
   function 발송문자안보냄(색) {
     색 = 색 || 발송색인();
     return 전부().filter(function (r) {
+      // 당근 주문(받는 분 「당근…」)·전화 없는 줄은 발송문자를 안 보낸다 (11/09 우람님)
+      if (/^\s*당근/.test(r.받는분 || '') || !문자되나(r.전화)) return false;
       return r.상태 === '올림' && !r.발송문자보냄일시 && 발송정보(r, 색).됨;
     }).sort(function (a, b) {
       return String(a.날짜).localeCompare(String(b.날짜)) || (a.등록일시 || 0) - (b.등록일시 || 0);
