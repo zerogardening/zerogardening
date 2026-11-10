@@ -146,17 +146,9 @@ window.ZG = window.ZG || {};
     });
   }
 
-  function 띠(글, 색) {
-    function 넣기() {
-      var d = document.createElement('div');
-      d.className = 'zg-서버띠';
-      d.style.cssText = 'padding:10px 14px;font-size:13px;line-height:1.5;background:' + 색 +
-        ';border-bottom:1px solid rgba(0,0,0,.08);position:relative;z-index:60';
-      d.textContent = 글;
-      document.body.insertBefore(d, document.body.firstChild);
-    }
-    if (document.body) 넣기(); else document.addEventListener('DOMContentLoaded', 넣기);
-  }
+  /* 맨 위 노란 띠는 걷었다(11/10 우람님 「앱 상단 경고 없애라」) — 01c 서버 경고 줄(경고:<기기>)에 남긴다 */
+  function 띠(글) { if (ZG.보내기 && ZG.보내기.받기경고) ZG.보내기.받기경고([글]); }
+
 
   /* ── 표 하나를 통째로 받는다. 1,000건씩 끊는다 ──────────────────────────────── */
   function 표받기(표) {
@@ -234,7 +226,7 @@ window.ZG = window.ZG || {};
 
     return Promise.all(일).then(function () {
       저.설정쓰기({ 실데이터: true });
-      if (서버.경고.length) 띠('⚠ ' + 서버.경고.join(' · '), '#fef3c7');
+      if (ZG.보내기 && ZG.보내기.받기경고) ZG.보내기.받기경고(서버.경고);   // 비었으면 풀림
       그리기예약();
       if (밀린인쇄 && ZG.동봉카드 && ZG.동봉카드.사무실인쇄) ZG.동봉카드.사무실인쇄(밀린인쇄);
       return 건수;
@@ -318,7 +310,7 @@ window.ZG = window.ZG || {};
     if (!행) {
       // 관문 ① — 아무도 올린 적이 없다. 내려받기를 통째로 건너뛴다
       서버.아직안올림 = true;
-      띠('아직 서버에 한 번도 올리지 않았습니다 — 이사 화면에서 「☁ 서버로 올리기」를 눌러 주세요. (고장이 아닙니다)', '#fef3c7');
+      띠('아직 서버에 한 번도 올리지 않았습니다(이사 화면 「서버로 올리기」)');
       return null;
     }
     return 내려받기(false);

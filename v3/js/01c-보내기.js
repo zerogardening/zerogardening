@@ -11,7 +11,7 @@ window.ZG = window.ZG || {};
   var 예약 = null, 보내는중 = false, 보내기시작 = 0;
   var 굳음한계 = 60000;   // 보내기가 이만큼 지나도 안 끝나면 죽은 것으로 보고 다시 건다
 
-  var 큐못씀 = false;   // 큐도 못 쓰면 새로고침에 못 보낸 것까지 사라진다 — 띠에 같이 띄운다
+  var 큐못씀 = false;   // 큐도 못 쓰면 새로고침에 못 보낸 것까지 사라진다 — 서버 경고 줄에 같이 남긴다
   function 큐저장() {
     var 전 = 큐못씀;
     try { localStorage.setItem(큐키, JSON.stringify(큐)); 큐못씀 = false; }
@@ -94,75 +94,76 @@ window.ZG = window.ZG || {};
   // 100건씩 끊어 보내므로 남은 게 있으면 곧바로 이어서 한 번 더
   function 담기0() { setTimeout(보내기, 100); }
 
-  /* ── 못 올린 것 · 못 쓴 것을 맨 위 빨간 띠로 (8/19 · 10/17 사고) ─────────────────
-     8/9부터 24건이 아무 표시 없이 쌓였고, 10/17 문자주문 2건은 흔적 없이 사라졌다.
-     방금 저장한 것이 잠깐 큐에 있는 건 정상이라 「1분 넘게 못 나간 것」만 센다.
-     body 맨 앞 보통 블록이다 — 폰 머리·PC 옆판이 top:0 에 붙어 있어 고정하면 그것을 가린다.
-     누르면 그 자리서 다시 보낸다. */
-  var 띠 = null;
+  /* ── 못 올린 것 · 못 쓴 것 · 끊김 · 수집 실패 — 화면엔 안 띄우고 서버에 조용히 한 줄 (11/10 우람님 「빨간 경고 없애고 보고서로」) ──
+     예전엔 맨 위 빨간 띠였다(8/19 · 10/17 · 10/21 사고 — 아무 표시 없이 쌓이고 사라졌던 것). 이제 v3_공유설정 「경고:<기기>」
+     { 글, 건수, 처음, 마지막, 기기 } 를 허브가 아침보고·매시 점검에서 읽는다. 글이 바뀔 때만 쓰고, 다 풀리면 그 줄을 비운다(삭제됨).
+     서버와 끊긴 동안은 못 쓰니 끊긴 시각을 이 기기에 적어 두었다가 다시 이어지면 「끊겼던 시각~」을 24시간 남긴다 */
   function 밀린건수() {
     var 이제 = Date.now(), n = 0;
     Object.keys(큐).forEach(function (열쇠) { if (이제 - (큐[열쇠].시각 || 0) > 60000) n++; });
     return n;
   }
-  /* 🔴 연결 부품(supabase-js)을 못 받으면 01b 가 조용히 로컬 전용으로 돈다 — 품절 단추가 서버에 안 닿았다 (10/7 타르다).
-     1분 기다리지 않고 바로 띄운다. 누르면 새로고침해 부품을 다시 받는다 */
+  // 연결 부품(supabase-js)을 못 받아 01b 가 로컬 전용으로 도는 것 (10/7 타르다)
   function 끊김() { return !!(ZG.서버 && ZG.서버.로그인됨 && !ZG.서버.켜짐); }
-  /* 🔴 주문 수집 실패도 다음에 받을 때까지 띄워 둔다 — 심폴이 로그인 실패로 10/17~21 나흘을 토스트만 띄우고
-     멈춰 있었고, 그동안 들어온 주문이 안 나갔다. 새로고침해도 남게 이 기기에 적어 둔다 (10/21) */
-  var 수집키 = 'zg.v3.수집실패', 수집 = {};
-  try { 수집 = JSON.parse(localStorage.getItem(수집키) || '{}') || {}; } catch (e) { 수집 = {}; }
+  function 읽기(k, 빈) { try { return JSON.parse(localStorage.getItem(k) || 'null') || 빈; } catch (e) { return 빈; } }
+  function 쓰기(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 무시 */ } }
+  // 주문 수집 실패 — 다음에 받을 때까지 이 기기에 남긴다(심폴 10/17~21 나흘 멈춤 · 10/21)
+  var 수집키 = 'zg.v3.수집실패', 수집 = 읽기(수집키, {});
   function 수집결과(이름, 실패글) {
     if (실패글) 수집[이름] = String(실패글).slice(0, 40); else delete 수집[이름];
-    try { localStorage.setItem(수집키, JSON.stringify(수집)); } catch (e) {}
-    표시();
+    쓰기(수집키, 수집);
+    살피기();
   }
-  function 띠글() {
+  var 받기경고들 = [];   // 01b — 표를 못 받음 · 서버에 아직 한 번도 안 올림
+  function 받기경고(글들) { 받기경고들 = (글들 || []).slice(); 살피기(); }
+
+  var 기기키 = 'zg.v3.기기', 기기 = 읽기(기기키, '');
+  if (!기기) {
+    기기 = (/iPhone|iPad/.test(navigator.userAgent) ? '아이폰' : /Android/.test(navigator.userAgent) ? '안드로이드' : /Mac/.test(navigator.userAgent) ? '맥' : '기기') +
+      '-' + Math.random().toString(36).slice(2, 6);
+    쓰기(기기키, 기기);
+  }
+  var 끊김키 = 'zg.v3.끊김기록', 상태키 = 'zg.v3.경고상태';
+  function 때(ms) { var d = new Date(ms), 두 = function (n) { return (n < 10 ? '0' : '') + n; }; return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + 두(d.getHours()) + ':' + 두(d.getMinutes()); }
+  function 경고글() {
     var n = 밀린건수(), 못씀 = 큐못씀 || (ZG.저장소 && ZG.저장소.저장실패 && ZG.저장소.저장실패() > 0);
-    return [끊김() ? '⚠ 서버 연결 안 됨 — 눌러서 새로고침' : '', 못씀 ? '⚠ 이 기기에 저장 실패' : '',
-            n ? '⚠ 서버에 못 올라간 기록 ' + n + '건' : '']
-      .concat(Object.keys(수집).map(function (k) { return '⚠ ' + k + ' 주문 수집 실패 — ' + 수집[k]; }))
-      .filter(Boolean).join(' · ');
+    var 끊 = 읽기(끊김키, null);
+    var 지난끊김 = 끊 && 끊.풀림 && Date.now() - 끊.풀림 < 864e5 ? '서버 연결 끊겼었음 ' + 때(끊.처음) + '~' + 때(끊.마지막) : '';
+    return { 글: [못씀 ? '이 기기에 저장 실패' : '', n ? '서버에 못 올라간 기록 ' + n + '건' : '']
+      .concat(Object.keys(수집).map(function (k) { return k + ' 주문 수집 실패 — ' + 수집[k]; }), 받기경고들, [지난끊김])
+      .filter(Boolean).join(' · '), 건수: n };
   }
-  function 표시() {
-    var 글 = 띠글();
-    if (!글) {
-      if (띠 && 띠.parentNode) 띠.parentNode.removeChild(띠);
-      띠 = null;
+  var 쓰는중 = false;
+  function 살피기() {
+    if (끊김()) {   // 못 쓴다 — 시각만 적어 둔다
+      var 끊 = 읽기(끊김키, null), 이제 = Date.now();
+      if (!끊 || 끊.풀림) 끊 = { 처음: 이제 };
+      끊.마지막 = 이제; 쓰기(끊김키, 끊);
       return;
     }
-    if (!띠) {
-      if (!document.body) return;
-      띠 = document.createElement('button');
-      띠.type = 'button';
-      띠.className = 'zg-못올림';
-      띠.style.cssText = 'display:block;width:100%;margin:0;padding:9px 14px;border:0;border-radius:0;' +
-        'font:inherit;font-size:14px;font-weight:700;line-height:1.35;text-align:center;' +
-        'background:#D70015;color:#fff;cursor:pointer';
-      띠.addEventListener('click', function () {
-        if (끊김()) { location.reload(); return; }
-        띠.textContent = '☁ 보내는 중…'; 깨우기().then(표시);
-      });
-      document.body.insertBefore(띠, document.body.firstChild);
-    }
-    띠.textContent = 글;
+    var 끊2 = 읽기(끊김키, null);
+    if (끊2 && !끊2.풀림 && ZG.서버 && ZG.서버.켜짐) { 끊2.풀림 = Date.now(); 쓰기(끊김키, 끊2); }
+    var supa = ZG.서버 && ZG.서버.켜짐 && ZG.서버.클라이언트;
+    if (!supa || 쓰는중) return;
+    var 지금 = 경고글(), 전 = 읽기(상태키, { 글: '' });
+    if (지금.글 === 전.글) return;   // 바뀔 때만 쓴다
+    var 이제 = Date.now(), 새 = { 글: 지금.글, 건수: 지금.건수, 처음: 전.글 && 지금.글 ? 전.처음 : 이제, 마지막: 이제, 기기: 기기 };
+    쓰는중 = true;
+    supa.from('v3_공유설정').upsert([{ id: '경고:' + 기기, 내용: 지금.글 ? 새 : {}, 삭제됨: !지금.글 }])
+      .then(function (r) { 쓰는중 = false; if (!r || !r.error) 쓰기(상태키, 새); },
+            function () { 쓰는중 = false; });   // 못 쓰면 다음 살피기 때 다시
   }
+  var 표시 = 살피기;   // 01-저장소가 저장 실패가 바뀔 때 부른다
 
   function 깨우기() { return 보내기(); }
   function 건수() { return Object.keys(큐).length; }
-  function 비우기() { 큐 = {}; 큐저장(); 표시(); }
+  function 비우기() { 큐 = {}; 큐저장(); 살피기(); }
 
   window.addEventListener('online', 깨우기);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) 깨우기(); });
   setInterval(깨우기, 30000);
-  setInterval(표시, 15000);
-  // 열자마자 한 번 — 지난 판에서 못 올린 게 있으면 15초 기다리지 않고 바로 알린다
-  if (document.body) 표시(); else document.addEventListener('DOMContentLoaded', 표시);
-  /* 새로고침하면 크롬이 「보던 줄」을 기준으로 스크롤을 되살려 딱 띠 높이만큼 내려가 띠가 숨는다(폰 실측 37px).
-     맨 위에 있던 것이니 맨 위로 돌린다 */
-  window.addEventListener('pageshow', function () {
-    setTimeout(function () { if (띠 && scrollY > 0 && scrollY <= 띠.offsetHeight) scrollTo(0, 0); }, 0);
-  });
+  setInterval(살피기, 15000);   // 15초마다 「살피기만」 — 서버엔 글이 바뀔 때만 쓴다
+  setTimeout(살피기, 3000);
 
-  ZG.보내기 = { 줄: 줄, 삭제: 삭제, 설정: 설정, 깨우기: 깨우기, 건수: 건수, 비우기: 비우기, 표시: 표시, 수집결과: 수집결과 };
+  ZG.보내기 = { 줄: 줄, 삭제: 삭제, 설정: 설정, 깨우기: 깨우기, 건수: 건수, 비우기: 비우기, 표시: 표시, 수집결과: 수집결과, 받기경고: 받기경고, 경고글: 경고글, 기기: function () { return 기기; } };
 })(window.ZG);
