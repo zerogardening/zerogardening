@@ -26,10 +26,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/00-확대금지.js?v=69"></script>
 <script src="js/00-새판.js?v=70"></script>
-<!-- 🔴 952KB 다. 매달아 두면 뒤의 스크립트 37개가 전부 그 뒤에 줄을 서 주문 화면 첫 그림이
-     2.5초 늦는다(우람님 9/2 「주문 탭만 1~2초 딜레이」). 엑셀은 눌러야 쓰므로 async 로 뺀다.
-     아직 안 왔을 때는 08d 의 준비되면() 이 기다렸다 이어서 한다 — ?v= 는 붙이지 않는다(다시 받는다) -->
-<script async id="엑셀도구" src="js/lib/xlsx.min.js"></script>
+<!-- 엑셀 도구(js/lib/xlsx.min.js 952KB)는 싣지 않는다 — 엑셀 단추를 누를 때 08d 준비되면() 이 부른다(11/10) -->
 <script src="js/00-시드.js?v=69"></script>
 <script src="js/01-저장소.js?v=144"></script>
 <script src="js/01b-서버.js?v=161" data-표="품목,입고,출고,재고조정,업체,주문,주문묶음,명세서,명세서줄,견적요청,심폴짝,운임손질,고객,문자,문자주문,공유설정"></script>
@@ -45,11 +42,11 @@
 <script src="js/08y-재구매자료.js?v=148"></script>
 <script src="js/08b-주문목록.js?v=162"></script>
 <script src="js/08c-주문입력.js?v=155"></script>
-<script src="js/08d-주문파일.js?v=69"></script>
+<script src="js/08d-주문파일.js?v=163"></script>
 <script src="js/08e-서비스품목.js?v=70"></script>
 <script src="js/08f-배송완료.js?v=157"></script>
 <script src="js/08g-배송완료창.js?v=141"></script>
-<script src="js/08h-주문올리기.js?v=116"></script>
+<script src="js/08h-주문올리기.js?v=163"></script>
 <script src="js/08i-로젠파일.js?v=150"></script>
 <script src="js/08j-심폴.js?v=146"></script>
 <script src="js/08k-심폴짝창.js?v=115"></script>
