@@ -563,11 +563,12 @@ with sync_playwright() as p:
         본다('제목: 메모', '화단 손님' in 제목들)
         본다('제목: 첫 품목 외 n종', '청사초 외 2종' in 제목들)
         본다('제목: 1종이면 「외」 없음', '청사초' in 제목들)
-        본다('달력 있음', 쪽.locator('.문자주문 .cal').count() == 1)
+        본다('맨 위 날짜줄 있음 · 달력은 화면에 없음(11/10 · 가운데 날짜를 누르면 팝업)', 쪽.locator('.문자주문 .날짜칸 .오늘날').count() == 1 and 쪽.locator('.문자주문 .cal').count() == 0)
         요약 = 쪽.locator('.ph-sub').inner_text()
         # 0인 것은 뺀다 (16단계-2 §5) — 이 날은 저장·보냄만 있고 올림은 아직 없다
         본다('목록 요약줄 저장·보냄 (0인 올림은 빠짐)', '저장' in 요약 and '보냄' in 요약 and '올림' not in 요약, 요약.replace('\n', ' '))
         # 달력 지난달 점·날짜
+        쪽.locator('.날짜칸 .오늘날').click(); 쪽.wait_for_timeout(200)   # 달력은 팝업(11/10)
         쪽.locator('.calhd button[aria-label="지난 달"]').click(); 쪽.wait_for_timeout(300)
         점 = 쪽.locator('.cal button.d', has_text='15').first.locator('i').get_attribute('class')
         본다('지난달 9/15 점 표시', 점 != 'none', 점)

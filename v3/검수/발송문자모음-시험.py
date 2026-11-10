@@ -47,7 +47,7 @@ try:
             쪽.evaluate("() => { ZG.문자주문자료.문자열기 = (t, g) => window.__열린.push([t, g]); }")
             쪽.locator('[role=tab]', has_text='문자').first.click()
             쪽.evaluate('() => ZG.문자주문.목록으로()')
-            칩 = 쪽.locator('.fchip', has_text='발송문자 안 보냄')
+            칩 = 쪽.locator('.fchip', has_text='발송문자')
             본다('「🚚 발송문자」 칩에 2', 칩.count() >= 1 and '2' in 칩.first.inner_text(), 칩.first.inner_text() if 칩.count() else '')
             칩.first.click(); 쪽.wait_for_timeout(300)
             보내기 = 쪽.get_by_text('🚚 발송완료 문자')
