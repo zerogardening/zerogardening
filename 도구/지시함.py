@@ -610,7 +610,8 @@ def 도구실패줄(기록):
             continue
         if not isinstance(o, dict):   # 기록 한 줄이 JSON 문자열이면 o.get 에서 죽는다(10/30 01:4x 일꾼 멈춤)
             continue
-        for c in (o.get('message') or {}).get('content') or []:
+        m = o.get('message')   # system 줄은 message 가 문자열이라 .get 에서 죽는다(11/10 17:0x 일꾼 멈춤)
+        for c in (m.get('content') if isinstance(m, dict) else None) or []:
             if not isinstance(c, dict):
                 continue
             if (o.get('type') == 'assistant' and c.get('type') == 'tool_use' and c.get('name') == 'Bash'
