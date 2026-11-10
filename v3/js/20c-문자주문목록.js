@@ -46,8 +46,9 @@ window.ZG = window.ZG || {};
   /* 발송완료인데 발송문자 안 보낸 것 — 날짜 상관없이 한 목록. 누르면 켜고 끈다 (11/09 우람님) */
   function 발송모음칩() {
     var n = 자().발송문자안보냄(참조.색인).length;
-    var b = 만들기('button', { type: 'button', class: 'fchip' + (상태.발송모음 ? ' on' : ''),
-      html: '발송문자<span class="n">' + n + '</span>' });
+    // 날짜줄 오른쪽 🚚 하나 · 건수는 작은 배지(0이면 숨김) (11/10 우람님)
+    var b = 만들기('button', { type: 'button', class: 'fchip 발송칩' + (상태.발송모음 ? ' on' : ''), 'aria-label': '발송문자 ' + n + '건',
+      html: '🚚' + (n ? '<span class="배지">' + n + '</span>' : '') });
     b.addEventListener('click', function () { 상태.발송모음 = !상태.발송모음; 상태.열린 = null; 상태.송장고침 = null; 다시(); });
     return b;
   }
@@ -473,7 +474,7 @@ window.ZG = window.ZG || {};
     var 뒤 = 단추('‹ 새 문자', 'sm', 새문자로);
     본문.appendChild(만들기('div', { class: '머리줄' }, [뒤, 검색칸('🔍 받는 분 · 전화 · 품목 · 메모 · 송장 (모든 날짜)')]));
     참조.날짜칸 = 만들기('div', { class: '날짜칸' });
-    본문.appendChild(만들기('div', { class: '날짜머리' }, [발송모음칩(), 참조.날짜칸]));
+    본문.appendChild(만들기('div', { class: '날짜머리' }, [만들기('span'), 참조.날짜칸, 발송모음칩()]));
     참조.목록칸 = 만들기('div', { class: 'ph-list' });
     본문.appendChild(참조.목록칸);
     목록다시();
@@ -529,11 +530,11 @@ window.ZG = window.ZG || {};
       if (발송판()) { ZG.문자주문올리기.인쇄(자().발송문자안보냄(), ''); return; }
       ZG.문자주문올리기.인쇄(자().거르기(상태.날짜, 상태.검색), 상태.검색.trim() ? '' : 상태.날짜);
     });
-    var 머리 = 만들기('div', { class: 'tblhd' }, [단추('‹ 새 문자', 'sm', 새문자로), 발송모음칩(), 참조.날짜칸, 참조.머리글, 검색칸('🔍 이름 · 전화 · 품목 · 메모 · 송장'), 출력]);
+    var 머리 = 만들기('div', { class: 'tblhd' }, [단추('‹ 새 문자', 'sm', 새문자로), 참조.머리글, 검색칸('🔍 이름 · 전화 · 품목 · 메모 · 송장'), 출력]);
     참조.표머리 = 만들기('colgroup');
     참조.표제목 = 만들기('thead');
     var 표 = 만들기('table', {}, [참조.표머리, 참조.표제목, 참조.목록칸]);
-    본문.appendChild(만들기('div', { class: 'lst card table-card' }, [머리, 표]));
+    본문.appendChild(만들기('div', { class: 'lst card table-card' }, [만들기('div', { class: '날짜머리' }, [만들기('span'), 참조.날짜칸, 발송모음칩()]), 머리, 표]));
     목록다시();
   }
 

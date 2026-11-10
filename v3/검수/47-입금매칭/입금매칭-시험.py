@@ -155,7 +155,11 @@ try:
             본다('두 번 올려도 주문 줄 하나(같은 id)', 쪽.evaluate("() => ZG.저장소.읽기(ZG.저장소.키.주문).filter(o => o.문자주문id === 'm30').length") == 1)
             # 맨 위 날짜 ‹ › · 가운데 누르면 달력 팝업 · 칩 이름
             오늘 = 쪽.evaluate("() => ZG.ui.오늘문자()")
-            본다('칩 이름 「발송문자」 · 달력은 화면에 없음', 쪽.locator('.문자주문 .fchip').first.inner_text().startswith('발송문자') and 쪽.locator('.문자주문 .cal').count() == 0)
+            칩 = 쪽.locator('.문자주문 .fchip.발송칩')
+            본다('칩 = 날짜줄 오른쪽 🚚 아이콘(글자 없음 · 배지 1 · 손가락 크기) · 달력은 화면에 없음', 칩.inner_text().startswith('🚚') and '발송문자' not in 칩.inner_text() and 칩.locator('.배지').inner_text() == '1' and 칩.bounding_box()['width'] >= 44 and 칩.bounding_box()['height'] >= 44 and 쪽.locator('.문자주문 .cal').count() == 0, 칩.inner_text())
+            가 = 쪽.evaluate("() => { const d = document.querySelector('.날짜칸').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); return [Math.round(d.left + d.width / 2 - (c.left + c.width / 2)), Math.round(b.left - d.right)]; }")
+            본다('날짜줄이 가운데(±2px) · 칩은 그 오른쪽', abs(가[0]) <= 2 and 가[1] > 0, 가)
+            쪽.screenshot(path=str(여기 / ('6-날짜줄-' + 틀 + '.png')), animations='disabled')
             본다('가운데 날짜 「YYYY.MM.DD (요일)」', 쪽.locator('.날짜칸 .오늘날').inner_text().startswith(오늘.replace('-', '.')))
             쪽.click('.날짜칸 button[aria-label="전날"]'); 쪽.wait_for_timeout(250)
             어제 = 쪽.evaluate("() => ZG.문자주문.상태.날짜")
