@@ -11,6 +11,7 @@ PORT = 8833
         "Object.defineProperty(window,'supabase',{value:undefined,writable:false,configurable:false});"
         "Object.defineProperty(navigator,'serviceWorker',{get:()=>undefined});"
         "window.__sms=[];window.print=function(){window.__printed=(window.__printed||0)+1;};")
+심기 += (원본 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append((bool(참), 이름, 덧))

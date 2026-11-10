@@ -6,6 +6,7 @@ from playwright.sync_api import sync_playwright
 뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 여기 = 뿌리 / '검수' / '39-예약발송'
 심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}'); sessionStorage.setItem('zg.새판시도','2');"
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''): 결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
 서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8839', '-d', str(뿌리)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1.2)

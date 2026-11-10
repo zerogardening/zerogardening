@@ -10,6 +10,7 @@ from playwright.sync_api import sync_playwright
 샷 = 뿌리 / '검수' / '21-주문실적'
 샷.mkdir(parents=True, exist_ok=True)
 심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 사본 = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else None
 
 결과 = []

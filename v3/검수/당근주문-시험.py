@@ -66,7 +66,7 @@ try:
         쪽.add_init_script(심기)
         쪽.goto('http://127.0.0.1:8821/주문.html')
         try:
-            쪽.wait_for_function('!!window.XLSX && !!window.ZG && !!ZG.당근', timeout=20000)
+            쪽.wait_for_function('!!window.ZG && !!ZG.당근 && !!ZG.주문파일', timeout=20000); 쪽.evaluate('() => new Promise(r => ZG.주문파일.준비되면(r))')   # 엑셀 도구는 쓸 때만(11/10)
         except Exception:
             print('  🔴 스크립트가 안 떴다:', 터진것[:5])
             print('  ZG 키:', 쪽.evaluate('Object.keys(window.ZG || {})'))

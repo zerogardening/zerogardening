@@ -9,6 +9,7 @@ from playwright.sync_api import sync_playwright
 샷 = 뿌리 / '검수' / '27-실적이익'
 샷.mkdir(parents=True, exist_ok=True)
 심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 
 결과 = []
 def 본다(이름, 참, 덧=''):

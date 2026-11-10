@@ -8,6 +8,7 @@ from playwright.sync_api import sync_playwright
 여기 = 뿌리 / '검수' / '19-전화주소'
 심기 = """localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{"a":1}');
 window.daum = { Postcode: function (o) { this.embed = function (el, op) { window.__우편 = { o: o, op: op, 몇: (window.__우편 ? window.__우편.몇 : 0) + 1 }; }; } };"""
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))

@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright
 뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝-개발/통합관리/v3')
 여기 = 뿌리 / '검수' / '28-심폴'
 심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}'); sessionStorage.setItem('zg.새판시도','2');"
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
@@ -70,7 +71,7 @@ def 새쪽(브, 폰):
 
 def 차림(브, 폰, 카페24도):
     쪽 = 새쪽(브, 폰)
-    쪽.goto(주소); 쪽.wait_for_load_state('networkidle'); 쪽.wait_for_function("() => window.ZG && ZG.배송완료창 && window.XLSX")
+    쪽.goto(주소); 쪽.wait_for_load_state('networkidle'); 쪽.wait_for_function("() => window.ZG && ZG.배송완료창"); 쪽.evaluate("() => new Promise(r => ZG.주문파일.준비되면(r))")   # 엑셀 도구는 쓸 때만(11/10)
     쪽.evaluate("() => ZG.시드.심기()")
     쪽.evaluate(심기자료, 카페24도); 쪽.evaluate(가짜)
     쪽.evaluate("() => ZG.배송완료창.열기()"); 쪽.wait_for_timeout(300)

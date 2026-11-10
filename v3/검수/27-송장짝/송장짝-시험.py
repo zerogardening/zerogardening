@@ -7,6 +7,7 @@ from playwright.sync_api import sync_playwright
 뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 여기 = 뿌리 / '검수' / '27-송장짝'
 심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}'); sessionStorage.setItem('zg.새판시도','2');"
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
@@ -89,7 +90,7 @@ try:
         ids = 쪽.evaluate(심기자료)
         앞 = 쪽.evaluate("() => ['010-1234-****', '0502-4236-****', '*******', '010-****-****', '', '02-123-****', '010-1234-5678'].map(ZG.배송완료.전화앞)")
         본다('전화앞: 가림 * 앞 숫자 · 짧으면(010) 버림', 앞 == ['0101234', '05024236', '', '', '', '02123', '01012345678'], 앞)
-        쪽.wait_for_function("() => window.XLSX")
+        쪽.evaluate("() => new Promise(r => ZG.주문파일.준비되면(r))")   # 엑셀 도구는 화면에 안 실린다(11/10) — 단추처럼 불러온다
         쪽.evaluate("() => ZG.배송완료창.열기()"); 쪽.wait_for_timeout(300)
         쪽.evaluate(파일넣기); 쪽.wait_for_timeout(800)
         판 = {r['수하인']: r for r in 쪽.evaluate("() => [...document.querySelectorAll('.needbox tr')].slice(1).map(tr => ({ 수하인: tr.cells[1].innerText.split('\\n')[0], 글: tr.innerText }))")}

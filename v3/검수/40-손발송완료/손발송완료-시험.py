@@ -9,6 +9,7 @@ from playwright.sync_api import sync_playwright
 심기 = ("localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"
         "Object.defineProperty(window,'supabase',{value:undefined,writable:false,configurable:false});"
         "Object.defineProperty(navigator,'serviceWorker',{get:()=>undefined});")
+심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
