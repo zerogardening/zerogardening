@@ -45,7 +45,21 @@ def 하나(코드, 머리):
     r = urllib.request.Request(집 + 'rest/v1/' + urllib.parse.quote('v3_지시') + '?on_conflict=id', data=몸, method='POST',
                                headers=dict(머리, Prefer='resolution=merge-duplicates'))
     urllib.request.urlopen(r, timeout=30).read()
-    print('%-10s %s  카페24 %s' % (코드, 이름, '✅' if 카.get('됨') else '❌ ' + (카.get('사유') or '')[:60]))
+    앱 = 앱품절(코드, 머리)
+    print('%-10s %s  카페24 %s · 앱 %s' % (코드, 이름, '✅' if 카.get('됨') else '❌ ' + (카.get('사유') or '')[:60], 앱))
+
+
+def 앱품절(코드, 머리):
+    """v3 품목 상태도 품절로 — 안 하면 마켓은 다 품절인데 앱엔 판매중으로 남는다 (11/11 트로피칼 231)"""
+    u = 집 + 'rest/v1/' + urllib.parse.quote('v3_품목') + '?id=eq.' + urllib.parse.quote(코드)
+    줄 = json.loads(urllib.request.urlopen(urllib.request.Request(u, headers=머리), timeout=30).read())
+    if not 줄: return '품목 없음'
+    내용 = 줄[0].get('내용') or {}
+    if 내용.get('상태') == '품절': return '이미 품절'
+    내용['상태'] = '품절'
+    urllib.request.urlopen(urllib.request.Request(u, method='PATCH', headers=머리,
+                           data=json.dumps({'내용': 내용}, ensure_ascii=False).encode()), timeout=30).read()
+    return '품절로 ✅'
 
 
 if __name__ == '__main__':
