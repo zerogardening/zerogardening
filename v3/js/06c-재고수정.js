@@ -340,7 +340,13 @@ window.ZG = window.ZG || {};
   function 선택삭제() {
     var 코드들 = 목.고른것들();
     if (!코드들.length) { u.토스트('지울 품목을 먼저 골라주세요'); return; }
+    /* 상품 화면은 주문 표를 평소 안 받는다(01b data-표) — 딸린 주문을 셀 때만 받는다 */
+    var 서 = ZG.서버;
+    if (서 && 서.켜짐 && 서.받는표.indexOf('주문') < 0) 서.받아오기(['주문']).then(function () { 삭제묻기(코드들); });
+    else 삭제묻기(코드들);
+  }
 
+  function 삭제묻기(코드들) {
     var 품목 = ZG.저장소.품목들();
     var 이름 = 코드들.map(function (c) {
       var p = 품목.find(function (x) { return x.품목코드 === c; });

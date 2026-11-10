@@ -10,12 +10,16 @@ window.ZG = window.ZG || {};
   var 토큰키 = 'sb-vjqfhwrgrocapcyndgtx-auth-token';
   var 표들 = ['품목', '입고', '출고', '재고조정', '업체', '주문', '주문묶음',
               '명세서', '명세서줄', '견적요청', '즐겨찾기', '분류폴더', '심폴짝', '운임손질', '고객', '문자', '메모', '제작요청', '블로그', '문자주문'];
+  /* 화면마다 쓰는 표만 받고 듣는다 — html 의 이 태그 data-표 (11/10 · 메모·지시함·현황판이 주문 3.2MB 를 받던 것).
+     없으면 전부(이사 화면) · 공유설정도 적힌 화면만. 🔴 화면에 표를 새로 쓰면 그 html data-표 에 더한다 */
+  var 적은표 = document.currentScript && document.currentScript.getAttribute('data-표');
+  var 받는표 = 적은표 == null ? 표들.concat(['공유설정']) : 적은표.split(',').filter(Boolean);
 
   var 서버 = {
     로그인됨: false, 켜짐: false, 아직안올림: false,
-    클라이언트: null, 표들: 표들, 경고: [],
+    클라이언트: null, 표들: 표들, 받는표: 받는표, 경고: [],
     표이름: 표이름, 키로: 키로,
-    받아오기: function () { return 내려받기(true); },
+    받아오기: function (몇표) { return 내려받기(true, 몇표); },   // 몇표 — 그 표만(08b 수집 뒤 주문·주문묶음)
     올림표시: 올림표시,
     상태: 상태
   };
@@ -182,8 +186,8 @@ window.ZG = window.ZG || {};
   }
 
   /* ── 첫 내려받기 ──────────────────────────────────────────────────────────── */
-  function 내려받기(강제) {
-    var 저 = ZG.저장소, 건수 = {}, 밀린인쇄 = null;
+  function 내려받기(강제, 몇표) {
+    var 저 = ZG.저장소, 건수 = {}, 밀린인쇄 = null, 고른 = 몇표 || 받는표;
     서버.경고 = [];
     // 첫 내려받기로 채운 줄도 시각을 적어 둔다 — 안 그러면 뒤에 오는 옛 값을 못 거른다
     function 시각모으기(표, 행들) {
@@ -192,7 +196,7 @@ window.ZG = window.ZG || {};
       });
     }
 
-    var 일 = 표들.map(function (표) {
+    var 일 = 고른.filter(function (표) { return 표 !== '공유설정'; }).map(function (표) {
       return 표받기(표).then(function (행들) {
         var 로컬수 = 저.읽기(키로(표)).length;
         // 관문 ② — 서버가 로컬보다 적으면 그 표는 안 덮는다 (삭제됨 포함해 센다)
@@ -210,7 +214,7 @@ window.ZG = window.ZG || {};
       .catch(function (e) {
         서버.경고.push(표 + ' 를 못 받았습니다 (' + (e.message || e) + ')');
       });
-    }).concat([
+    }).concat(고른.indexOf('공유설정') < 0 ? [] : [
       표받기('공유설정').then(function (행들) {
         시각모으기('공유설정', 행들);
         행들.forEach(function (r) {
@@ -243,10 +247,16 @@ window.ZG = window.ZG || {};
     });
   }
   function 구독() {
-    var ch = supa.channel('v3-전체');
-    표들.concat(['공유설정']).forEach(function (표) { if (따로표.indexOf(표) < 0) 표구독(ch, 표); });
-    ch.subscribe();
-    따로표.forEach(function (표) { var c = supa.channel('v3-' + 표); 표구독(c, 표); c.subscribe(); });
+    var 한채널 = 받는표.filter(function (표) { return 따로표.indexOf(표) < 0; });
+    if (한채널.length) {
+      var ch = supa.channel('v3-전체');
+      한채널.forEach(function (표) { 표구독(ch, 표); });
+      ch.subscribe();
+    }
+    따로표.forEach(function (표) {
+      if (받는표.indexOf(표) < 0) return;
+      var c = supa.channel('v3-' + 표); 표구독(c, 표); c.subscribe();
+    });
   }
 
   function 받은줄(표, p) {
