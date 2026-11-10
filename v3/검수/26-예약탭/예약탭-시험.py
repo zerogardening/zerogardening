@@ -12,7 +12,7 @@ from playwright.sync_api import sync_playwright
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
 
-서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8797', '-d', str(뿌리)],
+서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parents[1] / '_시험서버.py'), '8797', str(뿌리)],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(1.2)
 주소 = 'http://localhost:8797/%EC%A3%BC%EB%AC%B8.html'

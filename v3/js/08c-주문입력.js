@@ -222,8 +222,9 @@ window.ZG = window.ZG || {};
       var 속 = 만들기('div', { style: 'flex:1;min-height:0' });
       판.appendChild(속);
       function 닫기() { 막.remove(); 판.remove(); }
-      막.addEventListener('click', 닫기);
-      x.addEventListener('click', 닫기);
+      function 안고르고닫기() { 닫기(); if (설정.안고름) 설정.안고름(); }   // 붙여넣기로 연 창 — 카카오가 처음 검색 건수를 안 알려 준다
+      막.addEventListener('click', 안고르고닫기);
+      x.addEventListener('click', 안고르고닫기);
       document.body.appendChild(막);
       document.body.appendChild(판);
 
@@ -259,12 +260,12 @@ window.ZG = window.ZG || {};
     if (비.결과 === '없음') { 줄달기(null); 채우기(''); return; }
     if (비.결과 === '일치') {
       대상.주소확인 = '일치'; 칩(false);
-      줄달기(확인줄('맞음', '✓ 원문과 일치', [['도로명', 비.고른조각 ? 비.고른글.slice(비.고른조각.시작, 비.고른조각.끝) : 비.고른글], ['지번', 비.지번]]));
+      줄달기(확인줄('맞음', '✓ 원문과 일치', [['원문', 원문], ['검색', 비.고른글], ['지번', 비.지번]]));
       채우기(비.꼬리); return;
     }
     if (비.결과 === '불가') {
       대상.주소확인 = '비교안됨'; 칩(false);
-      줄달기(확인줄('비교안됨', '! 원문 비교 안 됨', [['원문', 원문], ['지번', 비.지번]]));
+      줄달기(확인줄('비교안됨', '! 원문 비교 안 됨 — 눈으로 확인', [['원문', 원문], ['검색', 비.고른글], ['지번', 비.지번]]));
       채우기(''); return;
     }
     주소확인창(비, 원문, function (답) {
@@ -287,16 +288,25 @@ window.ZG = window.ZG || {};
     주소.addEventListener('input', function () { 손댐 = true; 칸.hidden = true; });   // 고친 주소 옆에 지난 ✓ 를 남기지 않는다
     var 단추 = 만들기('button', { class: 'btn', type: 'button', text: '🔍 주소 찾기' });
     단추.style.flex = '0 0 auto';
+    function 열기(안고름) { 주소찾기(주소, 우편, { 대상: 대상, 상세: 설정.상세 || null, 표시: { 칩: 칩, 칸: 칸 }, 안고름: 안고름 }); }
     단추.addEventListener('click', function () {
       // 원문은 처음 한 번만 — 두 번째 찾기 때 카카오 주소가 원문을 덮지 않게. 손으로 고쳤으면 그게 새 원문이다
       if (손댐 || !대상.원문주소) 대상.원문주소 = 주소.value.trim();
       손댐 = false;
-      주소찾기(주소, 우편, { 대상: 대상, 상세: 설정.상세 || null, 표시: { 칩: 칩, 칸: 칸 } });
+      열기();
     });
     주소.style.flex = '1';
     주소.style.minWidth = '0';
     var 줄 = 만들기('div', { class: '확인묶음' }, [만들기('div', { style: 'display:flex;gap:6px;align-items:center' }, [주소, 단추]), 칸]);
-    줄.칩 = 칩;
+    줄.칩 = 칩; 줄.확인칸 = 칸;
+    /* 20h 붙여넣기 — 손님 원문 통째로 원문을 세우고 찾기를 연다. 고르지 않고 닫으면 「직접 입력」 안내 (33단계 §8) */
+    줄.찾기 = function (원문) {
+      대상.원문주소 = 원문; 손댐 = false;
+      열기(function () {
+        대상.주소확인 = '미확인'; 칩.hidden = false;
+        u.비우기(칸); 칸.appendChild(확인줄('안뜸', '✕ 주소 검색에서 못 골랐습니다 — 안 뜨면 직접 입력해 주세요', [['원문', 원문]])); 칸.hidden = false;
+      });
+    };
     return 줄;
   }
 

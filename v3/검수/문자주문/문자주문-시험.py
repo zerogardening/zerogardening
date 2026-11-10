@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # 문자주문 검수 — 로컬 서버 + headless 크롬, 바깥 접속 전부 막음, localStorage 시드만
-import pathlib, shutil, subprocess, sys, tempfile, time, json, urllib.parse
+import re, pathlib, shutil, subprocess, sys, tempfile, time, json, urllib.parse
 from playwright.sync_api import sync_playwright
 
 원본 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
@@ -8,6 +8,7 @@ from playwright.sync_api import sync_playwright
 샷.mkdir(parents=True, exist_ok=True)
 PORT = 8833
 심기 = ("localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"
+        "sessionStorage.setItem('zg.새판시도','2');"
         "Object.defineProperty(window,'supabase',{value:undefined,writable:false,configurable:false});"
         "Object.defineProperty(navigator,'serviceWorker',{get:()=>undefined});"
         "window.__sms=[];window.print=function(){window.__printed=(window.__printed||0)+1;};")
@@ -20,7 +21,7 @@ def 본다(이름, 참, 덧=''):
 터 = pathlib.Path(tempfile.mkdtemp(prefix='zg-sm-'))
 사본 = 터 / 'v3'
 shutil.copytree(원본, 사본, ignore=shutil.ignore_patterns('검수', '시안', '설계', '.git'))
-서버 = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT), '-d', str(사본)],
+서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parents[1] / '_시험서버.py'), str(PORT), str(사본)],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(1)
 밑 = 'http://127.0.0.1:%d/' % PORT
@@ -92,7 +93,7 @@ def 재고표(쪽):
     return 쪽.evaluate("""() => { const 저=ZG.저장소, k=저.키; return JSON.stringify([k.입고,k.출고,k.재고조정,k.품목].map(x => 저.읽기(x))); }""")
 
 def 문자탭(쪽):
-    쪽.locator('[role=tab]', has_text='문자주문').first.click()
+    쪽.locator('button', has_text=re.compile(r'^\s*문자(주문)?\s*$')).first.click()   # 주문 탭 단추 이름이 「문자」로 바뀜(44 와 같은 찾기)
     쪽.wait_for_timeout(300)
 
 def 잡기(쪽):
@@ -491,11 +492,11 @@ with sync_playwright() as p:
         글 = 말()
         print('    미리보기(이름 없음):\n' + '\n'.join('      | ' + x for x in 글.split('\n')))
         본다('이름 없으면 머리 「🌱 [제로가드닝]\\n주문 내역 안내」', 글.startswith('🌱 [제로가드닝]\n주문 내역 안내\n'))
-        본다('단위 「개」', '개X' in 글 and '주' not in 글.replace('주문', '').replace('주소', '').replace('보내주세요', ''), '')
+        본다('단위 「개」', '개X' in 글 and '주' not in 글.replace('주문', '').replace('주소', '').replace('보내주세요', '').replace('입금해 주세요', ''), '')
         본다('배송비 4,500 줄', '배송비 4,500원' in 글)
         본다('합계 = 5,800×1+3,000×2+4,500 = 16,300', '합계: 16,300원' in 글)
         본다('입금계좌 들어감(다듬음)', '💰입금계좌\n농협 351-1390-7063-23\n김두용(제로가드닝)' in 글 and not 글.endswith(' '))
-        본다('꼬리말 = 계좌 뒤 빈 줄 + 한 줄', 글.endswith('김두용(제로가드닝)\n\n📌 성함, 주소, 연락처를 보내주세요!'), 글[-60:])
+        본다('꼬리말 = 계좌 · 구매자 성함 입금 · 빈 줄 + 성함·주소 요청(11/10)', 글.endswith('김두용(제로가드닝)\n구매자 성함으로 입금해 주세요\n\n📌 성함, 주소를 보내주세요!'), 글[-60:])
         # 단가 고치기
         고쳐쓰기(쪽, 쪽.locator('.ph-card.담음').first.locator('input.won'), '6000')
         본다('단가 고치면 합계 반영(6,000+6,000+4,500=16,500)', '합계: 16,500원' in 말())

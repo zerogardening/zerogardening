@@ -80,7 +80,7 @@ window.ZG = window.ZG || {};
     var 사본 = 종류 === '올림'
       ? { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 주소: r.주소 || '', 상세주소: r.상세주소 || '', 우편: r.우편 || '', 배송메시지: r.배송메시지 || '' }
       : { 받는분: r.받는분 || '', 전화: 자().전화모양(r.전화), 메모: r.메모 || '', 주소: r.주소 || '', 상세주소: r.상세주소 || '', 우편: r.우편 || '',
-          배송메시지: r.배송메시지 || '', 배송비: Number(r.배송비) || 0,
+          배송메시지: r.배송메시지 || '', 배송비: Number(r.배송비) || 0, 무료배송: !!r.무료배송,
           품목: (r.품목 || []).map(function (p) { return Object.assign({}, p); }) };
     // 원문주소·주소확인도 있던 줄만 — 없는 칸을 실으면 고치기가 빈칸으로 덮는다
     ['원문주소', '주소확인'].forEach(function (k) { if (k in r) 사본[k] = r[k]; });
@@ -231,9 +231,10 @@ window.ZG = window.ZG || {};
     var 금액 = 만들기('b');
     function 금액다시() { 금액.textContent = 사본.배송비 ? u.콤마(사본.배송비) + '원' : '—'; }
     금액다시();
-    var 원 = 부().원칸(사본.배송비, function (n) { 사본.배송비 = n; 금액다시(); }, '배송비');
-    if (폰) return 만들기('div', { class: '항목' }, [만들기('div', { class: 'n', text: '배송비' }), 만들기('div', { class: 'r' }, [원, 금액])]);
-    return 만들기('div', { class: '항목' }, [만들기('span', { class: 'n', text: '배송비' }), 원, 금액]);
+    function 바뀜(n) { 사본.배송비 = n; 금액다시(); }
+    var 원 = 부().원칸(사본.배송비, 바뀜, '배송비'), 무료 = ZG.문자붙여넣기.무료단추(사본, 원, 바뀜);
+    if (폰) return 만들기('div', { class: '항목' }, [만들기('div', { class: 'n', text: '배송비' }), 만들기('div', { class: 'r' }, [무료, 원, 금액])]);
+    return 만들기('div', { class: '항목' }, [만들기('span', { class: 'n', text: '배송비' }), 무료, 원, 금액]);
   }
   function 사람칸들(사본, 폰) {
     var 부품 = 부();
@@ -297,14 +298,14 @@ window.ZG = window.ZG || {};
         [단.닫기 || 단추('삭제', 'sm del', function () { 지우기(r); }), 단.문자, 단.올림, 단.저장]);
     }
     var 칸 = 사람칸들(사본, 폰);
+    var 붙 = ZG.문자붙여넣기.단추({ 이름: 칸.받는분, 전화: 칸.전화, 곳: 칸.곳 });
     var 항목 = 항목칸만들기(사본, 폰);
     var 항목들 = [예().예약칸(사본, 폰, 상태.열린.예약판, 단.잠금), 항목.칸, 추가줄(사본, 폰, 항목)];
     if (폰) {
       return 만들기('div', { class: '속' }, [
-        만들기('div', { class: 'pair' }, [밭('받는 분 <span class="auto">선택</span>', 칸.받는분, 'flex:1'), 밭('전화번호', 칸.전화, 'flex:1.3')]),
+        붙, 부().사람줄(칸.받는분, 칸.전화),
         밭('메모 <span class="auto">선택</span>', 칸.메모),
-        부().주소밭('주소 <span class="auto">선택</span>', 칸.곳.줄),
-        밭('상세주소', 칸.곳.상세),
+        부().주소덩이('주소 <span class="auto">선택</span>', 칸.곳),
         밭('우편번호', 칸.곳.우편, 'width:120px'),
         밭('배송메시지 <span class="auto">선택</span>', 칸.배송메시지)
       ].concat(항목들, [만들기('div', { class: 'act', style: 'margin-top:0; flex-wrap:wrap' }, [단.닫기, 단.문자, 단.올림, 단.저장])]));
@@ -312,14 +313,11 @@ window.ZG = window.ZG || {};
     var 삭제 = 단.닫기 || 단추('삭제', 'sm del', function () { 지우기(r); });
     return 만들기('div', { class: '속판' }, [
       만들기('div', { class: '사람줄' }, [
-        밭('받는 분 <span class="auto">선택</span>', 칸.받는분, 'width:130px'), 밭('전화번호', 칸.전화, 'width:150px'),
-        밭('메모 <span class="auto">선택</span>', 칸.메모, 'flex:1')
+        밭('받는 분 <span class="auto">선택</span>', 칸.받는분, 'width:130px'), 밭('전화번호', 칸.전화, 'width:180px'),
+        밭('메모 <span class="auto">선택</span>', 칸.메모, 'flex:1'), 붙
       ]),
-      만들기('div', { class: '사람줄' }, [
-        밭('우편번호', 칸.곳.우편, 'width:130px'), 부().주소밭('주소 <span class="auto">선택</span>', 칸.곳.줄, 'flex:1')
-      ]),
-      만들기('div', { class: '사람줄' }, [
-        만들기('div', { style: 'flex:0 0 130px' }), 밭('상세주소', 칸.곳.상세, 'flex:1')   // 주소칸 바로 밑에 맞춘다
+      만들기('div', { class: '사람줄', style: 'align-items:flex-start' }, [
+        밭('우편번호', 칸.곳.우편, 'width:130px'), 부().주소덩이('주소 <span class="auto">선택</span>', 칸.곳, 'flex:1')
       ]),
       만들기('div', { class: '사람줄' }, [밭('배송메시지 <span class="auto">선택</span>', 칸.배송메시지, 'flex:1')])
     ].concat(항목들, [만들기('div', { class: '끝' }, [삭제, 만들기('span', { class: 'spacer' }), 단.문자, 단.올림, 단.저장])]));
@@ -482,7 +480,7 @@ window.ZG = window.ZG || {};
       사람 = (t.결 === '메모' ? '<span class="메모제목">' + u.안전(t.글) + '</span>' : u.안전(t.글)) + 아래;
     }
     var 품목글 = (r.품목 || []).map(function (p) { return u.안전(p.유통명) + ' ' + u.콤마(p.수량); }).join(' · ');
-    var 밑 = 올림됨 && !됨 && 자().온주소(r) ? u.안전(자().온주소(r)) : (셈.배송비 ? '배송비 ' + u.콤마(셈.배송비) : '배송비 없음');
+    var 밑 = 올림됨 && !됨 && 자().온주소(r) ? u.안전(자().온주소(r)) : (셈.배송비 ? '배송비 ' + u.콤마(셈.배송비) : r.무료배송 ? '무료배송' : '배송비 없음');
     var 상태칸 = 만들기('td', { class: '상태칸' }, [칩(r, false, 정보)]);
     if (예약) 상태칸.appendChild(만들기('div', { class: '예약표' }, [예().예약칩(r), 예().D칸(r)]));
     if (됨) [송장칸(r, 정보, false)].concat(발송단추(r, 정보, true)).forEach(function (e) { 상태칸.appendChild(e); });

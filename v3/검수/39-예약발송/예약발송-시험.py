@@ -9,7 +9,7 @@ from playwright.sync_api import sync_playwright
 심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''): 결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
-서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8839', '-d', str(뿌리)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1.2)
+서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parents[1] / '_시험서버.py'), '8839', str(뿌리)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL); time.sleep(1.2)
 주소 = 'http://localhost:8839/%EC%A3%BC%EB%AC%B8.html'
 심기자료 = """() => {
   const 자 = ZG.문자주문자료, 저 = ZG.저장소, ps = 저.품목들(), 오늘 = ZG.ui.오늘문자();

@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 # 19단계 ② 주소 확인 — python3 v3/검수/19-전화주소/주소확인-시험.py
 # 🔴 로컬 전용 — supabase·카카오 스크립트를 막는다. 카카오 우편번호는 가짜로 심고 oncomplete 를 손으로 부른다.
-import pathlib, subprocess, sys, time
+import re, pathlib, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
 뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
 여기 = 뿌리 / '검수' / '19-전화주소'
-심기 = """localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{"a":1}');
+심기 = """localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{"a":1}'); sessionStorage.setItem('zg.새판시도','2');
 window.daum = { Postcode: function (o) { this.embed = function (el, op) { window.__우편 = { o: o, op: op, 몇: (window.__우편 ? window.__우편.몇 : 0) + 1 }; }; } };"""
 심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
 
-서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8798', '-d', str(뿌리)],
+서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parents[1] / '_시험서버.py'), '8798', str(뿌리)],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(1.2)
 바탕 = 'http://localhost:8798/'
@@ -51,10 +51,10 @@ try:
             쪽.add_init_script(심기)
             쪽.goto(주소); 쪽.wait_for_timeout(2000)
             쪽.evaluate("() => { ZG.시드.심기(); }")
-            쪽.click('text=문자주문 >> nth=0'); 쪽.wait_for_timeout(400)
+            쪽.locator('button', has_text=re.compile(r'^\s*문자(주문)?\s*$')).first.click()   # 주문 탭 단추 이름이 「문자」로 바뀜(44 와 같은 찾기); 쪽.wait_for_timeout(400)
             쪽.evaluate("() => { ZG.문자주문새문자.상태.담은것.push(ZG.문자주문자료.담을줄(ZG.저장소.품목들()[1])); ZG.주문.다시그리기(); }")
             쪽.wait_for_timeout(300)
-            칸 = '.문자주문 input[placeholder="주소"]'
+            칸 = '.문자주문 [placeholder="주소"]'
             상세 = '.문자주문 input[placeholder="상세주소"]'
             찾기 = '.문자주문 button:has-text("주소 찾기")'
             def 원문치기(글):

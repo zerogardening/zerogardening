@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 # 19단계 ① 전화 정리 — python3 v3/검수/19-전화주소/전화-시험.py
 # 🔴 로컬 전용 — supabase CDN·서버 주소를 막아 서버에 아무것도 안 간다. localStorage 에만 쓴다.
-import pathlib, subprocess, sys, time
+import re, pathlib, subprocess, sys, time
 from playwright.sync_api import sync_playwright
 
 뿌리 = pathlib.Path('/Users/woorambaik/claude-projects/제로가드닝/통합관리/v3')
-심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}');"
+심기 = "localStorage.setItem('sb-vjqfhwrgrocapcyndgtx-auth-token','{\"a\":1}'); sessionStorage.setItem('zg.새판시도','2');"
 심기 += (뿌리 / 'js' / '00-시드.js').read_text(encoding='utf-8')   # 시드는 화면에 안 실린다(11/10) — 시험이 직접 싣는다
 결과 = []
 def 본다(이름, 참, 덧=''):
     결과.append(bool(참)); print(('  OK ' if 참 else '  XX ') + 이름 + ((' — ' + str(덧)) if 덧 else ''))
 
-서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8797', '-d', str(뿌리)],
+서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parents[1] / '_시험서버.py'), '8797', str(뿌리)],
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(1.2)
 바탕 = 'http://localhost:8797/'
@@ -51,7 +51,7 @@ try:
             쪽.add_init_script(심기)
             쪽.goto(주소); 쪽.wait_for_timeout(2000)
             쪽.evaluate("() => { ZG.시드.심기(); }")
-            쪽.click('text=문자주문 >> nth=0'); 쪽.wait_for_timeout(400)
+            쪽.locator('button', has_text=re.compile(r'^\s*문자(주문)?\s*$')).first.click()   # 주문 탭 단추 이름이 「문자」로 바뀜(44 와 같은 찾기); 쪽.wait_for_timeout(400)
 
             # ── 20b 새 문자 — 치는 중엔 그대로, 벗어날 때 바뀜
             tel = '.문자주문 input[type=tel]'
