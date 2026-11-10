@@ -164,8 +164,8 @@ try:
             오늘 = 쪽.evaluate("() => ZG.ui.오늘문자()")
             칩 = 쪽.locator('.문자주문 .fchip.발송칩')
             본다('칩 = 날짜줄 오른쪽 🚚 아이콘(글자 없음 · 배지 1 · 손가락 크기) · 달력은 화면에 없음', 칩.inner_text().startswith('🚚') and '발송문자' not in 칩.inner_text() and 칩.locator('.배지').inner_text() == '1' and 칩.bounding_box()['width'] >= 44 and 칩.bounding_box()['height'] >= 44 and 쪽.locator('.문자주문 .cal').count() == 0, 칩.inner_text())
-            가 = 쪽.evaluate("() => { const d = document.querySelector('.날짜칸').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); return [Math.round((d.left + b.right) / 2 - (c.left + c.width / 2)), Math.round(b.left - d.right)]; }")
-            본다('날짜줄+🚚 묶음이 가운데(±2px) · 🚚는 날짜줄 바로 옆', abs(가[0]) <= 2 and 0 < 가[1] <= 16, 가)
+            가 = 쪽.evaluate("() => { const d = document.querySelector('.날짜칸').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); a = document.querySelector('.새문자칩').getBoundingClientRect(); return [Math.round((a.left + b.right) / 2 - (c.left + c.width / 2)), Math.round(b.left - d.right)]; }")
+            본다('「✉️ ‹ 날짜 › 🚚」 묶음이 가운데(±2px) · 🚚는 날짜줄 바로 옆', abs(가[0]) <= 2 and 0 < 가[1] <= 16, 가)
             쪽.click('.발송칩'); 쪽.wait_for_timeout(300)
             본다('🚚 누르면 발송문자 안 보낸 모든 내역 · 단계 줄 숨김', 쪽.evaluate("() => ZG.문자주문.상태.발송모음") and 쪽.locator('.단계줄').is_hidden() and 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("자동이")').count() == 1)
             쪽.click('.발송칩'); 쪽.wait_for_timeout(300)
@@ -248,7 +248,7 @@ try:
             쪽.screenshot(path=str(여기 / ('3-올린뒤-' + 틀 + '.png')), full_page=폰, animations='disabled')
 
             # 저장하는 순간 — 그 이름 입금을 바로 찾아 짝 · 짧은 안내
-            쪽.locator('button', has_text='새 문자').first.click(); 쪽.wait_for_timeout(400)
+            쪽.click('.새문자칩'); 쪽.wait_for_timeout(400)
             쪽.evaluate("() => { const s = ZG.문자주문새문자.상태, 품 = ZG.저장소.품목들()[1]; s.담은것 = [Object.assign(ZG.문자주문자료.담을줄(품), { 단가: 2500 })]; ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(200)
             쪽.fill('.문자주문 input[placeholder="받는 분"]', '새손님'); 쪽.wait_for_timeout(250)
             쪽.click('.문자주문 .보냄줄 button:has-text("저장")'); 쪽.wait_for_timeout(300)
@@ -258,7 +258,7 @@ try:
             쪽.evaluate("() => ZG.문자주문.목록으로()"); 쪽.wait_for_timeout(300)
 
             # 프리셋(20j) — 우람님이 골라 저장 · 품목·수량·배송비(무료배송)·문자 · 4자 · 5개 · 길게 눌러 고치기
-            쪽.locator('button', has_text='새 문자').first.click(); 쪽.wait_for_timeout(400)
+            쪽.click('.새문자칩'); 쪽.wait_for_timeout(400)
             S = lambda: 쪽.evaluate("() => JSON.parse(JSON.stringify(ZG.문자주문새문자.상태))")
             목 = lambda: 쪽.evaluate("() => ZG.저장소.읽기(ZG.저장소.키.문자프리셋).목록 || []")
             본다('처음엔 ＋ 하나', 쪽.locator('.프리셋줄 .btn.프리셋').count() == 1 and 쪽.locator('.프리셋줄 .더').count() == 1)
@@ -286,6 +286,7 @@ try:
             쪽.click('.문자주문 .보냄줄 button:has-text("저장")'); 쪽.wait_for_timeout(300)
             r = 쪽.evaluate("() => { const r = ZG.문자주문자료.전부().filter(r => r.받는분 === '김가람' && r.문자글)[0]; return r && { 글: ZG.문자주문자료.문자내용(r), 무료: r.무료배송 }; }")
             본다('저장한 줄도 프리셋 문자로(다시 보내기도 같은 글)', r and '봄 특가' in r['글'] and '김가람 님 주문 안내' in r['글'] and r['무료'], r)
+            쪽.click('.새문자칩'); 쪽.wait_for_timeout(300)   # 저장하면 목록(메인) — 다시 새 문자로
             쪽.click('.프리셋줄 .btn.프리셋:has-text("봄세트한")'); 쪽.wait_for_timeout(300)
             쪽.evaluate("() => { ZG.문자주문새문자.상태.담은것[0].수량 = 4; ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(300)
             말 = 쪽.inner_text('.문자주문 .말풍선')

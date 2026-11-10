@@ -38,7 +38,7 @@ try:
                 품목: [{ 품목코드: 'CAR01-10', 유통명: '청사초', 학명: '', 규격: '10cm', 수량: 1, 단가: 3800 }], 배송비: 4500,
                 상태: '저장', 등록일시: 지금, 수정일시: 지금 }); ZG.주문.다시그리기(); }""")
             쪽.locator('button', has_text=re.compile(r'^\s*문자(주문)?\s*$')).first.click(); 쪽.wait_for_timeout(400)
-            쪽.locator('button', has_text='문자주문 목록').first.click(); 쪽.wait_for_timeout(400)
+            쪽.evaluate('() => ZG.문자주문.목록보기()'); 쪽.wait_for_timeout(400)   # 11/10 — 메인이 목록(옛 「문자주문 목록」 단추 걷음)
             def 펼치기():
                 if 쪽.locator('.속').count() == 0:
                     (쪽.locator('.문카드', has_text='김다시').locator('.r1') if 폰 else 쪽.locator('tr', has_text='김다시').first).click()

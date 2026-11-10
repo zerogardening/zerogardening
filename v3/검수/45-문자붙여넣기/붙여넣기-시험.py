@@ -44,6 +44,7 @@ try:
             쪽.goto('http://localhost:8852/%EC%A3%BC%EB%AC%B8.html'); 쪽.wait_for_function('!!(window.ZG && ZG.문자주문 && ZG.문자붙여넣기)', timeout=20000)
             쪽.evaluate("() => { ZG.시드.심기(); const 저 = ZG.저장소; if (!ZG.업체자료.자사()) 저.덧붙이기(저.키.업체, { id: 'c_self', 이름: '제로가드닝', 내업체: true, 입금계좌: '농협 000-0000-0000-00 제로가드닝' }); ZG.주문.다시그리기(); }")
             쪽.locator('button', has_text=re.compile(r'^\s*문자(주문)?\s*$')).first.click(); 쪽.wait_for_timeout(400)
+            쪽.click('.새문자칩'); 쪽.wait_for_timeout(300)   # 11/10 — 메인은 목록 · ✉️ 로 새 문자
             쪽.evaluate("() => { const s = ZG.문자주문새문자.상태; s.담은것.push(ZG.문자주문자료.담을줄(ZG.저장소.품목들()[1])); s.담은것[0].수량 = 3; s.담은것[0].단가 = 5000; ZG.주문.다시그리기(); }")
             쪽.wait_for_timeout(300)
             판 = '.문자주문'

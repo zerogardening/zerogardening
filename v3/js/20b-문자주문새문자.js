@@ -265,9 +265,20 @@ window.ZG = window.ZG || {};
     참조.검색 = e;
     return e;
   }
-  function 목록단추() {
-    var b = 만들기('button', { class: 'btn sm', type: 'button', text: '📋 문자주문 목록' });
-    b.addEventListener('click', function () { ZG.문자주문.목록으로(); });
+  /* ✕ — 비었으면 바로 목록, 뭐라도 넣었으면 버릴지 묻는다 (11/10 우람님 · 메인은 목록) */
+  function 비었나() {
+    글칸맞추기(참조.글칸들);
+    return !상태.담은것.length && ['받는분', '전화', '메모', '주소', '상세주소', '우편', '배송메시지'].every(function (k) { return !String(상태[k] || '').trim(); });
+  }
+  function 닫기단추() {
+    var b = 만들기('button', { class: 'btn sm 닫기x', type: 'button', text: '✕ 닫기', 'aria-label': '닫기' });
+    b.addEventListener('click', function () {
+      if (비었나()) { ZG.문자주문.목록보기(); return; }
+      u.확인({ 제목: '작성 중인 내용을 버릴까요?', 확인글: '버리기', 취소글: '계속 쓰기', 위험: true }, function (예) {
+        if (!예) return;
+        글칸멈추기(참조.글칸들); 비우기(); ZG.문자주문.목록보기();
+      });
+    });
     return b;
   }
   function 사람칸들(폰) {
@@ -301,8 +312,8 @@ window.ZG = window.ZG || {};
     var 배송 = 원칸(상태.배송비, function (n) { 상태.배송비 = n; 합계다시(); }, '배송비');
     var 무료 = ZG.문자붙여넣기.무료단추(상태, 배송, function (n) { 상태.배송비 = n; 합계다시(); });
     [
+      만들기('div', { style: 'display:flex' }, [닫기단추()]),
       프리셋줄(),
-      만들기('div', { style: 'display:flex; justify-content:flex-end' }, [목록단추()]),
       만들기('div', { class: 'field' }, [검색칸(), 참조.결과칸]),
       만들기('div', { class: 'ph-sec', text: '담은 품목' }), 참조.담은칸,
       만들기('div', { class: '배송줄' }, [만들기('span', { class: 'k', text: '배송비' }), 무료, 배송, 만들기('span', { class: 'lbl', text: '원' })]),
@@ -324,16 +335,15 @@ window.ZG = window.ZG || {};
     참조.담은칸 = 만들기('tbody');
     참조.합계 = 만들기('div', { class: '합계줄' });
     var 검색카드 = 만들기('div', { class: 'card' }, [
-      만들기('h3', { html: '품목 검색<span class="right"></span>' }), 검색칸(), 참조.결과칸
+      만들기('h3', { text: '품목 검색' }), 검색칸(), 참조.결과칸
     ]);
-    검색카드.querySelector('h3 .right').appendChild(목록단추());
     var 표 = 만들기('table', {}, [
       만들기('colgroup', { html: '<col style="width:90px"><col><col style="width:150px"><col style="width:110px"><col style="width:72px"><col style="width:68px">' }),
       만들기('thead', { html: '<tr><th>품목코드</th><th>유통명 · 규격</th><th>수량</th><th class="r">단가</th><th class="r">금액</th><th></th></tr>' }),
       참조.담은칸
     ]);
     var 왼 = 만들기('div', { class: 'l' }, [
-      프리셋줄(), 검색카드,
+      만들기('div', { style: 'display:flex' }, [닫기단추()]), 프리셋줄(), 검색카드,
       만들기('div', { class: 'card table-card' }, [만들기('h3', { text: '담은 품목' }), 표, 참조.합계]),
       만들기('div', { class: 'card' }, [만들기('div', { class: 'row', style: 'justify-content:flex-end' }, [붙단추(사람)]), 만들기('div', { class: 'row' }, [
         밭('받는 분 <span class="auto">선택</span>', 사람.받는분, 'width:130px'),
@@ -358,7 +368,9 @@ window.ZG = window.ZG || {};
     비우기();
     u.토스트(보냄 ? '저장했습니다 · 문자 내용을 복사했습니다' : '저장했습니다');
     ZG.입금매칭.저장뒤(r.id);
-    ZG.주문.다시그리기();
+    // 저장·문자 둘 다 목록(메인)으로 — 문자는 그 뒤 문자앱이 열리고 돌아오면 목록이다.
+    // 🔴 앱을 나갔다 오는 것만으로는 화면을 안 바꾼다 — 붙여넣기 하려고 문자앱에서 손님 글을 복사해 오는 길이 깨진다
+    ZG.문자주문.목록보기();
     if (보냄) 자().문자열기(r.전화, 자().문자내용(r));
   }
 
