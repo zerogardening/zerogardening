@@ -89,7 +89,7 @@ def 새쪽(브, 폰, 자):
 
 def 돌리기(뿌리, 포트, 출):
     출.mkdir(parents=True, exist_ok=True)
-    서버 = subprocess.Popen([sys.executable, '-m', 'http.server', str(포트), '-d', str(뿌리)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parents[1] / '_시험서버.py'), str(포트), str(뿌리)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(1.2); 주 = f'http://localhost:{포트}/'; 판 = {}
     def 찍기(쪽, 이름):
         쪽.wait_for_timeout(600)

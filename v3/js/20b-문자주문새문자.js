@@ -155,6 +155,14 @@ window.ZG = window.ZG || {};
     if (참조.검색) 참조.검색.value = '';
     결과다시(); 담은칸다시();
   }
+  /* 자주 파는 묶음(20h) — 있는 품목이면 수량을 더한다 */
+  function 묶음담기(줄) {
+    줄.forEach(function (p) {
+      var 있는 = 상태.담은것.filter(function (r) { return r.품목코드 === p.품목코드; })[0];
+      if (있는) 있는.수량 += p.수량; else 상태.담은것.push(p);
+    });
+    담은칸다시();
+  }
   function 빼기(코드) {
     상태.담은것 = 상태.담은것.filter(function (r) { return r.품목코드 !== 코드; });
     담은칸다시();
@@ -293,6 +301,7 @@ window.ZG = window.ZG || {};
     [
       만들기('div', { style: 'display:flex; justify-content:flex-end' }, [목록단추()]),
       만들기('div', { class: 'field' }, [검색칸(), 참조.결과칸]),
+      ZG.문자붙여넣기.묶음칸(묶음담기),
       만들기('div', { class: 'ph-sec', text: '담은 품목' }), 참조.담은칸,
       만들기('div', { class: '배송줄' }, [만들기('span', { class: 'k', text: '배송비' }), 무료, 배송, 만들기('span', { class: 'lbl', text: '원' })]),
       참조.합계,
@@ -304,7 +313,7 @@ window.ZG = window.ZG || {};
       밭('배송메시지 <span class="auto">선택</span>', 사람.배송메시지),
       만들기('div', { class: 'ph-sec', text: '문자 미리보기' }), 말풍선틀(),
       보내기단추(true)
-    ].forEach(function (e) { 본문.appendChild(e); });
+    ].forEach(function (e) { if (e) 본문.appendChild(e); });
   }
 
   function PC배치(본문) {
@@ -313,7 +322,7 @@ window.ZG = window.ZG || {};
     참조.담은칸 = 만들기('tbody');
     참조.합계 = 만들기('div', { class: '합계줄' });
     var 검색카드 = 만들기('div', { class: 'card' }, [
-      만들기('h3', { html: '품목 검색<span class="right"></span>' }), 검색칸(), 참조.결과칸
+      만들기('h3', { html: '품목 검색<span class="right"></span>' }), 검색칸(), ZG.문자붙여넣기.묶음칸(묶음담기), 참조.결과칸
     ]);
     검색카드.querySelector('h3 .right').appendChild(목록단추());
     var 표 = 만들기('table', {}, [

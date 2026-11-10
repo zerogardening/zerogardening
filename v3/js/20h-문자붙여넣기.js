@@ -91,5 +91,31 @@ window.ZG = window.ZG || {};
     return b;
   }
 
-  ZG.문자붙여넣기 = { 나누기: 나누기, 단추: 단추, 무료단추: 무료단추 };
+  /* 자주 파는 묶음 — 최근 60일 문자주문에서 두 번 넘게 나온 같은 품목·수량 조합 위 4개를 저절로 고른다(손으로 고치는 화면 없음 · 11/10).
+     품목 하나 1개짜리는 묶음이 아니다 · 지금 없는 품목이 낀 조합은 뺀다 · 단가는 지금 값 */
+  function 묶음들() {
+    var 지금 = Date.now(), 셈 = {}, 품 = {}, 자료 = ZG.문자주문자료;
+    ZG.저장소.품목들().forEach(function (p) { 품[p.품목코드] = p; });
+    자료.전부().forEach(function (r) {
+      if (지금 - (r.등록일시 || 0) > 60 * 864e5) return;
+      var 줄 = (r.품목 || []).map(function (p) { return [p.품목코드, Math.max(1, Number(p.수량) || 1)]; }).sort();
+      if (!줄.length || 줄.some(function (c) { return !품[c[0]]; }) || (줄.length === 1 && 줄[0][1] < 2)) return;
+      var k = JSON.stringify(줄);
+      (셈[k] = 셈[k] || { 줄: 줄, 번: 0 }).번++;
+    });
+    return Object.keys(셈).map(function (k) { return 셈[k]; }).filter(function (m) { return m.번 >= 2; })
+      .sort(function (a, b) { return b.번 - a.번; }).slice(0, 4)
+      .map(function (m) { return m.줄.map(function (c) { return Object.assign(자료.담을줄(품[c[0]]), { 수량: c[1] }); }); });
+  }
+  function 묶음칸(담기) {
+    var 들 = 묶음들();
+    if (!들.length) return null;
+    return 만들기('div', { class: '묶음줄' }, [만들기('span', { class: 'lbl', text: '자주 파는 묶음' })].concat(들.map(function (줄) {
+      var b = 만들기('button', { class: 'btn sm 묶음', type: 'button', text: 줄.map(function (p) { return p.유통명 + ' ' + p.수량; }).join(' + ') });
+      b.addEventListener('click', function () { 담기(줄.map(function (p) { return Object.assign({}, p); })); });
+      return b;
+    })));
+  }
+
+  ZG.문자붙여넣기 = { 나누기: 나누기, 단추: 단추, 무료단추: 무료단추, 묶음칸: 묶음칸 };
 })(window.ZG);

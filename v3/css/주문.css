@@ -1828,3 +1828,16 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
   body.인쇄중 .출고목록 .규{font-size:10.5pt}
   body.인쇄중 .출고목록 .n{font-size:13.5pt}
 }
+/* 34단계 2단계 — 문자주문 입금 띠 · 「주문 올릴까요?」 (20i) */
+.입금띠{font-size:var(--font-xs); font-weight:var(--weight-bold); padding:5px 10px; border-radius:var(--radius-sm); margin-bottom:var(--space-sm); cursor:pointer; line-height:1.4}
+.입금띠.맞음{background:var(--color-accent-bg); color:var(--color-accent-dark); box-shadow:inset 0 0 0 1px var(--color-accent-border)}
+.입금띠.다름{background:#FFF0E3; color:#C2410C; box-shadow:inset 0 0 0 1px #F8C9A0}
+.입금띠.물음, .입금띠.고름{background:#FFF7E0; color:#8A6100; box-shadow:inset 0 0 0 1px #F0DFAE}
+.입금띠.전{background:#F2F2F4; color:var(--color-text-muted); cursor:default; font-weight:var(--weight-semibold)}
+.입금띠.전.늦음{background:#FDECEC; color:#B42318}
+td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
+.btn.큰올림{width:100%; min-height:48px; font-size:var(--font-lg); font-weight:var(--weight-bold); margin-top:var(--space-sm)}
+td .btn.큰올림{min-height:34px; font-size:var(--font-sm); margin:0 0 6px}
+.묶음줄{display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-xs); margin-top:var(--space-sm)}
+.묶음줄 .lbl{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-right:2px}
+.btn.묶음{white-space:normal; text-align:left; background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}

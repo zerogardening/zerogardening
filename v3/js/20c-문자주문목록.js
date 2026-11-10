@@ -427,6 +427,8 @@ window.ZG = window.ZG || {};
     ]);
     var r2 = 만들기('div', { class: 'r2', html:
       (t.결 === '전화' ? '' : 전화글(r) + ' · ') + 셈.종 + '종 ' + u.콤마(셈.개) + '개' + '<span class="amt">' + u.콤마(셈.합) + '원</span>' });
+    var 판 = 참조.입금판[r.id], 입띠 = ZG.입금매칭.띠(r, 판);
+    if (입띠) 카드.appendChild(입띠);
     카드.appendChild(r1); 카드.appendChild(r2);
     if (올림됨) {
       if (정보.됨) {
@@ -445,6 +447,8 @@ window.ZG = window.ZG || {};
     if (열린 && 열린.종류 === '고침') 카드.appendChild(고침판(r, true));
     else if (열린) 카드.appendChild(ZG.문자주문올리기.판(r, 열린.사본, true, 닫기));
     else {
+      var 큰 = ZG.입금매칭.올릴단추(r, 판, 다시);
+      if (큰) 카드.appendChild(큰);
       var 줄 = [];
       줄.push(단추('💬 문자', '', function () { 문자보내기(r.id); }, !자().문자되나(r.전화)));
       var 올림 = 단추('주문올리기', 'main', function () { 올리기누름(r); });
@@ -481,7 +485,8 @@ window.ZG = window.ZG || {};
     }
     var 품목글 = (r.품목 || []).map(function (p) { return u.안전(p.유통명) + ' ' + u.콤마(p.수량); }).join(' · ');
     var 밑 = 올림됨 && !됨 && 자().온주소(r) ? u.안전(자().온주소(r)) : (셈.배송비 ? '배송비 ' + u.콤마(셈.배송비) : r.무료배송 ? '무료배송' : '배송비 없음');
-    var 상태칸 = 만들기('td', { class: '상태칸' }, [칩(r, false, 정보)]);
+    var 판 = 참조.입금판[r.id];
+    var 상태칸 = 만들기('td', { class: '상태칸' }, [ZG.입금매칭.띠(r, 판), 칩(r, false, 정보)]);
     if (예약) 상태칸.appendChild(만들기('div', { class: '예약표' }, [예().예약칩(r), 예().D칸(r)]));
     if (됨) [송장칸(r, 정보, false)].concat(발송단추(r, 정보, true)).forEach(function (e) { 상태칸.appendChild(e); });
     else if (올림됨) {
@@ -489,6 +494,8 @@ window.ZG = window.ZG || {};
       상태칸.appendChild(단추('발송완료', 'sm 꽉', function () { 손발송완료(r); }));
       상태칸.appendChild(단추('삭제', 'sm del 꽉', function () { 올림삭제(r); }));   // 발송완료 줄엔 안 단다 — 어차피 못 지운다
     } else if (!열린) {
+      var 큰 = ZG.입금매칭.올릴단추(r, 판, 다시);
+      if (큰) 상태칸.appendChild(큰);
       상태칸.appendChild(단추('💬 문자', 'sm 꽉', function () { 문자보내기(r.id); }, !자().문자되나(r.전화)));
       var 올림 = 단추('주문올리기', 'sm main 꽉', function () { 올리기누름(r); });
       예().잠그기(올림, r);
@@ -544,6 +551,7 @@ window.ZG = window.ZG || {};
     var 폰 = u.폰인가(), 발송 = 발송판();
     참조.색인 = 자().발송색인();
     var 목록 = 발송 ? 자().발송문자안보냄(참조.색인) : 자().거르기(상태.날짜, 상태.검색);
+    참조.입금판 = ZG.입금매칭.판정();
     참조.발송단추 = {}; 참조.발송누름 = null;
     u.열린줄잊기();
     u.비우기(참조.달력칸);
