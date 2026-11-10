@@ -133,9 +133,10 @@ window.ZG = window.ZG || {};
     글 += '\n\n📌 성함, 주소, 연락처를 보내주세요!';
     return 글;
   }
-  /* 맥 문자앱이 본문을 안 받는 때가 있다 — PC 는 열기 전에 복사해 둔다 (§5) */
+  /* 문자앱이 본문(body)을 안 받는 때가 있다 — 열기 전에 복사해 둔다 (§5).
+     맥 문자앱 · 🔴 아이폰도 그 사람 대화창이 이미 열려 있으면 body 를 버린다(11/08 우람님 「다시 보내면 내용이 안 넘어감」) → 폰도 복사 */
   function 문자열기(전화, 글) {
-    if (!u.폰인가() && navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(글).catch(function () { /* 무시 — 링크는 그래도 연다 */ });
     }
     // 🔴 아이폰 홈화면 앱은 location.href 로 sms: 를 열면 아무 일도 안 일어난다 — 진짜 링크를 눌러 연다 (11/03)
