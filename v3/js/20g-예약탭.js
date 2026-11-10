@@ -55,10 +55,11 @@ window.ZG = window.ZG || {};
   function 원본빔(r) { return r.원본줄들.some(function (o) { return 빈곳(o.수령인) || 빈곳(o.수령인주소); }); }
   function 지금올리기(r, 다시) {
     function 보냄() {
-      var 답 = 예().올리기(r.id);
-      if (답.오류) { u.토스트(답.오류); return; }
-      u.토스트('주문탭으로 올렸습니다' + (답.번호 ? ' — ' + 답.번호 : ''));
-      다시();
+      예().올리기(r.id).then(function (답) {
+        if (답.오류) { u.토스트(답.오류); return; }
+        u.토스트('주문탭으로 올렸습니다' + (답.번호 ? ' — ' + 답.번호 : ''));
+        다시();
+      });
     }
     function 올림() {
       자().잠금풀기(r.id);

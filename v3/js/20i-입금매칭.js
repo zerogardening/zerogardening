@@ -137,19 +137,27 @@ window.ZG = window.ZG || {};
   }
 
   /* 자동 올리기(11/10 13:25 우람님) — 초록 입금 + 받는 분 + 주소가 갖춰지면 누르지 않아도 20a 주문올리기 그대로.
-     빨강·주황·골라 주세요는 안 올림 · 예약일 전·예약 되살리기 줄도 안 함 · 두 기기가 같이 올려도 주문 줄 id 가 같아 하나(20a) */
+     빨강·주황·골라 주세요는 안 올림 · 예약일 전·예약 되살리기 줄도 안 함 · 두 기기가 같이 올려도 번호 장부·주문 줄 id 가 같아 하나(20k·20a)
+     돌려주는 값: Promise 올린 수 — 하나씩 올린다(같은 기기에서 동시에 번호를 잡으면 서로 거절당해 헛돈다) */
   function 자동올리기(판) {
     var 된 = 0, 저 = ZG.저장소;
-    Object.keys(판).forEach(function (id) {
+    var ids = Object.keys(판).filter(function (id) {
       var r = 자().하나(id);
-      if (!r || 판[id].결 !== '맞음' || r.상태 === '올림' || r.원본줄들) return;
-      if (!String(r.받는분 || '').trim() || !String(r.주소 || '').trim() || !자().올릴수있나(r).된다) return;
-      if (자().주문올리기(id, r).오류) return;
-      저.바꾸기(저.키.문자주문, id, { 자동올림: true });
-      된++;
+      if (!r || 판[id].결 !== '맞음' || r.상태 === '올림' || r.원본줄들) return false;
+      return !!String(r.받는분 || '').trim() && !!String(r.주소 || '').trim() && 자().올릴수있나(r).된다;
     });
-    if (된) u.토스트('입금 확인 · 주문 ' + 된 + '건 자동으로 올렸습니다');
-    return 된;
+    return ids.reduce(function (앞, id) {
+      return 앞.then(function () {
+        return ZG.번호장부.올리기(id, 자().하나(id)).then(function (답) {
+          if (답.오류) return;
+          저.바꾸기(저.키.문자주문, id, { 자동올림: true });
+          된++;
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      if (된) { u.토스트('입금 확인 · 주문 ' + 된 + '건 자동으로 올렸습니다'); ZG.주문.다시그리기(); }
+      return 된;
+    });
   }
 
   ZG.입금매칭 = { 판정: 판정, 띠: 띠, 자동올리기: 자동올리기, 이름같나: 이름같나, 저장뒤: 저장뒤 };

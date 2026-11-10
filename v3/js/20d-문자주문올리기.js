@@ -37,11 +37,12 @@ window.ZG = window.ZG || {};
     올림.addEventListener('click', function () {
       if (누르는중) return;
       누르는중 = true; 판정(); 곳맞추기();
-      var 결과 = 자().주문올리기(r.id, 사본);
-      if (결과.오류) { 누르는중 = false; 판정(); u.토스트(결과.오류); return; }
-      u.토스트('주문을 올렸습니다 — ' + 결과.번호);
-      ZG.입금매칭.저장뒤(r.id);
-      닫기();
+      ZG.번호장부.올리기(r.id, 사본).then(function (결과) {
+        if (결과.오류) { 누르는중 = false; 판정(); u.토스트(결과.오류); return; }
+        u.토스트('주문을 올렸습니다 — ' + 결과.번호);
+        ZG.입금매칭.저장뒤(r.id);
+        닫기();
+      });
     });
     판정();
 

@@ -183,7 +183,11 @@ try:
               const 가짜 = {};
               저.읽기(저.키.문자주문).forEach(r => { 가짜[r.id] = { 내용: JSON.parse(JSON.stringify(r)), 삭제됨: false }; });
               가짜[X].내용.상태 = '올림';   // 남이 이미 올렸는데 이 기기는 아직 못 받음
-              ZG.서버.클라이언트 = { from: (t) => ({
+              const 장부 = {};   // 35단계 번호 장부(v3_주문번호) — 번호 → 문자주문id · 겹치면 23505
+              const 장부표 = { select: () => ({ eq: (k, v) => Promise.resolve({ data: Object.keys(장부).filter(n => 장부[n] === v).map(id => ({ id })) }),
+                                                like: () => Promise.resolve({ data: Object.keys(장부).map(id => ({ id })) }) }),
+                insert: (h) => Promise.resolve(장부[h.id] || Object.values(장부).includes(h.문자주문id) ? { error: { code: '23505' } } : (장부[h.id] = h.문자주문id, { error: null })) };
+              ZG.서버.클라이언트 = { from: (t) => t === 'v3_주문번호' ? 장부표 : ({
                 select: () => ({ in: (k, ids) => Promise.resolve({ data: ids.filter(id => 가짜[id]).map(id => ({ id, 내용: JSON.parse(JSON.stringify(가짜[id].내용)), 삭제됨: 가짜[id].삭제됨 })) }) }),
                 upsert: (행들) => { 행들.forEach(h => { if (t !== 'v3_문자주문') return;
                     가짜[h.id] = { 내용: JSON.parse(JSON.stringify(h.내용)), 삭제됨: h.삭제됨 };

@@ -172,19 +172,22 @@ window.ZG = window.ZG || {};
     }).catch(function (e) { return { 오류: '예약으로 옮기지 못했습니다 — ' + e.message }; });
   }
 
-  /* 돌려주는 값: { 번호 } | { 오류 }  —  상태 바꾸기는 맨 끝. 그 전에 끊기면 다시 눌러 남은 줄만 더한다 */
-  function 되살리기(id) {
+  /* 돌려주는 값: { 번호 } | { 오류 }  —  상태 바꾸기는 맨 끝. 그 전에 끊기면 다시 눌러 남은 줄만 더한다
+     정한번호 = 20k 가 서버 장부에서 잡은 번호 · 🔴 서버가 켜져 있으면 번호 없이는 안 올린다 */
+  function 되살리기(id, 정한번호) {
     var r = 자().하나(id);
     // 예약을 풀어도 원본은 남는다 — 예약중이 아니어도 올릴 수 있어야 갇히지 않는다
     if (!r || r.상태 === '올림' || !(r.원본줄들 || []).length) return { 오류: '되살릴 원본이 없습니다' };
     var 됨 = 자().올릴수있나(r);
     if (!됨.된다) return { 오류: 됨.까닭 };
+    if (!정한번호 && ZG.서버 && ZG.서버.켜짐) return { 오류: '인터넷 연결 후 다시 올려 주세요' };
     var 오늘 = u.오늘문자(), 주문키 = 저().키.주문, 주문들 = 저().읽기(주문키);
     var 원본 = r.원본줄들, 원표 = id표(원본), 있는표 = id표(주문들);
     var 이미 = 원본.filter(function (o) { return 있는표[o.id]; });
     var 원번호 = (원본.map(function (o) { return String(o.주문번호 || '').trim(); }).filter(Boolean))[0] || '';
-    var 번호;
-    if (이미.length) {
+    var 번호 = 정한번호;
+    if (번호) 주문들.forEach(function (o) { if (원표[o.id] && o.주문번호 !== 번호) 저().바꾸기(주문키, o.id, { 주문번호: 번호 }); });   // 끊긴 줄의 번호가 남에게 갔다
+    else if (이미.length) {
       var 그줄 = 주문들.find(function (o) { return o.id === 이미[0].id; });
       번호 = String(그줄.주문번호 || '').trim();
     } else if (원번호 && 주문들.some(function (o) { return !원표[o.id] && String(o.주문번호 || '').trim() === 원번호; })) {
@@ -209,10 +212,11 @@ window.ZG = window.ZG || {};
   function 사람(r) {
     return { 받는분: r.받는분, 전화: r.전화, 주소: r.주소, 상세주소: r.상세주소, 우편: r.우편, 배송메시지: r.배송메시지 };
   }
+  /* 돌려주는 값: Promise { 번호 } | { 오류 } */
   function 올리기(id) {
     var r = 자().하나(id);
-    if (!r || !자().예약중(r)) return { 오류: '이미 올렸습니다' };
-    return r.원본줄들 ? 되살리기(id) : 자().주문올리기(id, 사람(r));
+    if (!r || !자().예약중(r)) return Promise.resolve({ 오류: '이미 올렸습니다' });
+    return ZG.번호장부.올리기(id, r.원본줄들 ? {} : 사람(r));
   }
   function 남이잡음(것) { return 것.자동 && 것.자동.기기 !== 기기 && Date.now() - (것.자동.때 || 0) < 60000; }
   function 서버도때됨(것) { return 것.예약 === true && 것.상태 !== '올림' && 때됨(것.예약일); }
@@ -251,15 +255,17 @@ window.ZG = window.ZG || {};
     var 못 = 목.filter(사유).length, 후보 = 목.filter(function (r) { return !사유(r); });
     if (!후보.length) return Promise.resolve({ 올림: 0, 못: 못 });
     도는중 = true;
+    var 올림 = 0;
     return 잡기(후보).then(function (ids) {
-      var 올림 = 0;
-      ids.forEach(function (id) {
-        if (!(ZG.서버 && ZG.서버.켜짐)) 저().바꾸기(문키(), id, { 자동: { 기기: 기기, 때: Date.now() } });
-        if (!올리기(id).오류) 올림++;
-      });
-      도는중 = false;
-      return { 올림: 올림, 못: 못 };
-    }, function () { 도는중 = false; return { 올림: 0, 못: 못 }; });
+      // 하나씩 — 같은 기기에서 동시에 번호를 잡으면 서로 거절당해 헛돈다
+      return ids.reduce(function (앞, id) {
+        return 앞.then(function () {
+          if (!(ZG.서버 && ZG.서버.켜짐)) 저().바꾸기(문키(), id, { 자동: { 기기: 기기, 때: Date.now() } });
+          return 올리기(id).then(function (답) { if (!답.오류) 올림++; });
+        });
+      }, Promise.resolve());
+    }).then(function () { 도는중 = false; return { 올림: 올림, 못: 못 }; },
+      function () { 도는중 = false; return { 올림: 올림, 못: 못 }; });
   }
   function 오늘자동수() {
     var 오늘 = u.오늘문자();
@@ -271,6 +277,6 @@ window.ZG = window.ZG || {};
   ZG.예약자료 = {
     날수: 날수, 때됨: 때됨, D글: D글, 예약목록: 예약목록, 사유: 사유,
     넘길수있나: 넘길수있나, 옮기기: 옮기기, 되살리기: 되살리기, 올리기: 올리기,
-    자동올리기: 자동올리기, 오늘자동수: 오늘자동수
+    자동올리기: 자동올리기, 오늘자동수: 오늘자동수, 서버읽기: 서버읽기
   };
 })(window.ZG);

@@ -16,5 +16,5 @@ for r in 줄들:
     c = r["내용"]; n = c.get("주문번호")
     if n: 모[n].add((c.get("문자주문id") or "-", c.get("수령인") or "", (c.get("수령인전화") or "")[-4:]))
 겹 = {n: v for n, v in 모.items() if len({x[0] for x in v}) > 1 or len({(x[1], x[2]) for x in v}) > 1}
-print("겹침 %d (문자 주문 줄 %d개 점검)" % (len(겹), len(줄들)))
+print("주문번호 겹침 %d (문자 주문 줄 %d개 점검)" % (len(겹), len(줄들)))
 for n, v in sorted(겹.items()): print(" ", n, " / ".join("%s(%s)" % (x[1], x[2]) for x in sorted(v)))
