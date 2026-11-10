@@ -255,28 +255,28 @@ window.ZG = window.ZG || {};
     });
   }
 
-  /* 화면을 다시 켜면 입금 줄만 다시 받는다(11/10 18:3x 조춘성 건) — 폰이 잠긴 동안 실시간이 끊겨
-     그사이 온 입금(18:32)을 몰라서 이름·주소를 넣어도 자동 올리기가 안 됐다.
-     입금은 로컬에 안 쓰고 읽기만 하므로 덮어쓸 걱정이 없다 · 20i 가 7일만 보니 8일 것만(한 번 약 30KB) */
+  /* 화면을 다시 켜면 숨어 있던 동안 바뀐 줄을 모든 표에서 받아 실시간과 같은 길(받은줄)로 넣는다 (11/10 조춘성 건).
+     폰이 잠긴 동안 실시간이 끊겨 ① 그사이 온 입금(18:32)을 몰라 자동 올리기가 안 됐고
+     ② 그사이 다른 기기가 올린 현진희 주문(261110-01)을 몰라 새주문번호()가 같은 번호를 또 줬다 → 남의 송장이 붙어 발송완료.
+     받은줄은 수정시각으로 옛 값을 거르므로 실시간을 두 번 받는 것과 같다 · 바뀐 줄만 받는다(보통 몇 KB) */
   var 숨은때 = 0;
-  function 입금따라잡기() {
-    var 전 = new Date(Date.now() - 8 * 864e5).toISOString();
-    return supa.from('v3_공유설정').select('id,내용,삭제됨,수정시각').like('id', '입금:%').gte('수정시각', 전)
-      .then(function (r) {
-        if (r.error) throw r.error;
-        var 바뀜 = 0;
-        (r.data || []).forEach(function (행) {
-          if (행.삭제됨) { if (ZG.입금줄[행.id]) { delete ZG.입금줄[행.id]; 바뀜++; } return; }
-          if (!ZG.입금줄[행.id]) 바뀜++;
-          ZG.입금줄[행.id] = 행.내용 || {};
-        });
-        if (바뀜) 그리기예약();   // 문자주문 목록이 다시 그려지며 20i 판정 → 자동 올리기
-      })
-      .catch(function (e) { console.warn('입금 따라잡기 실패', e); });
+  function 따라잡기(부터) {
+    var 전 = new Date(부터 - 60000).toISOString();   // 기기 시계 차이 1분 여유
+    받는표.forEach(function (표) {
+      supa.from('v3_' + 표).select('id,내용,삭제됨,수정시각').gte('수정시각', 전).limit(1000)
+        .then(function (r) {
+          if (r.error) throw r.error;
+          (r.data || []).forEach(function (행) {
+            if (표 === '공유설정' && 행.id === '인쇄대기열') return;   // 다시 넣으면 사무실 프린터가 같은 카드를 또 뽑는다
+            받은줄(표, { eventType: 'UPDATE', 'new': 행 });
+          });
+        })
+        .catch(function (e) { console.warn(표 + ' 따라잡기 실패', e); });
+    });
   }
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { 숨은때 = Date.now(); return; }
-    if (숨은때 && Date.now() - 숨은때 > 15000) 입금따라잡기();
+    if (숨은때 && Date.now() - 숨은때 > 15000) 따라잡기(숨은때);
   });
 
   function 받은줄(표, p) {
