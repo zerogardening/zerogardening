@@ -1839,8 +1839,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .입금띠.전.늦음{background:#FDECEC; color:#B42318}
 td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
 /* 문자주문 목록 — 맨 위 날짜 · 네 구역 (11/10 13:25 · 20c) */
-.문자주문 .날짜머리{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-sm)}
-.문자주문 .날짜머리 > .발송칩{justify-self:end}
+.문자주문 .날짜머리{display:flex; justify-content:center; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-sm)}
 .fchip.발송칩{position:relative; min-width:44px; min-height:44px; padding:0 10px; font-size:22px; line-height:1; justify-content:center}
 .fchip.발송칩 .배지{position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--color-danger); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; box-sizing:border-box}
 .날짜칸{display:inline-flex; align-items:center; gap:4px}
@@ -1848,15 +1847,18 @@ td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
 .날짜칸 .btn.오늘날{font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; padding:0 12px}
 .ph-body .날짜칸 .btn{min-height:38px; font-size:var(--font-md)}
 .askbox.달력창{width:min(360px, calc(100% - 32px))}
-.구역머리{display:flex; align-items:center; gap:6px; font-size:var(--font-sm); font-weight:var(--weight-bold); padding:7px 12px; border-radius:var(--radius-md); border-left:5px solid; margin-top:var(--space-md)}
-.구역머리 b{font-variant-numeric:tabular-nums}
-.구역머리.전{background:#F2F2F4; color:#3C3C43; border-color:#8E8E93}
-.구역머리.입금{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent)}
-.구역머리.주문{background:#EEF3FB; color:#2F4F80; border-color:#4C74B3}
-.구역머리.발송{background:#F4EEFB; color:#5B3A8C; border-color:#8A63C7}
-.구역머리.빔{opacity:.55}
-tr.구역줄 > td{padding:10px 6px 4px; background:transparent}
-tr.구역줄 .구역머리{margin-top:0}
+/* 단계 줄 — 입금 전 › 입금완료 › 주문완료 › 발송완료 · 얇은 선과 글자 · 고른 단계만 옅은 단계색 칩 (11/10 · 20c) */
+.문자주문 .단계줄{display:flex; justify-content:center; align-items:center; gap:2px; padding:0 0 var(--space-sm); margin-bottom:var(--space-sm); border-bottom:1px solid var(--color-border-faint); flex-wrap:nowrap}
+.문자주문 .단계줄[hidden]{display:none}
+.단계줄 .단계{border:0; background:none; font:inherit; font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text-sub); padding:6px 8px; border-radius:var(--radius-pill); white-space:nowrap; cursor:pointer; min-height:34px}
+.단계줄 .단계 b{font-variant-numeric:tabular-nums; margin-left:2px}
+.단계줄 .단계.빔{color:var(--color-text-hint)}
+.단계줄 .단계사이{color:var(--color-text-hint); font-size:var(--font-sm)}
+.단계줄 .단계.on{color:#3C3C43; background:#EDEDF0}
+.단계줄 .단계.입금.on{color:var(--color-accent-dark); background:var(--color-accent-bg)}
+.단계줄 .단계.주문.on{color:#2F4F80; background:#EEF3FB}
+.단계줄 .단계.발송.on{color:#5B3A8C; background:#F4EEFB}
+.ph-body .단계줄 .단계{padding:6px 5px; font-size:var(--font-xs)}
 .칩묶음{display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap}
 .자동표{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 /* 새 문자 프리셋(20j) — 4자 × 5개가 폰 한 줄 · 폭은 글자만큼 */

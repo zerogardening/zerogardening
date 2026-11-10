@@ -18,6 +18,9 @@ window.ZG = window.ZG || {};
 
   function 두자리(n) { return (n < 10 ? '0' : '') + n; }
   function 다시() { ZG.주문.다시그리기(); }
+  // 고른 단계(입금 전·입금완료·주문완료·발송완료)는 이 기기에 기억 — 날짜를 넘겨도 그대로 (11/10 우람님)
+  var 단계키 = 'zg.v3.문자단계';
+  try { 상태.단계 = localStorage.getItem(단계키) || '전'; } catch (e) { 상태.단계 = '전'; }
   function 날글(날짜) {
     var d = new Date(Number(날짜.slice(0, 4)), Number(날짜.slice(5, 7)) - 1, Number(날짜.slice(8, 10)));
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + 요일[d.getDay()] + ')';
@@ -474,7 +477,9 @@ window.ZG = window.ZG || {};
     var 뒤 = 단추('‹ 새 문자', 'sm', 새문자로);
     본문.appendChild(만들기('div', { class: '머리줄' }, [뒤, 검색칸('🔍 받는 분 · 전화 · 품목 · 메모 · 송장 (모든 날짜)')]));
     참조.날짜칸 = 만들기('div', { class: '날짜칸' });
-    본문.appendChild(만들기('div', { class: '날짜머리' }, [만들기('span'), 참조.날짜칸, 발송모음칩()]));
+    참조.단계칸 = 만들기('div', { class: '단계줄' });
+    본문.appendChild(만들기('div', { class: '날짜머리' }, [참조.날짜칸, 발송모음칩()]));
+    본문.appendChild(참조.단계칸);
     참조.목록칸 = 만들기('div', { class: 'ph-list' });
     본문.appendChild(참조.목록칸);
     목록다시();
@@ -534,7 +539,8 @@ window.ZG = window.ZG || {};
     참조.표머리 = 만들기('colgroup');
     참조.표제목 = 만들기('thead');
     var 표 = 만들기('table', {}, [참조.표머리, 참조.표제목, 참조.목록칸]);
-    본문.appendChild(만들기('div', { class: 'lst card table-card' }, [만들기('div', { class: '날짜머리' }, [만들기('span'), 참조.날짜칸, 발송모음칩()]), 머리, 표]));
+    참조.단계칸 = 만들기('div', { class: '단계줄' });
+    본문.appendChild(만들기('div', { class: 'lst card table-card' }, [만들기('div', { class: '날짜머리' }, [참조.날짜칸, 발송모음칩()]), 참조.단계칸, 머리, 표]));
     목록다시();
   }
 
@@ -550,8 +556,9 @@ window.ZG = window.ZG || {};
     참조.표머리.innerHTML = '<col style="width:24px"><col style="width:48px"><col style="width:136px"><col><col style="width:66px"><col style="width:168px">';
     참조.표제목.innerHTML = '<tr><th></th><th>시각</th><th>받는 분 · 전화</th><th>품목</th><th class="r">금액</th><th>상태</th></tr>';
   }
-  /* 그날 문자주문을 네 구역으로 — 우람님이 한눈에 「입금 안 했네 / 입금했는데 주소 없네 / 주문 됐네 / 문자만 보내면 되네」 (11/10 13:25)
-     빨강·주황·골라 주세요는 「입금 전」 맨 위(손으로 볼 것) · 구역 안은 최신이 위(올린 줄은 올린 시각) */
+  /* 그날 문자주문을 네 단계로 — 「입금 안 했네 / 입금했는데 주소 없네 / 주문 됐네 / 문자만 보내면 되네」 (11/10 13:25)
+     위아래로 늘어놓던 것을 단계 탭으로(빈 구역이 보기 싫다 · 11/10) — 고른 단계의 목록만 · 0건 단계는 흐리게(누를 수는 있음)
+     빨강·주황·골라 주세요는 「입금 전」 맨 위(손으로 볼 것) · 단계 안은 최신이 위(올린 줄은 올린 시각) */
   var 구역들 = [['전', '입금 전'], ['입금', '입금완료'], ['주문', '주문완료'], ['발송', '발송완료']];
   function 구역(r) {
     if (r.상태 === '올림') return 자().발송정보(r, 참조.색인).됨 ? '발송' : '주문';
@@ -566,9 +573,20 @@ window.ZG = window.ZG || {};
     구역들.forEach(function (g) { 칸[g[0]].sort(function (a, b) { return 볼것(b) - 볼것(a) || 때(b) - 때(a); }); });
     return 칸;
   }
-  function 구역머리(g, n, 폰) {
-    var 글 = 만들기('div', { class: '구역머리 ' + g[0] + (n ? '' : ' 빔'), html: u.안전(g[1]) + ' <b>' + n + '</b>' });
-    return 폰 ? 글 : 만들기('tr', { class: '구역줄' }, [만들기('td', { colspan: '6' }, [글])]);
+  function 단계줄(자리, 칸) {
+    u.비우기(자리);
+    구역들.forEach(function (g, i) {
+      if (i) 자리.appendChild(만들기('span', { class: '단계사이', text: '›', 'aria-hidden': 'true' }));
+      var n = 칸[g[0]].length, 켬 = 상태.단계 === g[0];
+      var b = 만들기('button', { type: 'button', class: '단계 ' + g[0] + (켬 ? ' on' : '') + (n ? '' : ' 빔'), 'aria-pressed': 켬 ? 'true' : 'false',
+        html: u.안전(g[1]) + ' <b>' + n + '</b>' });
+      b.addEventListener('click', function () {
+        상태.단계 = g[0]; 상태.열린 = null; 상태.송장고침 = null;
+        try { localStorage.setItem(단계키, g[0]); } catch (e) { /* 무시 */ }
+        목록다시();
+      });
+      자리.appendChild(b);
+    });
   }
 
   /* 맨 위 「‹ 2026.11.10 (화) ›」 — 좌우로 하루씩 · 가운데를 누르면 달력 팝업 · 날짜 = 문자 만든 날 */
@@ -606,25 +624,24 @@ window.ZG = window.ZG || {};
     참조.발송단추 = {}; 참조.발송누름 = null;
     u.열린줄잊기();
     표머리();
-    if (참조.날짜칸) { u.비우기(참조.날짜칸); if (!(발송 || 찾기)) 날짜줄(참조.날짜칸); }
+    if (참조.날짜칸) { u.비우기(참조.날짜칸); if (!찾기) 날짜줄(참조.날짜칸); }   // 발송문자 목록에서도 날짜를 누르면 돌아온다
     if (참조.머리글) {
       var 합 = 목록.reduce(function (a, r) { return a + 자().합계(r).합; }, 0);
       참조.머리글.innerHTML = (발송 ? '발송문자 안 보낸 것' : 찾기 ? '찾은 것' : '') + '<small>' + 목록.length + '건 · ' + u.콤마(합) + '원</small>';
     }
+    var 칸 = 발송 ? null : 나누기(목록);
+    if (참조.단계칸) { 참조.단계칸.hidden = 발송; if (!발송) 단계줄(참조.단계칸, 칸); }
+    if (!발송) 목록 = 칸[상태.단계] || [];
     u.비우기(참조.목록칸);
     if (!목록.length) {
-      var 빈 = 발송 ? '발송문자 다 보냈습니다 ✅' : '문자주문이 없습니다';
+      var 빈 = 발송 ? '발송문자 다 보냈습니다 ✅' : (구역들.filter(function (g) { return g[0] === 상태.단계; })[0] || ['', ''])[1] + ' 없습니다';
       참조.목록칸.appendChild(폰 ? 만들기('div', { class: '빈목록', text: 빈 })
         : 만들기('tr', {}, [만들기('td', { colspan: '6', class: '빈목록', text: 빈 })]));
       return;
     }
     var 줄들 = [];
     function 넣기(r) { if (폰) 줄들.push(폰카드(r)); else 줄들 = 줄들.concat(PC줄(r)); }
-    if (발송) 목록.forEach(넣기);
-    else {
-      var 칸 = 나누기(목록);
-      구역들.forEach(function (g) { 줄들.push(구역머리(g, 칸[g[0]].length, 폰)); 칸[g[0]].forEach(넣기); });
-    }
+    목록.forEach(넣기);
     줄들.forEach(function (e) { 참조.목록칸.appendChild(e); });
     u.목록등장(줄들);
   }

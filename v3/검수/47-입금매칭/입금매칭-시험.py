@@ -118,6 +118,9 @@ try:
             판 = lambda: 쪽.evaluate("() => { const p = ZG.입금매칭.판정(), o = {}; Object.keys(p).forEach(k => o[k] = [p[k].결, p[k].입금 ? p[k].입금.이름 : '', !!p[k].확정, !!p[k].늦음]); return o; }")
             def 카드(id):
                 return ('.문카드' if 폰 else 'tr') + ':has(:text-is("%s"))' % 쪽.evaluate("id => ZG.문자주문자료.하나(id).받는분", id)
+            def 단계(k): 쪽.click('.단계줄 .단계.' + k); 쪽.wait_for_timeout(200)
+            def 이름들(): return 쪽.evaluate("() => " + ("[...document.querySelectorAll('.문카드 .r1 .nm')].map(e => e.textContent)" if 폰 else "[...document.querySelectorAll('tbody tr')].filter(t => t.children.length > 2).map(t => t.children[2].firstChild.textContent)"))
+            def 단계글(): return 쪽.evaluate("() => [...document.querySelectorAll('.단계줄 .단계')].map(b => [b.textContent, b.classList.contains('on'), b.classList.contains('빔')])")
             def 띠글(이름):
                 e = 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("%s") .입금띠' % 이름)
                 return [e.nth(i).inner_text() for i in range(e.count())]
@@ -133,23 +136,27 @@ try:
             본다('입금 전 · 하루 지나면 늦음 · 8일 전은 없음', j['m7'][0] == '전' and not j['m7'][3] and j['m8'][0] == '전' and j['m8'][3] and 'm9' not in j)
             쪽.evaluate("() => ZG.주문.다시그리기()"); 쪽.wait_for_timeout(300)
             본다('다시 열어도 그대로', 판() == j)
+            단계('입금')
             본다('초록 띠 글 「입금 ✓ 시각 · 금액」', any('입금 ✓' in t and '09:29' in t and '19,500원' in t for t in 띠글('김가람')), 띠글('김가람'))
+            단계('전')
             본다('주황 띠 「6,000원 모자람」', any('6,000원 모자람' in t for t in 띠글('이나래')), 띠글('이나래'))
             본다('빨간 띠 「확인요청 · 김두용(제로가드닝) 15,000원」', '확인요청 · 김두용(제로가드닝) 15,000원' in 띠글('김두용'), 띠글('김두용'))
             본다('골라 주세요 띠 「최둘 입금 2건」', any('골라 주세요' in t and '2건' in t for t in 띠글('최둘')), 띠글('최둘'))
+            단계('주문')
             자동 = 쪽.evaluate("() => { const r = ZG.문자주문자료.하나('m30'), 주 = ZG.저장소.읽기(ZG.저장소.키.주문).filter(o => o.문자주문id === 'm30'); return [r.상태, !!r.자동올림, 주.map(o => o.id)]; }")
             본다('자동 올리기 — 초록+이름+주소 → 누르지 않아도 올림 1번 · 자동 올림 표시', 자동 == ['올림', True, ['od_sm_m30_0']] and '자동 올림' in 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("자동이")').first.inner_text(), 자동)
             본다('빨강·주황·골라 주세요는 안 올림 · 주소 빠진 초록(김가람·박 정확)도 안 올림', all(쪽.evaluate("(k) => ZG.문자주문자료.하나(k).상태", k) != '올림' for k in ('m6', 'm21', 'm2', 'm24', 'm1', 'm23')))
             본다('「주문 올릴까요?」 단추 없음', 쪽.locator('.btn.큰올림').count() == 0)
-            구 = 쪽.evaluate("() => { const o = {}; let 지금 = ''; const 줄 = document.querySelector('.문자주문 .ph-list') || document.querySelector('.문자주문 tbody'); [...줄.children].forEach(e => { const h = e.classList.contains('구역머리') ? e : e.querySelector('.구역머리'); if (h) { 지금 = h.textContent; return; } const n = e.querySelector('.r1 .nm') || (e.children[2] && e.children[2].firstChild); if (n && n.textContent) o[n.textContent] = 지금; }); return o; }")
-            머리 = 쪽.evaluate("() => [...document.querySelectorAll('.문자주문 .구역머리')].map(e => e.textContent)")
-            본다('네 구역 머리 — 입금 전 · 입금완료 · 주문완료 · 발송완료 (건수)', [m.split(' ')[0] for m in 머리] == ['입금', '입금완료', '주문완료', '발송완료'] and 머리[0].startswith('입금 전 '), 머리)
-            본다('구역 — 입금 전(박다솜) · 입금완료(김가람 주소 없음 · 박 정확) · 주문완료(자동이)', 구.get('박다솜', '').startswith('입금 전') and 구.get('김가람', '').startswith('입금완료') and 구.get('박 정확', '').startswith('입금완료') and 구.get('자동이', '').startswith('주문완료'), 구)
-            앞줄 = [k for k, v in 구.items() if v.startswith('입금 전')][:5]
-            본다('입금 전 구역 맨 위는 손으로 볼 것(빨강·주황·골라 주세요)', set(앞줄) <= {'(주)초록농원', '김두용', '이두환', '이나래', '최둘', '정하나'} and len(앞줄) == 5, 앞줄)
+            단계('전')
+            줄 = 단계글()
+            본다('단계 줄 — 입금 전 › 입금완료 › 주문완료 › 발송완료 · 건수 · 고른 것 하나', [x[0].split(' ')[0] for x in 줄] == ['입금', '입금완료', '주문완료', '발송완료'] and [x[1] for x in 줄] == [True, False, False, False] and all(any(c.isdigit() for c in x[0]) for x in 줄), 줄)
+            전들 = 이름들(); 단계('입금'); 입들 = 이름들(); 단계('주문'); 주들 = 이름들(); 단계('발송'); 발들 = 이름들()
+            본다('고른 단계 목록만 — 입금 전(박다솜) · 입금완료(김가람·박 정확) · 주문완료(자동이) · 발송완료 0건은 흐리게', '박다솜' in 전들 and '박다솜' not in 입들 and {'김가람', '박 정확'} <= set(입들) and '자동이' in 주들 and not 발들 and 단계글()[3][2] and 단계글()[3][1], [len(전들), 입들, 주들, 발들])
+            본다('0건 단계 — 「발송완료 없습니다」', '발송완료 없습니다' in 쪽.inner_text('.문자주문'))
+            단계('전'); 앞줄 = 이름들()[:5]
+            본다('입금 전 맨 위는 손으로 볼 것(빨강·주황·골라 주세요)', set(앞줄) <= {'(주)초록농원', '김두용', '이두환', '이나래', '최둘', '정하나'} and len(앞줄) == 5, 앞줄)
             쪽.evaluate("() => { const 저 = ZG.저장소; 저.덧붙이기(저.키.출고, { id: 'out_m30', 출처: '주문', 주문id: 'od_sm_m30_0', 운송장번호: '12345678901', 등록일시: Date.now() }); ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(300)
-            카 = 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("자동이")').first
-            본다('송장 들어가면 발송완료 구역 · 발송완료 문자 단추', 쪽.evaluate("() => [...document.querySelectorAll('.문자주문 .구역머리')].pop().textContent") == '발송완료 1' and 카.locator('button:has-text("발송완료 문자")').count() == 1)
+            단계('발송'); 본다('송장 들어가면 발송완료 단계 · 발송완료 문자 단추', 단계글()[3][0] == '발송완료 1' and 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("자동이") button:has-text("발송완료 문자")').count() == 1, 단계글())
             # 두 기기가 같이 올림 — 상대 기기 몫을 흉내(상태만 되돌려 다시 올림) → 주문 줄 그대로 하나
             쪽.evaluate("() => { const 자 = ZG.문자주문자료, 저 = ZG.저장소; 저.바꾸기(저.키.문자주문, 'm30', { 상태: '보냄' }); 자.주문올리기('m30', 자.하나('m30')); }")
             본다('두 번 올려도 주문 줄 하나(같은 id)', 쪽.evaluate("() => ZG.저장소.읽기(ZG.저장소.키.주문).filter(o => o.문자주문id === 'm30').length") == 1)
@@ -157,8 +164,18 @@ try:
             오늘 = 쪽.evaluate("() => ZG.ui.오늘문자()")
             칩 = 쪽.locator('.문자주문 .fchip.발송칩')
             본다('칩 = 날짜줄 오른쪽 🚚 아이콘(글자 없음 · 배지 1 · 손가락 크기) · 달력은 화면에 없음', 칩.inner_text().startswith('🚚') and '발송문자' not in 칩.inner_text() and 칩.locator('.배지').inner_text() == '1' and 칩.bounding_box()['width'] >= 44 and 칩.bounding_box()['height'] >= 44 and 쪽.locator('.문자주문 .cal').count() == 0, 칩.inner_text())
-            가 = 쪽.evaluate("() => { const d = document.querySelector('.날짜칸').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); return [Math.round(d.left + d.width / 2 - (c.left + c.width / 2)), Math.round(b.left - d.right)]; }")
-            본다('날짜줄이 가운데(±2px) · 칩은 그 오른쪽', abs(가[0]) <= 2 and 가[1] > 0, 가)
+            가 = 쪽.evaluate("() => { const d = document.querySelector('.날짜칸').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); return [Math.round((d.left + b.right) / 2 - (c.left + c.width / 2)), Math.round(b.left - d.right)]; }")
+            본다('날짜줄+🚚 묶음이 가운데(±2px) · 🚚는 날짜줄 바로 옆', abs(가[0]) <= 2 and 0 < 가[1] <= 16, 가)
+            쪽.click('.발송칩'); 쪽.wait_for_timeout(300)
+            본다('🚚 누르면 발송문자 안 보낸 모든 내역 · 단계 줄 숨김', 쪽.evaluate("() => ZG.문자주문.상태.발송모음") and 쪽.locator('.단계줄').is_hidden() and 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("자동이")').count() == 1)
+            쪽.click('.발송칩'); 쪽.wait_for_timeout(300)
+            본다('다시 누르면 돌아옴', not 쪽.evaluate("() => ZG.문자주문.상태.발송모음") and 쪽.locator('.단계줄').is_visible())
+            쪽.click('.발송칩'); 쪽.wait_for_timeout(200); 쪽.click('.날짜칸 button[aria-label="다음날"]'); 쪽.wait_for_timeout(200); 쪽.click('.날짜칸 button[aria-label="전날"]'); 쪽.wait_for_timeout(300)
+            본다('🚚 목록에서 날짜를 누르면 돌아옴', not 쪽.evaluate("() => ZG.문자주문.상태.발송모음"))
+            단계('주문'); 쪽.click('.날짜칸 button[aria-label="다음날"]'); 쪽.wait_for_timeout(250)
+            본다('고른 단계는 날짜를 넘겨도 그대로 · 이 기기에 기억', 쪽.evaluate("() => ZG.문자주문.상태.단계") == '주문' and 단계글()[2][1] and 쪽.evaluate("() => localStorage.getItem('zg.v3.문자단계')") == '주문')
+            쪽.screenshot(path=str(여기 / ('7-단계줄-' + 틀 + '.png')), animations='disabled')
+            쪽.click('.날짜칸 button[aria-label="전날"]'); 쪽.wait_for_timeout(250)
             쪽.screenshot(path=str(여기 / ('6-날짜줄-' + 틀 + '.png')), animations='disabled')
             본다('가운데 날짜 「YYYY.MM.DD (요일)」', 쪽.locator('.날짜칸 .오늘날').inner_text().startswith(오늘.replace('-', '.')))
             쪽.click('.날짜칸 button[aria-label="전날"]'); 쪽.wait_for_timeout(250)
@@ -184,13 +201,17 @@ try:
               저.바꾸기(저.키.문자주문, 'm11', { 올린일시: 지금 - 0.1 * 36e5 });   // 3시간 전에 만들고 6분 전에 올림 → 30분 전에 만들어 올린 시각 없는 m13 보다 위
               저.바꾸기(저.키.문자주문, 'm7', { 등록일시: 지금 - 5 * 36e5 }); ZG.주문.다시그리기(); }""")
             쪽.wait_for_timeout(300)
+            단계('주문')
             본다('올린 주문 — 「입금 ✓ (주문 올림)」 초록 · 9일 지난 것도', any(t == '입금 ✓ (주문 올림)' for t in 띠글('송올림')) and 쪽.evaluate("() => { const e = ZG.입금매칭.띠(ZG.문자주문자료.하나('m12'), undefined); return e && e.className === '입금띠 올림'; }"), 띠글('송올림'))
             본다('회색 「입금 전」은 안 올린 것만', all(v[0] != '전' for k, v in 판().items() if k in ('m11', 'm12', 'm13')))
-            화면 = 쪽.evaluate("() => " + ("[...document.querySelectorAll('.문카드 .r1 .nm')].map(e => e.textContent)" if 폰 else "[...document.querySelectorAll('tbody tr')].filter(t => t.children.length > 2).map(t => t.children[2].firstChild.textContent)"))
+            화면 = []
+            for _k in ('전', '입금', '주문', '발송'): 단계(_k); 화면 += 이름들()
             기대 = 쪽.evaluate("() => { const 자 = ZG.문자주문자료, 판 = ZG.입금매칭.판정(), 색 = 자.발송색인(), 때 = r => (r.상태 === '올림' && r.올린일시) || r.등록일시; const 구 = r => r.상태 === '올림' ? (자.발송정보(r, 색).됨 ? 3 : 2) : (판[r.id] && 판[r.id].결 === '맞음' ? 1 : 0); const 볼 = r => 판[r.id] && /확인|다름|고름/.test(판[r.id].결) ? 1 : 0; return 자.전부().filter(r => r.날짜 === ZG.ui.오늘문자()).sort((a, b) => 구(a) - 구(b) || 볼(b) - 볼(a) || 때(b) - 때(a)).map(r => r.받는분); }")
             본다('차례 — 구역(입금 전 → 입금완료 → 주문완료 → 발송완료) · 입금 전은 손으로 볼 것 먼저 · 그 안 최신이 위 · 올린 것은 올린 시각(송올림 6분 전 → 송새올림 30분 전)', 화면 == 기대 and 화면.index('송올림') < 화면.index('송새올림'), 화면)
             m11시 = 쪽.evaluate("() => { const d = new Date(ZG.문자주문자료.하나('m11').올린일시); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }")
+            단계('주문')
             본다('올린 줄 시각 칸 = 올린 시각', m11시 in 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("송올림")').first.inner_text(), m11시)
+            단계('전')
             쪽.screenshot(path=str(여기 / ('1-띠-' + 틀 + '.png')), full_page=폰, animations='disabled')
 
             # 빨강 → 맞음(김두용) — 고정 · 초록 · 올릴까요
@@ -210,6 +231,7 @@ try:
             쪽.click('.askbox button:has-text("7,000원")'); 쪽.wait_for_timeout(300)
             본다('골라 주세요 → 고른 입금 고정(금액 달라 주황)', 판()['m24'][:3] == ['다름', '최둘', True], 판()['m24'])
             # 초록 떼어 내기(m1) → m1 입금 전 · 그 입금은 같은 이름 m10 에 새로 고정
+            단계('입금')
             쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("김가람") .입금띠.맞음').first.click(); 쪽.wait_for_timeout(300)
             쪽.click('.askbox button:has-text("떼어 내기")'); 쪽.wait_for_timeout(300)
             j = 판(); r = 쪽.evaluate("() => ZG.문자주문자료.하나('m1')")
@@ -222,6 +244,7 @@ try:
             본다('주소 넣으면 그때 자동 올림(박 정확)', 쪽.evaluate("() => ZG.문자주문자료.하나('m23').상태") != '올림')
             쪽.evaluate("() => { ZG.저장소.바꾸기(ZG.저장소.키.문자주문, 'm23', { 주소: '서울 어딘가로 23' }); ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(300)
             본다('→ 주소 생기자 저절로 주문완료', 쪽.evaluate("() => ZG.문자주문자료.하나('m23').상태") == '올림')
+            단계('주문')
             쪽.screenshot(path=str(여기 / ('3-올린뒤-' + 틀 + '.png')), full_page=폰, animations='disabled')
 
             # 저장하는 순간 — 그 이름 입금을 바로 찾아 짝 · 짧은 안내
