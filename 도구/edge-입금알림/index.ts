@@ -24,7 +24,8 @@ export function 읽기(글: string, 지금: number) {
   const r = 규칙.find((x) => x.알아봄.test(글));
   const 금 = r && r.금액.exec(글), 때 = r && r.때이름.exec(글);
   if (!r || !금 || !때) return null;
-  const 금액 = Number(금[1].replace(/,/g, "")), 이름 = 때[5].trim();
+  // 농협은 이름 앞에 「048-」 같은 숫자를 붙여 보낸다(11/10 13:11 실례) — 떼고 남긴다
+  const 금액 = Number(금[1].replace(/,/g, "")), 이름 = 때[5].trim().replace(/^\d+\s*-\s*|^\d+\s+/, "");
   if (!금액 || !이름) return null;
   const 한국 = new Date(지금 + 9 * 3600e3);
   const 해 = 한국.getUTCFullYear() - (Number(때[1]) > 한국.getUTCMonth() + 1 ? 1 : 0);   // 1월에 받은 12월 글

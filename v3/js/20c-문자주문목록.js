@@ -22,9 +22,12 @@ window.ZG = window.ZG || {};
     var d = new Date(Number(날짜.slice(0, 4)), Number(날짜.slice(5, 7)) - 1, Number(날짜.slice(8, 10)));
     return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + 요일[d.getDay()] + ')';
   }
+  /* 올린 줄은 주문 올린 시각, 안 올린 줄은 만든 시각(11/10 우람님) · 올린 시각이 없는 옛 줄은 만든 시각 */
+  function 때(r) { return (r.상태 === '올림' && r.올린일시) || r.등록일시 || 0; }
   function 시각(r) {
-    var d = new Date(r.등록일시 || 0), 시 = 두자리(d.getHours()) + ':' + 두자리(d.getMinutes());
-    return 상태.검색.trim() || 발송판() ? String(r.날짜).slice(5) + ' ' + 시 : 시;
+    var d = new Date(때(r)), 시 = 두자리(d.getHours()) + ':' + 두자리(d.getMinutes());
+    if (!(상태.검색.trim() || 발송판())) return 시;
+    return (r.상태 === '올림' && r.올린일시 ? 두자리(d.getMonth() + 1) + '-' + 두자리(d.getDate()) : String(r.날짜).slice(5)) + ' ' + 시;
   }
   function 달옮기기(달, 걸음) {
     var 해 = Number(달.slice(0, 4)), 월 = Number(달.slice(5, 7)) + 걸음;
@@ -112,7 +115,9 @@ window.ZG = window.ZG || {};
     부().글칸맞추기(참조.글칸들);
     var 사본 = 상태.열린.사본;
     if (!사본.품목.length) { u.토스트('품목이 하나는 있어야 합니다'); return null; }
-    return 자().고치기(r.id, 사본);
+    var 새 = 자().고치기(r.id, 사본);
+    if (새) ZG.입금매칭.저장뒤(r.id);
+    return 새;
   }
   function 지우기(r) {
     var 본문 = u.안전(자().제목(r).글) + (r.원본줄들 ? '<br><b class="위험글">주문탭에서 옮겨 온 주문입니다 — 지우면 주문도 함께 없어집니다</b>' : '');
@@ -547,11 +552,15 @@ window.ZG = window.ZG || {};
     참조.표머리.innerHTML = '<col style="width:24px"><col style="width:48px"><col style="width:136px"><col><col style="width:66px"><col style="width:168px">';
     참조.표제목.innerHTML = '<tr><th></th><th>시각</th><th>받는 분 · 전화</th><th>품목</th><th class="r">금액</th><th>상태</th></tr>';
   }
+  /* 안 올린 것이 위, 올린 것이 아래 · 그 안에서 최신이 위 — 올린 것은 올린 시각으로(11/10 우람님). 고른 날 하루·찾은 것 둘 다 */
+  function 차례(목록) {
+    return 목록.slice().sort(function (a, b) { return (a.상태 === '올림') - (b.상태 === '올림') || 때(b) - 때(a); });
+  }
   function 목록다시() {
     var 폰 = u.폰인가(), 발송 = 발송판();
     참조.색인 = 자().발송색인();
-    var 목록 = 발송 ? 자().발송문자안보냄(참조.색인) : 자().거르기(상태.날짜, 상태.검색);
-    참조.입금판 = ZG.입금매칭.판정();
+    var 목록 = 발송 ? 자().발송문자안보냄(참조.색인) : 차례(자().거르기(상태.날짜, 상태.검색));
+    참조.입금판 = ZG.입금매칭.판정(true);   // 새로 맞은 짝은 줄에 적어 고정
     참조.발송단추 = {}; 참조.발송누름 = null;
     u.열린줄잊기();
     u.비우기(참조.달력칸);
