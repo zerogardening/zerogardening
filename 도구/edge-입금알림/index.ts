@@ -40,8 +40,10 @@ Deno.serve(async (req) => {
     const 글 = String(몸.text ?? "");
     const 뜻 = 읽기(글, Date.now());
     if (몸.시험 === true) return 답({ ok: true, 시험: true, 뜻 });
-    const 열쇠 = Deno.env.get("DEPOSIT_TOKEN");
-    if (!열쇠 || new URL(req.url).searchParams.get("k") !== 열쇠) return 답({ ok: false, 오류: "열쇠" }, 401);
+    // 열쇠 지문(sha256)만 둔다 — 배포 토큰에 비밀값 권한이 없어서(11/10). 원본 열쇠는 제로가드닝/.env.deposit(깃 제외)
+    const 지문 = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",
+      new TextEncoder().encode(new URL(req.url).searchParams.get("k") ?? "")))).map((b) => b.toString(16).padStart(2, "0")).join("");
+    if (지문 !== "b8fae579245d30f9283fd0d7707a492f68e36eece543101e8710ecd8c680be4a") return 답({ ok: false, 오류: "열쇠" }, 401);
     if (!뜻) return 답({ ok: true, 저장: false, 까닭: "입금 글 아님" });
     // 같은 입금이 문자·앱 알림 두 길로 와도, 단축어가 두 번 돌아도 한 줄 — 원문이 아니라 시각·금액·이름으로
     const id = `입금:${뜻.시각.slice(0, 16)}:${뜻.금액}:${뜻.이름}`;
