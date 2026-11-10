@@ -1838,6 +1838,8 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
 .btn.큰올림{width:100%; min-height:48px; font-size:var(--font-lg); font-weight:var(--weight-bold); margin-top:var(--space-sm)}
 td .btn.큰올림{min-height:34px; font-size:var(--font-sm); margin:0 0 6px}
-.묶음줄{display:flex; flex-wrap:wrap; align-items:center; gap:var(--space-xs); margin-top:var(--space-sm)}
-.묶음줄 .lbl{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); margin-right:2px}
-.btn.묶음{white-space:normal; text-align:left; background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+/* 새 문자 프리셋(20j) — 4자 × 5개가 폰 한 줄 · 폭은 글자만큼 */
+.프리셋줄{display:flex; flex-wrap:wrap; gap:6px}
+.btn.프리셋{flex:0 0 auto; padding:0 8px; background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border); font-weight:var(--weight-bold); -webkit-touch-callout:none; user-select:none}
+.btn.프리셋.더{background:var(--color-btn-bg); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
+.askbox.글창 .inp.ta{width:100%; box-sizing:border-box; font-size:var(--font-md)}

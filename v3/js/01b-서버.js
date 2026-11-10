@@ -27,7 +27,7 @@ window.ZG = window.ZG || {};
 
   function 표이름(k) { return String(k).replace('zg.v3.', ''); }
   function 키로(표) { return 'zg.v3.' + 표; }
-  var 설정행 = ['동봉카드설정', '키워드', '실적이익설정'];   // v3_공유설정 에서 로컬 객체 키로 받는 행
+  var 설정행 = ['동봉카드설정', '키워드', '실적이익설정', '문자프리셋'];   // v3_공유설정 에서 로컬 객체 키로 받는 행
   /* 입금 알림 줄(34단계 · deposit-in 이 씀) — 메모리에만 모은다 */
   ZG.입금줄 = ZG.입금줄 || {};
   function 입금인가(id) { return String(id).indexOf('입금:') === 0; }

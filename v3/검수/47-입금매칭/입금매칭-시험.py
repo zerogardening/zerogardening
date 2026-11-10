@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# 34단계 2단계 입금 띠·「주문 올릴까요?」·자주 파는 묶음 — python3 v3/검수/47-입금매칭/입금매칭-시험.py
+# 34단계 2단계 입금 띠·「주문 올릴까요?」 + 새 문자 프리셋 — python3 v3/검수/47-입금매칭/입금매칭-시험.py
 # 🔴 로컬 전용 · 이름·금액은 전부 가짜(공개 저장소). 입금 줄은 ZG.입금줄 에 직접 심고, 01b 받는 길은 가짜 Supabase 로 한 번 더
 import re, json, pathlib, subprocess, sys, time
 from playwright.sync_api import sync_playwright
@@ -152,25 +152,62 @@ try:
             본다('한 번 누름 — 주문 올림 · 주문 줄 생김 · 짝 남김 · 띠 그대로 초록', r['상태'] == '올림' and len(주) == 1 and '광교중앙로 145' in 주[0]['수령인주소'] and r['입금']['id'].endswith(':50000:초록농') and 판()['m6'][0] == '맞음', [r['상태'], len(주)])
             쪽.screenshot(path=str(여기 / ('3-올린뒤-' + 틀 + '.png')), full_page=폰, animations='disabled')
 
-            # 자주 파는 묶음 — 같은 조합 세 번·두 번·한 번
-            쪽.evaluate("""() => { const 저 = ZG.저장소, 품 = 저.품목들(), 지금 = Date.now();
-              const 넣 = (id, 줄) => 저.덧붙이기(저.키.문자주문, { id, 날짜: '2026-10-01', 받는분: '묶음' + id, 전화: '', 품목: 줄.map(([i, n]) => ({ 품목코드: 품[i].품목코드, 유통명: 품[i].유통명, 수량: n, 단가: 1 })), 배송비: 0, 상태: '올림', 등록일시: 지금 - 864e5 * 20, 수정일시: 0 });
-              ['a', 'b', 'c'].forEach(k => 넣('묶' + k, [[2, 3], [3, 2]]));
-              ['d', 'e'].forEach(k => 넣('묶' + k, [[4, 5]]));
-              넣('묶f', [[2, 1]]); 넣('묶g', [[2, 1]]);
-              ZG.문자주문새문자.상태.담은것 = []; }""")
+            # 프리셋(20j) — 우람님이 골라 저장 · 품목·수량·배송비(무료배송)·문자 · 4자 · 5개 · 길게 눌러 고치기
             쪽.locator('button', has_text='새 문자').first.click(); 쪽.wait_for_timeout(400)
-            단 = 쪽.locator('.묶음줄 .btn.묶음')
-            글들 = [단.nth(i).inner_text() for i in range(단.count())]
-            품3 = 쪽.evaluate("() => ZG.저장소.품목들()[2].유통명")
-            본다('묶음 — 두 번 넘게 나온 조합만 · 많이 나온 순 · 1개짜리 하나는 빼고', len(글들) == 2 and 글들[0].count('+') == 1 and 글들[1].endswith(' 5') and 품3 in 글들[0], 글들)
-            단.first.click(); 쪽.wait_for_timeout(300)
-            담 = 쪽.evaluate("() => ZG.문자주문새문자.상태.담은것.map(r => [r.품목코드, r.수량, r.단가])")
-            기단 = 쪽.evaluate("() => { const 품 = ZG.저장소.품목들(); return [ZG.문자주문자료.담을줄(품[2]).단가, ZG.문자주문자료.담을줄(품[3]).단가]; }")
-            본다('묶음 누름 — 품목·수량 담김 · 단가는 지금 값', sorted(x[1] for x in 담) == [2, 3] and sorted(x[2] for x in 담) == sorted(기단), 담)
-            단.first.click(); 쪽.wait_for_timeout(300)
-            본다('한 번 더 — 수량 더함', sorted(x[1] for x in 쪽.evaluate("() => ZG.문자주문새문자.상태.담은것.map(r => [r.품목코드, r.수량])")) == [4, 6])
-            쪽.screenshot(path=str(여기 / ('4-묶음-' + 틀 + '.png')), full_page=폰, animations='disabled')
+            S = lambda: 쪽.evaluate("() => JSON.parse(JSON.stringify(ZG.문자주문새문자.상태))")
+            목 = lambda: 쪽.evaluate("() => ZG.저장소.읽기(ZG.저장소.키.문자프리셋).목록 || []")
+            본다('처음엔 ＋ 하나', 쪽.locator('.프리셋줄 .btn.프리셋').count() == 1 and 쪽.locator('.프리셋줄 .더').count() == 1)
+            쪽.evaluate("""() => { const 품 = ZG.저장소.품목들(), 자 = ZG.문자주문자료, s = ZG.문자주문새문자.상태;
+              s.담은것 = [Object.assign(자.담을줄(품[2]), { 수량: 3 }), Object.assign(자.담을줄(품[3]), { 수량: 2, 단가: 9000 })]; ZG.주문.다시그리기(); }""")
+            쪽.wait_for_timeout(200)
+            쪽.click('.문자주문 button:has-text("무료배송")'); 쪽.wait_for_timeout(150)
+            쪽.click('.프리셋줄 .더'); 쪽.wait_for_timeout(200)
+            쪽.fill('.askbox input', '봄세트한가득'); 쪽.wait_for_timeout(100)
+            본다('이름 칸 4자까지', 쪽.input_value('.askbox input') == '봄세트한')
+            쪽.click('.askbox button:has-text("저장")'); 쪽.wait_for_timeout(300)
+            기 = 쪽.input_value('.askbox.글창 textarea')
+            본다('문자 칸 — 지금 견적 글 · 받는 분 자리 {이름}', '{이름} 님 주문 안내' in 기 and '무료배송' in 기, 기[:40].replace('\n', ' / '))
+            쪽.fill('.askbox.글창 textarea', 기.replace('합계:', '🌸 봄 특가\n합계:')); 쪽.click('.askbox.글창 button:has-text("저장")'); 쪽.wait_for_timeout(300)
+            m = 목()
+            본다('저장 — 이름·품목 2·수량·단가·무료배송·문자', len(m) == 1 and m[0]['이름'] == '봄세트한' and [x['수량'] for x in m[0]['품목']] == [3, 2] and m[0]['품목'][1]['단가'] == 9000 and m[0]['배송비'] == 0 and m[0]['무료배송'] is True and '봄 특가' in m[0]['문자'], m and {k: m[0][k] for k in ('이름', '배송비', '무료배송')})
+            본다('단추 폭은 글자만큼', 쪽.evaluate("() => { const b = [...document.querySelectorAll('.프리셋줄 .btn.프리셋')]; return b[0].offsetWidth > b[1].offsetWidth; }"))
+            # 비운 새 문자에서 누르면 셋이 한 번에
+            쪽.evaluate("() => { const s = ZG.문자주문새문자.상태; s.담은것 = []; s.배송비 = 4500; s.무료배송 = false; s.문자글 = ''; ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(200)
+            쪽.click('.프리셋줄 .btn.프리셋:has-text("봄세트한")'); 쪽.wait_for_timeout(300)
+            s = S(); 말 = 쪽.inner_text('.문자주문 .말풍선')
+            본다('누름 — 품목·수량·무료배송·문자가 한 번에', [x['수량'] for x in s['담은것']] == [3, 2] and s['배송비'] == 0 and s['무료배송'] and '봄 특가' in 말 and 말.split('\n')[1] == '주문 안내', 말[:60].replace('\n', ' / '))
+            쪽.fill('.문자주문 input[placeholder="받는 분"]', '김가람'); 쪽.wait_for_timeout(300)
+            본다('받는 분 넣으면 {이름} 자리에', '김가람 님 주문 안내' in 쪽.inner_text('.문자주문 .말풍선'))
+            쪽.click('.문자주문 .보냄줄 button:has-text("저장")'); 쪽.wait_for_timeout(300)
+            r = 쪽.evaluate("() => { const r = ZG.문자주문자료.전부().filter(r => r.받는분 === '김가람' && r.문자글)[0]; return r && { 글: ZG.문자주문자료.문자내용(r), 무료: r.무료배송 }; }")
+            본다('저장한 줄도 프리셋 문자로(다시 보내기도 같은 글)', r and '봄 특가' in r['글'] and '김가람 님 주문 안내' in r['글'] and r['무료'], r)
+            쪽.click('.프리셋줄 .btn.프리셋:has-text("봄세트한")'); 쪽.wait_for_timeout(300)
+            쪽.evaluate("() => { ZG.문자주문새문자.상태.담은것[0].수량 = 4; ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(300)
+            말 = 쪽.inner_text('.문자주문 .말풍선')
+            본다('수량을 바꾸면 보통 견적 글로(금액 안 어긋나게)', '봄 특가' not in 말 and '4개X' in 말, 말[:50].replace('\n', ' / '))
+            # 길게 누름(PC 는 오른쪽 단추) → 이름 바꾸기
+            b = 쪽.locator('.프리셋줄 .btn.프리셋:has-text("봄세트한")')
+            if 폰:
+                bb = b.bounding_box(); 쪽.mouse.move(bb['x'] + 5, bb['y'] + 5); 쪽.mouse.down(); 쪽.wait_for_timeout(700); 쪽.mouse.up()
+            else: b.click(button='right')
+            쪽.wait_for_timeout(300)
+            본다('길게 누름 — 고치기 메뉴 넷', 쪽.locator('.askbox .picklist button').count() == 4 and 쪽.evaluate("() => ZG.문자주문새문자.상태.담은것[0].수량") == 4)
+            쪽.click('.askbox button:has-text("이름 바꾸기")'); 쪽.wait_for_timeout(200)
+            쪽.fill('.askbox input', '봄세트'); 쪽.click('.askbox button:has-text("저장")'); 쪽.wait_for_timeout(300)
+            본다('이름 바꿈', [x['이름'] for x in 목()] == ['봄세트'])
+            # 5개까지 · 폰 한 줄
+            쪽.evaluate("() => { const 저 = ZG.저장소, m = 저.읽기(저.키.문자프리셋).목록; ['가을모음', '작약다섯', '수국셋', '튤립'].forEach(n => m.push(Object.assign({}, m[0], { 이름: n }))); 저.전체쓰기(저.키.문자프리셋, { 목록: m }); ZG.주문.다시그리기(); }")
+            쪽.wait_for_timeout(300)
+            위 = 쪽.evaluate("() => [...document.querySelectorAll('.프리셋줄 .btn.프리셋')].map(b => Math.round(b.getBoundingClientRect().top))")
+            본다('5개 — ＋ 사라짐 · 한 줄', len(위) == 5 and len(set(위)) == 1 and 쪽.locator('.프리셋줄 .더').count() == 0, 위)
+            쪽.screenshot(path=str(여기 / ('4-프리셋-' + 틀 + '.png')), full_page=폰, animations='disabled')
+            b = 쪽.locator('.프리셋줄 .btn.프리셋:has-text("튤립")')
+            if 폰:
+                bb = b.bounding_box(); 쪽.mouse.move(bb['x'] + 5, bb['y'] + 5); 쪽.mouse.down(); 쪽.wait_for_timeout(700); 쪽.mouse.up()
+            else: b.click(button='right')
+            쪽.wait_for_timeout(300); 쪽.click('.askbox button:has-text("지우기")'); 쪽.wait_for_timeout(200)
+            쪽.click('.askbox button:has-text("지우기")'); 쪽.wait_for_timeout(300)
+            본다('지우기 — 4개 · ＋ 돌아옴', [x['이름'] for x in 목()] == ['봄세트', '가을모음', '작약다섯', '수국셋'] and 쪽.locator('.프리셋줄 .더').count() == 1)
             본다('콘솔 빨간 에러 0 (' + 틀 + ')', not 쪽._오류, 쪽._오류[:3])
             쪽.close()
 
@@ -179,10 +216,12 @@ try:
         오늘 = time.strftime('%Y-%m-%d')
         자 = {'문자주문': [{'id': 's1', '내용': {'id': 's1', '날짜': 오늘, '받는분': '서버받음', '전화': '', '주소': '서울 어딘가로 1', '품목': [{'품목코드': 'X-10', '유통명': '시험풀', '수량': 1, '단가': 5500}], '배송비': 4500, '상태': '보냄', '등록일시': int(time.time() * 1000) - 3600e3, '수정일시': 0}, '삭제됨': False, '수정시각': '2026-11-10T00:00:00+00:00'}],
               '공유설정': [{'id': '입금:%sT08:00:10000:서버받음' % 오늘, '내용': {'은행': '농협', '이름': '서버받음', '금액': 10000, '시각': 오늘 + 'T08:00:00+09:00', '입구': '시험'}, '삭제됨': False, '수정시각': '2026-11-10T00:00:00+00:00'},
+                          {'id': '문자프리셋', '내용': {'목록': [{'이름': '서버셋', '품목': [], '배송비': 4500, '무료배송': False, '문자': ''}]}, '삭제됨': False, '수정시각': '2026-11-10T00:00:00+00:00'},
                           {'id': '동봉카드설정', '내용': {}, '삭제됨': False, '수정시각': '2026-11-10T00:00:00+00:00'}]}
         쪽 = 쪽열기(브, False, 'window.__가짜자료 = ' + json.dumps(자, ensure_ascii=False) + ';' + 가짜)
         쪽.wait_for_function("() => Object.keys(ZG.입금줄 || {}).length > 0", timeout=10000)
         본다('처음 받기 — 입금 줄이 ZG.입금줄 로(로컬 저장 없음)', list(쪽.evaluate("() => ZG.입금줄").keys()) == [자['공유설정'][0]['id']] and not 쪽.evaluate("() => Object.keys(localStorage).some(k => k.indexOf('입금') >= 0)"))
+        본다('프리셋 — 공유설정 한 줄을 받아 이 기기에(기기 사이 같이)', [x['이름'] for x in 쪽.evaluate("() => ZG.저장소.읽기(ZG.저장소.키.문자프리셋).목록 || []")] == ['서버셋'])
         본다('서버 문자주문 + 서버 입금 → 초록', 쪽.evaluate("() => ZG.입금매칭.판정().s1.결") == '맞음')
         쪽.evaluate("(id) => window.__콜백['공유설정']({ eventType: 'DELETE', old: { id }, new: {} })", 자['공유설정'][0]['id']); 쪽.wait_for_timeout(300)
         본다('실시간 지움 → 입금 전', 쪽.evaluate("() => ZG.입금매칭.판정().s1.결") == '전')

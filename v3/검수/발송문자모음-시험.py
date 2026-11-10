@@ -30,7 +30,7 @@ def 문(id, 날짜, 상태, 번호='', 보냄=None):
 
 터 = pathlib.Path(tempfile.mkdtemp(prefix='zg-bs-')); 사본 = 터 / 'v3'
 shutil.copytree(원본, 사본, ignore=shutil.ignore_patterns('검수', '시안', '설계', '.git'))
-서버 = subprocess.Popen([sys.executable, '-m', 'http.server', '8823', '-d', str(사본)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+서버 = subprocess.Popen([sys.executable, str(pathlib.Path(__file__).resolve().parent / '_시험서버.py'), '8823', str(사본)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 time.sleep(1)
 try:
     with sync_playwright() as p:
