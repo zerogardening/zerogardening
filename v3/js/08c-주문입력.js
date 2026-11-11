@@ -105,7 +105,7 @@ window.ZG = window.ZG || {};
      손으로 친 주소는 오타·옛 주소가 그대로 로젠 송장에 찍힌다(10/7 우람님).
      고르면 도로명주소·우편번호가 채워지고 상세주소만 손으로 잇는다.
      🔴 창(popup) 말고 화면 안에 띄운다 — 폰 홈화면 앱에서는 새 창이 막힌다 */
-  var 우편스크립트 = 'https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+  var 우편스크립트 = 'https://t1.kakaocdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';   // 11/30 daumcdn 끝 (카카오 공지)
   var 우편불러옴 = null;
 
   function 우편불러오기() {
@@ -200,12 +200,12 @@ window.ZG = window.ZG || {};
 
   function 확인줄(종류, 머리, 줄들) {
     return 만들기('div', { class: '확인줄 ' + 종류 }, [만들기('span', { class: '머리', text: 머리 })].concat(줄들.map(function (kv) {
-      return 만들기('span', {}, [만들기('span', { class: 'k', text: kv[0] }), 만들기('span', { class: 'v', text: kv[1] })]);
+      return 만들기('span', {}, [kv[0] ? 만들기('span', { class: 'k', text: kv[0] }) : null, 만들기('span', { class: 'v', text: kv[1] })]);
     })));
   }
 
   /* 설정 = { 대상, 상세, 표시 } — 대상은 원문주소·주소확인을 쥔 객체(문자주문 상태·사본), 표시는 주소줄이 단다.
-     q 가 있으면 「다시 찾기」 — 원문은 그대로 두고 카카오 검색어만 잇는다 */
+     q 가 있으면 「다시 찾기」 — 원문은 그대로 두고 카카오 검색어만 잇는다. q 가 목록이면 0건일 때 다음 검색어로(20h 붙여넣기) */
   function 주소찾기(주소, 우편, 설정, q) {
     설정 = 설정 || {};
     var 대상 = 설정.대상 || {}, 상세 = 설정.상세 || null, 표시 = 설정.표시 || {};
@@ -228,13 +228,18 @@ window.ZG = window.ZG || {};
       document.body.appendChild(막);
       document.body.appendChild(판);
 
-      new window.daum.Postcode({
-        width: '100%', height: '100%',
-        oncomplete: function (d) {
-          닫기();   // 🔴 확인창은 embed(z 1000)를 닫은 뒤에 — 안 그러면 그 아래로 숨는다
-          주소골랐다(주소, 우편, 대상, 상세, 표시, d);
-        }
-      }).embed(속, { q: q !== undefined ? q : 주소.value.trim(), autoClose: false });
+      var 묻기 = q === undefined ? [주소.value.trim()] : [].concat(q);
+      (function 펼치기(i) {
+        u.비우기(속);
+        new window.daum.Postcode({
+          width: '100%', height: '100%',
+          oncomplete: function (d) {
+            닫기();   // 🔴 확인창은 embed(z 1000)를 닫은 뒤에 — 안 그러면 그 아래로 숨는다
+            주소골랐다(주소, 우편, 대상, 상세, 표시, d);
+          },
+          onsearch: function (d) { if (!d.count && String(d.q).trim() === 묻기[i] && i + 1 < 묻기.length) 펼치기(i + 1); }   // 손으로 친 검색은 그대로 둔다
+        }).embed(속, { q: 묻기[i], autoClose: false });
+      })(0);
     }, function () {
       u.토스트('주소 찾기를 못 불러왔습니다 — 인터넷 연결을 확인하세요.');
     });
@@ -254,7 +259,7 @@ window.ZG = window.ZG || {};
       주소.setSelectionRange(주소.value.length, 주소.value.length);   // 이어서 동·호수를 적는다
     }
     function 칩(보임) { if (표시.칩) 표시.칩.hidden = !보임; }
-    function 줄달기(el) { if (!표시.칸) return; u.비우기(표시.칸); if (el) 표시.칸.appendChild(el); 표시.칸.hidden = !el; }
+    function 줄달기(el) { if (!표시.칸) return; u.비우기(표시.칸); [el, 표시.덧].forEach(function (e) { if (e) 표시.칸.appendChild(e); }); 표시.칸.hidden = !el && !표시.덧; }
     var 원문 = String(대상.원문주소 || '');
     var 비 = 주소비교(원문, d);
     if (비.결과 === '없음') { 줄달기(null); 채우기(''); return; }
@@ -280,7 +285,7 @@ window.ZG = window.ZG || {};
      설정이 없으면(수동주문·주문수정) 닫힌 빈 대상을 쓴다 — 저장은 안 된다 */
   function 주소줄(주소, 우편, 설정) {
     설정 = 설정 || {};
-    var 대상 = 설정.대상 || {}, 손댐 = false;
+    var 대상 = 설정.대상 || {}, 손댐 = false, 덧 = null;   // 덧 = 붙여넣기 「확인 필요」 줄 — 주소를 골라도 남긴다
     var 칩 = 만들기('span', { class: '미확인', text: '미확인' });
     칩.hidden = 대상.주소확인 !== '미확인';
     var 칸 = 만들기('div', { class: '확인칸' });
@@ -288,7 +293,7 @@ window.ZG = window.ZG || {};
     주소.addEventListener('input', function () { 손댐 = true; 칸.hidden = true; });   // 고친 주소 옆에 지난 ✓ 를 남기지 않는다
     var 단추 = 만들기('button', { class: 'btn', type: 'button', text: '🔍 주소 찾기' });
     단추.style.flex = '0 0 auto';
-    function 열기(안고름) { 주소찾기(주소, 우편, { 대상: 대상, 상세: 설정.상세 || null, 표시: { 칩: 칩, 칸: 칸 }, 안고름: 안고름 }); }
+    function 열기(안고름, q) { 주소찾기(주소, 우편, { 대상: 대상, 상세: 설정.상세 || null, 표시: { 칩: 칩, 칸: 칸, 덧: 덧 }, 안고름: 안고름 }, q); }
     단추.addEventListener('click', function () {
       // 원문은 처음 한 번만 — 두 번째 찾기 때 카카오 주소가 원문을 덮지 않게. 손으로 고쳤으면 그게 새 원문이다
       if (손댐 || !대상.원문주소) 대상.원문주소 = 주소.value.trim();
@@ -300,12 +305,16 @@ window.ZG = window.ZG || {};
     var 줄 = 만들기('div', { class: '확인묶음' }, [만들기('div', { style: 'display:flex;gap:6px;align-items:center' }, [주소, 단추]), 칸]);
     줄.칩 = 칩; 줄.확인칸 = 칸;
     /* 20h 붙여넣기 — 손님 원문 통째로 원문을 세우고 찾기를 연다. 고르지 않고 닫으면 「직접 입력」 안내 (33단계 §8) */
-    줄.찾기 = function (원문) {
+    줄.덧 = function (글들) {
+      덧 = 글들 && 글들.length ? 확인줄('비교안됨', '! 확인 필요', 글들.map(function (t) { return ['', t]; })) : null;
+      u.비우기(칸); if (덧) 칸.appendChild(덧); 칸.hidden = !덧;
+    };
+    줄.찾기 = function (원문, 검색어들) {
       대상.원문주소 = 원문; 손댐 = false;
       열기(function () {
         대상.주소확인 = '미확인'; 칩.hidden = false;
-        u.비우기(칸); 칸.appendChild(확인줄('안뜸', '✕ 주소 검색에서 못 골랐습니다 — 안 뜨면 직접 입력해 주세요', [['원문', 원문]])); 칸.hidden = false;
-      });
+        u.비우기(칸); 칸.appendChild(확인줄('안뜸', '✕ 주소 검색에서 못 골랐습니다 — 안 뜨면 직접 입력해 주세요', [['원문', 원문]])); if (덧) 칸.appendChild(덧); 칸.hidden = false;
+      }, 검색어들);
     };
     return 줄;
   }

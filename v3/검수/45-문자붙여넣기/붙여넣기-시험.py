@@ -72,7 +72,7 @@ try:
                 값 = [쪽.input_value(이름칸), 쪽.input_value(전화칸), 쪽.input_value(주소칸), 쪽.input_value(상세칸)]
                 본다('예시%d 나누기' % i, 값 == [이름, 전화, 주소, 상세] and s['받는분'] == 이름 and s['주소'] == 주소 and s['상세주소'] == 상세, 값)
                 q = 쪽.evaluate("() => window.__우편 && window.__우편.op.q")
-                본다('예시%d 주소 찾기 자동으로 열림 · 원문 통째' % i, q == 주소 and s['원문주소'] == (주소 + (' ' + 상세 if 상세 else '')).replace('112 2층', '112, 2층'), [q, s['원문주소']])
+                본다('예시%d 주소 찾기 자동으로 열림 · 원문 통째' % i, q == 주소 and s['원문주소'] == (주소 + (' ' + 상세 if 상세 else '')), [q, s['원문주소']])
                 if i == 2: 쪽.screenshot(path=str(여기 / ('2-붙여넣은뒤-' + 틀 + '.png')), full_page=폰, animations='disabled')
                 쪽.evaluate("() => document.querySelectorAll('.pcscrim').forEach(e => { if (e.nextElementSibling) e.nextElementSibling.remove(); e.remove(); })")
 
