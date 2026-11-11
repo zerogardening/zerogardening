@@ -107,12 +107,13 @@ def 구독지우기(줄id):
     """푸시 서버가 「그 자리 없다(404·410)」 하면 지운다 — 앱을 지우셨거나 구독이 바뀐 것이다"""
     k = 키()
     req = urllib.request.Request(
-        주소 + urllib.parse.quote(표('v3_지시')) + '?id=eq.' + urllib.parse.quote(줄id),
+        주소 + 표('v3_지시') + '?id=eq.' + urllib.parse.quote(줄id),     # 🔴 표()가 이미 감싼다 — 또 감싸면 404로 못 지운다(11/11)
         method='DELETE', headers={'apikey': k, 'Authorization': 'Bearer ' + k})
     try:
         urllib.request.urlopen(req, timeout=30).read()
-    except urllib.error.HTTPError:
-        pass
+    except urllib.error.HTTPError as e:
+        print('  ⚠️ 구독 못 지움 %s — %s' % (e.code, 줄id[:22]))
+        return
     from 줄캐시 import 빼기
     빼기('v3_지시', 줄id)
 
