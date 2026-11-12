@@ -228,16 +228,16 @@ window.ZG = window.ZG || {};
       document.body.appendChild(막);
       document.body.appendChild(판);
 
-      var 묻기 = q === undefined ? [주소.value.trim()] : [].concat(q);
+      var 묻기 = q === undefined ? [주소.value.trim()] : [].concat(q), 몇 = null;   // 몇 = 마지막 검색 후보 수
       (function 펼치기(i) {
         u.비우기(속);
         new window.daum.Postcode({
           width: '100%', height: '100%',
           oncomplete: function (d) {
             닫기();   // 🔴 확인창은 embed(z 1000)를 닫은 뒤에 — 안 그러면 그 아래로 숨는다
-            주소골랐다(주소, 우편, 대상, 상세, 표시, d);
+            주소골랐다(주소, 우편, 대상, 상세, 표시, d, 몇);
           },
-          onsearch: function (d) { if (!d.count && String(d.q).trim() === 묻기[i] && i + 1 < 묻기.length) 펼치기(i + 1); }   // 손으로 친 검색은 그대로 둔다
+          onsearch: function (d) { 몇 = d.count; if (!d.count && String(d.q).trim() === 묻기[i] && i + 1 < 묻기.length) 펼치기(i + 1); }   // 손으로 친 검색은 그대로 둔다
         }).embed(속, { q: 묻기[i], autoClose: false });
       })(0);
     }, function () {
@@ -245,10 +245,15 @@ window.ZG = window.ZG || {};
     });
   }
 
-  function 주소골랐다(주소, 우편, 대상, 상세, 표시, d) {
+  /* 도로명은 시·군·구 안에서만 하나다(「중앙로 10」은 여러 도시) — 원문에 시·군·구가 없으면 검색 후보가 1개일 때만 일치 (11/13 우람님) */
+  function 시군구있나(원문, d) {
+    var 말 = String(d.sigungu || d.sido || '').split(/\s+/).filter(Boolean);
+    return 말.some(function (p) { return 원문.indexOf(p) >= 0 || p.length > 2 && 원문.indexOf(p.slice(0, -1)) >= 0; });
+  }
+  function 주소골랐다(주소, 우편, 대상, 상세, 표시, d, 몇) {
     function 채우기(꼬리) {
-      var 글 = d.userSelectedType === 'J' ? d.jibunAddress : d.roadAddress;
-      if (d.userSelectedType !== 'J' && d.apartment === 'Y' && d.buildingName) 글 += ' (' + d.buildingName + ')';
+      var 글 = d.roadAddress || d.jibunAddress;   // 송장엔 도로명 — 지번을 눌러 골라도 (11/13 우람님)
+      if (d.roadAddress && d.apartment === 'Y' && d.buildingName) 글 += ' (' + d.buildingName + ')';
       우편.value = d.zonecode || '';
       if (꼬리 && 상세 && !상세.value.trim()) {
         상세.value = 꼬리;
@@ -262,6 +267,7 @@ window.ZG = window.ZG || {};
     function 줄달기(el) { if (!표시.칸) return; u.비우기(표시.칸); [el, 표시.덧].forEach(function (e) { if (e) 표시.칸.appendChild(e); }); 표시.칸.hidden = !el && !표시.덧; }
     var 원문 = String(대상.원문주소 || '');
     var 비 = 주소비교(원문, d);
+    if (비.결과 === '일치' && 몇 !== 1 && !시군구있나(원문, d)) { 비.결과 = '불가'; 비.이유 = '시·군·구가 원문에 없고 후보가 여럿'; }
     if (비.결과 === '없음') { 줄달기(null); 채우기(''); return; }
     if (비.결과 === '일치') {
       대상.주소확인 = '일치'; 칩(false);
@@ -270,7 +276,7 @@ window.ZG = window.ZG || {};
     }
     if (비.결과 === '불가') {
       대상.주소확인 = '비교안됨'; 칩(false);
-      줄달기(확인줄('비교안됨', '! 원문 비교 안 됨 — 눈으로 확인', [['원문', 원문], ['검색', 비.고른글], ['지번', 비.지번]]));
+      줄달기(확인줄('비교안됨', '! ' + (비.이유 || '원문 비교 안 됨') + ' — 눈으로 확인', [['원문', 원문], ['검색', 비.고른글], ['지번', 비.지번]]));
       채우기(''); return;
     }
     주소확인창(비, 원문, function (답) {
