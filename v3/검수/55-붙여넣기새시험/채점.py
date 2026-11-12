@@ -14,6 +14,7 @@ def 시도같게(s):
         if s.startswith(v): return k + s[len(v):]
     return s
 def 참빼기(s, 참):
+    for c in sorted(참, key=len, reverse=True): s = s.replace(c, ' ')   # 통째 먼저(「우남 더 테라스」의 한 글자 「더」가 남던 것 · 11/13 2차)
     s = re.sub(r'[()]', ' ', s)   # 손님 자료 참고가 「산본동, 백두(극동」처럼 괄호 안 괄호에서 잘린 것 — 낱말 단위로 지운다
     for c in sorted({x for c in 참 for x in re.split(r'[,()\s]+', c) if len(x) >= 2}, key=len, reverse=True): s = s.replace(c, ' ')
     return s
