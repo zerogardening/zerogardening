@@ -119,7 +119,7 @@ try:
             m = 미리()
             본다('무료배송 — 합계 15,000 · 문자에 「무료배송」 · 배송비 줄 없음', '15,000' in 합() and '\n무료배송\n' in m and '배송비 ' not in m and 상태()['배송비'] == 0 and 상태()['무료배송'] is True, 합())
             본다('무료배송 줄 자리 = 품목 아래·합계 위', m.index('15,000원') < m.index('무료배송') < m.index('합계:'))
-            본다('안내 문자 — B안 양식(성함·주소·요청사항) · 연락처 요청 없음', '📌 아래 칸을 채워 보내주세요\n성함:\n주소:\n요청사항:' in m and '연락처' not in m)
+            본다('안내 문자 — B안 양식(성함·주소만) · 요청사항·연락처 요청 없음', m.endswith('📌 아래 칸을 채워 보내주세요\n성함:\n주소:') and '요청사항' not in m and '연락처' not in m, m[-60:].replace('\n', ' / '))
             본다('입금계좌 아래 「구매자 성함으로 입금해 주세요」', '💰입금계좌' in m and m.index('💰입금계좌') < m.index('구매자 성함으로 입금해 주세요') < m.index('📌'), m[-120:].replace('\n', ' / '))
             쪽.screenshot(path=str(여기 / ('6-무료배송-' + 틀 + '.png')), full_page=폰, animations='disabled')
             쪽.click(판 + ' button:has-text("무료배송")'); 쪽.wait_for_timeout(200)
