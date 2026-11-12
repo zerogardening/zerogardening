@@ -14,7 +14,8 @@ def 시도같게(s):
         if s.startswith(v): return k + s[len(v):]
     return s
 def 참빼기(s, 참):
-    for c in sorted({x.strip() for c in 참 for x in [c] + c.split(',') if len(x.strip()) >= 2}, key=len, reverse=True): s = s.replace(c, ' ')   # 「치평동, 상무광명메이루즈」
+    s = re.sub(r'[()]', ' ', s)   # 손님 자료 참고가 「산본동, 백두(극동」처럼 괄호 안 괄호에서 잘린 것 — 낱말 단위로 지운다
+    for c in sorted({x for c in 참 for x in re.split(r'[,()\s]+', c) if len(x) >= 2}, key=len, reverse=True): s = s.replace(c, ' ')
     return s
 def 주맞(s, 참):
     s = 참빼기(s or '', 참)
@@ -72,11 +73,18 @@ def 채점(문자, 답):
             '확인전체': 붙음(lambda r: r.get('확인')), '새의심': 붙음(lambda r: r.get('의심')), 'ok': ok}
 
 def 가림(s):
-    """전화처럼 보이는 덩어리(ㅡ·~·_·띄움 포함)는 뒤 4자리만 남김"""
-    def 하나(x):
-        g = x.group(0); 뒤 = [i for i, ch in enumerate(g) if ch.isdigit()][-4:]
-        return ''.join('*' if ch.isdigit() and i not in 뒤 else ch for i, ch in enumerate(g))
-    return re.sub(r'(?:\+82[\s\-]?|\(?0)1[\d\s.\-ㅡ~_()]{7,16}\d', 하나, s or '')
+    """전화처럼 보이는 덩어리(ㅡ·~·_·띄움 포함)는 뒤 4자리만 남김 — 01로 시작해 숫자 11개(+82 는 10개)까지를 번호 하나로"""
+    s = s or ''; out = []; i = 0
+    while i < len(s):
+        m = re.match(r'\+82[ \-]?(?=1)|\(?0(?=1)', s[i:])
+        if not m: out.append(s[i]); i += 1; continue
+        j = i + m.end(); 몇 = 1 if m.group(0).endswith('0') else 0; 필요 = 10 if m.group(0).startswith('+') else 11
+        while j < len(s) and 몇 < 필요 and (s[j].isdigit() or s[j] in ' \t.-ㅡ~_()'):
+            몇 += s[j].isdigit(); j += 1
+        if 몇 < 필요: out.append(s[i]); i += 1; continue
+        g = s[i:j]; 뒤 = [k for k, ch in enumerate(g) if ch.isdigit()][-4:]
+        out.append(''.join('*' if ch.isdigit() and k not in 뒤 else ch for k, ch in enumerate(g))); i = j
+    return ''.join(out)
 
 # ── 실패 유형 상위 — 틀린 칸의 원인 × 그 문자에서 가장 실패율이 높은 꼬리표(실수·함정·꼴·상황) ──
 def 유형들(c):

@@ -23,7 +23,7 @@ import re, collections
 맺음식 = re.compile(r'(수고|감사|고맙|ㄱㅅ|부탁|하십시|드림니|드립니|합니다)')
 def 남은(r, m):
     a = r.get('상세') or ''
-    for w in (m['정답']['상세'] or '').split(): a = a.replace(w, ' ', 1)
+    for w in (m['정답']['상세'] or '').split() + [x for c in m['정답']['참고'] for x in re.split(r'[,()\s]+', c) if len(x) >= 2]: a = a.replace(w, ' ', 1)   # 괄호 참고(동 이름)는 군것 아님
     return re.sub(r'\s+', ' ', a).strip()
 
 def 유형(m, r, p, 왜):
@@ -82,7 +82,7 @@ def 엑셀(경로, 판들, 요, _유형들, 가림):
     w = wb.create_sheet('실패 유형(' + 이 + ')'); 머리(w, ['순위', '유형', '건수', '예시 원문(전화 가림)', '앱이 나눈 것', '사람이 읽은 답'])
     for i, (u, xs) in enumerate(유형셈(c), 1):
         m, r, p, 왜 = xs[0]; 정 = m['정답']
-        w.append([i, 유형글[u], len(xs), 가림(m['글']), f"{r.get('이름')} / {폰끝(r)} / {r.get('주소')} / {r.get('상세')}", f"{정['이름']} / {정['전화'][-4:]} / {정['기본']} / {정['상세']}"])
+        w.append([i, 유형글[u], len(xs), 가림(m['글']), 가림(f"{r.get('이름')} / {폰끝(r)} / {r.get('주소')} / {r.get('상세')}"), f"{정['이름']} / {정['전화'][-4:]} / {정['기본']} / {정['상세']}"])
     for col, wd in zip('ABCDEF', [6, 50, 8, 60, 45, 45]): w.column_dimensions[col].width = wd
     for row in w.iter_rows(min_row=2):
         for x in row: x.alignment = Alignment(wrap_text=True, vertical='top')
@@ -90,8 +90,8 @@ def 엑셀(경로, 판들, 요, _유형들, 가림):
     머리(w, ['번호', '연령대', '원문 문자(전화 가림)', '답 받는 분', '답 전화', '답 기본주소', '답 상세', '앱 받는 분', '앱 전화', '앱 기본주소', '앱 상세', '틀린 칸', '무엇이 틀렸나', '유형', '꼬리표', '노란 줄'])
     for m, r, p, 왜 in c['목록']:
         정 = m['정답']
-        w.append([m['id'], f"{m['나이']}대", 가림(m['글']), 정['이름'], '*' * 7 + 정['전화'][-4:], 정['기본'], 정['상세'], r.get('이름', ''), 폰끝(r), r.get('주소', ''), r.get('상세', ''),
-                  ' '.join(k for k in p if not p[k]), ' · '.join(왜), 유형글[유형(m, r, p, 왜)], ' '.join(m['표']), ' | '.join(r.get('확인') or [])])
+        w.append([m['id'], f"{m['나이']}대", 가림(m['글']), 정['이름'], '*' * 7 + 정['전화'][-4:], 정['기본'], 정['상세'], r.get('이름', ''), 폰끝(r), 가림(r.get('주소', '')), 가림(r.get('상세', '')),
+                  ' '.join(k for k in p if not p[k]), ' · '.join(왜), 유형글[유형(m, r, p, 왜)], ' '.join(m['표']), 가림(' | '.join(r.get('확인') or []))])   # 앱이 못 걷어낸 번호는 상세·노란 줄에 남는다 — 거기도 가림
     for col, wd in zip('ABCDEFGHIJKLMNOP', [8, 6, 55, 8, 12, 34, 20, 8, 12, 34, 24, 10, 26, 40, 40, 40]): w.column_dimensions[col].width = wd
     for row in w.iter_rows(min_row=2):
         for x in row: x.alignment = Alignment(wrap_text=True, vertical='top')
