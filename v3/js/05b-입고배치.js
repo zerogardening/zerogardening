@@ -83,25 +83,27 @@ window.ZG = window.ZG || {};
     참조.저장단추들 = [저장];
 
     return [
-      내.필드('입고업체 <span class="req">*</span> <span class="auto">오늘 계속 이 업체입니다</span>', 업체칸(), null, '입고업체'),
+      내.필드('업체 <span class="req">*</span>', 업체칸(), null, '입고업체'),
       내.필드('유통명 <span class="req">*</span>', 유통명칸(), null, '유통명'),
       참조.자동완성칸,
       내.필드('학명', 학명칸(), null, '학명'),
-      내.필드('규격 <span class="req">*</span> <span class="auto">「치」로 들어와도 cm로 저장합니다</span>', 내.규격칸()),
+      내.필드('규격 <span class="req">*</span>', 내.규격칸()),
       만들기('div', { class: 'pair' }, [
-        내.필드('판매단위', 단위칸()),
-        내.필드('쿠팡 판매단위', 쿠팡칸())
+        내.필드('판매단위', 단위칸(true)),
+        내.필드('쿠팡 단위', 쿠팡칸(true))
       ]),
       만들기('div', { class: 'pair' }, [
         내.필드('수량 <span class="req">*</span>', 내.숫자칸('수량'), null, '수량'),
-        내.필드('매입단가 <span class="req">*</span>', 내.숫자칸('매입단가'), null, '매입단가')
+        내.필드('매입가 <span class="req">*</span>', 내.숫자칸('매입단가'), null, '매입단가')
       ]),
-      내.필드('판매단가', 내.숫자칸('판매단가')),
       만들기('div', { class: 'pair' }, [
-        내.필드('과세 · 면세 <span class="req">*</span>', 내.과세칸()),
+        내.필드('판매가', 내.숫자칸('판매단가')),
+        내.필드('과세 · 면세 <span class="req">*</span>', 내.과세칸())
+      ]),
+      만들기('div', { class: 'pair' }, [
+        내.필드('메모', 내.입력칸('메모', { placeholder: '메모' })),
         코드필드(코드칸)
       ]),
-      메모필드(),
       참조.경고칸,
       특성칸(),
       저장
@@ -110,12 +112,25 @@ window.ZG = window.ZG || {};
 
   /* 판매단위 — 한 번에 파는 수(구근 5구 한 묶음 등). 기본 1
      쿠팡 판매단위 — 쿠팡 수량옵션. 비우면 지금처럼 규격으로 고른다 (2026-09-15 우람님) */
-  function 단위칸() {
+  function 단위칸(폰) {
     var e = 내.입력칸('판매단위', { class: 'inp num', inputmode: 'numeric' });
     e.addEventListener('input', 내.금액갱신);      // 판매단가 칸의 흐린 기본값이 따라온다
-    return e;
+    return 폰 ? 프리셋(e, ['1', '3', '5', '10']) : e;
   }
-  function 쿠팡칸() { return 내.입력칸('쿠팡단위', { placeholder: '1,2,4,6,9' }); }
+  function 쿠팡칸(폰) {
+    var e = 내.입력칸('쿠팡단위', { placeholder: '1,2,4,6,9' });
+    return 폰 ? 프리셋(e, ['1,2,4,6,9', '1,2,4']) : e;
+  }
+  /* 판매단위는 토글이 아니라 직접 치는 칸 + 아래 프리셋 칩 — 누르면 그 값이 칸에 들어간다 (11/12 우람님) */
+  function 프리셋(e, 값들) {
+    var 줄 = 만들기('div', { class: '프리셋' });
+    값들.forEach(function (v) {
+      var b = 만들기('button', { type: 'button', class: 'fchip', text: v });
+      b.addEventListener('click', function () { e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); });
+      줄.appendChild(b);
+    });
+    return 만들기('div', { class: 'stack' }, [e, 줄]);
+  }
 
   function 코드필드(코드칸, 스타일) {
     var f = 만들기('div', { class: 'field', style: 스타일 || null });

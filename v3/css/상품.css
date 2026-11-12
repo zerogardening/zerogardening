@@ -68,7 +68,7 @@ td.same{box-shadow:inset var(--bar-width) 0 0 var(--color-accent-border)}
 /* ══ 15단계 A — 사진 수집 (시안 13-사진수집-macA.html) ══ */
 .chip.사진{background:var(--color-surface); color:var(--color-text-muted); border-color:var(--color-border); font-variant-numeric:tabular-nums}
 .chip.사진::before{content:'📷'; background:none; width:auto; height:auto; border-radius:0; font-size:10px; line-height:1}
-.chip.사진.일부{background:#FFF8E8; color:#8A5A00; border-color:#F0DDB0}
+.chip.사진.일부{background:var(--color-warn-bg); color:var(--color-warn); border-color:var(--color-warn-border)}
 .chip.사진.완{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
 
 /* 상세페이지 작업 대기 — 끝났거나 할 필요 없는 것을 손으로 뺀다 (2026-09-14 우람님) */
@@ -98,7 +98,7 @@ td.뺌칸{text-align:right}
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   border:none; cursor:pointer; font-family:inherit;
   font-size:var(--font-xl); font-weight:var(--weight-semibold);
-  background:var(--color-danger); color:#fff;
+  background:var(--color-danger); color:var(--color-on-accent);
 }
 .민칸.되돌리기 .뒷단추{background:var(--color-text-muted)}
 .민칸 .뒷단추.올림{right:88px; background:var(--color-accent-dark)}
@@ -120,10 +120,10 @@ td.뺌칸{text-align:right}
 .tablewrap td:last-child{white-space:nowrap}
 .tablewrap td:last-child .btn + .btn{margin-left:var(--space-sm)}
 
-.사진덮개{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.34); display:flex; align-items:flex-start; justify-content:center; overflow:auto}
+.사진덮개{position:fixed; inset:0; z-index:200; background:var(--color-scrim); display:flex; align-items:flex-start; justify-content:center; overflow:auto}
 .사진창{
   width:min(780px,94%); margin:4vh 0; background:var(--color-bg); border-radius:var(--radius-lg);
-  box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+  box-shadow:0 22px 54px var(--shade-3), 0 0 0 1px var(--shade-1);
 }
 .사진창 .hd{
   display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
@@ -164,21 +164,21 @@ td.뺌칸{text-align:right}
 .사진칸.찍기 .빈표{font-size:24px; color:var(--color-accent-dark); opacity:.85}
 .사진칸 .다시{
   position:absolute; right:5px; bottom:5px; border:none; cursor:pointer; font-family:inherit;
-  background:rgba(29,29,31,.68); color:#fff; font-size:var(--font-2xs); font-weight:var(--weight-semibold);
+  background:var(--color-toast); color:var(--color-on-accent); font-size:var(--font-2xs); font-weight:var(--weight-semibold);
   padding:3px 9px; border-radius:var(--radius-pill);
 }
 .사진칸 .덮개{
   position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:7px; background:rgba(255,255,255,.78); padding:0 10px;
+  gap:7px; background:var(--overlay-mid); padding:0 10px;
 }
 .사진칸 .상태{font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
 .사진칸 .바{width:74%; height:5px; border-radius:3px; background:var(--color-border); overflow:hidden}
 .사진칸 .바 i{display:block; height:100%; border-radius:3px; background:var(--color-accent); transition:width 2.4s ease-out}
 .사진칸.실패 .틀{border-color:var(--color-danger)}
 .사진칸.실패 .번{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
-.사진칸.실패 .덮개{background:rgba(255,241,240,.9)}
+.사진칸.실패 .덮개{background:var(--color-danger-bg)}
 .사진칸.실패 .상태{color:var(--color-danger)}
-.사진칸.실패 .btn{background:#fff; border-color:var(--color-danger-border); color:var(--color-danger)}
+.사진칸.실패 .btn{background:var(--color-surface); border-color:var(--color-danger-border); color:var(--color-danger)}
 
 @media (max-width:899px){
   .사진창{width:100%; margin:0; min-height:100%; border-radius:0}
@@ -202,10 +202,10 @@ td.뺌칸{text-align:right}
 .사진대기 .search .mag{position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:var(--font-md); opacity:.45}
 .사진대기 .search .지움{
   position:absolute; right:8px; top:50%; transform:translateY(-50%);
-  width:18px; height:18px; border-radius:50%; border:none; background:#C7C7CC; color:#fff;
+  width:18px; height:18px; border-radius:50%; border:none; background:var(--color-text-faint); color:var(--color-on-accent);
   font-size:10px; font-weight:700; line-height:18px; text-align:center; padding:0; font-family:inherit; cursor:pointer;
 }
-.사진대기 mark{background:#FFF2B8; color:inherit; border-radius:3px; box-shadow:0 0 0 1.5px #FFF2B8}
+.사진대기 mark{background:var(--color-warn-border); color:inherit; border-radius:3px; box-shadow:0 0 0 1.5px var(--color-warn-border)}
 @media (max-width:899px){
   .사진거름{flex-direction:column; align-items:stretch}
   .사진거름 .갈래칩, .사진거름 .search{width:auto}
@@ -246,7 +246,7 @@ td.뺌칸{text-align:right}
   width:100%; display:flex; align-items:center; gap:var(--space-sm);
   height:var(--h-btn); padding:0 var(--space-md) 0 var(--space-lg);
   border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);
-  background:var(--color-surface); box-shadow:inset 0 1px 1px rgba(0,0,0,.03);
+  background:var(--color-surface); box-shadow:inset 0 1px 1px var(--shade-1);
   font-family:inherit; font-size:var(--font-sm); line-height:calc(var(--h-btn) - 2px); color:var(--color-text); text-align:left; cursor:pointer;
 }
 .고름상자 .ic{font-size:var(--font-md); opacity:.55}
@@ -254,17 +254,17 @@ td.뺌칸{text-align:right}
 .고름상자 .k{color:var(--color-text-muted); font-weight:var(--weight-semibold); font-size:var(--font-xs)}
 .고름상자 .n{color:var(--color-text-muted); font-size:var(--font-xs); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums}
 .고름상자 .화살{color:var(--color-text-muted); font-size:11px; margin-left:2px}
-.고름상자.열림{border-color:var(--color-accent); box-shadow:0 0 0 3px rgba(47,158,68,.16)}
+.고름상자.열림{border-color:var(--color-accent); box-shadow:0 0 0 3px var(--color-accent-bg)}
 .고름상자.걸림{background:var(--color-accent-bg); border-color:var(--color-accent-border); color:var(--color-accent-dark); font-weight:var(--weight-bold)}
 .고름상자.걸림 .n{color:var(--color-accent-dark); opacity:.75}
 .고름상자 .지움{
   flex:0 0 auto; width:22px; height:22px; border-radius:50%; border:none; padding:0;
-  background:var(--color-accent); color:#fff; font-size:11px; font-weight:700; line-height:22px; text-align:center; font-family:inherit;
+  background:var(--color-accent); color:var(--color-on-accent); font-size:11px; font-weight:700; line-height:22px; text-align:center; font-family:inherit;
 }
 .펼침{
   position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0;
   background:var(--color-surface); border:var(--border-width) solid var(--color-border);
-  border-radius:var(--radius-lg); box-shadow:0 14px 34px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04);
+  border-radius:var(--radius-lg); box-shadow:0 14px 34px var(--shade-2), 0 0 0 1px var(--shade-1);
   padding:var(--space-xs); display:flex; flex-direction:column; max-height:60vh; overflow-y:auto;
 }
 .펼침 .it{
@@ -273,7 +273,7 @@ td.뺌칸{text-align:right}
 }
 .펼침 .it .ck{width:14px; color:var(--color-accent-dark); font-weight:700}
 .펼침 .it .n{margin-left:auto; color:var(--color-text-muted); font-variant-numeric:tabular-nums; font-size:var(--font-sm)}
-.펼침 .it:hover, .펼침 .it:focus{background:#F2F2F5; outline:none}
+.펼침 .it:hover, .펼침 .it:focus{background:var(--color-border-faint); outline:none}
 .펼침 .it.on{background:var(--color-accent-bg); color:var(--color-accent-dark)}
 .펼침 .sep{height:1px; background:var(--color-border-faint); margin:var(--space-3xs) var(--space-sm)}
 .ph-body .업체고름{width:auto}
@@ -283,13 +283,13 @@ td.뺌칸{text-align:right}
 
 /* 기간 고르는 창 */
 .기간덮개{
-  position:fixed; inset:0; z-index:300; background:rgba(0,0,0,.34);
+  position:fixed; inset:0; z-index:300; background:var(--color-scrim);
   display:flex; align-items:center; justify-content:center; padding:var(--space-2xl);
 }
 .기간창{
   width:min(360px,100%); background:var(--color-surface);
   border-radius:var(--radius-lg); padding:var(--space-3xl);
-  box-shadow:0 22px 54px rgba(0,0,0,.22);
+  box-shadow:0 22px 54px var(--shade-3);
 }
 .기간창 .ttl{ font-size:var(--font-3xl); font-weight:var(--weight-semibold); margin-bottom:var(--space-2xl) }
 .기간창 label{ display:block; font-size:var(--font-sm); color:var(--color-text-sub); margin:var(--space-lg) 0 var(--space-xs) }
@@ -301,29 +301,29 @@ td.뺌칸{text-align:right}
    🔴 전부 .품절탭 아래 — .bar .st .why .mrow .dot 가 주문·메모·업체 css 에 이미 있다.
    🔴 배지는 .탭배지 — 시안 .bd 는 .사진창 .bd 와 겹친다. */
 .pc-tabs button{display:inline-flex; align-items:center}
-.탭배지{font-style:normal; display:inline-block; min-width:17px; padding:0 5px; border-radius:9px; background:#8E8E93; color:#fff; font-size:var(--font-2xs); line-height:17px; text-align:center; font-weight:var(--weight-bold); margin-left:5px; font-variant-numeric:tabular-nums}
+.탭배지{font-style:normal; display:inline-block; min-width:17px; padding:0 5px; border-radius:9px; background:var(--color-text-muted); color:var(--color-on-accent); font-size:var(--font-2xs); line-height:17px; text-align:center; font-weight:var(--weight-bold); margin-left:5px; font-variant-numeric:tabular-nums}
 .탭배지.빨강{background:var(--color-danger)}
 .탭배지[hidden]{display:none}
 .속탭 button{display:flex; align-items:center; justify-content:center}
-.속탭 button.on .탭배지{box-shadow:0 0 0 1.5px #fff}
+.속탭 button.on .탭배지{box-shadow:0 0 0 1.5px var(--color-surface)}
 
 /* 하위탭 줄 · 칩 줄 · 첫 카드 사이를 띄운다 (우람님 「공백이 너무 없다」) — 다른 하위탭은 그대로 */
 .ph-shell .품절탭{display:flex; flex-direction:column; gap:14px; padding-top:10px}
 .ph-shell .품절탭 .ph-list{gap:12px}
 .pc-main .품절탭{margin-top:10px}
 .품절탭 .지시-빈{text-align:center; color:var(--color-text-hint); font-size:var(--font-md); line-height:1.7; padding:var(--space-4xl) 0}
-.품절탭 .ktag{flex-shrink:0; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:2px 7px; border-radius:var(--radius-badge); background:#E5E5EA; color:#3A3A3C; line-height:1.4}
+.품절탭 .ktag{flex-shrink:0; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:2px 7px; border-radius:var(--radius-badge); background:var(--color-border); color:var(--color-text); line-height:1.4}
 .품절탭 .ktag.back{background:var(--color-accent-bg); color:var(--color-accent-dark); box-shadow:inset 0 0 0 1px var(--color-accent-border)}
 .품절탭 .frac{margin-left:auto; font-size:var(--font-md); color:var(--color-text-muted); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums; white-space:nowrap}
 .품절탭 .frac b{font-size:22px; color:var(--color-text); font-weight:var(--weight-bold); letter-spacing:-.02em}
 .품절탭 .frac.done b{color:var(--color-accent-dark)}
 .품절탭 .frac.bad b{color:var(--color-danger)}
 .품절탭 .frac.옛{font-size:var(--font-xs); color:var(--color-text-hint)}
-.품절탭 .fn{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#fff; background:var(--color-danger); padding:1px 7px; border-radius:var(--radius-pill)}
+.품절탭 .fn{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-on-accent); background:var(--color-danger); padding:1px 7px; border-radius:var(--radius-pill)}
 .품절탭 .bar{display:flex; gap:3px; margin-top:10px}
-.품절탭 .bar i{flex:1; height:7px; border-radius:3px; background:#E3E3E8}
+.품절탭 .bar i{flex:1; height:7px; border-radius:3px; background:var(--color-border)}
 .품절탭 .bar i.ok, .품절탭 .bar .sg.ok i{background:var(--color-accent)}
-.품절탭 .bar i.run, .품절탭 .bar .sg.run i{background:#F2A30F}
+.품절탭 .bar i.run, .품절탭 .bar .sg.run i{background:var(--color-warn-strong)}
 .품절탭 .bar i.fail, .품절탭 .bar .sg.fail i{background:var(--color-danger)}
 /* 폰 카드 */
 .품절탭 .sc{background:var(--color-surface); border-radius:var(--radius-xl); padding:12px 16px 14px; box-shadow:var(--shadow-card); cursor:pointer}
@@ -333,16 +333,16 @@ td.뺌칸{text-align:right}
 .품절탭 .cd{font-family:var(--font-mono); font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-accent-dark)}
 .품절탭 .sc .tt{font-variant-numeric:tabular-nums}
 .품절탭 .chev{margin-left:auto; color:var(--color-text-hint); font-size:var(--font-md)}
-.품절탭 .sc.bad{box-shadow:0 0 0 1.5px var(--color-danger), var(--shadow-card); background:#FFFBFB}
+.품절탭 .sc.bad{box-shadow:0 0 0 1.5px var(--color-danger), var(--shadow-card); background:var(--color-surface)}
 .품절탭 .sc.done, .품절탭 .pcr.done{opacity:.72}
 .품절탭 .sc.done .bar i{opacity:.55}
 .품절탭 .sc.open{padding-bottom:6px}
 .품절탭 .mlist{margin-top:12px; border-top:var(--border-width) solid var(--color-border-faint)}
 .품절탭 .mrow{display:flex; align-items:center; gap:8px; padding:9px 0; border-bottom:var(--border-width) solid var(--color-border-faint); font-size:var(--font-md)}
 .품절탭 .mrow:last-child{border-bottom:none}
-.품절탭 .mrow .dot{width:9px; height:9px; border-radius:50%; background:#D1D1D6; flex-shrink:0}
+.품절탭 .mrow .dot{width:9px; height:9px; border-radius:50%; background:var(--color-text-faint); flex-shrink:0}
 .품절탭 .mrow.ok .dot{background:var(--color-accent)}
-.품절탭 .mrow.run .dot{background:#F2A30F}
+.품절탭 .mrow.run .dot{background:var(--color-warn-strong)}
 .품절탭 .mrow.fail .dot{background:var(--color-danger)}
 .품절탭 .mrow .mk{font-weight:var(--weight-semibold); min-width:84px}
 .품절탭 .mrow .how{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium)}
@@ -350,9 +350,9 @@ td.뺌칸{text-align:right}
 .품절탭 .mrow .tm{width:38px; text-align:right; font-size:var(--font-xs); color:var(--color-text-muted); font-variant-numeric:tabular-nums}
 .품절탭 .st{font-size:var(--font-xs); font-weight:var(--weight-bold); padding:2px 8px; border-radius:var(--radius-pill); white-space:nowrap}
 .품절탭 .st.ok{color:var(--color-accent-dark); background:var(--color-accent-bg)}
-.품절탭 .st.run{color:#9A5B00; background:#FFF3D6}
-.품절탭 .st.wait, .품절탭 .st.none, .품절탭 .st.unk{color:var(--color-text-muted); background:#F0F0F3}
-.품절탭 .st.fail{color:#fff; background:var(--color-danger)}
+.품절탭 .st.run{color:var(--color-warn); background:var(--color-warn-border)}
+.품절탭 .st.wait, .품절탭 .st.none, .품절탭 .st.unk{color:var(--color-text-muted); background:var(--color-border-faint)}
+.품절탭 .st.fail{color:var(--color-on-accent); background:var(--color-danger)}
 .품절탭 .why{margin:-4px 0 6px 17px; font-size:var(--font-sm); color:var(--color-danger); font-weight:var(--weight-semibold); padding-bottom:6px; border-bottom:var(--border-width) solid var(--color-border-faint)}
 .품절탭 .mlist .why:last-child{border-bottom:none}
 .품절탭 .why.회색{color:var(--color-text-muted); font-weight:var(--weight-medium)}
@@ -370,13 +370,13 @@ td.뺌칸{text-align:right}
 .품절탭 .pcr .bar{margin-top:0}
 .품절탭 .bar.lb{gap:4px}
 .품절탭 .bar .sg{flex:1; display:flex; flex-direction:column; gap:4px; align-items:stretch; min-width:0}
-.품절탭 .bar .sg i{flex:none; height:7px; border-radius:3px; background:#E3E3E8}   /* 시안은 .bar i{flex:1} 이 세로줄 안에서 높이를 0 으로 눌렀다 */
+.품절탭 .bar .sg i{flex:none; height:7px; border-radius:3px; background:var(--color-border)}   /* 시안은 .bar i{flex:1} 이 세로줄 안에서 높이를 0 으로 눌렀다 */
 .품절탭 .bar .sg span{font-size:var(--font-3xs); color:var(--color-text-muted); text-align:center; font-weight:var(--weight-semibold); white-space:nowrap}
 .품절탭 .bar .sg.fail span{color:var(--color-danger); font-weight:var(--weight-bold)}
-.품절탭 .bar .sg.run span{color:#9A5B00}
+.품절탭 .bar .sg.run span{color:var(--color-warn)}
 .품절탭 .pcr .rt{display:flex; align-items:center; justify-content:flex-end; gap:8px}
 .품절탭 .pcr .rt .frac{margin-left:0}
-.품절탭 .pcr.bad{border-color:var(--color-danger); box-shadow:0 0 0 1px var(--color-danger); background:#FFFBFB}
+.품절탭 .pcr.bad{border-color:var(--color-danger); box-shadow:0 0 0 1px var(--color-danger); background:var(--color-surface)}
 .품절탭 .pcr .chev{margin-left:0}
 .품절탭 .mt{margin:0 16px 12px; width:calc(100% - 32px)}
 .품절탭 .redo{display:flex; justify-content:flex-end; padding:10px 16px 12px}
@@ -384,7 +384,7 @@ td.뺌칸{text-align:right}
 .품절탭 .mt td{padding:8px 12px}
 .품절탭 .mt td.mk{font-weight:var(--weight-semibold)}
 .품절탭 .mt td.why{margin:0; padding:8px 12px; border-bottom:var(--border-width) solid var(--color-border-faint)}
-.품절탭 .mt tr.fail td{background:#FFF1F0}
+.품절탭 .mt tr.fail td{background:var(--color-danger-bg)}
 
 /* ══ 23b — 학명 복사 (시안 23b-작업중복사-macA.html) ══ */
 .사진대기 .scirow{display:flex; align-items:center; gap:8px; margin-top:3px}
@@ -398,12 +398,12 @@ td.뺌칸{text-align:right}
 .사진대기 .cpy.done{color:var(--color-accent-dark); background:var(--color-accent-bg); border-color:var(--color-accent-border)}
 
 /* ══ 23c — 품절 실패만 다시 · 쿠팡 미확인(노랑) (시안 23c-품절실패만다시-macA.html) ══ */
-.품절탭 .bar i.chk, .품절탭 .bar .sg.chk i{background:#F2C94C}
-.품절탭 .bar .sg.chk span{color:#8A6100}
-.품절탭 .mrow.chk .dot{background:#F2C94C}
-.품절탭 .st.chk{color:#8A6100; background:#FFF6D6}
-.품절탭 .why.노랑{color:#8A6100}
-.품절탭 .btn.rd{color:var(--color-danger); border-color:#F2B8B3; font-weight:var(--weight-bold); justify-content:center}
+.품절탭 .bar i.chk, .품절탭 .bar .sg.chk i{background:var(--color-warn-strong)}
+.품절탭 .bar .sg.chk span{color:var(--color-warn)}
+.품절탭 .mrow.chk .dot{background:var(--color-warn-strong)}
+.품절탭 .st.chk{color:var(--color-warn); background:var(--color-warn-border)}
+.품절탭 .why.노랑{color:var(--color-warn)}
+.품절탭 .btn.rd{color:var(--color-danger); border-color:var(--color-danger-border); font-weight:var(--weight-bold); justify-content:center}
 .품절탭 .mrow .btn.rd{min-height:32px; font-size:var(--font-sm); padding:0 11px}
 .품절탭 .mrow .tm:has(.btn){width:auto}
 .품절탭 .redo{gap:8px}
@@ -413,29 +413,29 @@ td.뺌칸{text-align:right}
 .품절탭 .mt td.rdc, .품절탭 .mt td.lkc{text-align:right}
 
 /* ══ 24단계 — 업로드 › 완료 (시안 24-업로드완료-macA.html) — .품절탭 카드에 .업로드탭 만 덧입힌다 ══ */
-.업로드탭 .th{width:46px; height:46px; border-radius:10px; object-fit:cover; flex-shrink:0; background:#E3E3E8; box-shadow:0 0 0 1px rgba(0,0,0,.06)}
+.업로드탭 .th{width:46px; height:46px; border-radius:10px; object-fit:cover; flex-shrink:0; background:var(--color-border); box-shadow:0 0 0 1px var(--shade-1)}
 .업로드탭 .sc .top{display:flex; align-items:center; gap:12px}
 .업로드탭 .sc .info{flex:1; min-width:0}
 .업로드탭 .sc .nm{min-width:0}
 .업로드탭 .fn{white-space:nowrap}
-.업로드탭 .bar i.unk, .업로드탭 .bar .sg.unk i{background:repeating-linear-gradient(135deg,#DADADF 0 3px,#F3F3F6 3px 6px)}
+.업로드탭 .bar i.unk, .업로드탭 .bar .sg.unk i{background:repeating-linear-gradient(135deg,var(--color-border) 0 3px,var(--color-bg) 3px 6px)}
 .업로드탭 .bar .sg.w{flex:1.7}
 .업로드탭 .bar .sg.unk span, .업로드탭 .bar .sg.none span{color:var(--color-text-hint)}
 .업로드탭 .mrow{padding:7px 0}
 .업로드탭 .mrow .btn.sm{min-width:88px}
-.업로드탭 .dot{width:9px; height:9px; border-radius:50%; background:#D1D1D6; flex-shrink:0; display:inline-block}
+.업로드탭 .dot{width:9px; height:9px; border-radius:50%; background:var(--color-text-faint); flex-shrink:0; display:inline-block}
 .업로드탭 .ok .dot{background:var(--color-accent)}
 .업로드탭 .fail .dot{background:var(--color-danger)}
-.업로드탭 .chk .dot{background:#F2C94C}
-.업로드탭 .unk .dot{background:#fff; box-shadow:inset 0 0 0 1.5px #C7C7CC}
-.업로드탭 .st.unk{color:var(--color-text-hint); background:#fff; box-shadow:inset 0 0 0 1px var(--color-border)}
+.업로드탭 .chk .dot{background:var(--color-warn-strong)}
+.업로드탭 .unk .dot{background:var(--color-surface); box-shadow:inset 0 0 0 1.5px var(--color-text-faint)}
+.업로드탭 .st.unk{color:var(--color-text-hint); background:var(--color-surface); box-shadow:inset 0 0 0 1px var(--color-border)}
 .업로드탭 .mrow.unk .mk, .업로드탭 .mrow.none .mk, .업로드탭 .mt tr.unk td.mk, .업로드탭 .mt tr.none td.mk{color:var(--color-text-sub)}
 .업로드탭 .mt td{padding:7px 12px; vertical-align:middle}
 .업로드탭 .mt td.mk .dot{margin-right:9px; vertical-align:1px}
 .업로드탭 .mt td.lkc .btn{min-width:96px}
 .업로드탭 .lk{flex-shrink:0; color:var(--color-accent-dark); font-weight:var(--weight-semibold); text-decoration:none}
 .ph-shell .업로드탭 .lk{min-height:32px; font-size:var(--font-sm); padding:0 11px}
-.업로드탭 .lk.off{color:var(--color-text-faint); background:#F2F2F4; border-color:var(--color-border-faint); box-shadow:none; pointer-events:none}
+.업로드탭 .lk.off{color:var(--color-text-faint); background:var(--color-border-faint); border-color:var(--color-border-faint); box-shadow:none; pointer-events:none}
 .업로드탭 .pcr .hd{grid-template-columns:40px 176px 74px 1fr 92px 18px; padding:10px 16px}
 .업로드탭 .pcr .th{width:40px; height:40px; border-radius:8px}
 .업로드탭 .pcr .tt{white-space:nowrap}
@@ -454,3 +454,37 @@ td.뺌칸{text-align:right}
 }
 .사진거름 .정렬[hidden]{display:none}
 .품절탭 .mt tr:last-child td.why{border-bottom:none}
+
+/* ══ 2판 (11/12) 재고 폰 — [검색][업체][선택] 한 줄 · 일자별 달력 · 판매중 켜기/끄기 ══ */
+.ph-shell > .속탭{margin:0 var(--space-2xl) var(--space-xs)}
+.ph-body .검색줄{display:flex; gap:6px; align-items:center}
+.ph-body .검색줄 > .inp{flex:1; min-width:0; height:44px; border-radius:16px}
+.ph-body .검색줄 .업체고름{width:auto}
+.ph-body .검색줄 .고름상자{height:44px; border-radius:16px; padding:0 11px; max-width:150px}
+.ph-body .검색줄 .고름상자:not(.걸림) .v, .ph-body .검색줄 .고름상자:not(.걸림) .화살{display:none}
+.고름상자 .ic{opacity:1; display:flex; color:var(--color-text-sub)}
+.고름상자 .ic .ico{width:20px; height:20px}
+.ph-body .검색줄 .업체고름 .펼침{right:0; left:auto; min-width:220px}
+.fchip.아이콘칩{padding:0 10px}
+.fchip.아이콘칩 .ico{width:18px; height:18px}
+.ph-card > .품절단추.스위치{font-size:0; width:52px; min-width:52px; height:30px; min-height:30px; padding:0; border-radius:15px; position:relative; border:0; background:var(--color-accent); margin-top:var(--space-sm)}
+.ph-card > .품절단추.스위치.warn{background:var(--color-border)}
+.ph-card > .품절단추.스위치::after{content:''; position:absolute; top:3px; left:25px; width:24px; height:24px; border-radius:50%; background:var(--color-surface); transition:left var(--dur-fast) var(--ease-out)}
+.ph-card > .품절단추.스위치.warn::after{left:3px}
+/* 입고 폰 — 판매단위·쿠팡 단위 프리셋 칩 · 규격 3칸씩 · 특성 접기 아이콘 */
+.ph-body .프리셋{display:flex; gap:var(--space-3xs); flex-wrap:wrap; margin-top:calc(var(--gap-ph-body) * -1 + 6px)}
+.ph-body .프리셋 .fchip{min-height:30px; padding:0 10px; font-size:var(--font-xs)}
+.ph-body .field > .stack{gap:var(--gap-ph-body)}
+.ph-body .seg{display:grid; grid-template-columns:repeat(3, 1fr)}
+.ph-body .seg button .ico{width:20px; height:20px; display:block; margin:0 auto}
+.ph-shell .fold .ico{width:20px; height:20px; color:var(--color-accent-dark); vertical-align:-4px}
+.ph-shell .fold .화살{margin-left:auto; display:flex; color:var(--color-text-muted); transition:transform var(--dur-fast) var(--ease-out)}
+.ph-shell .fold .화살 .ico{color:inherit}
+.ph-shell .fold .화살.열림{transform:rotate(180deg)}
+/* 품절 — 칩 줄 끝 돋보기 · 단추 속 선 아이콘 */
+.품절탭 .칩머리{display:flex; gap:6px; align-items:flex-start}
+.품절탭 .칩머리 > .칩자리{flex:1; min-width:0}
+.품절탭 .찾칸[hidden]{display:none}
+.품절탭 .찾칸{margin:6px 0 var(--space-sm)}
+.품절탭 .btn .ico, .btn.lk .ico, .btn.되돌 .ico{width:16px; height:16px; vertical-align:-3px}
+.ph-shell .품절탭 .btn.rd{min-width:40px; padding:0 8px}

@@ -37,8 +37,7 @@ window.ZG = window.ZG || {};
         ' <span class="r">' + 걸러진.length + '종</span>'
     }));
     // 목록칸만 갈면 위쪽 재입고 칸이 그대로 남는다 — 화면을 통째로 다시 그린다
-    줄.appendChild(목.선택단추(다시));
-    var 조각 = [줄];
+    var 조각 = [줄];   // 「선택」은 2판에서 검색줄 오른쪽 아이콘(폰목록)
     var 목록 = 만들기('div', { class: 'ph-list' });
     걸러진.slice(0, 상태.폰보임).forEach(function (요) { 목록.appendChild(목.폰카드(요, false)); });
     if (!걸러진.length) 목록.appendChild(만들기('div', { class: 'ph-card', text: '이 조건에 맞는 품목이 없습니다' }));
@@ -143,8 +142,8 @@ window.ZG = window.ZG || {};
     참조.목록칸 = null;
 
     // 🔴 「3주 내 소진」 카드를 안 낸다 — 우람님이 그 갈래를 통째로 빼셨다 (2026-09-14)
-    뿌리.appendChild(만들기('div', { class: 'field' }, [목.검색칸(목록다시)]));
-    뿌리.appendChild(목.업체찾기(전부, 다시));
+    // 2판 — 한 줄에 [검색][업체][선택]
+    뿌리.appendChild(만들기('div', { class: '검색줄' }, [목.검색칸(목록다시), 목.업체찾기(전부, 다시), 목.선택단추(다시)]));
     뿌리.appendChild(목.필터칩들(전부, 다시));
 
     참조.목록칸 = 만들기('div', { class: 'stack' });
@@ -178,8 +177,7 @@ window.ZG = window.ZG || {};
       return 입;
     }
     if (u.폰인가() && 상태.상세코드) return ZG.재고수정.폰상세머리();
-    var 요 = 목.요약글();
-    return { 제목: '재고', 뒤로: null, 왼: 요.왼, 오: 요.오 };
+    return { 제목: '재고', 뒤로: null, 왼: '', 오: '' };   // 오른쪽 위 요약 글은 뺀다 (11/12 우람님)
   }
 
   /* 입고 수정(05e)에서 저장·삭제 뒤 부른다 — 일자별을 보고 있을 때만 갈아끼운다 */

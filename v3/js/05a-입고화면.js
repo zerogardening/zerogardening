@@ -55,7 +55,7 @@ window.ZG = window.ZG || {};
       참조.규격단추.push(b);
       상자.appendChild(b);
     });
-    var 직접 = 만들기('button', { type: 'button', html: '직접입력<i>그 밖의 규격</i>' });
+    var 직접 = 만들기('button', { type: 'button', 'aria-label': '직접입력', html: 직접글() });
     직접.dataset.cm = '직접';
     직접.addEventListener('click', function () { 직접규격묻기(); });
     참조.규격단추.push(직접);
@@ -77,9 +77,10 @@ window.ZG = window.ZG || {};
       b.classList.toggle('on', 기본 || 직접켜짐);
       // 「화분묘 아님」은 그대로, 숫자 규격은 단추가 좁아 「15cm」로 줄여 쓴다
       if (직접켜짐) b.innerHTML = ZG.품목코드.규격이름(상태.규격cm).replace(/cm 포트$/, 'cm') + '<i>직접입력</i>';
-      else if (b.dataset.cm === '직접') b.innerHTML = '직접입력<i>그 밖의 규격</i>';
+      else if (b.dataset.cm === '직접') b.innerHTML = 직접글();
     });
   }
+  function 직접글() { return u.폰인가() ? u.아이콘('메모') : '직접입력<i>그 밖의 규격</i>'; }   // 폰 2판 — 연필 하나
 
   function 규격고름(cm) {
     상태.규격cm = cm;

@@ -65,7 +65,9 @@ window.ZG = window.ZG || {};
     var 위 = 만들기('div', { class: 'ph-top' }, [왼쪽, 오른]);
 
     var 조각 = [위];
-    if (정보.왼 || 정보.오) {
+    var 한줄 = 탭 === '체크' && !쓰는중;   // 2판 — 달은 아래 ‹ › 에 있어 「남은 일」만 제목 오른쪽에
+    if (한줄) 오른.appendChild(만들기('span', { class: '머리요약', html: 정보.오 || '' }));
+    else if (정보.왼 || 정보.오) {
       조각.push(만들기('div', { class: 'ph-sub' }, [
         만들기('span', { html: 정보.왼 || '' }), 만들기('span', { html: 정보.오 || '' })
       ]));
@@ -73,7 +75,7 @@ window.ZG = window.ZG || {};
 
     본문 = 만들기('div', { class: 'ph-body tight' });
     if (!쓰는중) {
-      var 탭줄 = 만들기('div', { class: 'toggle', style: 'height:36px' });
+      var 탭줄 = 만들기('div', { class: 'toggle 속탭', style: 'height:36px' });
       탭들.forEach(function (이름) {
         var b = 만들기('button', {
           type: 'button', class: 탭 === 이름 ? 'on' : '', text: 탭이름[이름], style: 'flex:1; padding:0'
@@ -106,6 +108,8 @@ window.ZG = window.ZG || {};
     var m = 지금모듈();
     if (!m.요약) return;
     var 정보 = m.요약();
+    var 머리요약 = 뿌리.querySelector('.ph-top .머리요약');
+    if (머리요약) 머리요약.innerHTML = 정보.오 || '';
     var 줄 = 뿌리.querySelector('.ph-sub');
     if (!줄) return;
     줄.children[0].innerHTML = 정보.왼 || '';

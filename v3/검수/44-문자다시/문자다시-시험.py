@@ -44,7 +44,7 @@ try:
                     (쪽.locator('.문카드', has_text='김다시').locator('.r1') if 폰 else 쪽.locator('tr', has_text='김다시').first).click()
                     쪽.wait_for_timeout(300)
             # ① 처음 보내기 → ② 그대로 다시 보내기 → ③ 수량 고쳐 다시 보내기
-            펼치기(); 쪽.locator('button:visible', has_text='💬 문자').first.click(); 쪽.wait_for_timeout(300)
+            펼치기(); 쪽.locator('.속 button:visible, .속판 button:visible', has_text=re.compile(r'^\s*문자\s*$')).first.click(); 쪽.wait_for_timeout(300)   # 11/12 2판 — 💬 이모지 → 말풍선 아이콘
             펼치기(); 쪽.locator('button:visible', has_text='다시 보내기').first.click(); 쪽.wait_for_timeout(300)
             펼치기(); 쪽.locator('button[aria-label="하나 늘리기"]:visible').first.click(); 쪽.wait_for_timeout(100)
             쪽.locator('button:visible', has_text='다시 보내기').first.click(); 쪽.wait_for_timeout(300)

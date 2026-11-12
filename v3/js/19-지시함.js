@@ -165,8 +165,7 @@ window.ZG = window.ZG || {};
   function 흐름그리기() {
     u.비우기(흐름칸);
     if (!담긴것.length) {
-      흐름칸.appendChild(만들기('div', { class: '지시-빈' , html:
-        '여기에 일감을 쌓아 두시면<br>맥이 켜질 때 알아서 해 두고 답장합니다.' }));
+      흐름칸.appendChild(만들기('div', { class: '지시-빈' }));   // 안내 글은 뺐다 (2판 11/12)
       return;
     }
     var 지난날 = '';
@@ -245,7 +244,7 @@ window.ZG = window.ZG || {};
       var s = (줄.내용 || {}).상태 || '대기';
       return s === '대기' || s === '하는중' || s === '허브로';
     }).length;
-    return n ? n + '건 기다리는 중' : '';
+    return n ? '대기 ' + n : '';
   }
 
   function 보냄() {
@@ -268,7 +267,7 @@ window.ZG = window.ZG || {};
     상태칸 = 만들기('span', { class: '상태' });
     var 뒤 = 만들기('button', { class: '지시-뒤', type: 'button', text: '‹', 'aria-label': '뒤로' });
     뒤.addEventListener('click', function () { location.href = 'index.html'; });
-    알림단추 = 만들기('button', { class: '지시-알림', type: 'button', text: '알림 켜기',
+    알림단추 = 만들기('button', { class: '지시-알림 아이콘단추 맨', type: 'button', html: u.아이콘('종'), 'aria-label': '알림 켜기', title: '알림 켜기',
                                   style: 'display:none' });
     알림단추.addEventListener('click', function () {
       알림단추.disabled = true;
@@ -289,7 +288,7 @@ window.ZG = window.ZG || {};
     흐름칸 = 만들기('div', { class: '지시-흐름' });
 
     입력칸 = 만들기('textarea', {
-      rows: '1', placeholder: '무엇을 해 둘까요',
+      rows: '1', placeholder: '지시',
       'aria-label': '지시 적기'
     });
     입력칸.addEventListener('input', function () {

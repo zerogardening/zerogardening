@@ -1,4 +1,4 @@
-/* 15d-견적탭 — 주문 화면 셸에 「주문 조회 · 견적 요청 · 고객 · 문자주문 · 주문실적」 다섯 칸을 단다 (5단계 §3 · 11단계 §4 · 16단계 §3-1 · 21단계 §6)
+/* 15d-견적탭 — 주문 화면 셸에 「주문 조회 · 문자주문 · 고객 · 견적 요청 · 주문실적」 다섯 칸을 단다 (5단계 §3 · 11단계 §4 · 16단계 §3-1 · 21단계 §6)
    08b 는 다시그리기() 안 두 줄만 바뀐다. 나머지 손질은 전부 여기서 한다.
    탭 상태는 메모리로만 갖는다 — 새로고침하면 주문 조회로 돌아온다. */
 window.ZG = window.ZG || {};
@@ -24,9 +24,9 @@ window.ZG = window.ZG || {};
   /* 폰은 390px 에 다섯 칸이라 짧은 이름을 쓴다 */
   var 폰이름 = { 주문: '조회', 견적: '견적', 고객: '고객', 문자: '문자', 실적: '실적' };
 
-  function 탭줄(폰) {
+  function 탭줄(폰) {   // 순서 조회·문자·고객·견적·실적 (11/12 우람님)
     var 줄 = 만들기('div', { class: 폰 ? 'subtabs' : 'pc-tabs', role: 'tablist' });
-    [['주문 조회', '주문'], ['견적 요청', '견적'], ['고객', '고객'], ['문자주문', '문자'], ['주문실적', '실적']].forEach(function (쌍) {
+    [['주문 조회', '주문'], ['문자주문', '문자'], ['고객', '고객'], ['견적 요청', '견적'], ['주문실적', '실적']].forEach(function (쌍) {
       var 켬 = 켜짐 === 쌍[1];
       var b = 만들기('button', {
         type: 'button', role: 'tab', text: 폰 ? 폰이름[쌍[1]] : 쌍[0],
@@ -66,6 +66,14 @@ window.ZG = window.ZG || {};
     if (켜짐 === '실적') return;   // 실적은 요약줄이 없다 — 요약카드가 본문 맨 위에 있다 (시안)
 
     var 요약 = 모듈.요약();
+    if (요약.짧게 != null) {   // 2판 — 날짜 줄이 따로 있어 요약은 제목 오른쪽 한 줄 (11/12)
+      var 있던 = document.querySelector('.ph-shell .ph-sub');
+      if (있던) 있던.remove();
+      var 위 = document.querySelector('.ph-shell .ph-top'), 칸 = 위 && 위.querySelector('.머리요약');
+      if (위 && !칸) 칸 = 위.appendChild(만들기('span', { class: '머리요약' }));
+      if (칸) 칸.innerHTML = 요약.짧게;
+      return;
+    }
     var 줄 = document.querySelector('.ph-shell .ph-sub');
     if (!줄) {
       줄 = 만들기('div', { class: 'ph-sub' });

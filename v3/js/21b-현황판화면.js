@@ -76,12 +76,13 @@ window.ZG = window.ZG || {};
 
   /* ── 조각 ── */
   function 흐름(수, 넓게) {
-    var 줄 = 만들기('div', { class: 'flow' + (넓게 ? ' wide' : '') });
+    var 줄 = 만들기('div', { class: 'flow' + (넓게 ? ' wide' : ' 단계칸들') });   // 폰 2판 — 큰 숫자 칸 넷
     자.단계들.forEach(function (s) {
       var 칸 = 만들기('div', {
         class: 'fs ' + 결[s] + (단계 === s ? ' on' : 단계 ? ' dim' : ''),
         role: 'button', tabindex: '0', 'aria-pressed': 단계 === s ? 'true' : 'false'
-      }, [만들기('div', { class: 'sg' }, [만들기('span', { class: 'nm', text: s }), 만들기('b', { text: String(수[s]) })])]);
+      }, 넓게 ? [만들기('div', { class: 'sg' }, [만들기('span', { class: 'nm', text: s }), 만들기('b', { text: String(수[s]) })])]
+            : [만들기('b', { text: String(수[s]) }), 만들기('span', { class: 'nm', text: s })]);
       칸.addEventListener('click', function () { 단계 = 단계 === s ? null : s; u.햅틱(); 그리기(); });
       칸.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); 칸.click(); } });
       줄.appendChild(칸);
@@ -118,7 +119,7 @@ window.ZG = window.ZG || {};
 
   function 카드(h) {
     var k = 결[h.단계], 급 = 판.급함.has(h.id), 열림 = !!펼친[h.id];
-    var 푸시 = 만들기('button', { type: 'button', class: 'btn sm push' + (급 ? ' on' : ''), text: 급 ? '급함 해제' : '급함 푸시' });
+    var 푸시 = 만들기('button', { type: 'button', class: 'btn sm push 종단추' + (급 ? ' on' : ''), html: u.아이콘('종'), 'aria-label': 급 ? '급함 해제' : '급함 푸시', title: 급 ? '급함 해제' : '급함 푸시' });   // 2판 — 종(켜면 빨강)
     푸시.addEventListener('click', function (e) { e.stopPropagation(); 급함누름(h); });
     var r1 = 만들기('div', { class: 'r1' }, [
       급 ? 만들기('span', { class: 'urg', text: '급함' }) : null,
@@ -188,7 +189,7 @@ window.ZG = window.ZG || {};
   }
 
   function 갱신칸(넓게) {
-    var 글 = 판 && 판.갱신 ? '갱신 ' + 월일(판.갱신.slice(0, 10)) + ' ' + 판.갱신.slice(11, 16) : '';
+    var 글 = 판 && 판.갱신 ? (넓게 ? '갱신 ' + 월일(판.갱신.slice(0, 10)) + ' ' : '') + 판.갱신.slice(11, 16) : '';   // 폰 2판 — 시각만
     var b = 만들기('button', { type: 'button', class: 넓게 ? 'btn sm rfb' : 'rf', html: 돌림, 'aria-label': '다시 읽기' });
     b.addEventListener('click', function () { u.햅틱(); 읽기(); });
     return 만들기('span', { class: 'upd' }, [document.createTextNode(글), b]);

@@ -31,13 +31,13 @@
 }
 .stat-준비중{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
 .stat-나감{background:var(--color-seg-bg); color:var(--color-text-muted); border-color:var(--color-border)}
-.stat-섞임{background:#fff6dd; color:#7a5b00; border-color:#eddca6}
+.stat-섞임{background:var(--color-warn-bg); color:var(--color-warn); border-color:var(--color-warn-border)}
 
 /* 서비스(무료) 품목 딱지 — 시안 09-동봉카드-기존느낌.html 값 그대로.
    인쇄되는 카드와 화면(표·폰 목록·상세)에서 같은 것을 쓴다 (6단계 설계 §2-6) */
 .svc{
-  display:inline-block; font-size:9.5px; font-weight:700; color:#7a5b00; background:#fff6dd;
-  border:1px solid #eddca6; border-radius:9px; padding:1px 7px; margin-left:5px; vertical-align:2px;
+  display:inline-block; font-size:9.5px; font-weight:700; color:var(--color-warn); background:var(--color-warn-bg);
+  border:1px solid var(--color-warn-border); border-radius:9px; padding:1px 7px; margin-left:5px; vertical-align:2px;
   white-space:nowrap;
 }
 
@@ -48,7 +48,7 @@
 }
 .cb.on{background:var(--color-accent); border-color:var(--color-accent-dark); position:relative}
 .cb.on::after{
-  content:'✓'; position:absolute; inset:0; color:#fff; font-size:11px; font-weight:700;
+  content:'✓'; position:absolute; inset:0; color:var(--color-on-accent); font-size:11px; font-weight:700;
   display:flex; align-items:center; justify-content:center; line-height:1;
 }
 
@@ -65,14 +65,14 @@
 /* PC 표 — 이름·전화·주소가 같은 줄을 한 덩어리로 */
 tr.gstart td{border-top:var(--border-width-thick) solid var(--color-border)}
 td.who{
-  vertical-align:top; background:#FAFAFC; border-right:var(--border-width) solid var(--color-border-faint);
+  vertical-align:top; background:var(--color-bg); border-right:var(--border-width) solid var(--color-border-faint);
   line-height:1.45;
 }
 td.who .n{font-size:var(--font-md); font-weight:var(--weight-bold); letter-spacing:-.02em}
 td.who .d{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
 td.who .cnt{font-size:var(--font-2xs); color:var(--color-text-hint); font-weight:var(--weight-semibold); margin-top:var(--space-xs)}
 tr.short td{background:var(--color-danger-bg)}
-tr.short td.who{background:#FFE9E7}
+tr.short td.who{background:var(--color-danger-bg)}
 td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(--weight-bold); margin-top:2px}
 
 /* 출고리스트 — 품목 밑 규격 */
@@ -95,7 +95,7 @@ td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(-
 .ph-card[role="button"]:active{transform:scale(.985)}
 
 /* 재고가 모자란 주문은 카드째 빨강 */
-.ph-card.short{background:var(--color-danger-bg); box-shadow:0 1px 3px rgba(0,0,0,.05), 0 0 0 1.5px var(--color-danger-border)}
+.ph-card.short{background:var(--color-danger-bg); box-shadow:0 1px 3px var(--shade-1), 0 0 0 1.5px var(--color-danger-border)}
 .ph-card.short .r0 .who{color:var(--color-danger)}
 .ph-card .warn{
   margin-top:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-danger);
@@ -103,7 +103,7 @@ td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(-
 }
 
 /* 재주문 표시 — 첫 주문이면 아예 그리지 않는다 */
-.star{font-size:var(--font-xs); font-weight:var(--weight-bold); color:#9A6B00; white-space:nowrap; letter-spacing:-.01em}
+.star{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-warn); white-space:nowrap; letter-spacing:-.01em}
 /* 품목이 2개를 넘을 때 나머지를 접어 표시 */
 .more{
   font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-accent-dark);
@@ -143,7 +143,7 @@ td .lack{font-size:var(--font-2xs); color:var(--color-danger); font-weight:var(-
 .totalbar{
   position:fixed; left:0; right:0; bottom:0; z-index:29;
   background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border);
-  box-shadow:0 -4px 14px rgba(0,0,0,.06);
+  box-shadow:0 -4px 14px var(--shade-1);
   padding:var(--space-lg) var(--space-2xl); display:flex; align-items:center; gap:var(--space-sm);
 }
 .totalbar .l{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
@@ -181,12 +181,12 @@ table.mini th{padding:var(--space-xs)}
 .headbtns{margin-left:auto; display:flex; gap:var(--space-sm); align-items:center}
 
 /* PC 팝업 창 */
-.pcscrim{position:fixed; inset:0; background:rgba(0,0,0,.34); z-index:60}
+.pcscrim{position:fixed; inset:0; background:var(--color-scrim); z-index:60}
 .pcsheet{
   position:fixed; z-index:61; top:8vh; left:50%; transform:translateX(-50%);
   width:min(760px, 92vw); max-height:80vh; overflow:auto;
   background:var(--color-bg); border-radius:var(--radius-lg);
-  box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+  box-shadow:0 22px 54px var(--shade-3), 0 0 0 1px var(--shade-1);
 }
 .pcsheet .hd{
   display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);
@@ -304,27 +304,27 @@ table.mini th{padding:var(--space-xs)}
 .encardframe{
   --s:.7053;
   width:calc(794px * var(--s)); height:calc(1123px * var(--s));
-  overflow:hidden; background:#fff; box-shadow:var(--shadow-panel, 0 6px 20px rgba(0,0,0,.12));
+  overflow:hidden; background:var(--color-surface); box-shadow:var(--shadow-panel, 0 6px 20px var(--shade-2));
   margin:0 auto var(--space-2xl);
 }
 .encardframe:last-child{margin-bottom:0}
 
 .encard{
-  width:794px; height:1123px; background:#fff;
+  width:794px; height:1123px; background:var(--color-surface);
   transform:scale(var(--s)); transform-origin:top left;
   padding:28px 40px 24px; display:flex; flex-direction:column; position:relative;
-  font-family:"Apple SD Gothic Neo","Helvetica Neue",sans-serif; color:#1a1a1a;
+  font-family:"Apple SD Gothic Neo","Helvetica Neue",sans-serif; color:var(--color-text);
   letter-spacing:-.01em;
 }
 
 /* 머리 — 로고 PNG + 태그라인. 받는 분·송장·영문 워드마크는 넣지 않는다(우람님 확정) */
-.encard .cp-head{text-align:center; padding-bottom:10px; border-bottom:1px solid #2F6B3A}
+.encard .cp-head{text-align:center; padding-bottom:10px; border-bottom:1px solid var(--color-accent-dark)}
 .encard .cp-head .lg{height:74px; display:flex; align-items:center; justify-content:center; overflow:hidden}
 .encard .cp-head .lg img{width:264px; display:block}
-.encard .cp-head .tag{font-size:14px; color:#888; letter-spacing:.8px; margin-top:2px}
+.encard .cp-head .tag{font-size:14px; color:var(--color-text-muted); letter-spacing:.8px; margin-top:2px}
 .encard .cp-title{
-  font-size:17px; font-weight:700; color:#2F6B3A; letter-spacing:1px;
-  padding:13px 0 8px; border-bottom:1px solid #d4e3d8; margin-bottom:12px;
+  font-size:17px; font-weight:700; color:var(--color-accent-dark); letter-spacing:1px;
+  padding:13px 0 8px; border-bottom:1px solid var(--color-accent-border); margin-bottom:12px;
 }
 
 /* ── 식물 자리 — 담긴 종수가 판을 정한다 ──
@@ -340,12 +340,12 @@ table.mini th{padding:var(--space-xs)}
 .encard .n5 > .plant:first-child{grid-column:1 / -1}   /* 5종은 첫 칸이 윗줄을 통으로 써 빈칸을 없앤다 */
 
 .encard .plant{
-  background:#fafbfa; border:1px solid #d4e3d8; border-left:4px solid #2F9E44;
+  background:var(--color-bg); border:1px solid var(--color-accent-border); border-left:4px solid var(--color-accent);
   border-radius:8px; padding:11px 15px; display:flex; flex-direction:column; min-height:0;
 }
-.encard .plant .ph{padding-bottom:7px; border-bottom:1px dashed #c8d8ce; flex:none}
-.encard .plant .nm{font-size:18px; font-weight:700; color:#2F6B3A; display:block; line-height:1.3}
-.encard .plant .sci{font-size:13px; font-style:italic; color:#666; display:block; margin-top:1px; line-height:1.3}
+.encard .plant .ph{padding-bottom:7px; border-bottom:1px dashed var(--color-accent-border); flex:none}
+.encard .plant .nm{font-size:18px; font-weight:700; color:var(--color-accent-dark); display:block; line-height:1.3}
+.encard .plant .sci{font-size:13px; font-style:italic; color:var(--color-text-sub); display:block; margin-top:1px; line-height:1.3}
 
 /* 🔴 값은 말줄임으로 잘라내지 않는다. 라벨은 안 접고 값만 자기 자리에서 줄바꿈한다.
    빈 값은 줄 자체를 그리지 않고, 특이사항은 별도 상자가 아니라 이 표에서 한 줄을
@@ -362,18 +362,18 @@ table.mini th{padding:var(--space-xs)}
 .encard .traits .t{display:flex; align-items:baseline; gap:5px; min-width:0; line-height:1.35}
 .encard .traits .t.wide{grid-column:1 / -1; margin-top:3px}
 .encard .traits i{font-style:normal; width:16px; text-align:center; flex:none}
-.encard .traits .l{color:#666; font-weight:700; font-size:12px; flex:none; white-space:nowrap}
+.encard .traits .l{color:var(--color-text-sub); font-weight:700; font-size:12px; flex:none; white-space:nowrap}
 .encard .traits .v{
-  color:#1a1a1a; font-weight:600; min-width:0; word-break:keep-all;
+  color:var(--color-text); font-weight:600; min-width:0; word-break:keep-all;
   overflow-wrap:break-word; white-space:nowrap;
 }
 .encard .traits .t.wide .v{white-space:normal}
 /* 값의 설명 부분은 괄호를 버리고 아랫줄에 작게 — 줄 중간에서 갈라지지 않는다 */
 .encard .traits .v small{
-  display:block; font-size:.8em; color:#666; font-weight:500;
+  display:block; font-size:.8em; color:var(--color-text-sub); font-weight:500;
   line-height:1.2; margin-top:1px; white-space:nowrap;
 }
-.encard .traits .t.wide .v{font-weight:500; color:#3a3a3a}
+.encard .traits .t.wide .v{font-weight:500; color:var(--color-text)}
 
 /* 종수별 크기 — 1·2·3종은 3종 기준 한 벌로 통일한다 */
 .encard .n1 .plant, .encard .n2 .plant, .encard .n3 .plant{padding:16px 20px}
@@ -399,15 +399,15 @@ table.mini th{padding:var(--space-xs)}
    빈 칸이라, 종이가 꽉 차는 주문에서는 스스로 좁아져 안내 말씀이 종이 밖으로 밀려나지 않는다 */
 .encard .cp-gap{flex:0 1 34px; min-height:14px}
 .encard .cp-bottom{flex:none}
-.encard .thanks{text-align:center; font-size:20px; font-weight:600; color:#2F6B3A; letter-spacing:1px}
-.encard .thanks small{display:block; font-size:15px; color:#555; font-weight:500; margin-top:3px; letter-spacing:0}
-.encard .memo{margin-top:9px; padding-top:9px; border-top:1px dashed #d4d8d4}
-.encard .memo .t{font-size:14px; font-weight:700; color:#2F6B3A; letter-spacing:1px; margin-bottom:4px}
+.encard .thanks{text-align:center; font-size:20px; font-weight:600; color:var(--color-accent-dark); letter-spacing:1px}
+.encard .thanks small{display:block; font-size:15px; color:var(--color-text-sub); font-weight:500; margin-top:3px; letter-spacing:0}
+.encard .memo{margin-top:9px; padding-top:9px; border-top:1px dashed var(--color-text-faint)}
+.encard .memo .t{font-size:14px; font-weight:700; color:var(--color-accent-dark); letter-spacing:1px; margin-bottom:4px}
 /* 안내 말씀 본문만 손글씨다. 인사말·식물 정보는 고딕 그대로.
    손글씨는 획이 가늘어 같은 크기면 작아 보이므로 한 단계 키우고 줄 간격을 넓혔다 */
 .encard .memo p{
   font-family:'나눔바른펜',"Apple SD Gothic Neo",sans-serif;
-  font-size:15.5px; line-height:1.68; color:#333; letter-spacing:0;
+  font-size:15.5px; line-height:1.68; color:var(--color-text); letter-spacing:0;
 }
 
 /* ══ 1종·2종만 — 남던 아래 여백을 위쪽 사이사이로 나눠 보낸다 (2026-08-05 우람님).
@@ -436,7 +436,7 @@ table.mini th{padding:var(--space-xs)}
 /* 종이와 송장을 짝짓는 출력번호 */
 .encard .enno{
   position:absolute; right:16px; bottom:8px;
-  font-size:12px; color:#b0b3b0; font-variant-numeric:tabular-nums;
+  font-size:12px; color:var(--color-text-hint); font-variant-numeric:tabular-nums;
 }
 
 /* 폰에서는 창이 좁다. 배율만 줄여 얹는다 — 안이 다시 짜이지 않으니 인쇄와 같은 그림이다 */
@@ -519,7 +519,7 @@ select.inp.sm{height:34px; font-size:var(--font-md)}
   border:var(--border-width) solid transparent;
 }
 .st::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:currentColor}
-.st.wait{background:#FFF7E0; color:#8A6100; border-color:#F0DFAE}
+.st.wait{background:var(--color-warn-bg); color:var(--color-warn); border-color:var(--color-warn-border)}
 .st.done{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
 .st.cancel{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
 
@@ -780,7 +780,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .safe{
   display:inline-block; margin-top:var(--space-4xs);
   padding:var(--pad-tag); border-radius:var(--radius-badge);
-  background:#FFF7E0; color:#8A6100; border:var(--border-width) solid #F0DFAE;
+  background:var(--color-warn-bg); color:var(--color-warn); border:var(--border-width) solid var(--color-warn-border);
   font-family:var(--font-family); font-size:var(--font-3xs); font-weight:var(--weight-bold); white-space:nowrap;
 }
 /* 손등록 — 주문이 아직 없는 사람 */
@@ -861,11 +861,11 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 
 /* ══ 문자주문 (16단계 · 시안 16-문자주문-macA) ══
    🔴 전부 .문자주문 아래에 가둔다 — .cols .qty .cal .fx .항목 이 흔한 이름이라 주문 조회 화면과 부딪친다 */
-.문자주문 .st.saved{background:#EEF3FB; color:#3A5A8C; border-color:#CBD8EC}
+.문자주문 .st.saved{background:var(--color-info-bg); color:var(--color-info); border-color:var(--color-info-border)}
 .문자주문 .st.saved::before{background:transparent; box-shadow:inset 0 0 0 1.5px currentColor}
 .문자주문 .st .no{font-family:var(--font-mono); font-weight:var(--weight-bold); margin-left:2px}
 
-.문자주문 .inp.need{border-color:var(--color-danger); background:var(--color-danger-bg); box-shadow:0 0 0 3px rgba(215,0,21,.10)}
+.문자주문 .inp.need{border-color:var(--color-danger); background:var(--color-danger-bg); box-shadow:0 0 0 3px var(--color-danger-bg)}
 .문자주문 .ph-save:disabled{opacity:.4; box-shadow:none}
 .문자주문 .btn.main:disabled{box-shadow:none}
 .문자주문 .btn:disabled{opacity:.4}
@@ -918,7 +918,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .말풍선틀 .to{font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-semibold); text-align:center; margin-bottom:var(--space-md)}
 .문자주문 .말풍선틀 .to b{color:var(--color-text); font-family:var(--font-mono)}
 .문자주문 .말풍선{
-  white-space:pre-wrap; background:#E9E9EB; color:var(--color-text); border-radius:18px 18px 18px 5px;
+  white-space:pre-wrap; background:var(--color-border); color:var(--color-text); border-radius:18px 18px 18px 5px;
   padding:11px 14px; font-size:var(--font-md); line-height:1.5; font-weight:var(--weight-medium);
   max-width:88%; font-variant-numeric:tabular-nums;
 }
@@ -939,7 +939,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .card .cal .d{font-size:var(--font-sm)}
 .문자주문 .cal .d{
   aspect-ratio:1/1; border-radius:var(--radius-md); background:var(--color-surface); cursor:pointer;
-  box-shadow:0 0 0 1px rgba(0,0,0,.05); border:none; font-family:inherit;
+  box-shadow:0 0 0 1px var(--shade-1); border:none; font-family:inherit;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-4xs);
   font-size:var(--font-md); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums; color:var(--color-text);
 }
@@ -980,11 +980,11 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .쓸줄 > .쓸단추{visibility:hidden}
 .문자주문 .쓸줄:has(> .ph-card[style*="translateX"]) > .쓸단추{visibility:visible}
 .문자주문 .쓸단추 button{
-  width:76px; border:none; padding:0; font-family:inherit; cursor:pointer; color:#fff; background:var(--color-danger);
+  width:76px; border:none; padding:0; font-family:inherit; cursor:pointer; color:var(--color-on-accent); background:var(--color-danger);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:var(--space-4xs); -webkit-tap-highlight-color:transparent; transition:filter .12s ease;
 }
-.문자주문 .쓸단추 button.ship{background:var(--color-primary, #2F9E44)}
+.문자주문 .쓸단추 button.ship{background:var(--color-primary, var(--color-accent))}
 .문자주문 .쓸단추 button:active{filter:brightness(.86)}
 .문자주문 .쓸단추 button .ic{width:23px; height:23px; display:block}
 .문자주문 .쓸단추 button .ic svg{width:100%; height:100%; display:block}
@@ -1005,8 +1005,8 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 td.tm{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-sub)}
 .문자주문 td.fx{color:var(--color-text-muted); font-weight:var(--weight-bold); font-size:var(--font-lg); text-align:center}
 .문자주문 td .btn.꽉{display:block; width:100%; margin-top:4px}
-.문자주문 tr.펼침 > td{background:#FAFAFB}
-.문자주문 tr.속줄 > td{background:#FAFAFB; padding:0 10px 14px}
+.문자주문 tr.펼침 > td{background:var(--color-bg)}
+.문자주문 tr.속줄 > td{background:var(--color-bg); padding:0 10px 14px}
 .문자주문 tr.속줄.올림 > td{background:var(--color-accent-bg)}
 .문자주문 tr.올림머리 > td{background:var(--color-accent-bg)}
 .문자주문 .속판{display:flex; flex-direction:column; gap:var(--space-sm); padding:var(--space-md) var(--space-lg); background:var(--color-surface); border:var(--border-width) solid var(--color-border-faint); border-radius:var(--radius-md)}
@@ -1027,7 +1027,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 /* 발송완료 문자 (16단계-2 · 시안 16-문자주문-발송완료-macA) — .송장·.보낸표·td.상태칸 이 맨이름으로 새면 주문 조회와 부딪친다 */
 .문자주문 .st.ship{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent)}
 .문자주문 .st.ship::before{background:var(--overlay-strong)}
-.문자주문 .송장{display:flex; flex-direction:column; gap:3px; margin-top:var(--space-md); padding:var(--space-sm) var(--space-md); background:#F5F5F7; border-radius:var(--radius-md)}
+.문자주문 .송장{display:flex; flex-direction:column; gap:3px; margin-top:var(--space-md); padding:var(--space-sm) var(--space-md); background:var(--color-bg); border-radius:var(--radius-md)}
 .문자주문 .송장 .줄{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm)}
 .문자주문 .송장 .사{color:var(--color-text-sub); font-weight:var(--weight-semibold); white-space:nowrap}
 .문자주문 .송장 .번{font-family:var(--font-mono); font-weight:var(--weight-bold); font-size:var(--font-md); letter-spacing:.01em}
@@ -1066,17 +1066,17 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
   padding:var(--space-lg); display:flex; flex-direction:column; gap:var(--space-sm);
 }
 .askbox .지울주문 .큰{font-size:var(--font-xl); font-weight:var(--weight-bold); color:var(--color-danger); letter-spacing:-.02em; line-height:1.35}
-.askbox .지울주문 .건{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text); background:#fff; border-radius:var(--radius-sm); padding:var(--space-sm) var(--space-md); border:1px solid var(--color-danger-border)}
+.askbox .지울주문 .건{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-text); background:var(--color-surface); border-radius:var(--radius-sm); padding:var(--space-sm) var(--space-md); border:1px solid var(--color-danger-border)}
 .askbox .지울주문 .건 .no{font-family:var(--font-mono); font-weight:700; color:var(--color-danger)}
 .askbox .지울주문 .건 b{margin-left:auto; font-variant-numeric:tabular-nums}
 
 /* ── 18 예약주문 (18단계 · 시안 18b) — .dn .예약머리 .구역머리 가 흔한 이름이라 .문자주문 아래에 가둔다 ── */
-.문자주문 .st.resv{background:#F3EFFA; color:#5F3DA0; border-color:#DCD0F0}
-.문자주문 .st.resv.due{background:#F76707; color:#fff; border-color:#E8590C}
-.문자주문 .st.resv.due::before{background:rgba(255,255,255,.85)}
-.문자주문 .st.resv.미정{background:#fff; color:#5F3DA0; border:1.5px dashed #A992D6}
-.문자주문 .dn{font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold); color:#5F3DA0; white-space:nowrap}
-.문자주문 .dn.due{color:#C2410C}
+.문자주문 .st.resv{background:var(--color-purple-bg); color:var(--color-purple); border-color:var(--color-purple-border)}
+.문자주문 .st.resv.due{background:var(--color-orange); color:var(--color-on-accent); border-color:var(--color-orange)}
+.문자주문 .st.resv.due::before{background:var(--overlay-mid)}
+.문자주문 .st.resv.미정{background:var(--color-surface); color:var(--color-purple); border:1.5px dashed var(--color-purple)}
+.문자주문 .dn{font-family:var(--font-mono); font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-purple); white-space:nowrap}
+.문자주문 .dn.due{color:var(--color-orange)}
 .문자주문 .문카드 .r1 .dn{margin-left:auto}
 .문자주문 .문카드 .nm.tel{white-space:nowrap; font-size:var(--font-lg)}
 .문자주문 .btn.잠김:disabled{opacity:1; color:var(--color-text-hint); background:var(--color-seg-bg); box-shadow:none}
@@ -1096,7 +1096,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
   border:var(--border-width) solid var(--color-border); box-shadow:var(--shadow-btn);
   font-size:var(--font-sm); font-weight:var(--weight-semibold);
 }
-.문자주문 .예약고름 button.on{background:#5F3DA0; color:#fff; border-color:#4B2F82; box-shadow:0 1px 2px rgba(75,47,130,.35)}
+.문자주문 .예약고름 button.on{background:var(--color-purple); color:var(--color-on-accent); border-color:var(--color-purple); box-shadow:0 1px 2px var(--color-purple-bg)}
 .ph-shell .문자주문 .예약고름 button{height:42px; font-size:var(--font-lg)}
 .문자주문 .예약줄{display:flex; gap:var(--space-sm); align-items:center}
 .문자주문 .예약줄 .예약고름{flex:1}
@@ -1104,16 +1104,16 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .문자주문 .날짜칸{display:flex; gap:var(--space-sm); align-items:center}
 .문자주문 .날짜칸 .inp{flex:1; min-width:0; cursor:pointer}
 .문자주문 .속판 .날짜칸 .inp{height:30px; font-size:var(--font-md); line-height:28px}
-.문자주문 .날짜칸 .inp.고름{border-color:#5F3DA0; box-shadow:0 0 0 3px rgba(95,61,160,.15)}
-.문자주문 .날짜칸 .inp.정함{color:#5F3DA0; font-weight:var(--weight-bold); background:#F8F5FD; border-color:#DCD0F0}
-.문자주문 .날짜판{background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-panel), 0 0 0 1px rgba(0,0,0,.06); padding:var(--space-md)}
+.문자주문 .날짜칸 .inp.고름{border-color:var(--color-purple); box-shadow:0 0 0 3px var(--color-purple-bg)}
+.문자주문 .날짜칸 .inp.정함{color:var(--color-purple); font-weight:var(--weight-bold); background:var(--color-bg); border-color:var(--color-purple-border)}
+.문자주문 .날짜판{background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-panel), 0 0 0 1px var(--shade-1); padding:var(--space-md)}
 .문자주문 .날짜판 .calhd{gap:var(--space-lg); margin-bottom:var(--space-sm)}
 .문자주문 .날짜판 .calhd .m{font-size:var(--font-lg)}
 .문자주문 .날짜판 .calhd button{width:28px; height:28px; font-size:var(--font-md)}
 .문자주문 .날짜판 .cal .d{aspect-ratio:auto; height:32px; font-size:var(--font-sm)}
 .ph-shell .문자주문 .날짜판 .cal .d{height:36px; font-size:var(--font-md)}
 .문자주문 .cal .d.지난{color:var(--color-text-hint); background:transparent; box-shadow:none; cursor:default}
-.문자주문 .날짜판 .cal .d.on{background:#5F3DA0; color:#fff; box-shadow:none}
+.문자주문 .날짜판 .cal .d.on{background:var(--color-purple); color:var(--color-on-accent); box-shadow:none}
 .문자주문 .날짜판 .cal .d.today{box-shadow:0 0 0 2px var(--color-accent)}
 
 .문자주문 td .dn{display:block; margin-top:1px}
@@ -1125,19 +1125,19 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
   body.문자인쇄중 > *:not(.doc문자){display:none !important}
   body.문자인쇄중 > .doc문자{
     display:block !important; max-width:none; margin:0; padding:14mm 12mm;
-    font-family:inherit; color:#111;
+    font-family:inherit; color:var(--color-text);
   }
   @page{margin:0}
   .doc문자 h2{font-size:20px; margin:0 0 4px}
-  .doc문자 .dmeta{display:flex; font-size:12px; color:#555; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid #ccc}
+  .doc문자 .dmeta{display:flex; font-size:12px; color:var(--color-text-sub); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--color-text-faint)}
   .doc문자 .dmeta .r{margin-left:auto}
   .doc문자 table{width:100%; border-collapse:collapse; font-size:12px}
-  .doc문자 th, .doc문자 td{border-bottom:1px solid #ddd; padding:6px 8px; text-align:left}
+  .doc문자 th, .doc문자 td{border-bottom:1px solid var(--color-border); padding:6px 8px; text-align:left}
   .doc문자 th.r, .doc문자 td.r{text-align:right; font-variant-numeric:tabular-nums}
-  .doc문자 tr.dgrp td{background:#F4F4F6; font-weight:700; border-top:2px solid #999}
+  .doc문자 tr.dgrp td{background:var(--color-bg); font-weight:700; border-top:2px solid var(--color-text-hint)}
   .doc문자 tr.dgrp .r{float:right; font-weight:600}
-  .doc문자 tfoot td{border-top:2px solid #333; border-bottom:none; padding-top:10px}
-  .doc문자 .dacct{margin-top:16px; font-size:12px; color:#333}
+  .doc문자 tfoot td{border-top:2px solid var(--color-text); border-bottom:none; padding-top:10px}
+  .doc문자 .dacct{margin-top:16px; font-size:12px; color:var(--color-text)}
 }
 
 /* ── 주문조회 합계 줄 (17단계 §4) ── */
@@ -1146,7 +1146,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .합계띠 b{color:var(--color-text); font-size:var(--font-xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
 .합계띠 .칸.돈 b{color:var(--color-accent-dark); font-size:var(--font-2xl)}
 .합계띠 .점{color:var(--color-text-faint)}
-.table-card .합계띠{padding:var(--space-lg) var(--space-lg) var(--space-md); border-top:var(--border-width-thick) solid var(--color-border); margin-top:var(--space-xs); background:#FAFAFC}
+.table-card .합계띠{padding:var(--space-lg) var(--space-lg) var(--space-md); border-top:var(--border-width-thick) solid var(--color-border); margin-top:var(--space-xs); background:var(--color-bg)}
 .ph-body .합계띠{justify-content:space-between; gap:var(--space-sm); background:var(--color-surface); border-radius:var(--radius-xl); padding:var(--space-md) var(--space-lg); box-shadow:var(--shadow-card); font-size:var(--font-xs)}
 .ph-body .합계띠 b{font-size:var(--font-lg)}
 .ph-body .합계띠 .칸.돈 b{font-size:var(--font-xl)}
@@ -1154,13 +1154,13 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .ph-body .합계띠 .칸.돈{align-items:flex-end}
 
 /* ── 18b ② 주문탭 → 예약 (시안 18b ③) — .넘김 은 주문 조회 화면, 팝업은 body 에 붙어 .askbox.넘김창 아래로 가둔다 ── */
-.문자주문 .옴{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:#EEF3FB; color:#3A5A8C; border:var(--border-width) solid #CBD8EC}
-.btn.넘김{color:#5F3DA0; border-color:#CDBFE8}
+.문자주문 .옴{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:var(--color-info-bg); color:var(--color-info); border:var(--border-width) solid var(--color-info-border)}
+.btn.넘김{color:var(--color-purple); border-color:var(--color-purple-border)}
 .btn.넘김:disabled{opacity:.4; color:var(--color-text-sub); border-color:var(--color-border)}
 .btn.넘김큰{width:100%; min-height:50px; font-size:var(--font-lg); font-weight:var(--weight-bold); border-radius:var(--radius-xl)}
 .askbox.넘김창 .넘김목록{display:flex; flex-direction:column; gap:var(--space-sm)}
 .askbox.넘김창 .넘김목록.넘침{max-height:340px; overflow-y:auto}
-.askbox.넘김창 .넘김건{background:#FAFAFC; border:var(--border-width) solid var(--color-border-faint); border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg); display:flex; flex-direction:column; gap:var(--space-xs)}
+.askbox.넘김창 .넘김건{background:var(--color-bg); border:var(--border-width) solid var(--color-border-faint); border-radius:var(--radius-md); padding:var(--space-md) var(--space-lg); display:flex; flex-direction:column; gap:var(--space-xs)}
 .askbox.넘김창 .넘김건 .누구{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-md)}
 .askbox.넘김창 .넘김건 .누구 b{font-size:var(--font-lg); letter-spacing:-.02em}
 .askbox.넘김창 .넘김건 .누구 .t{font-family:var(--font-mono); font-size:var(--font-xs); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
@@ -1170,7 +1170,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .askbox.넘김창 .넘김건 .줄 .q{margin-left:auto; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
 .askbox.넘김창 .넘김건 .합{display:flex; justify-content:space-between; border-top:var(--border-width) solid var(--color-border-faint); padding-top:var(--space-xs); margin-top:var(--space-3xs); font-size:var(--font-sm); color:var(--color-text-sub); font-weight:var(--weight-semibold)}
 .askbox.넘김창 .넘김건 .합 b{color:var(--color-text); font-size:var(--font-lg); font-variant-numeric:tabular-nums}
-.askbox.넘김창 .결과줄{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:#5F3DA0; background:#F3EFFA; border-radius:var(--radius-sm); padding:var(--space-sm) var(--space-md)}
+.askbox.넘김창 .결과줄{display:flex; align-items:center; gap:var(--space-sm); font-size:var(--font-sm); font-weight:var(--weight-semibold); color:var(--color-purple); background:var(--color-purple-bg); border-radius:var(--radius-sm); padding:var(--space-sm) var(--space-md)}
 .askbox.넘김창.폰 .결과줄{font-size:var(--font-md)}
 .askbox.넘김창.폰 .넘김건 .줄{font-size:var(--font-lg)}
 .askbox.넘김창.폰 .예약고름 button{height:42px; font-size:var(--font-lg)}
@@ -1194,7 +1194,7 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .확인줄 .k{display:inline-block; width:38px; color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .확인줄 .v{color:var(--color-text-sub)}
 .확인줄.맞음{background:var(--color-accent-bg); color:var(--color-accent-dark)}
-.확인줄.비교안됨{background:#FFF7E0; color:#8A6100; box-shadow:inset 0 0 0 1px #F0DFAE}
+.확인줄.비교안됨{background:var(--color-warn-bg); color:var(--color-warn); box-shadow:inset 0 0 0 1px var(--color-warn-border)}
 .확인줄.안뜸{background:var(--color-danger-bg); color:var(--color-danger); box-shadow:inset 0 0 0 1px var(--color-danger-border)}
 /* 33단계 — 주소 → 상세 → 확인줄 위아래 · 찾기 단추는 라벨 오른쪽 · 붙여넣기 · 무료배송 */
 .주소덩이{display:flex; flex-direction:column; gap:var(--space-sm); min-width:0}
@@ -1203,14 +1203,14 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 .ph-body .btn.붙단추, .문카드 .btn.붙단추{width:100%; min-height:44px; font-size:var(--font-lg)}
 .btn.무료.켬{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent-dark)}
 .미확인{display:inline-flex; align-items:center; gap:4px; padding:var(--pad-chip); border-radius:var(--radius-badge); margin-left:8px; vertical-align:middle;
-  font-size:var(--font-2xs); font-weight:var(--weight-bold); background:#FFF0E3; color:#C2410C; border:1px solid #F8C9A0; white-space:nowrap}
-.미확인::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:#E8590C}
+  font-size:var(--font-2xs); font-weight:var(--weight-bold); background:var(--color-warn-bg); color:var(--color-orange); border:1px solid var(--color-orange-border); white-space:nowrap}
+.미확인::before{content:''; width:var(--dot-size); height:var(--dot-size); border-radius:50%; background:var(--color-orange)}
 .미확인[hidden]{display:none}
-.btn.주의{background:#E8590C; color:#fff; border-color:#C94C09; font-weight:var(--weight-bold)}
+.btn.주의{background:var(--color-orange); color:var(--color-on-accent); border-color:var(--color-orange); font-weight:var(--weight-bold)}
 .askbox.주소창{width:min(540px, calc(100vw - 40px))}
 .대조{display:flex; flex-direction:column; gap:var(--space-sm)}
 .대조 .줄{display:grid; grid-template-columns:64px 1fr; gap:var(--space-md); align-items:baseline;
-  padding:var(--space-md) var(--space-lg); border-radius:var(--radius-md); background:#F7F7F9; border:1px solid var(--color-border-faint)}
+  padding:var(--space-md) var(--space-lg); border-radius:var(--radius-md); background:var(--color-bg); border:1px solid var(--color-border-faint)}
 .대조 .줄 .k{font-size:var(--font-xs); font-weight:var(--weight-bold); color:var(--color-text-muted); white-space:nowrap}
 .대조 .줄 .v{font-size:var(--font-lg); font-weight:var(--weight-semibold); color:var(--color-text); line-height:1.45; word-break:keep-all; overflow-wrap:anywhere}
 .대조 .줄 .v small{display:block; font-size:var(--font-xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px}
@@ -1228,11 +1228,11 @@ tr.sum td{border-top:var(--border-width) solid var(--color-border); font-weight:
 
 /* ── 옵션이 품목인 상품 (21단계 · 시안 20) ──
    목록 쪽: 짝 전엔 노랑 옵션(.optw)·「짝 대기」, 짝 후엔 회색 보조줄(.opts) */
-.optw{display:inline-block; margin-top:3px; background:#FFF2B8; color:#6E4A00; font-size:var(--font-sm); font-weight:var(--weight-bold); padding:1px 7px; border-radius:4px; line-height:1.45; word-break:keep-all}
+.optw{display:inline-block; margin-top:3px; background:var(--color-warn-border); color:var(--color-warn); font-size:var(--font-sm); font-weight:var(--weight-bold); padding:1px 7px; border-radius:4px; line-height:1.45; word-break:keep-all}
 .optw .k{font-weight:var(--weight-semibold); opacity:.7; margin-right:4px}
 .opts{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:2px; word-break:keep-all}
 .opts::before{content:'옵션 · '; color:var(--color-text-hint)}
-td.code .wait{display:inline-flex; align-items:center; margin-top:3px; font-family:var(--font-family); font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:#FFF8E6; color:#9A6400; border:var(--border-width) solid #F2DFA8}
+td.code .wait{display:inline-flex; align-items:center; margin-top:3px; font-family:var(--font-family); font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:var(--color-warn-bg); color:var(--color-warn); border:var(--border-width) solid var(--color-warn-border)}
 td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .oline .l{min-width:0; word-break:keep-all; overflow-wrap:anywhere}
 .ph-card .optw{font-size:var(--font-md)}
@@ -1251,7 +1251,7 @@ td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-m
   display:grid; grid-template-columns:300px 1fr; gap:var(--space-xl); align-items:center; line-height:normal;
   font-size:var(--font-md); color:var(--color-text); font-weight:normal;
   padding:var(--space-md) var(--space-lg); margin-left:var(--space-xl);
-  border:none; border-left:3px solid #F2DFA8; background:#FFFCF3; border-radius:0 var(--radius-md) var(--radius-md) 0;
+  border:none; border-left:3px solid var(--color-warn-border); background:var(--color-warn-bg); border-radius:0 var(--radius-md) var(--radius-md) 0;
 }
 .pcsheet.dlv .pblk .orow + .orow{margin-top:var(--space-xs)}
 .pcsheet.dlv .pblk .orow.done{border-left-color:var(--color-accent-border); background:var(--color-accent-bg)}
@@ -1265,11 +1265,11 @@ td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-m
 .pcsheet.dlv .orow .pc2{font-family:var(--font-mono); font-size:var(--font-sm); font-weight:var(--weight-bold); color:var(--color-accent-dark); white-space:nowrap}
 .pcsheet.dlv .orow .pn{font-size:var(--font-md); font-weight:var(--weight-semibold); white-space:nowrap}
 .pcsheet.dlv .lk{background:none; border:none; padding:0; cursor:pointer; font:inherit; font-size:var(--font-2xs); color:var(--color-accent-dark); font-weight:var(--weight-semibold); white-space:nowrap}
-.pcsheet.dlv .ip{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:#EEF3FB; color:#3A5A8C; border:var(--border-width) solid #CBD8EC; white-space:nowrap}
-.pcsheet.dlv .ln{font-size:var(--font-2xs); color:#9A6400; font-weight:var(--weight-semibold); white-space:nowrap}
+.pcsheet.dlv .ip{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:0 7px; line-height:18px; border-radius:var(--radius-badge); background:var(--color-info-bg); color:var(--color-info); border:var(--border-width) solid var(--color-info-border); white-space:nowrap}
+.pcsheet.dlv .ln{font-size:var(--font-2xs); color:var(--color-warn); font-weight:var(--weight-semibold); white-space:nowrap}
 .pcsheet.dlv .orow.done .ln{color:var(--color-text-muted)}
 .pcsheet.dlv .oldnote{margin:0 0 var(--space-sm) var(--space-xl); display:flex; align-items:center; gap:var(--space-sm);
-  font-size:var(--font-xs); font-weight:var(--weight-semibold); color:#9A6400; background:#FFF8E6; border:var(--border-width) dashed #E8C873; border-radius:var(--radius-md); padding:var(--space-sm) var(--space-lg)}
+  font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-warn); background:var(--color-warn-bg); border:var(--border-width) dashed var(--color-warn-strong); border-radius:var(--radius-md); padding:var(--space-sm) var(--space-lg)}
 .pcsheet.dlv .oldnote .cd{font-family:var(--font-mono); font-weight:var(--weight-bold)}
 /* 옵션 줄 안의 품목 카드는 시안처럼 한 줄(찾기칸 + 화분 사이즈)로 눕힌다 — 08c 카드를 그대로 빌려 쓰므로 모양만 여기서 */
 .pcsheet.dlv .orow .itemcard{flex-direction:row; align-items:flex-start; padding:var(--space-xs) var(--space-sm); gap:var(--space-sm)}
@@ -1293,7 +1293,7 @@ td.code .orig{display:block; font-size:var(--font-2xs); color:var(--color-text-m
 /* ── 21 주문조회 날짜·마켓 ── (시안 21-주문실적-macA) */
 .mall .md, .fchip .md, .주문실적 .md{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:4px; flex-shrink:0}
 .fchip .md{width:8px; height:8px; margin-right:5px}
-.fchip.on .md{box-shadow:0 0 0 1.5px #fff}
+.fchip.on .md{box-shadow:0 0 0 1.5px var(--color-surface)}
 .fchip.zero{opacity:.45}
 .hscroll{display:flex; gap:var(--space-xs); flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; margin-right:-18px; padding:1px 18px 2px 0}
 .hscroll::-webkit-scrollbar{display:none}
@@ -1335,9 +1335,9 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .legend{display:flex; flex-wrap:wrap; gap:var(--space-2xs); padding:0 var(--space-sm) var(--space-sm)}
 .주문실적 .mall.범례{background:transparent; border:none; padding:0 8px 0 0}
 .주문실적 .stk{display:flex; border-radius:3px; overflow:hidden; background:var(--color-seg-bg)}
-.주문실적 .stk i{display:block; height:100%; border-right:1px solid #fff}
+.주문실적 .stk i{display:block; height:100%; border-right:1px solid var(--color-surface)}
 .주문실적 .stk i:last-child{border-right:none}
-.주문실적 .tip{position:absolute; z-index:2; pointer-events:none; background:rgba(255,255,255,.97); border-radius:var(--radius-md); box-shadow:0 6px 18px rgba(0,0,0,.16), 0 0 0 1px rgba(0,0,0,.06);
+.주문실적 .tip{position:absolute; z-index:2; pointer-events:none; background:var(--overlay-strong); border-radius:var(--radius-md); box-shadow:0 6px 18px var(--shade-2), 0 0 0 1px var(--shade-1);
   padding:var(--space-sm) var(--space-md); font-size:var(--font-xs); min-width:168px; font-variant-numeric:tabular-nums}
 .주문실적 .tip .h{font-weight:var(--weight-bold); margin-bottom:4px; color:var(--color-text)}
 .주문실적 .tip .l{display:flex; align-items:center; gap:4px; color:var(--color-text-sub); line-height:1.6}
@@ -1352,10 +1352,10 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .ptab td.pd{color:var(--color-text-sub); font-weight:var(--weight-semibold)}
 .주문실적 .ptab td.b{font-weight:var(--weight-bold)}
 .주문실적 .ptab td.z{color:var(--color-text-faint)}
-.주문실적 .ptab tr.ttot td{font-weight:var(--weight-bold); background:#FAFAFC}
+.주문실적 .ptab tr.ttot td{font-weight:var(--weight-bold); background:var(--color-bg)}
 .주문실적 .ptab tr.ttot.비중 td{border-bottom:var(--border-width-thick) solid var(--color-border); color:var(--color-text-sub)}
 .주문실적 .ptbody{max-height:384px; overflow-y:auto}
-.주문실적 tr.sun td, .주문실적 .prow2.sun{background:#F5F5F7}
+.주문실적 tr.sun td, .주문실적 .prow2.sun{background:var(--color-bg)}
 /* 마켓별 — 폰 */
 .주문실적 .mleg{display:grid; grid-template-columns:1fr 1fr; gap:3px 14px; margin:var(--space-sm) 0 var(--space-xs); font-size:var(--font-2xs); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
 .주문실적 .mleg span{display:flex; align-items:center; white-space:nowrap}
@@ -1378,7 +1378,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 tr.prow td.rk{color:var(--color-text-hint); font-weight:var(--weight-bold); text-align:center; font-variant-numeric:tabular-nums}
 .주문실적 tr.prow td.pn{font-weight:var(--weight-semibold)}
 .주문실적 tr.prow.open td{background:var(--color-accent-bg); border-bottom-color:transparent}
-.주문실적 tr.det > td{background:#FBFDFB; padding:var(--space-md) var(--space-lg) var(--space-xl) 44px; border-bottom:var(--border-width-thick) solid var(--color-accent-border)}
+.주문실적 tr.det > td{background:var(--color-surface); padding:var(--space-md) var(--space-lg) var(--space-xl) 44px; border-bottom:var(--border-width-thick) solid var(--color-accent-border)}
 .주문실적 td.chevc{color:var(--color-text-faint); font-weight:var(--weight-bold); text-align:center}
 .주문실적 .dgrid{display:flex; gap:var(--space-3xl); align-items:flex-start}
 .주문실적 .dtab{flex:1}
@@ -1432,7 +1432,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
    🔴 `.c24`·`.srch`·`.selfix`는 다른 데서도 쓰는 이름이라 `.pcsheet.dlv` 아래로 가둔다.
    🔴 시안 `.넘김`은 예약 단추(`.btn.넘김`)가 이미 쓴다 → `.보류넘김`
    ══════════════════════════════════════════════════════════ */
-.hold{display:inline-flex; align-items:center; gap:4px; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:#E4E4E8; color:#4A4C52; border:var(--border-width) solid #CFCFD5}
+.hold{display:inline-flex; align-items:center; gap:4px; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; background:var(--color-border); color:var(--color-text-sub); border:var(--border-width) solid var(--color-text-faint)}
 .hold::before{content:'⏸'; font-size:10px}
 .res{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:var(--pad-tag); border-radius:var(--radius-badge); white-space:nowrap; border:var(--border-width) solid var(--color-border); background:var(--color-surface); color:var(--color-text-sub)}
 .res.chk{background:var(--color-danger-bg); color:var(--color-danger); border-color:var(--color-danger-border)}
@@ -1441,12 +1441,12 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .age{font-size:var(--font-2xs); font-weight:var(--weight-bold); color:var(--color-text-sub); white-space:nowrap; font-variant-numeric:tabular-nums}
 .age.old{color:var(--color-danger)}
 .ed{font-family:inherit; cursor:pointer; font-size:var(--font-xs); color:var(--color-text-sub); border:var(--border-width) solid var(--color-border); background:var(--color-surface); border-radius:var(--radius-sm); padding:3px 9px; font-weight:var(--weight-semibold); white-space:nowrap; box-shadow:var(--shadow-btn)}
-.ed.go{background:var(--color-accent); color:#fff; border-color:var(--color-accent-dark)}
+.ed.go{background:var(--color-accent); color:var(--color-on-accent); border-color:var(--color-accent-dark)}
 .inp.edit{border-color:var(--color-accent); box-shadow:0 0 0 3px var(--color-accent-bg)}
 .cb.big{width:24px; height:24px; border-radius:7px; border-width:1.5px; flex:0 0 auto}
 .cb.big.on::after{font-size:15px}
 .cb:disabled{opacity:.4; cursor:default}
-.bigbtn{width:100%; min-height:52px; font-size:var(--font-xl); font-weight:var(--weight-bold); border-radius:var(--radius-xl); background:var(--color-accent); color:#fff; border:none; box-shadow:var(--shadow-btn-main); font-family:inherit; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer}
+.bigbtn{width:100%; min-height:52px; font-size:var(--font-xl); font-weight:var(--weight-bold); border-radius:var(--radius-xl); background:var(--color-accent); color:var(--color-on-accent); border:none; box-shadow:var(--shadow-btn-main); font-family:inherit; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer}
 .bigbtn:active{transform:scale(var(--scale-tap))}
 .bigbtn:disabled{opacity:.55}
 
@@ -1455,7 +1455,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .stabs > button{font-family:inherit; background:none; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 18px 9px; font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub); border-bottom:2.5px solid transparent; margin-bottom:-1px; white-space:nowrap}
 .stabs > button.on{color:var(--color-accent-dark); border-bottom-color:var(--color-accent); font-weight:var(--weight-bold)}
 .stabs .n{font-variant-numeric:tabular-nums; color:var(--color-text-muted); font-weight:var(--weight-semibold)}
-.stabs .hn{display:inline-block; min-width:19px; padding:0 6px; border-radius:10px; background:#5E6066; color:#fff; font-size:var(--font-2xs); font-weight:var(--weight-bold); line-height:18px; text-align:center; font-variant-numeric:tabular-nums}
+.stabs .hn{display:inline-block; min-width:19px; padding:0 6px; border-radius:10px; background:var(--color-text-sub); color:var(--color-on-accent); font-size:var(--font-2xs); font-weight:var(--weight-bold); line-height:18px; text-align:center; font-variant-numeric:tabular-nums}
 .ph-shell .stabs > button{flex:1; padding:9px 0 10px; gap:4px}
 .datebar[hidden]{display:none}
 
@@ -1480,10 +1480,10 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .oc .tv .inp{height:32px; line-height:30px; font-family:var(--font-mono); font-size:var(--font-md); font-weight:var(--weight-semibold); letter-spacing:.02em}
 .oc .tv .ttl{font-size:var(--font-md)}
 .oc .tv .보류넘김{margin-left:auto}
-.oc.off{background:#EFEFF2; box-shadow:none; border:1px dashed #C4C4CB}
+.oc.off{background:var(--color-border-faint); box-shadow:none; border:1px dashed var(--color-text-faint)}
 .oc.off .who, .oc.off .ln .nm, .oc.off .ln .q{color:var(--color-text-sub)}
 .oc.off .ln .cd{color:var(--color-text-muted)}
-.oc.off .tv .inp{background:#F7F7F9}
+.oc.off .tv .inp{background:var(--color-bg)}
 /* `.pcsheet.dlv .ln`(문자주문 넘김창 갈색 글씨)이 팝업 카드 줄에 묻어 온다 — 되덮는다 */
 .pcsheet.dlv .oc .ln{font-size:var(--font-sm); color:var(--color-text); white-space:normal}
 .ogrid.보류판{align-items:start}
@@ -1524,7 +1524,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .pcsheet.dlv .ft.savebar{flex:0 0 auto; display:flex; align-items:center; gap:var(--space-xl); background:var(--color-surface); padding:12px 18px; border-top:var(--border-width) solid var(--color-border)}
 .pcsheet.dlv .savebar .n{font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub); white-space:nowrap}
 .pcsheet.dlv .savebar .n b{font-size:var(--font-2xl); color:var(--color-text); font-variant-numeric:tabular-nums; margin:0 1px}
-.pcsheet.dlv .savebar .n.hb b{color:#4A4C52}
+.pcsheet.dlv .savebar .n.hb b{color:var(--color-text-sub)}
 .pcsheet.dlv .savebar .n small{font-size:var(--font-xs); color:var(--color-text-muted); margin-left:4px}
 .pcsheet.dlv .savebar .sep{width:1px; height:22px; background:var(--color-border)}
 .pcsheet.dlv .savebar .rt{margin-left:auto; display:flex; align-items:center; gap:var(--space-md)}
@@ -1533,8 +1533,8 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .pcsheet.dlv .ft .c24[hidden]{display:none}
 .pcsheet.dlv .ft .c24:disabled{opacity:.55; cursor:default}
 
-.pcsheet.dlv.폰시트{left:0; right:0; bottom:0; top:58px; transform:none; width:auto; max-height:none; border-radius:14px 14px 0 0; background:var(--color-ios-bg); box-shadow:0 -8px 30px rgba(0,0,0,.22)}
-.pcsheet.dlv.폰시트 .grab{width:38px; height:5px; border-radius:3px; background:#C7C7CC; margin:8px auto 4px; flex:0 0 auto}
+.pcsheet.dlv.폰시트{left:0; right:0; bottom:0; top:58px; transform:none; width:auto; max-height:none; border-radius:14px 14px 0 0; background:var(--color-ios-bg); box-shadow:0 -8px 30px var(--shade-3)}
+.pcsheet.dlv.폰시트 .grab{width:38px; height:5px; border-radius:3px; background:var(--color-text-faint); margin:8px auto 4px; flex:0 0 auto}
 .pcsheet.dlv.폰시트 .hd{background:none; border:none; padding:4px 16px 10px; position:static}
 .pcsheet.dlv.폰시트 .hd h3{font-size:var(--font-4xl)}
 .pcsheet.dlv.폰시트 .hd .hint{display:none}
@@ -1549,7 +1549,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .pcsheet.dlv.폰시트 .ft.selfix{flex:0 0 auto; display:flex; flex-direction:column; gap:var(--space-sm); padding:var(--space-md) 16px calc(16px + env(safe-area-inset-bottom)); background:var(--color-ios-bar); border-top:var(--border-width) solid var(--color-border)}
 .pcsheet.dlv .selfix .r1{display:flex; align-items:center; gap:var(--space-md); font-size:var(--font-md); font-weight:var(--weight-semibold); color:var(--color-text-sub)}
 .pcsheet.dlv .selfix .r1 b{font-size:var(--font-xl); color:var(--color-text); font-variant-numeric:tabular-nums}
-.pcsheet.dlv .selfix .r1 .hb b{color:#4A4C52}
+.pcsheet.dlv .selfix .r1 .hb b{color:var(--color-text-sub)}
 .pcsheet.dlv .selfix .r1 .c24{margin-left:auto; padding:6px 10px}
 .pcsheet.dlv .selfix .r1{flex-wrap:wrap}
 
@@ -1562,34 +1562,34 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .askbox .넘김표 .t{font-family:var(--font-mono); font-size:var(--font-2xs); color:var(--color-text-muted)}
 
 /* ── 26 주문탭 「예약」 하위탭 (시안 26) — .rc .nm .dd .st 가 흔한 이름이라 .예약탭 아래에 가둔다 ── */
-.예약탭{--bl:#1A56C4; --blbg:#E8F0FE; display:flex; flex-direction:column; gap:10px}
+.예약탭{--bl:var(--color-info); --blbg:var(--color-info-bg); display:flex; flex-direction:column; gap:10px}
 .예약탭 .ico{width:13px; height:13px; flex-shrink:0}
 .예약탭 .fchip{flex-shrink:0}
 .예약탭 .fchip.wc{color:var(--color-danger); border-color:var(--color-danger-border)}
-.예약탭 .fchip.wc.on{color:#fff; background:var(--color-danger); border-color:var(--color-danger)}
+.예약탭 .fchip.wc.on{color:var(--color-on-accent); background:var(--color-danger); border-color:var(--color-danger)}
 .예약탭.폰 .fchips.칩넘침{flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none}
 .예약탭 .hsec{font-size:13px; font-weight:var(--weight-bold); color:var(--color-text-muted); padding:6px 2px 0; display:flex; gap:6px; align-items:center}
-.예약탭 .hsec i{font-style:normal; background:#E4E4E8; color:var(--color-text-sub); border-radius:10px; padding:0 8px; font-size:12px}
+.예약탭 .hsec i{font-style:normal; background:var(--color-border); color:var(--color-text-sub); border-radius:10px; padding:0 8px; font-size:12px}
 .예약탭 .hsec.rd{color:var(--color-danger)}
-.예약탭 .hsec.rd i{background:var(--color-danger); color:#fff}
+.예약탭 .hsec.rd i{background:var(--color-danger); color:var(--color-on-accent)}
 .예약탭 .빈{padding:var(--space-xl); text-align:center; color:var(--color-text-muted)}
 .예약탭 .nm{font-weight:var(--weight-bold); letter-spacing:-.02em; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .예약탭 .dd{margin-left:auto; font-size:13px; font-weight:var(--weight-bold); color:var(--bl); background:var(--blbg); padding:2px 10px; border-radius:99px; white-space:nowrap}
-.예약탭 .dd.gr{color:#6E6E73; background:#ECECEF}
-.예약탭 .dd.rd{color:#fff; background:var(--color-danger)}
+.예약탭 .dd.gr{color:var(--color-text-sub); background:var(--color-border-faint)}
+.예약탭 .dd.rd{color:var(--color-on-accent); background:var(--color-danger)}
 .예약탭 .atag{display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:var(--weight-semibold); color:var(--color-accent-dark); background:var(--color-accent-bg); border:1px solid var(--color-accent-border); padding:3px 9px; border-radius:99px; white-space:nowrap}
-.예약탭 .atag.gr{color:#6E6E73; background:#F0F0F3; border-color:#E0E0E4}
+.예약탭 .atag.gr{color:var(--color-text-sub); background:var(--color-border-faint); border-color:var(--color-border)}
 .예약탭 .wmsg{display:flex; align-items:center; gap:5px; color:var(--color-danger); font-weight:var(--weight-bold); font-size:13.5px; background:var(--color-danger-bg); border:1px solid var(--color-danger-border); padding:5px 9px; border-radius:8px}
 .예약탭 .wmsg .ico{width:16px; height:16px}
 .예약탭 .날짜줄{display:flex; gap:8px; align-items:center}
 .예약탭 .날짜줄 .inp{flex:1; min-width:0}
 .예약탭 .주소자리{margin-top:10px}
 /* 폰 카드 */
-.예약탭 .rc{background:#fff; border-radius:var(--radius-xl); padding:12px 14px 12px 17px; box-shadow:var(--shadow-card); position:relative; overflow:hidden}
+.예약탭 .rc{background:var(--color-surface); border-radius:var(--radius-xl); padding:12px 14px 12px 17px; box-shadow:var(--shadow-card); position:relative; overflow:hidden}
 .예약탭 .rc::before{content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--bl)}
-.예약탭 .rc.und::before{background:#AEAEB2}
+.예약탭 .rc.und::before{background:var(--color-text-hint)}
 .예약탭 .rc.bad::before{background:var(--color-danger)}
-.예약탭 .rc.bad{box-shadow:0 0 0 2px var(--color-danger), var(--shadow-card); background:#FFFBFA}
+.예약탭 .rc.bad{box-shadow:0 0 0 2px var(--color-danger), var(--shadow-card); background:var(--color-surface)}
 .예약탭 .rc.방금{box-shadow:0 0 0 2px var(--bl), var(--shadow-card)}
 .예약탭 .rc .r1{display:flex; align-items:center; gap:8px}
 .예약탭 .rc .nm{font-size:18px}
@@ -1608,7 +1608,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .예약탭.PC .머리{display:flex; align-items:center; gap:var(--space-md)}
 .예약탭.PC .머리 .sum{margin-left:auto; font-size:13px; color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .예약탭.PC .머리 .sum b{color:var(--color-text)}
-.예약탭 .tbox{background:#fff; border-radius:14px; box-shadow:var(--shadow-card); overflow:hidden}
+.예약탭 .tbox{background:var(--color-surface); border-radius:14px; box-shadow:var(--shadow-card); overflow:hidden}
 .예약탭 .tbox .hsec{padding:12px 18px 8px; font-size:14px}
 .예약탭 .th, .예약탭 .tr{display:grid; grid-template-columns:96px minmax(0,1fr) 84px 100px 50px 210px 170px; gap:8px; align-items:center; padding:0 18px}
 .예약탭 .th{height:30px; font-size:12px; color:var(--color-text-hint); font-weight:var(--weight-semibold); border-bottom:1px solid var(--color-border-faint)}
@@ -1622,18 +1622,18 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .예약탭 .tr .dt.wd{grid-column:span 2}
 .예약탭 .tr .dt.wd .inp{height:32px; padding:0 8px; font-size:13px}
 .예약탭 .tr .bn{display:flex; gap:6px; justify-content:flex-end; white-space:nowrap}
-.예약탭 .tr.bad{background:#FFFBFA; box-shadow:inset 4px 0 0 var(--color-danger)}
+.예약탭 .tr.bad{background:var(--color-surface); box-shadow:inset 4px 0 0 var(--color-danger)}
 .예약탭.PC.발송판 .rc{max-width:760px}
 .예약탭 .tr.bad .wmsg{font-size:12.5px; padding:4px 8px}
 .예약탭 .tr.방금{background:var(--blbg)}
 .예약탭 .판줄{padding:0 18px 14px; border-bottom:1px solid var(--color-border-faint)}
 /* 주문탭 줄의 칩 · 확인창 · 토스트 둘째 줄 */
 .예약옴{display:inline-flex; align-items:center; font-size:12px; font-weight:var(--weight-bold); color:var(--color-accent-dark); background:var(--color-accent-bg); border:1px solid var(--color-accent-border); padding:2px 9px; border-radius:99px; white-space:nowrap}
-.askbox .예약누구{display:block; font-size:14px; color:var(--color-text-sub); background:#F5F5F7; border-radius:10px; padding:9px 12px; margin-bottom:12px; line-height:1.45}
+.askbox .예약누구{display:block; font-size:14px; color:var(--color-text-sub); background:var(--color-bg); border-radius:10px; padding:9px 12px; margin-bottom:12px; line-height:1.45}
 .askbox .예약누구 b{color:var(--color-text)}
-.askbox .예약날{color:#1A56C4}
+.askbox .예약날{color:var(--color-info)}
 .toast.예약토스트{display:flex; flex-direction:column; gap:3px; border-radius:14px; pointer-events:auto; cursor:pointer}
-.toast.예약토스트 span{font-size:13px; color:#FFB4AE}
+.toast.예약토스트 span{font-size:13px; color:var(--color-danger-border)}
 
 /* ── 27 실적 이익 ── (시안 27-실적이익-macA) 🔴 전부 .주문실적 아래로 가둔다 · ⚙ 수수료율 창은 body 에 붙어 .이익설정 아래 */
 .주문실적 .gear{display:inline-flex; align-items:center; gap:5px}
@@ -1642,7 +1642,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .stat.five .v{font-size:23px}
 .주문실적 .stat .v.pf{color:var(--color-accent-dark)}
 .주문실적 .stat .v.neg, .주문실적 .stat .v.neg small{color:var(--color-danger)}
-.주문실적 .stat .k .tg, .주문실적 .sumcard .head .tg{margin-left:6px; font-size:var(--font-3xs); padding:1px 6px; border-radius:5px; background:#EEF2FF; color:#3B4FB8; font-weight:var(--weight-bold)}
+.주문실적 .stat .k .tg, .주문실적 .sumcard .head .tg{margin-left:6px; font-size:var(--font-3xs); padding:1px 6px; border-radius:5px; background:var(--color-info-bg); color:var(--color-info); font-weight:var(--weight-bold)}
 .주문실적 .stat .sub{font-size:var(--font-2xs); color:var(--color-text-muted); margin-top:3px; font-weight:var(--weight-medium); white-space:nowrap}
 .주문실적 .eq{display:flex; align-items:stretch; background:var(--color-surface); border-radius:var(--radius-lg); box-shadow:var(--shadow-card); padding:12px 8px}
 .주문실적 .eq .it{flex:1; padding:0 12px; border-right:1px solid var(--color-border-faint)}
@@ -1655,36 +1655,36 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .eq .it.결과{background:var(--color-accent-bg); border-radius:var(--radius-md); border:none}
 .주문실적 .exrow{display:flex; gap:var(--space-lg)}
 .주문실적 .exc{flex:1; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:var(--radius-lg); font-size:var(--font-sm); font-weight:var(--weight-semibold)}
-.주문실적 .exc.no{background:#FFF8EC; border:1px solid #F2D5A3; color:#8A4B00}
-.주문실적 .exc.un{background:#F3F5FF; border:1px solid #CBD5F7; color:#2F3F99}
+.주문실적 .exc.no{background:var(--color-warn-bg); border:1px solid var(--color-warn-border); color:var(--color-warn)}
+.주문실적 .exc.un{background:var(--color-info-bg); border:1px solid var(--color-info-border); color:var(--color-info)}
 .주문실적 .exc b{font-size:var(--font-xl); font-variant-numeric:tabular-nums}
 .주문실적 .exc .r{margin-left:auto; font-size:var(--font-xs); font-weight:var(--weight-medium); opacity:.85}
 .주문실적 .xt{display:inline-flex; align-items:center; font-size:var(--font-2xs); font-weight:var(--weight-bold); padding:2px 7px; border-radius:var(--radius-badge); white-space:nowrap; margin:0 4px 3px 0}
-.주문실적 .xt.no{background:#FFF4E0; color:#A85A00; border:1px solid #F2D5A3}
-.주문실적 .xt.un{background:#EEF2FF; color:#3B4FB8; border:1px solid #CBD5F7}
+.주문실적 .xt.no{background:var(--color-warn-bg); color:var(--color-warn); border:1px solid var(--color-warn-border)}
+.주문실적 .xt.un{background:var(--color-info-bg); color:var(--color-info); border:1px solid var(--color-info-border)}
 .주문실적 .kt{display:inline-block; font-size:var(--font-3xs); font-weight:var(--weight-bold); padding:1px 6px; border-radius:5px; margin-left:15px; margin-top:2px}
 .주문실적 .kt.in{background:var(--color-accent-bg); color:var(--color-accent-dark)}
 .주문실적 .kt.ex{background:var(--color-seg-bg); color:var(--color-text-sub)}
-.주문실적 .kt.un{background:#EEF2FF; color:#3B4FB8}
+.주문실적 .kt.un{background:var(--color-info-bg); color:var(--color-info)}
 .주문실적 .mn{display:flex; align-items:center; font-weight:var(--weight-semibold); white-space:nowrap}
 .주문실적 .mn .md, .주문실적 .mr .md{width:8px; height:8px; margin-right:7px}
 .주문실적 .dv{font-weight:var(--weight-bold)}
 .주문실적 .dv.pos{color:var(--color-accent-dark)}
 .주문실적 .dv.neg, .주문실적 .neg{color:var(--color-danger)}
-.주문실적 .dv.un{color:#3B4FB8}
+.주문실적 .dv.un{color:var(--color-info)}
 .주문실적 .ds2{font-size:var(--font-3xs); color:var(--color-text-muted); font-weight:var(--weight-medium); margin-top:1px; white-space:nowrap}
 .주문실적 .없음표, .주문실적 .흐림{color:var(--color-text-faint)}
 .주문실적 .이익표{table-layout:fixed; font-variant-numeric:tabular-nums}
 .주문실적 .이익표 td, .주문실적 .이익표 th{padding:9px 8px; font-size:var(--font-sm)}
 .주문실적 .이익표 td.r{white-space:nowrap}
 .주문실적 .이익표 td.pf{color:var(--color-accent-dark); font-weight:var(--weight-bold)}
-.주문실적 .이익표 td.pf.prov{color:#3B4FB8}
+.주문실적 .이익표 td.pf.prov{color:var(--color-info)}
 .주문실적 .이익표 td.pf.neg{color:var(--color-danger)}
 .주문실적 .이익표 td.pf.흐림{color:var(--color-text-faint)}
 .주문실적 .이익표 td.pn{font-weight:var(--weight-semibold)}
 .주문실적 .이익표 td.rk{text-align:center; color:var(--color-text-hint); font-weight:var(--weight-bold)}
-.주문실적 .이익표 tr.tot td{border-top:2px solid var(--color-border); font-weight:var(--weight-bold); background:#FAFAFB; vertical-align:top}
-.주문실적 .이익표 tr.nocost td{background:#FBFBFC; color:var(--color-text-muted)}
+.주문실적 .이익표 tr.tot td{border-top:2px solid var(--color-border); font-weight:var(--weight-bold); background:var(--color-bg); vertical-align:top}
+.주문실적 .이익표 tr.nocost td{background:var(--color-surface); color:var(--color-text-muted)}
 .주문실적 .이익표 th.sortbtn{color:var(--color-accent-dark)}
 .주문실적 .ptab2{overflow-x:auto}
 .주문실적 .이익상품 h3 .right{display:flex; gap:8px; align-items:center}
@@ -1711,7 +1711,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .mr .a{display:flex; align-items:center; font-size:var(--font-sm)}
 .주문실적 .mr .a .nm{font-weight:var(--weight-semibold); display:flex; align-items:center; flex:1; white-space:nowrap}
 .주문실적 .mr .a .pf{font-weight:var(--weight-bold); color:var(--color-accent-dark); font-variant-numeric:tabular-nums; font-size:var(--font-md); margin-right:8px}
-.주문실적 .mr .a .pf.prov{color:#3B4FB8}
+.주문실적 .mr .a .pf.prov{color:var(--color-info)}
 .주문실적 .mr .a .pf.neg{color:var(--color-danger)}
 .주문실적 .mr .a .pc2{width:70px; white-space:nowrap; text-align:right; font-weight:var(--weight-bold); font-variant-numeric:tabular-nums}
 .주문실적 .mr .b{display:flex; gap:6px; margin-top:3px; font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-medium); padding-left:15px; flex-wrap:wrap; align-items:center}
@@ -1732,11 +1732,11 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .pk .t2 .xt{margin:0}
 .주문실적 .pk .cbar{flex:1}
 .주문실적 .pk .cbar i{max-width:100%}
-.주문실적 .pk.nocost{background:#FBFBFC; opacity:.9}
+.주문실적 .pk.nocost{background:var(--color-surface); opacity:.9}
 /* ⚙ 수수료율 창 */
 .이익설정 .mn{display:flex; align-items:center; font-weight:var(--weight-semibold); white-space:nowrap}
 .이익설정 .md{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; flex-shrink:0}
-.이익설정 .est{display:inline-flex; font-size:var(--font-3xs); font-weight:var(--weight-bold); padding:2px 6px; border-radius:5px; background:#FFF4E0; color:#A85A00; border:1px solid #F2D5A3; white-space:nowrap}
+.이익설정 .est{display:inline-flex; font-size:var(--font-3xs); font-weight:var(--weight-bold); padding:2px 6px; border-radius:5px; background:var(--color-warn-bg); color:var(--color-warn); border:1px solid var(--color-warn-border); white-space:nowrap}
 .이익설정 .est.fix{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
 .이익설정 .u{font-size:var(--font-sm); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .이익설정 .sin{width:78px; height:34px; font-size:var(--font-md); font-weight:var(--weight-bold)}
@@ -1749,7 +1749,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .pcsheet.이익설정 .sw2{display:flex; align-items:center; gap:6px}
 .pcsheet.이익설정 .ds2l{font-size:var(--font-3xs); color:var(--color-text-muted); margin-top:3px; padding-left:2px; min-height:1em}
 .pcsheet.이익설정 .lv{font-size:var(--font-xs); font-weight:var(--weight-semibold)}
-.pcsheet.이익설정 .lv.y{color:#A85A00}
+.pcsheet.이익설정 .lv.y{color:var(--color-warn)}
 .pcsheet.이익설정 .lv.r{color:var(--color-danger)}
 .pcsheet.이익설정 .lv::before{content:''; display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; background:currentColor}
 .pcsheet.이익설정 .없음표{color:var(--color-text-faint)}
@@ -1779,7 +1779,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .이익설정.폰 .sbar .btn{flex:1; min-height:44px}
 
 /* ── 30 재구매 ── (시안 28-재구매-macA) 🔴 전부 .주문실적 아래로 가둔다 */
-.주문실적 .재구매 h3 .tg, .주문실적 .재구매 .head .tg{margin-left:6px; font-size:var(--font-3xs); padding:1px 6px; border-radius:5px; background:#EEF2FF; color:#3B4FB8; font-weight:var(--weight-bold); vertical-align:2px}
+.주문실적 .재구매 h3 .tg, .주문실적 .재구매 .head .tg{margin-left:6px; font-size:var(--font-3xs); padding:1px 6px; border-radius:5px; background:var(--color-info-bg); color:var(--color-info); font-weight:var(--weight-bold); vertical-align:2px}
 .주문실적 .재구매 h3 .right{display:flex; gap:8px; align-items:center}
 .주문실적 .sumrow{display:flex; gap:28px; padding:10px var(--space-sm) 6px; align-items:stretch}
 .주문실적 .big3{display:flex; gap:26px; flex:1; align-items:center}
@@ -1810,7 +1810,7 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .주문실적 .재구매손님칸{display:flex; flex-direction:column; gap:var(--space-md)}
 .주문실적 .pk .pf.검{color:var(--color-text)}
 .주문실적 .pk .t2 .이익{margin-left:auto}
-.주문실적 .pk .t2 b.prov{color:#3B4FB8}
+.주문실적 .pk .t2 b.prov{color:var(--color-info)}
 .주문실적 .pk .t2 b.흐림{color:var(--color-text-faint)}
 .주문실적 .pk .t3{margin-top:4px; font-size:var(--font-2xs); color:var(--color-text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .주문실적 .재구매마켓 .mr .a .pf{margin-right:0}
@@ -1832,16 +1832,16 @@ td.wh .t{display:block; font-size:var(--font-lg); font-weight:var(--weight-bold)
 .입금띠{font-size:var(--font-xs); font-weight:var(--weight-bold); padding:5px 10px; border-radius:var(--radius-sm); margin-bottom:var(--space-sm); cursor:pointer; line-height:1.4}
 .입금띠.올림{cursor:default}
 .입금띠.맞음, .입금띠.올림{background:var(--color-accent-bg); color:var(--color-accent-dark); box-shadow:inset 0 0 0 1px var(--color-accent-border)}
-.입금띠.다름{background:#FFF0E3; color:#C2410C; box-shadow:inset 0 0 0 1px #F8C9A0}
-.입금띠.확인{background:#FDECEC; color:#B42318; box-shadow:inset 0 0 0 1px #F5B5B0}
-.입금띠.고름{background:#FFF7E0; color:#8A6100; box-shadow:inset 0 0 0 1px #F0DFAE}
-.입금띠.전{background:#F2F2F4; color:var(--color-text-muted); cursor:default; font-weight:var(--weight-semibold)}
-.입금띠.전.늦음{background:#FDECEC; color:#B42318}
+.입금띠.다름{background:var(--color-warn-bg); color:var(--color-orange); box-shadow:inset 0 0 0 1px var(--color-orange-border)}
+.입금띠.확인{background:var(--color-danger-bg); color:var(--color-danger); box-shadow:inset 0 0 0 1px var(--color-danger-border)}
+.입금띠.고름{background:var(--color-warn-bg); color:var(--color-warn); box-shadow:inset 0 0 0 1px var(--color-warn-border)}
+.입금띠.전{background:var(--color-border-faint); color:var(--color-text-muted); cursor:default; font-weight:var(--weight-semibold)}
+.입금띠.전.늦음{background:var(--color-danger-bg); color:var(--color-danger)}
 td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
 /* 문자주문 목록 — 맨 위 날짜 · 네 구역 (11/10 13:25 · 20c) */
 .문자주문 .날짜머리{display:flex; justify-content:center; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-sm)}
 .fchip.아이콘칩{position:relative; min-width:44px; min-height:44px; padding:0 10px; font-size:22px; line-height:1; justify-content:center}
-.fchip.아이콘칩 .배지{position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--color-danger); color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center; box-sizing:border-box}
+.fchip.아이콘칩 .배지{position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--color-danger); color:var(--color-on-accent); font-size:11px; font-weight:700; line-height:18px; text-align:center; box-sizing:border-box}
 .날짜칸{display:inline-flex; align-items:center; gap:4px}
 .날짜칸 .btn.하루{min-width:34px; font-size:var(--font-lg); font-weight:var(--weight-bold)}
 .날짜칸 .btn.오늘날{font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; padding:0 12px}
@@ -1854,10 +1854,10 @@ td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
 .단계줄 .단계 b{font-variant-numeric:tabular-nums; margin-left:2px}
 .단계줄 .단계.빔{color:var(--color-text-hint)}
 .단계줄 .단계사이{color:var(--color-text-hint); font-size:var(--font-sm)}
-.단계줄 .단계.on{color:#3C3C43; background:#EDEDF0}
+.단계줄 .단계.on{color:var(--color-text); background:var(--color-border-faint)}
 .단계줄 .단계.입금.on{color:var(--color-accent-dark); background:var(--color-accent-bg)}
-.단계줄 .단계.주문.on{color:#2F4F80; background:#EEF3FB}
-.단계줄 .단계.발송.on{color:#5B3A8C; background:#F4EEFB}
+.단계줄 .단계.주문.on{color:var(--color-info); background:var(--color-info-bg)}
+.단계줄 .단계.발송.on{color:var(--color-purple); background:var(--color-purple-bg)}
 .ph-body .단계줄 .단계{padding:6px 5px; font-size:var(--font-xs)}
 .칩묶음{display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap}
 .자동표{font-size:var(--font-2xs); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
@@ -1866,3 +1866,33 @@ td .입금띠{margin:0 0 6px; padding:3px 8px; white-space:normal}
 .btn.프리셋{flex:0 0 auto; padding:0 8px; background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border); font-weight:var(--weight-bold); -webkit-touch-callout:none; user-select:none}
 .btn.프리셋.더{background:var(--color-btn-bg); color:var(--color-text-muted); font-weight:var(--weight-semibold)}
 .askbox.글창 .inp.ta{width:100%; box-sizing:border-box; font-size:var(--font-md)}
+
+/* ══ 2판 (11/12) — 주문 문자·조회 같은 머리: 하위 탭 → [아이콘] ‹ 날짜 › [아이콘] → 큰 숫자 단계 칸 ══ */
+.ph-body .subtabs{display:flex}
+.ph-body .subtabs button{padding:7px 0; font-size:var(--font-sm)}
+.문자주문 .날짜머리.날짜아이콘줄{justify-content:stretch; margin-bottom:0}
+.문자주문 .머리줄[hidden]{display:none}
+.문자주문 .머리줄 .찾기{height:44px; border-radius:16px}
+.문자주문 .단계줄.단계칸들{display:grid; gap:6px; padding:0 0 var(--space-md); margin-bottom:0}
+.ph-body .단계줄.단계칸들 .단계{height:58px; padding:0 2px; font-size:inherit; border-radius:16px; background:var(--color-surface); border:var(--border-width) solid var(--color-border-line); color:var(--color-text-muted)}
+.ph-body .단계줄.단계칸들 .단계.on{background:var(--color-accent-bg); border-color:var(--color-accent); color:var(--color-accent-dark)}
+.ph-body .단계줄.단계칸들 .단계 b{margin:0}
+.문자주문 .문카드 .act.아이콘줄{align-items:center; gap:6px; margin-top:var(--space-md); padding-top:var(--space-sm); border-top:var(--border-width) solid var(--color-border-faint)}
+.문자주문 .문카드 .act.아이콘줄 .spacer{flex:1}
+.문자주문 .문카드 .act.아이콘줄 .아이콘단추{height:40px; min-width:40px; border-radius:14px}
+.문자주문 .문카드 .act.아이콘줄 .문자단추{background:var(--color-bg)}
+.문자주문 .문카드 .act.아이콘줄 .올림단추{padding:0 16px}
+.문자주문 .문카드 .act.아이콘줄 .올림단추.잠김{background:var(--color-border-faint); border-color:var(--color-border-line); color:var(--color-text-muted)}
+.문자주문 .문카드 .amt{font-size:var(--font-3xl)}
+/* 조회 — 같은 날짜 줄 · 단계 칸 (예약·보류도 칸 하나) */
+.조회머리{display:flex; flex-direction:column; gap:var(--space-md)}
+.조회머리 .search[hidden]{display:none}
+.ph-shell .stabs.단계칸들{display:grid; border-bottom:0; gap:6px}
+.ph-shell .stabs.단계칸들 > button{height:58px; padding:0 2px; gap:1px; margin:0; flex-direction:column-reverse; border-radius:16px; background:var(--color-surface); border:var(--border-width) solid var(--color-border-line); color:var(--color-text-muted)}
+.ph-shell .stabs.단계칸들 > button.on{background:var(--color-accent-bg); border-color:var(--color-accent); color:var(--color-accent-dark)}
+.ph-shell .stabs.단계칸들 .n, .ph-shell .stabs.단계칸들 .hn{all:unset; font-size:var(--font-3xl); font-weight:var(--weight-bold); font-variant-numeric:tabular-nums; line-height:1.15}
+.ph-shell .stabs.단계칸들 .hn{color:var(--color-danger)}
+.ph-shell .stabs.단계칸들 .이름{font-size:var(--font-2xs); font-weight:var(--weight-semibold)}
+.ph-body .search[hidden]{display:none}
+.ph-body > .날짜아이콘줄 .날짜알약{min-width:0}
+.문자주문 .단계줄.단계칸들[hidden]{display:none}

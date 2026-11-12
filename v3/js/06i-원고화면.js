@@ -34,7 +34,7 @@ window.ZG = window.ZG || {};
     ' border:var(--border-width) solid var(--color-border); border-radius:var(--radius-md);' +
     ' background:var(--color-surface); color:var(--color-text); letter-spacing:-.01em}' +
     '.ta:focus{outline:none; border-color:var(--color-accent); box-shadow:0 0 0 3px var(--color-accent-bg)}' +
-    '.ta.over{border-color:var(--color-danger); background:#FFFCFC}' +
+    '.ta.over{border-color:var(--color-danger); background:var(--color-danger-bg)}' +
     '.ta:disabled{background:var(--color-bg); color:var(--color-text-hint)}' +
     '.subline{display:flex; align-items:center; gap:var(--space-sm)}' +
     '.subline label{font-size:var(--font-xs); font-weight:var(--weight-semibold); color:var(--color-text-muted)}' +

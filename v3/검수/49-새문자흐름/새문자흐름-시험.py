@@ -32,10 +32,11 @@ try:
             쪽.locator('button', has_text=re.compile(r'^\s*문자(주문)?\s*$')).first.click(); 쪽.wait_for_timeout(400)
             뷰 = lambda: 쪽.evaluate("() => ZG.문자주문.상태.뷰")
             본다('문자 탭 = 메인 목록(단계 탭)', 뷰() == '목록' and 쪽.locator('.단계줄').is_visible())
-            if 폰: 본다('폰 머리줄 날짜 = 오늘(첫 화면)', 쪽.evaluate("() => { const t = ZG.ui.오늘문자(); return Number(t.slice(5, 7)) + '월 ' + Number(t.slice(8, 10)) + '일'; }") in 쪽.inner_text('body'))
+            if 폰: 본다('폰 머리 = 제목 오른쪽 요약 한 줄(2판 · 날짜는 아래 날짜 줄 「MM.DD」)', 쪽.locator('.ph-top .머리요약').is_visible() and 쪽.evaluate("() => ZG.ui.오늘문자().slice(5).replace('-', '.')") in 쪽.inner_text('.날짜칸'))
             본다('옛 오가는 단추 없음(「‹ 새 문자」「📋 문자주문 목록」)', 쪽.locator('button:has-text("‹ 새 문자")').count() == 0)
             가 = 쪽.evaluate("() => { const a = document.querySelector('.새문자칩').getBoundingClientRect(), d = document.querySelector('.날짜칸').getBoundingClientRect(), b = document.querySelector('.발송칩:not(.새문자칩)').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(); return [Math.round((a.left + b.right) / 2 - (c.left + c.width / 2)), a.right <= d.left, d.right <= b.left, Math.round(a.width), Math.round(a.height)]; }")
-            본다('「✉️ ‹ 날짜 › 🚚」 묶음 가운데(±2px) · ✉️ 왼쪽 · 🚚 오른쪽 · 손가락 크기', abs(가[0]) <= 2 and 가[1] and 가[2] and 가[3] >= 44 and 가[4] >= 44, 가)
+            if 폰: 가[0] = 쪽.evaluate("() => { const c = document.querySelector('.날짜머리').getBoundingClientRect(), s = document.querySelector('.검색칩').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); return Math.round(Math.abs(s.left - c.left) + Math.abs(c.right - b.right)); }")   # 폰 2판 — 가운데 대신 줄을 꽉 채움
+            본다('「✉️ ‹ 날짜 › 🚚」 묶음 가운데(±2px · 폰은 줄 양끝) · ✉️ 왼쪽 · 🚚 오른쪽 · 손가락 크기', abs(가[0]) <= 2 and 가[1] and 가[2] and 가[3] >= 44 and 가[4] >= 44, 가)
             쪽.screenshot(path=str(여기 / ('1-메인-' + 틀 + '.png')), animations='disabled')
             # ✉️ → 새 문자 · ✕ 빈 화면 바로 닫힘
             쪽.click('.새문자칩'); 쪽.wait_for_timeout(300)

@@ -129,7 +129,9 @@ window.ZG = window.ZG || {};
     var 됨 = 자().올릴수있나(r);
     b.disabled = !됨.된다;
     b.classList.toggle('잠김', !됨.된다);
-    b.textContent = 됨.된다 ? '주문올리기' : '🔒 주문올리기';
+    var 글칸 = b.classList.contains('아이콘단추') && b.querySelector('span');   // 2판 아이콘 단추는 그림을 남기고 글만
+    if (글칸) 글칸.textContent = 됨.된다 ? '올리기' : '잠김';
+    else b.textContent = 됨.된다 ? '주문올리기' : '🔒 주문올리기';
     b.title = 됨.된다 ? '' : 됨.까닭;
   }
 

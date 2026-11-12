@@ -339,8 +339,8 @@ window.ZG = window.ZG || {};
 
   /* 08h·08k 와 같은 노랑 상자 톤. 새 CSS 규칙을 만들지 않으려고 여기서 입힌다 */
   function 손질상자(제목, 왜, 속) {
-    return 만들기('div', { class: 'needbox', style: 'border-color:#F2DFA8' }, [
-      만들기('h4', { style: 'background:#FFF8E6; color:#9A6400; border-bottom-color:#F2DFA8' }, [
+    return 만들기('div', { class: 'needbox', style: 'border-color:var(--color-warn-border)' }, [
+      만들기('h4', { style: 'background:var(--color-warn-bg); color:var(--color-warn); border-bottom-color:var(--color-warn-border)' }, [
         만들기('span', { text: 제목 }),
         만들기('span', { class: 'why', text: 왜 || '' })
       ]),
@@ -367,7 +367,7 @@ window.ZG = window.ZG || {};
       만들기('div', { style: 'display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:6px' }, [
         만들기('b', { text: 것.유통명 }),
         만들기('span', { class: 'sub', text: 것.코드 }),
-        만들기('span', { class: 'sub', style: 'color:#9A6400', text: '빈 칸 — ' + 것.빈칸.join(' · ') })
+        만들기('span', { class: 'sub', style: 'color:var(--color-warn)', text: '빈 칸 — ' + 것.빈칸.join(' · ') })
       ]),
       묶.요소,
       만들기('div', { style: 'margin-top:6px' }, [저장])

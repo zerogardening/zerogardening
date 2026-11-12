@@ -192,13 +192,16 @@ window.ZG = window.ZG || {};
 
   /* 배송 상태 탭 (시안 22c .stabs). 수는 마켓·찾기를 안 본다 — 그 탭에 남은 일의 양이다 */
   function 상태탭(누름) {
-    var 줄 = 만들기('div', { class: 'stabs', role: 'tablist' });
+    var 폰 = u.폰인가();
+    var 줄 = 만들기('div', { class: 'stabs' + (폰 ? ' 단계칸들' : ''), role: 'tablist' });
     var 준 = 자.건으로묶기(준비중만(자.읽기({ 부터: '', 까지: '' }))).length, 보 = ZG.배송보류.건들().length;
     상태칩목록().forEach(function (쌍) {
-      var 속 = [document.createTextNode(쌍[1])];
+      var 속 = [폰 ? 만들기('span', { class: '이름', text: 쌍[1] }) : document.createTextNode(쌍[1])];
       if (쌍[0] === '준비중') 속.push(만들기('span', { class: 'n', text: String(준) }));
-      if (쌍[0] === '보류' && 보) 속.push(만들기('span', { class: 'hn', text: String(보) }));
+      if (쌍[0] === '보류' && (보 || 폰)) 속.push(만들기('span', { class: 'hn', text: String(보) }));
       if (쌍[0] === '예약') 속.push(만들기('span', { class: 'n', text: String(ZG.예약탭.수()) }));
+      if (폰 && !쌍[0]) 속.push(만들기('span', { class: 'n 그날수', text: '' }));      // 전체·배송완료 — 그날 건수는 채우기()가 적는다
+      if (폰 && 쌍[0] === '나감') 속.push(만들기('span', { class: 'n 그날수', text: '' }));
       var on = 상태.상태칩 === 쌍[0];
       var b = 만들기('button', { type: 'button', role: 'tab', class: on ? 'on' : '', 'aria-selected': on ? 'true' : 'false' }, 속);
       b.addEventListener('click', function () {
@@ -550,7 +553,7 @@ window.ZG = window.ZG || {};
     /* 🔴 'dlv' — 짝짓기 상자(needbox) CSS 가 `.pcsheet.dlv` 아래에만 있다 (2026-08-19에 빠진 걸 봤다) */
     var 창 = 만들기('div', { class: 'pcsheet dlv', role: 'dialog', 'aria-modal': 'true' }, [
       만들기('div', { class: 'hd' }, [
-        만들기('h3', { text: '🔗 품목 짝짓기' }),
+        만들기('h3', { text: '품목 짝짓기' }),
         만들기('span', { class: 'right' }, [닫기])
       ]),
       속
@@ -567,58 +570,60 @@ window.ZG = window.ZG || {};
     var n = 짝못붙은수();
     if (!n) return null;
     var b = 만들기('button', { class: 'btn' + (반 ? ' ' + 반 : ''), type: 'button',
-      text: '🔗 품목 짝짓기 ' + n, title: '품목이 안 붙은 상품 ' + n + '종' });
+      text: '품목 짝짓기 ' + n, title: '품목이 안 붙은 상품 ' + n + '종' });
     b.addEventListener('click', 짝짓기창);
     return b;
   }
 
   function PC머리버튼() {
-    function 단추(글, 눌림, 주) {
-      var b = 만들기('button', { class: 'btn sm' + (주 ? ' main' : ''), type: 'button', text: 글 });
+    function 단추(글, 눌림, 주) {   // 글 = [아이콘, 글]
+      var b = 만들기('button', { class: 'btn sm' + (주 ? ' main' : ''), type: 'button', html: u.아이콘글(글[0], 글[1]) });
       b.addEventListener('click', 눌림);
       return b;
     }
-    var 수집단추 = 단추('📥 주문수집', function () { 주문수집하기(수집단추); }, true);
+    var 수집단추 = 단추(['받기', '주문수집'], function () { 주문수집하기(수집단추); }, true);
     return 만들기('div', { class: 'headbtns' }, [
       수집단추,
       짝단추('sm'),
-      단추('⬆ 주문 올리기', 주문올리기누름),
-      단추('🚚 배송완료', function () { ZG.주문파일.배송완료(); }, true),
-      단추('📋 출고리스트', function () {
+      단추(['올리기', '주문 올리기'], 주문올리기누름),
+      단추(['트럭', '배송완료'], function () { ZG.주문파일.배송완료(); }, true),
+      단추(['목록', '출고리스트'], function () {
         if (보류탭막기()) return;
         if (상태.상태칩 !== '나감') 상태.출고배치 = '';   // 배송완료 탭에서 고른 회차는 그대로 들고 간다
         ZG.주문입력.PC출고창(상태, 고른줄들());
       }, true),
-      단추('💌 동봉카드', function () { if (!보류탭막기()) 카드열기(포장순(고른건들())); }, true)
+      단추(['봉투', '동봉카드'], function () { if (!보류탭막기()) 카드열기(포장순(고른건들())); }, true)
     ]);
   }
 
   /* ══ 폰 — 목록 ══ */
   function 폰목록(칸) {
-    var 날바 = 만들기('div', { class: 'datebar' });
-    칸.appendChild(날바);
-
-    var 수동 = 만들기('button', { class: 'btn', type: 'button', text: '＋ 수동주문' });
-    수동.addEventListener('click', function () { 열기('수동'); });
-    var 출고 = 만들기('button', { class: 'btn', type: 'button', text: '📋 출고리스트' });
-    출고.addEventListener('click', function () {
+    /* 2판(11/12) — 문자 화면과 같은 머리: [검색][수동주문] ‹ 날짜 › [배송완료] · 제목줄 오른쪽 [주문수집][출고리스트][동봉카드] */
+    var 수동 = u.아이콘단추('더하기', '수동주문', function () { 열기('수동'); });
+    var 출고 = u.아이콘단추('목록', '출고리스트', function () {
       if (보류탭막기()) return;
       if (상태.상태칩 !== '나감') 상태.출고배치 = '';
       열기('출고');
     });
-    var 카드 = 만들기('button', { class: 'btn', type: 'button', text: '💌 동봉카드' });
-    카드.addEventListener('click', function () { if (!보류탭막기()) 카드열기(포장순(자.건으로묶기(줄들()))); });
-    var 수집 = 만들기('button', { class: 'btn', type: 'button', text: '📥 주문수집' });
-    수집.addEventListener('click', function () { 주문수집하기(수집); });
-    var 배송 = 만들기('button', { class: 'btn', type: 'button', text: '🚚 배송완료' });
-    배송.addEventListener('click', function () { ZG.주문파일.배송완료(); });
-    칸.appendChild(만들기('div', { class: 'topbtns' }, [수집, 짝단추(), 수동, 배송, 출고, 카드]));
+    var 카드 = u.아이콘단추('봉투', '동봉카드', function () { if (!보류탭막기()) 카드열기(포장순(자.건으로묶기(줄들()))); });
+    var 수집 = u.아이콘단추('받기', '주문수집', function () { 주문수집하기(수집); });
+    var 배송 = u.아이콘단추('트럭', '배송완료', function () { ZG.주문파일.배송완료(); });
+    var 찾기열기 = u.아이콘단추('검색', '검색', function () {
+      찾기.hidden = 상태.글 ? false : !찾기.hidden;
+      if (!찾기.hidden) 찾기.querySelector('input').focus();
+    }, { 결: 상태.글 ? 'on' : '' });
+    var 위 = document.querySelector('.ph-shell .ph-top');
+    if (위) 위.appendChild(만들기('div', { class: '머리단추' }, [수집, 출고, 카드]));
+    var 날바 = 만들기('div', { class: '날짜알약' });
+    칸.appendChild(만들기('div', { class: '날짜아이콘줄' }, [찾기열기, 수동, 날바, 배송]));
+    var 짝 = 짝단추();
+    if (짝) 칸.appendChild(짝);
 
     var 목록 = 만들기('div', { class: 'ph-list' });
     function 채우기() {
       날짜줄채우기(날바);          // 🔴 탭을 바꾸면 「무슨 기간을 보고 있는지」도 같이 바뀌어야 한다
-      날바.hidden = 상태.상태칩 === '보류' || 상태.상태칩 === '예약';
-      찾기.style.display = 마켓줄.style.display = 상태.상태칩 === '예약' ? 'none' : '';
+      마켓줄.style.display = 상태.상태칩 === '예약' ? 'none' : '';
+      그날수채우기();
       u.비우기(목록);
       var 건들 = 자.건으로묶기(줄들());
       회차줄채우기(회차줄, 채우기);      // 🔴 줄들() 이 사라진 회차를 풀 수 있다 — 반드시 그 뒤다
@@ -643,8 +648,20 @@ window.ZG = window.ZG || {};
 
     var 회차줄 = 만들기('div', { class: 'fchips 나간칩줄', style: 'padding:0 var(--space-md) var(--space-xs)' });
     var 마켓줄 = 만들기('div', { class: 'hscroll 마켓줄' });
-    var 찾기 = 칸.appendChild(찾는칸('이름 · 전화번호 · 상품명으로 찾기', 채우기));
-    칸.appendChild(상태탭(채우기));                // 🔴 통째로 다시 그리지 않는다 — 찾는칸의 한글 조합이 끊긴다
+    var 찾기 = 칸.appendChild(찾는칸('검색', 채우기));
+    찾기.hidden = !상태.글;
+    var 탭줄 = 칸.appendChild(상태탭(채우기));                // 🔴 통째로 다시 그리지 않는다 — 찾는칸의 한글 조합이 끊긴다
+    /* 전체·배송완료 칸의 수 — 지금 날짜·마켓·찾기 그대로, 탭만 바꿔 센다 */
+    function 그날수채우기() {
+      var 원 = 상태.상태칩, 배 = 상태.출고배치;
+      [['', 0], ['나감', 2]].forEach(function (쌍) {
+        상태.상태칩 = 쌍[0]; if (쌍[0] !== 원) 상태.출고배치 = '';
+        var n = 자.건으로묶기(줄들()).length;
+        상태.상태칩 = 원; 상태.출고배치 = 배;
+        var 칸수 = 탭줄.children[쌍[1]].querySelector('.그날수');
+        if (칸수) 칸수.textContent = String(n);
+      });
+    }
     칸.appendChild(마켓줄);
     var 합계칸 = 만들기('div');
     칸.appendChild(회차줄);
@@ -733,26 +750,16 @@ window.ZG = window.ZG || {};
 
   function 날짜줄채우기(줄) {
     u.비우기(줄);
-    if (기간무시()) {
-      // 화살표 자리는 비워 둔 채 남긴다 — 가운데 글이 그대로 가운데 온다
-      줄.appendChild(만들기('span', { class: 'ar', style: 'visibility:hidden' }));
-      줄.appendChild(만들기('span', { class: 'd' }, [
-        만들기('div', { class: 'big', text: '전체 기간' }),
-        만들기('div', { class: 'sml', text: '날짜와 상관없이 아직 안 나간 주문' })
-      ]));
-      줄.appendChild(만들기('span', { class: 'ar', style: 'visibility:hidden' }));
-      return;
-    }
+    var 온통 = 기간무시() || 상태.상태칩 === '예약';   // 날짜와 상관없는 탭 — 화살표 자리는 비워 둔 채(가운데 글이 그대로 가운데)
     var 왼 = 만들기('button', { class: 'ar', type: 'button', text: '‹', 'aria-label': '하루 앞' });
     var 오 = 만들기('button', { class: 'ar', type: 'button', text: '›', 'aria-label': '하루 뒤' });
     왼.addEventListener('click', function () { 날짜로(날더하기(상태.날짜, -1)); });
     오.addEventListener('click', function () { 날짜로(날더하기(상태.날짜, 1)); });
+    if (온통) 왼.style.visibility = 오.style.visibility = 'hidden';
     var 오늘인가 = 상태.날짜 === u.오늘문자();
     줄.appendChild(왼);
-    줄.appendChild(만들기('span', { class: 'd' }, [
-      만들기('div', { class: 'big', text: 상태.날짜 }),
-      만들기('div', { class: 'sml', text: (오늘인가 ? '오늘 · ' : '') + 요일글(상태.날짜) })
-    ]));
+    줄.appendChild(만들기('span', { class: 'd 가운데' + (오늘인가 && !온통 ? ' 오늘' : ''),
+      text: 온통 ? '전체 기간' : 상태.날짜.slice(5).replace(/-/g, '.') + ' (' + 요일글(상태.날짜).charAt(0) + ')' + (오늘인가 ? ' 오늘' : '') }));
     줄.appendChild(오);
   }
 
@@ -770,7 +777,7 @@ window.ZG = window.ZG || {};
       상태.글 = 값; 상태.쪽 = 1;
       목록만다시();
     }, 220);
-    return 만들기('div', { class: 'search' }, [만들기('span', { class: 'mag', text: '🔍' }), 입력]);
+    return 만들기('div', { class: 'search' }, [만들기('span', { class: 'mag', html: u.아이콘('검색') }), 입력]);
   }
 
   /* 무료로 얹어 나가는 줄임을 목록·상세·표·동봉카드 넷에서 같은 모양으로 알린다 (6단계 설계 §2-6) */
@@ -790,7 +797,7 @@ window.ZG = window.ZG || {};
     // 기준은 그 건의 주문일이다 — 준비중 탭은 화면 날짜와 다른 날 주문도 섞여 나온다
     var 별 = 자.재주문횟수(g.묶음키, g.주문일 || 상태.날짜);
     var 첫줄 =[만들기('span', { class: 'who', text: g.수령인 })];
-    if (별 > 0) 첫줄.push(만들기('span', { class: 'star', text: '⭐ ' + 별 }));
+    if (별 > 0) 첫줄.push(만들기('span', { class: 'star', text: '★' + 별 }));
     var 폰배지 = 상태배지(g);
     if (폰배지) { 폰배지.style.marginLeft = 'auto'; 첫줄.push(폰배지); }
     var 곳 = 마켓꼬리표(g), 옴 = ZG.예약탭.옴칩(g);
@@ -859,7 +866,7 @@ window.ZG = window.ZG || {};
       오: (g.주문일 || 상태.날짜) + ' · ' + (g.판매처 || '기타'),
       그리기: function (칸) { 상세그리기(칸, g); },
       바닥: function () {
-        var 카드 = 만들기('button', { class: 'btn main', type: 'button', text: '💌 동봉카드' });
+        var 카드 = 만들기('button', { class: 'btn main', type: 'button', html: u.아이콘글('봉투', '동봉카드') });
         카드.addEventListener('click', function () { ZG.동봉카드.열기([g]); });
         return 만들기('div', { class: 'totalbar' }, [
           만들기('span', { class: 'l', text: '총 주문금액' }),
@@ -876,7 +883,7 @@ window.ZG = window.ZG || {};
       text: g.수령인,
       style: 'font-size:var(--font-xl); font-weight:var(--weight-bold); letter-spacing:-.02em; color:var(--color-text)'
     })];
-    if (별 > 0) 머리자식.push(만들기('span', { class: 'star', text: '⭐ ' + 별 }));
+    if (별 > 0) 머리자식.push(만들기('span', { class: 'star', text: '★' + 별 }));
     var 여닫이 = 만들기('span', { class: 'r', text: '닫기 ⌃' });
     머리자식.push(여닫이);
 
@@ -931,7 +938,7 @@ window.ZG = window.ZG || {};
     });
     칸.appendChild(만들기('div', { class: 'topbtns' }, [수정, 삭제]));
     // 마켓 줄이 하나라도 있으면 끈다. 배송완료는 눌렀을 때 20f 가 막는다 (18단계 §4-1)
-    var 넘김 = 만들기('button', { class: 'btn 넘김 넘김큰', type: 'button', text: '📅 예약으로 넘기기' });
+    var 넘김 = 만들기('button', { class: 'btn 넘김 넘김큰', type: 'button', html: u.아이콘글('달력', '예약으로 넘기기') });
     if (!ZG.예약자료.넘길수있나(g)) 넘김.disabled = true;
     넘김.addEventListener('click', function () { ZG.예약화면.넘기기창([g]); });
     칸.appendChild(넘김);
@@ -941,10 +948,10 @@ window.ZG = window.ZG || {};
     var 봄 = ZG.수동배송완료.상태보기(g), 손 = null;
     function 마치면(했나) { if (했나) 다시그리기(); }
     if (봄.나감) {
-      손 = 만들기('button', { class: 'btn warn', type: 'button', text: '↩ 배송완료 되돌리기' });
+      손 = 만들기('button', { class: 'btn warn', type: 'button', html: u.아이콘글('돌림', '배송완료 되돌리기') });
       손.addEventListener('click', function () { ZG.수동배송완료.되돌리기([g], 마치면); });
     } else if (봄.넘길수있는) {
-      손 = 만들기('button', { class: 'btn', type: 'button', text: '✋ 배송완료로 넘기기' });
+      손 = 만들기('button', { class: 'btn', type: 'button', html: u.아이콘글('트럭', '배송완료로 넘기기') });
       손.addEventListener('click', function () { ZG.수동배송완료.넘기기([g], 마치면); });
     }
     if (손) 칸.appendChild(만들기('div', { class: 'topbtns' }, [손]));
@@ -1113,7 +1120,7 @@ window.ZG = window.ZG || {};
     /* 잘못 올린 파일 무르기. 회차를 하나 고른 뒤에만 나온다 — 늘 떠 있으면 잘못 누른다 */
     if (상태.묶음id) {
       var 물리기 = 만들기('button', {
-        class: 'fchip', type: 'button', text: '🗑 이 회차 물리기',
+        class: 'fchip', type: 'button', html: u.아이콘글('휴지통', '이 회차 물리기'),
         style: 'color:var(--color-danger); border-color:var(--color-danger)'
       });
       물리기.addEventListener('click', function () {
@@ -1318,7 +1325,7 @@ window.ZG = window.ZG || {};
     내려.addEventListener('click', function () { ZG.주문파일.내려받기(고른줄들()); });
 
     /* 🔴 여기서는 「고른 게 없으면 전체」를 쓰지 않는다 — 그 날 주문 전부에 서비스가 들어간다 (설계 §2-5) */
-    var 서비스 = 만들기('button', { class: 'btn sm', type: 'button', text: '🎁 서비스 품목 넣기' });
+    var 서비스 = 만들기('button', { class: 'btn sm', type: 'button', html: u.아이콘글('선물', '서비스 품목 넣기') });
     if (!고름.length) {
       서비스.setAttribute('aria-disabled', 'true');
       서비스.style.opacity = '.4';
@@ -1328,7 +1335,7 @@ window.ZG = window.ZG || {};
     }
 
     /* 🔴 여기도 「고른 게 없으면 전체」를 쓰지 않는다 — 고른 건만 주문 목록에서 빠진다 (18단계 §4-2) */
-    var 넘김 = 만들기('button', { class: 'btn sm 넘김', type: 'button', text: '📅 예약으로 넘기기' });
+    var 넘김 = 만들기('button', { class: 'btn sm 넘김', type: 'button', html: u.아이콘글('달력', '예약으로 넘기기') });
     if (!고름.length || !고름.every(ZG.예약자료.넘길수있나)) 넘김.disabled = true;
     넘김.addEventListener('click', function () { ZG.예약화면.넘기기창(고름, function () { 상태.고른 = {}; }); });
 

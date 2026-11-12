@@ -151,7 +151,7 @@ try:
 
             # ── 주문올리기 판(20d)
             쪽.evaluate("() => { const r = ZG.문자주문자료.전부().filter(r => r.받는분 === '정하늘')[0]; ZG.문자주문자료.보냄표시 && ZG.문자주문자료.보냄표시(r.id); ZG.주문.다시그리기(); }"); 쪽.wait_for_timeout(300)
-            올 = 쪽.locator(('.문카드:has-text("정하늘")' if 폰 else 'tr:has-text("정하늘")') + ' button:has-text("주문올리기")')
+            올 = 쪽.locator(('.문카드:has-text("정하늘")' if 폰 else 'tr:has-text("정하늘")') + ' :is(button:has-text("주문올리기"), button[aria-label="주문올리기"])')   # 11/12 2판 — 폰 카드는 「올리기」 글 + aria-label
             if 올.count():
                 올.first.click(); 쪽.wait_for_timeout(300)
                 올판 = '.문카드 .속.올림' if 폰 else '.올림판'

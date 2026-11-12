@@ -170,7 +170,7 @@ try:
 
             # ── 주문수집 단추 — 예약일을 오늘로 당긴 B 가 올라간다 (서버 없음 토스트와 함께)
             쪽.evaluate("(m) => ZG.저장소.바꾸기(ZG.저장소.키.문자주문, m.B, { 예약일: m.오늘 })", m)
-            쪽.click('button:has-text("📥 주문수집")'); 쪽.wait_for_timeout(600)
+            쪽.click('button:has-text("주문수집"), [aria-label="주문수집"]'); 쪽.wait_for_timeout(600)
             본다('주문수집 단추 → B 자동 올림', 쪽.evaluate(하나, m['B'])['상태'] == '올림')
 
             # ── 두 기기 겹침 — 가짜 서버 (실서버 아님)

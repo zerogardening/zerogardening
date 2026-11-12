@@ -43,10 +43,10 @@
 .mcard.hold{background:var(--color-accent-bg)}
 .mcard.done{background:var(--color-danger-bg)}
 .mcard.done .mt, .mcard.done .mp{opacity:.72}
-.chip.hold{background:#DCF0E1; color:#1B6B33; border-color:#BEE0C8}
-.chip.hold::before{background:#2F9E44}
-.chip.done{background:#FBE0DE; color:#9A2119; border-color:#F0C4C0}
-.chip.done::before{background:#D70015}
+.chip.hold{background:var(--color-accent-bg); color:var(--color-accent-dark); border-color:var(--color-accent-border)}
+.chip.hold::before{background:var(--color-accent)}
+.chip.done{background:var(--color-danger-border); color:var(--color-danger); border-color:var(--color-danger-border)}
+.chip.done::before{background:var(--color-danger)}
 
 /* 수정모드 — 꾹 눌러 켠다 (17b 꾹누르기붙이기) */
 .editbar{
@@ -68,7 +68,7 @@
 .thumb{
   width:56px; height:56px; border-radius:var(--radius-md); flex-shrink:0;
   object-fit:cover; background:var(--color-bg);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+  box-shadow:inset 0 0 0 1px var(--shade-1);
 }
 
 /* 편집기 도구줄 — 볼드 · 글자크기 · 글씨색 · 하이라이트 + 사진 */
@@ -89,7 +89,7 @@
 .tbar .bar{width:14px; height:3px; border-radius:2px; display:block; margin-top:2px}
 .tbar .col{display:flex; flex-direction:column; align-items:center; line-height:1}
 /* 하이라이트 — 칠해진 모양 그대로 보인다. 글씨색(가+색줄)과 한눈에 갈린다 (설계 §0-1) */
-.tbar .hl{border-radius:3px; padding:1px 5px; background:#FFE44D; color:#3A2E00}
+.tbar .hl{border-radius:3px; padding:1px 5px; background:var(--color-warn-strong); color:var(--color-warn)}
 .tbar .sep{width:1px; height:20px; background:var(--color-border-faint); margin:0 var(--space-3xs)}
 .tbar .right{margin-left:auto}
 
@@ -114,7 +114,7 @@
 .edit .shot img{margin:0}
 .edit .shot .x{
   position:absolute; top:8px; right:8px;
-  background:rgba(0,0,0,.42); color:#fff; border:none; font-family:inherit; cursor:pointer;
+  background:var(--color-scrim); color:var(--color-on-accent); border:none; font-family:inherit; cursor:pointer;
   font-size:var(--font-sm); font-weight:var(--weight-semibold); line-height:1.4;
   border-radius:var(--radius-pill); padding:3px 10px;
 }
@@ -135,7 +135,7 @@
 .cal .wd.sun{color:var(--color-danger)}
 .cal .d{
   aspect-ratio:1/1; border-radius:var(--radius-md); background:var(--color-surface);
-  box-shadow:0 0 0 1px rgba(0,0,0,.05); cursor:pointer; border:none; font-family:inherit;
+  box-shadow:0 0 0 1px var(--shade-1); cursor:pointer; border:none; font-family:inherit;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:var(--space-4xs);
   font-size:var(--font-lg); font-weight:var(--weight-semibold); font-variant-numeric:tabular-nums;
   color:var(--color-text);
@@ -155,7 +155,7 @@
   position:fixed; right:16px; bottom:calc(80px + env(safe-area-inset-bottom)); width:56px; height:56px; border-radius:50%;
   background:var(--color-accent); color:var(--color-on-accent); border:none;
   font-size:28px; font-weight:var(--weight-bold); line-height:1; cursor:pointer; z-index:40;
-  box-shadow:0 6px 18px rgba(0,0,0,.24); display:flex; align-items:center; justify-content:center;
+  box-shadow:0 6px 18px var(--shade-3); display:flex; align-items:center; justify-content:center;
 }
 
 /* PC 두 칸 */
@@ -184,7 +184,7 @@
 .ckacts{position:absolute; top:0; right:0; bottom:0; display:flex}
 /* 🔴 결 이름이 `.ed` 인 것은 일부러다. `.edit` 는 위쪽에서 본문 편집칸이 이미 쓰고 있다 */
 .ckacts button{
-  width:76px; border:none; padding:0; font-family:inherit; cursor:pointer; color:#fff;
+  width:76px; border:none; padding:0; font-family:inherit; cursor:pointer; color:var(--color-on-accent);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:var(--space-4xs); -webkit-tap-highlight-color:transparent; transition:filter .12s ease;
 }
@@ -192,8 +192,8 @@
 .ckacts button .ic{width:23px; height:23px; display:block}
 .ckacts button .ic svg{width:100%; height:100%; display:block}
 .ckacts button .lb{font-size:var(--font-2xs); font-weight:var(--weight-semibold); letter-spacing:-.01em}
-.ckacts .ed{background:#8E8E93}     /* 아이폰 메모장 회색 */
-.ckacts .del{background:#FF3B30}    /* 아이폰 메모장 빨강 */
+.ckacts .ed{background:var(--color-text-muted)}     /* 아이폰 메모장 회색 */
+.ckacts .del{background:var(--color-danger)}    /* 아이폰 메모장 빨강 */
 
 .ckcard{
   position:relative; display:flex; gap:var(--space-md); align-items:flex-start;

@@ -120,7 +120,7 @@ try:
                 return ('.문카드' if 폰 else 'tr') + ':has(:text-is("%s"))' % 쪽.evaluate("id => ZG.문자주문자료.하나(id).받는분", id)
             def 단계(k): 쪽.click('.단계줄 .단계.' + k); 쪽.wait_for_timeout(200)
             def 이름들(): return 쪽.evaluate("() => " + ("[...document.querySelectorAll('.문카드 .r1 .nm')].map(e => e.textContent)" if 폰 else "[...document.querySelectorAll('tbody tr')].filter(t => t.children.length > 2).map(t => t.children[2].firstChild.textContent)"))
-            def 단계글(): return 쪽.evaluate("() => [...document.querySelectorAll('.단계줄 .단계')].map(b => [b.textContent, b.classList.contains('on'), b.classList.contains('빔')])")
+            def 단계글(): return 쪽.evaluate("() => [...document.querySelectorAll('.단계줄 .단계')].map(b => [b.querySelector('span') ? b.querySelector('span').textContent + ' ' + b.querySelector('b').textContent : b.textContent, b.classList.contains('on'), b.classList.contains('빔')])")   # 폰 2판 — 큰 숫자 위·이름 아래
             def 띠글(이름):
                 e = 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("%s") .입금띠' % 이름)
                 return [e.nth(i).inner_text() for i in range(e.count())]
@@ -162,10 +162,13 @@ try:
             본다('두 번 올려도 주문 줄 하나(같은 id)', 쪽.evaluate("() => ZG.저장소.읽기(ZG.저장소.키.주문).filter(o => o.문자주문id === 'm30').length") == 1)
             # 맨 위 날짜 ‹ › · 가운데 누르면 달력 팝업 · 칩 이름
             오늘 = 쪽.evaluate("() => ZG.ui.오늘문자()")
-            칩 = 쪽.locator('.문자주문 .fchip.발송칩')
-            본다('칩 = 날짜줄 오른쪽 🚚 아이콘(글자 없음 · 배지 1 · 손가락 크기) · 달력은 화면에 없음', 칩.inner_text().startswith('🚚') and '발송문자' not in 칩.inner_text() and 칩.locator('.배지').inner_text() == '1' and 칩.bounding_box()['width'] >= 44 and 칩.bounding_box()['height'] >= 44 and 쪽.locator('.문자주문 .cal').count() == 0, 칩.inner_text())
+            칩 = 쪽.locator('.문자주문 .발송칩')
+            본다('칩 = 날짜줄 오른쪽 🚚 아이콘(글자 없음 · 배지 1 · 손가락 크기) · 달력은 화면에 없음', 칩.locator('svg').count() == 1 and '발송문자' not in 칩.inner_text() and 칩.locator('.배지').inner_text() == '1' and 칩.bounding_box()['width'] >= 44 and 칩.bounding_box()['height'] >= 44 and 쪽.locator('.문자주문 .cal').count() == 0, 칩.inner_text())
             가 = 쪽.evaluate("() => { const d = document.querySelector('.날짜칸').getBoundingClientRect(), c = document.querySelector('.날짜머리').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); a = document.querySelector('.새문자칩').getBoundingClientRect(); return [Math.round((a.left + b.right) / 2 - (c.left + c.width / 2)), Math.round(b.left - d.right)]; }")
-            본다('「✉️ ‹ 날짜 › 🚚」 묶음이 가운데(±2px) · 🚚는 날짜줄 바로 옆', abs(가[0]) <= 2 and 0 < 가[1] <= 16, 가)
+            if 폰:   # 11/12 2판 — 폰은 [검색][새 문자] ‹ 날짜 › [발송] 한 줄을 꽉 채움
+                끝 = 쪽.evaluate("() => { const c = document.querySelector('.날짜머리').getBoundingClientRect(), s = document.querySelector('.검색칩').getBoundingClientRect(), b = document.querySelector('.발송칩').getBoundingClientRect(); return [Math.round(s.left - c.left), Math.round(c.right - b.right)]; }")
+                본다('폰 「[검색][새 문자] ‹ 날짜 › [발송]」 한 줄 꽉 · 발송은 날짜줄 바로 옆', abs(끝[0]) <= 2 and abs(끝[1]) <= 2 and 0 < 가[1] <= 16, [끝, 가])
+            else: 본다('「✉️ ‹ 날짜 › 🚚」 묶음이 가운데(±2px) · 🚚는 날짜줄 바로 옆', abs(가[0]) <= 2 and 0 < 가[1] <= 16, 가)
             쪽.click('.발송칩'); 쪽.wait_for_timeout(300)
             본다('🚚 누르면 발송문자 안 보낸 모든 내역 · 단계 줄 숨김', 쪽.evaluate("() => ZG.문자주문.상태.발송모음") and 쪽.locator('.단계줄').is_hidden() and 쪽.locator(('.문카드' if 폰 else 'tr') + ':has-text("자동이")').count() == 1)
             쪽.click('.발송칩'); 쪽.wait_for_timeout(300)
@@ -177,7 +180,7 @@ try:
             쪽.screenshot(path=str(여기 / ('7-단계줄-' + 틀 + '.png')), animations='disabled')
             쪽.click('.날짜칸 button[aria-label="전날"]'); 쪽.wait_for_timeout(250)
             쪽.screenshot(path=str(여기 / ('6-날짜줄-' + 틀 + '.png')), animations='disabled')
-            본다('가운데 날짜 「YYYY.MM.DD (요일)」', 쪽.locator('.날짜칸 .오늘날').inner_text().startswith(오늘.replace('-', '.')))
+            본다('가운데 날짜 「YYYY.MM.DD (요일)」 · 폰 2판은 「MM.DD (요일)」', 쪽.locator('.날짜칸 .오늘날').inner_text().startswith((오늘[5:] if 폰 else 오늘).replace('-', '.')))
             쪽.click('.날짜칸 button[aria-label="전날"]'); 쪽.wait_for_timeout(250)
             어제 = 쪽.evaluate("() => ZG.문자주문.상태.날짜")
             쪽.click('.날짜칸 button[aria-label="다음날"]'); 쪽.wait_for_timeout(250)

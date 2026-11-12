@@ -214,11 +214,11 @@ window.ZG = window.ZG || {};
       var 판 = 만들기('div', {
         style: 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1000;' +
                'width:min(500px,calc(100vw - 24px));height:min(560px,calc(100vh - 80px));' +
-               'background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.25);' +
+               'background:var(--color-surface);border-radius:12px;overflow:hidden;box-shadow:0 12px 40px var(--shade-3);' +
                'display:flex;flex-direction:column'
       });
       var x = 만들기('button', { class: 'btn', type: 'button', text: '✕ 닫기', 'aria-label': '닫기' });
-      판.appendChild(만들기('div', { style: 'display:flex;justify-content:flex-end;padding:6px 8px;border-bottom:1px solid #eee' }, [x]));
+      판.appendChild(만들기('div', { style: 'display:flex;justify-content:flex-end;padding:6px 8px;border-bottom:1px solid var(--color-border-faint)' }, [x]));
       var 속 = 만들기('div', { style: 'flex:1;min-height:0' });
       판.appendChild(속);
       function 닫기() { 막.remove(); 판.remove(); }

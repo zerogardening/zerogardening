@@ -70,7 +70,7 @@ try:
         본다('없는 배치는 빈손', 쪽.evaluate("() => ZG.배송완료.배치줄들('없다').length") == 0)
 
         print('\n② 화면 — 출고리스트 창의 칩')
-        쪽.click("button:has-text('📋 출고리스트')"); 쪽.wait_for_timeout(500)
+        쪽.click("button:has-text('출고리스트')"); 쪽.wait_for_timeout(500)
         칩글 = 쪽.eval_on_selector_all('.배치칩 .fchip', 'els => els.map(e => e.textContent)')
         본다('칩이 「지금 화면」 + 배치 2개', len(칩글) == 3 and 칩글[0] == '지금 화면', 칩글)
         어제글 = 만든['어제'][5:].replace('-', '/')
@@ -126,7 +126,7 @@ try:
         폰.goto(주소); 폰.wait_for_timeout(2200)
         폰.evaluate("() => { ZG.시드.심기(); ZG.주문.다시그리기(); }"); 폰.wait_for_timeout(600)
         폰만든 = 폰.evaluate(만들기)
-        폰.click("button:has-text('📋 출고리스트')"); 폰.wait_for_timeout(500)
+        폰.click("[aria-label='출고리스트']"); 폰.wait_for_timeout(500)
         폰칩 = 폰.eval_on_selector_all('.배치칩 .fchip', 'els => els.map(e => e.textContent)')
         본다('폰에도 칩 3개', len(폰칩) == 3 and 폰칩[0] == '지금 화면', 폰칩)
         폰.click('.배치칩 .fchip:last-child'); 폰.wait_for_timeout(500)

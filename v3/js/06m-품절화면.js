@@ -46,10 +46,10 @@ window.ZG = window.ZG || {};
      🔴 업로드 실패에는 [다시]가 없다 — 쿠팡·심폴은 다시 보내면 상품이 둘로 올라간다(지시함 프롬프트 ⑦⑧) */
   function 줄단추(c, k) {
     if (c.업로드) return k.주소
-      ? '<a class="btn sm lk" href="' + 안(k.주소) + '" target="_blank" rel="noopener">상품 보기 ↗</a>'
-      : '<a class="btn sm lk off" aria-disabled="true">상품 보기 ↗</a>';
+      ? '<a class="btn sm lk" href="' + 안(k.주소) + '" target="_blank" rel="noopener" aria-label="상품 보기">' + 보기글() + '</a>'
+      : '<a class="btn sm lk off" aria-disabled="true" aria-label="상품 보기">' + 보기글() + '</a>';
     return (k.값 === 'fail' || k.값 === 'chk') && !c.옛줄   // 노랑도 줄 [다시] — WING 로그인 뒤 다시 확인 (「실패만 다시」엔 안 든다) && c.무리 !== '진행중'
-      ? '<button type="button" class="btn sm rd" data-다시="' + 안(k.마켓) + '">다시</button>' : '';
+      ? '<button type="button" class="btn sm rd" data-다시="' + 안(k.마켓) + '" aria-label="다시">' + (u.폰인가() ? u.아이콘('돌림') : '다시') + '</button>' : '';
   }
   function 사유칸(k) { return k.값 === 'fail' ? ' class="why"' : k.값 === 'chk' ? ' class="why 노랑"' : ' class="why 회색"'; }
 
@@ -105,14 +105,16 @@ window.ZG = window.ZG || {};
      🔴 다시판매→품절로 껐다 켜면 그 사이 마켓이 판매중으로 열린다 — 상태는 그대로 두고 지시만 다시 낸다.
      🔴 진행중이면 안 보인다 — 맥이 집기 전에 두 번 쌓이면 같은 일을 두 번 한다.
      🔴 업로드 카드엔 없다 — PC 만 ↺(작업중으로) 를 작게 둔다(폰은 밀기) */
+  function 보기글() { return u.폰인가() ? u.아이콘('바깥') : '상품 보기 ' + u.아이콘('바깥'); }
   function 다시단추(c) {
-    if (c.업로드) return u.폰인가() ? '' : '<div class="redo"><button type="button" class="btn sm 되돌" title="작업중으로 되돌리기">↺ 작업중으로</button></div>';
+    if (c.업로드) return u.폰인가() ? '' : '<div class="redo"><button type="button" class="btn sm 되돌" title="작업중으로 되돌리기">' + u.아이콘('돌림') + ' 작업중으로</button></div>';
     if (c.무리 === '진행중') return '';
     var 실 = 실패마켓(c);
     var 삭 = u.폰인가() ? '' : '<button type="button" class="btn sm 지움" title="이 카드를 목록에서 지웁니다">삭제</button>';
-    var 보조 = '<button type="button" class="btn" data-다시="*">' + (c.다시판매 ? '판매 전체 다시' : '품절 전체 다시') + '</button>';
+    var 폰 = u.폰인가();   // 폰 2판 — 돌림 아이콘 + 짧은 글
+    var 보조 = '<button type="button" class="btn" data-다시="*">' + u.아이콘('돌림') + (폰 ? ' 전체 다시' : c.다시판매 ? ' 판매 전체 다시' : ' 품절 전체 다시') + '</button>';
     if (!실.length || c.옛줄) return '<div class="redo">' + 삭 + 보조 + '</div>';
-    var 주 = '<button type="button" class="btn warn" data-다시="' + 안(실.join(',')) + '">실패만 다시<span class="n">(' + 실.length + '곳)</span></button>';
+    var 주 = '<button type="button" class="btn warn" data-다시="' + 안(실.join(',')) + '">' + u.아이콘('돌림') + ' 실패만 다시<span class="n">' + (폰 ? ' ' + 실.length : '(' + 실.length + '곳)') + '</span></button>';
     return '<div class="redo">' + 삭 + (u.폰인가() ? 주 + 보조 : 보조 + 주) + '</div>';
   }
   /* 품절 카드 삭제 — 폰은 밀기(06g 민카드) · PC 는 펼친 칸 맨 아래 「삭제」. 진행중은 못 지운다 */
@@ -247,7 +249,10 @@ window.ZG = window.ZG || {};
     칩자리 = 만들기('div', { class: '칩자리' });
     목록자리 = 만들기('div');
     if (u.폰인가()) {
-      뿌리 = 만들기('div', { class: '품절탭' }, [칩자리, 목록자리]);
+      // 2판 — 칩 줄 끝 돋보기 · 누르면 검색칸
+      var 찾칸 = 만들기('div', { class: '찾칸' }, [검색칸()]); 찾칸.hidden = true;
+      var 돋 = u.아이콘단추('검색', '검색', function () { 찾칸.hidden = !찾칸.hidden && !검색글; if (!찾칸.hidden) 찾칸.querySelector('input').focus(); });
+      뿌리 = 만들기('div', { class: '품절탭' }, [만들기('div', { class: '칩머리' }, [칩자리, 돋]), 찾칸, 목록자리]);
     } else {
       var 머리 = 만들기('div', { class: 'ch' }, [만들기('h3', { text: '품절 요청' }), 칩자리, 검색칸()]);
       뿌리 = 만들기('div', { class: '품절탭' }, [만들기('div', { class: 'card' }, [머리, 목록자리])]);

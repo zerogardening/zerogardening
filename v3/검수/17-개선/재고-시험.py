@@ -33,13 +33,14 @@ try:
             쪽.evaluate("() => { ZG.시드.심기(); }")
             쪽.click('.속탭 button:has-text("재고")' if 폰 else '.pc-tabs >> text=재고'); 쪽.wait_for_timeout(700)
             본다('datalist 없음', 쪽.query_selector('#zg-입고업체목록') is None and 쪽.query_selector('.업체지움') is None)
-            본다('상자 「업체 전체 ▼」', '전체' in 쪽.inner_text('.고름상자') and '▼' in 쪽.inner_text('.고름상자'), 쪽.inner_text('.고름상자'))
+            if 폰: 본다('폰 2판 — 업체 거르기 = 건물 아이콘(글은 숨김 · 이름은 aria-label)', 쪽.locator('.고름상자 .ic svg').count() == 1 and 쪽.get_attribute('.고름상자', 'aria-label') == '입고업체로 거르기')
+            else: 본다('상자 「업체 전체 ▼」', '전체' in 쪽.inner_text('.고름상자') and '▼' in 쪽.inner_text('.고름상자'), 쪽.inner_text('.고름상자'))
             if not 폰:
                 한줄 = 쪽.evaluate("() => { const a = document.querySelector('.고름상자').getBoundingClientRect(), b = document.querySelector('.fchip').getBoundingClientRect(), c = document.querySelector('.editwrap input[type=search], .card input[type=search]').getBoundingClientRect(); return [Math.round(a.width), Math.round(c.width), Math.abs(a.top - b.top) < 12 && Math.abs(c.top - b.top) < 12]; }")
                 본다('칩·검색 250·업체 230 한 줄', 한줄[0] == 230 and 한줄[1] == 250 and 한줄[2], 한줄)
             else:
                 순서 = 쪽.evaluate("() => { const b = document.querySelector('.ph-body'); const s = b.querySelector('input[type=search]'), g = b.querySelector('.업체고름'), f = b.querySelector('.fchips'); return [s.getBoundingClientRect().top, g.getBoundingClientRect().top, f.getBoundingClientRect().top]; }")
-                본다('폰 순서 검색 → 업체 → 칩', 순서[0] < 순서[1] < 순서[2], 순서)
+                본다('폰 2판 — [검색][업체] 한 줄 → 칩', abs(순서[0] - 순서[1]) < 4 and 순서[1] < 순서[2], 순서)
             쪽.click('.고름상자'); 쪽.wait_for_timeout(300)
             줄들 = 쪽.eval_on_selector_all('.펼침 .it', 'es => es.map(e => e.innerText.replace(/\\n/g, " "))')
             본다('펼침 첫 줄 전체·고른 줄 ✓', 줄들 and 줄들[0].startswith('✓') and '전체' in 줄들[0], 줄들[:3])

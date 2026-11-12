@@ -99,8 +99,10 @@ window.ZG = window.ZG || {};
     var 제목 = 정보.뒤로 ? 정보.제목 : '상품';
     if (제목) 왼쪽.appendChild(만들기('h1', { text: 제목, style: 정보.작게 ? 'font-size:22px' : null }));
     위.appendChild(왼쪽);
+    // 왼쪽 글이 없으면 오른쪽 요약은 제목 줄 오른쪽에 작게 (2판 11/12) — 요약줄을 따로 두지 않는다
+    if (!정보.왼) 위.appendChild(만들기('span', { class: '머리요약', html: 정보.오 || '' }));
 
-    var 아래 = (정보.왼 || 정보.오) ? 만들기('div', { class: 'ph-sub' }, [
+    var 아래 = 정보.왼 ? 만들기('div', { class: 'ph-sub' }, [
       만들기('span', { html: 정보.왼 }), 만들기('span', { html: 정보.오 })
     ]) : null;
 
@@ -152,6 +154,8 @@ window.ZG = window.ZG || {};
       return;
     }
     var 정보 = 머리정보();
+    var 머리요약 = 뿌리.querySelector('.ph-top .머리요약');
+    if (머리요약) 머리요약.innerHTML = 정보.왼 ? '' : (정보.오 || '');
     var 줄 = 뿌리.querySelector('.ph-sub');
     if (!줄) return;
     줄.children[0].innerHTML = 정보.왼;

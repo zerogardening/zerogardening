@@ -7,11 +7,14 @@ window.ZG = window.ZG || {};
   'use strict';
 
   var NS = 'http://www.w3.org/2000/svg';
-  var 선색 = '#2F9E44', 바닥색 = '#ECECF0', 글색 = '#86868B', 띠색 = '#F5F5F7';
+  /* 색은 공통.css 토큰 — var() 는 svg 속성에선 안 먹어 그() 가 style 로 넣는다 */
+  var 선색 = 'var(--color-accent)', 바닥색 = 'var(--color-border-faint)', 글색 = 'var(--color-text-muted)', 띠색 = 'var(--color-bg)';
 
   function 그(태그, 속성) {
     var e = document.createElementNS(NS, 태그);
-    Object.keys(속성 || {}).forEach(function (k) { e.setAttribute(k, 속성[k]); });
+    Object.keys(속성 || {}).forEach(function (k) {
+      if (String(속성[k]).indexOf('var(') === 0) e.style.setProperty(k, 속성[k]); else e.setAttribute(k, 속성[k]);
+    });
     return e;
   }
   function 콤마(n) { return (Number(n) || 0).toLocaleString('ko-KR'); }
@@ -172,8 +175,8 @@ window.ZG = window.ZG || {};
     var p = svg._점 && svg._점[i];
     if (!p) return null;
     var 틀 = svg._틀;
-    var 선 = 그('line', { class: '짚음', x1: p.x.toFixed(1), x2: p.x.toFixed(1), y1: 틀.위, y2: 틀.바닥, stroke: '#A1A1A6', 'stroke-dasharray': '3 3', 'pointer-events': 'none' });
-    var 점 = 그('circle', { class: '짚음', cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 4, fill: '#fff', stroke: 선색, 'stroke-width': 2.2, 'pointer-events': 'none' });
+    var 선 = 그('line', { class: '짚음', x1: p.x.toFixed(1), x2: p.x.toFixed(1), y1: 틀.위, y2: 틀.바닥, stroke: 'var(--color-text-hint)', 'stroke-dasharray': '3 3', 'pointer-events': 'none' });
+    var 점 = 그('circle', { class: '짚음', cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 4, fill: 'var(--color-surface)', stroke: 선색, 'stroke-width': 2.2, 'pointer-events': 'none' });
     svg.appendChild(선);
     if (!svg._막대) svg.appendChild(점);
     return { x: p.x / 틀.W, y: p.y / 틀.H };

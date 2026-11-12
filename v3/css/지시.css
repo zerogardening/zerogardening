@@ -35,7 +35,7 @@
 .지시-날{
   align-self:center; margin:var(--space-md) 0 var(--space-2xs);
   padding:3px 12px; border-radius:11px;
-  background:rgba(0,0,0,.06); color:var(--color-text-sub);
+  background:var(--shade-1); color:var(--color-text-sub);
   font-size:var(--font-2xs);
 }
 
@@ -119,3 +119,7 @@
   font-family:var(--font-family); cursor:pointer;
 }
 .지시-알림:disabled{ opacity:.5; cursor:default }
+
+/* 2판 (11/12) — 알림은 종 아이콘 · 대기 수는 작은 알약 */
+.지시-알림.아이콘단추{ width:40px; height:40px; min-width:40px; padding:0; border:0; background:none; color:var(--color-text-sub) }
+.지시-머리 .상태:not(:empty){ background:var(--color-border-faint); border-radius:999px; padding:3px 10px; font-weight:600 }

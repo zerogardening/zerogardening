@@ -12,11 +12,11 @@ window.ZG = window.ZG || {};
 
   /* 08h 의 톤과 같은 값. 새 CSS 규칙을 만들지 않으려고 여기서 입힌다 */
   var 톤 = {
-    노랑상자: 'border-color:#F2DFA8',
-    노랑머리: 'background:#FFF8E6; color:#9A6400; border-bottom-color:#F2DFA8',
+    노랑상자: 'border-color:var(--color-warn-border)',
+    노랑머리: 'background:var(--color-warn-bg); color:var(--color-warn); border-bottom-color:var(--color-warn-border)',
     회색상자: 'border-color:var(--color-border)',
     회색머리: 'background:var(--color-seg-bg); color:var(--color-text-sub); border-bottom-color:var(--color-border)',
-    노랑글: 'color:#9A6400'
+    노랑글: 'color:var(--color-warn)'
   };
 
   function 상자틀(빛, 제목, 덧머리, 속) {

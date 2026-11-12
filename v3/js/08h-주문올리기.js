@@ -312,9 +312,9 @@ window.ZG = window.ZG || {};
   /* 시안의 노랑(막지 않는 경고)·회색(그냥 지나감) 톤. 새 CSS 를 만들지 않으려고 여기서 입힌다 —
      빨강(.needbox 기본)은 「멈춰야 하는 줄」이라 이 화면에 쓰면 안 된다 */
   var 톤표 = {
-    노랑상자: 'border-color:#F2DFA8', 노랑머리: 'background:#FFF8E6; color:#9A6400; border-bottom-color:#F2DFA8',
+    노랑상자: 'border-color:var(--color-warn-border)', 노랑머리: 'background:var(--color-warn-bg); color:var(--color-warn); border-bottom-color:var(--color-warn-border)',
     회색상자: 'border-color:var(--color-border)', 회색머리: 'background:var(--color-seg-bg); color:var(--color-text-sub); border-bottom-color:var(--color-border)',
-    노랑칸: 'background:#FFF8E6; border-color:#F2DFA8', 노랑글: 'color:#9A6400'
+    노랑칸: 'background:var(--color-warn-bg); border-color:var(--color-warn-border)', 노랑글: 'color:var(--color-warn)'
   };
 
   function 상자(빛, 제목, 왜, 속) {

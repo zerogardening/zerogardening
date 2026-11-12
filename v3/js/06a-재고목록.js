@@ -83,13 +83,6 @@ window.ZG = window.ZG || {};
     });
   }
 
-  function 요약글() {
-    var 전부 = 전부요약();
-    var 총 = 전부.reduce(function (a, 요) { return a + Math.max(0, 요.현재고); }, 0);
-    var 급함 = 전부.filter(function (요) { return 요.재입고; }).length;
-    return { 왼: '등록 <b>' + 전부.length + '</b>종 · 총 <b>' + u.콤마(총) + '</b>주', 오: '3주 내 소진 <b>' + 급함 + '</b>종' };
-  }
-
   function 필터칩들(전부, 다시) {
     var 상자 = 만들기('div', { class: 'fchips' });
     var 셈 = function (이름) {
@@ -100,8 +93,8 @@ window.ZG = window.ZG || {};
     ['전체', '판매중', '품절', '일자별'].forEach(function (이름) {
       var 날 = 이름 === '일자별';
       var b = 만들기('button', {
-        class: 'fchip' + (상태.필터 === 이름 ? ' on' : ''), type: 'button',
-        html: u.안전(이름) + (날 ? '' : ' <span class="n">' + 셈(이름) + '</span>')
+        class: 'fchip' + (상태.필터 === 이름 ? ' on' : '') + (날 && u.폰인가() ? ' 아이콘칩' : ''), type: 'button', 'aria-label': 이름,
+        html: 날 && u.폰인가() ? u.아이콘('달력') : u.안전(이름) + (날 ? '' : ' <span class="n">' + 셈(이름) + '</span>')   // 폰 일자별 = 달력 (2판)
       });
       b.addEventListener('click', function () {
         상태.필터 = 이름; 상태.쪽 = 1;
@@ -219,13 +212,13 @@ window.ZG = window.ZG || {};
     });
     var 화살 = null;
     if (걸림) {
-      상자.innerHTML = '<span class="ic">🏢</span><span class="v">' + u.안전(상태.업체) + '</span>' +
+      상자.innerHTML = '<span class="ic">' + u.아이콘('건물') + '</span><span class="v">' + u.안전(상태.업체) + '</span>' +
         '<span class="n">' + (셈[상태.업체] || 0) + '건</span>';
       var 지움 = 만들기('span', { class: '지움', role: 'button', 'aria-label': '업체 거르기 끄기', text: '✕' });
       지움.addEventListener('click', function (e) { e.stopPropagation(); 고르기(''); });
       상자.appendChild(지움);
     } else {
-      상자.innerHTML = '<span class="ic">🏢</span><span class="v"><span class="k">업체</span> 전체</span>';
+      상자.innerHTML = '<span class="ic">' + u.아이콘('건물') + '</span><span class="v"><span class="k">업체</span> 전체</span>';
       화살 = 만들기('span', { class: '화살', text: '▼' });
       상자.appendChild(화살);
     }
@@ -286,7 +279,7 @@ window.ZG = window.ZG || {};
      칸이 갈아끼워지면 아이폰 한글 조합이 끊긴다. */
   function 검색칸(목록다시) {
     /* 🔴 손대야열림 — 탭을 바꿀 때 아이폰이 커서를 여기로 옮겨 붙여 키보드가 저 혼자 올라왔다 */
-    var e = u.손대야열림(만들기('input', { class: 'inp', type: 'search', placeholder: '🔍  유통명 · 학명 · 품목코드로 찾기' }));
+    var e = u.손대야열림(만들기('input', { class: 'inp', type: 'search', placeholder: u.폰인가() ? '검색' : '유통명 · 학명 · 품목코드로 찾기' }));
     e.value = 상태.검색;
     u.조합안전입력(e, function (값) {
       if (값 === 상태.검색) return;
@@ -374,7 +367,10 @@ window.ZG = window.ZG || {};
     if (칩) 속 += '<div class="r2">' + 칩 + '</div>';
     칸.innerHTML = 속;
     /* 판매중·품절 상태 단추 — 카드 오른쪽 위. 누르면 반대로 바꿀지 묻는다. 선택모드에서는 안 보인다 (06k) */
-    if (!고름 && ZG.마켓품절) 칸.appendChild(ZG.마켓품절.단추(p, function () { ZG.재고.다시(); }));
+    if (!고름 && ZG.마켓품절) {
+      var 켬끔 = 칸.appendChild(ZG.마켓품절.단추(p, function () { ZG.재고.다시(); }));
+      켬끔.classList.add('스위치'); 켬끔.setAttribute('aria-label', '판매중 켜기/끄기');   // 2판 — 글 단추 대신 켜기/끄기 (켜짐 = 판매중)
+    }
     칸.addEventListener('click', function () {
       if (!상태.선택모드) { ZG.재고수정.폰상세열기(p.품목코드); return; }
       var 켬 = !상태.선택[p.품목코드];
@@ -407,7 +403,8 @@ window.ZG = window.ZG || {};
 
   /* ── 폰: 「선택」 단추와 아래 고정 작업 막대 ── */
   function 선택단추(다시) {
-    var b = 만들기('button', { class: 'btn sm', type: 'button', text: 상태.선택모드 ? '취소' : '선택' });
+    var b = u.폰인가() ? u.아이콘단추('고름', 상태.선택모드 ? '취소' : '선택', null, { 결: 상태.선택모드 ? 'on' : '' })
+      : 만들기('button', { class: 'btn sm', type: 'button', text: 상태.선택모드 ? '취소' : '선택' });
     b.addEventListener('click', function () {
       상태.선택모드 = !상태.선택모드;
       if (!상태.선택모드) 선택비우기();
@@ -530,7 +527,7 @@ window.ZG = window.ZG || {};
   }
 
   ZG.재고목록 = {
-    상태: 상태, 참조: 참조, 전부요약: 전부요약, 거르기: 거르기, 요약글: 요약글,
+    상태: 상태, 참조: 참조, 전부요약: 전부요약, 거르기: 거르기,
     필터칩들: 필터칩들, 업체찾기: 업체찾기, 일자줄: 일자줄, 그날입고: 그날입고, 검색칸: 검색칸, 급한카드들: 급한카드들, 폰카드: 폰카드,
     표그리기: 표그리기, 쪽번호: 쪽번호, 배지: 배지,
     고른것들: 고른것들, 선택비우기: 선택비우기, 선택바갱신: 선택바갱신,

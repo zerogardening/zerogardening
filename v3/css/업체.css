@@ -214,12 +214,12 @@ table.items .xbtn{
 .acwrap .ac .it .sub{font-size:var(--font-xs); color:var(--color-text-muted); margin-top:1px}
 
 /* PC 팝업 창 (업체 수정 시트 · 직접 입력) — 주문.css 와 같은 모양 */
-.pcscrim{position:fixed; inset:0; background:rgba(0,0,0,.34); z-index:60}
+.pcscrim{position:fixed; inset:0; background:var(--color-scrim); z-index:60}
 .pcsheet{
   position:fixed; z-index:61; top:8vh; left:50%; transform:translateX(-50%);
   width:min(760px, 92vw); max-height:80vh; overflow:auto;
   background:var(--color-bg); border-radius:var(--radius-lg);
-  box-shadow:0 22px 54px rgba(0,0,0,.22), 0 0 0 1px rgba(0,0,0,.07);
+  box-shadow:0 22px 54px var(--shade-3), 0 0 0 1px var(--shade-1);
 }
 .pcsheet .hd{
   display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface);

@@ -85,7 +85,7 @@ try:
              '1회차' in 쪽.eval_on_selector('.나간칩.on', 'e => e.textContent'))
 
         print('\n③ 그대로 출고리스트')
-        쪽.click("button:has-text('📋 출고리스트')"); 쪽.wait_for_timeout(500)
+        쪽.click("button:has-text('출고리스트')"); 쪽.wait_for_timeout(500)
         머리 = 쪽.eval_on_selector('.pcsheet .hd .hint', 'e => e.textContent')
         본다('창 머리가 그 회차의 처리분이라고 말한다', '배송완료 처리분' in 머리, 머리)
         코드 = 쪽.eval_on_selector_all('.pcsheet .bd table tr td.code', 'els => els.map(e => e.textContent).sort()')
@@ -129,7 +129,7 @@ try:
         폰.click("button.나간칩:has-text('1회차')"); 폰.wait_for_timeout(400)
         폰줄 = 폰.evaluate("() => ZG.주문.줄들().map(r => r.id)")
         본다('폰도 그 회차 것만 남는다', sorted(폰줄) == sorted(폰만든['갑']), 폰줄)
-        폰.click("button:has-text('📋 출고리스트')"); 폰.wait_for_timeout(600)
+        폰.click("[aria-label='출고리스트']"); 폰.wait_for_timeout(600)
         본다('폰 출고리스트도 그 회차를 들고 간다',
              '배송완료 처리분' in 폰.eval_on_selector('.ph-sub', 'e => e.textContent'),
              폰.eval_on_selector('.ph-sub', 'e => e.textContent'))
