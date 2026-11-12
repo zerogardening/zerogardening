@@ -259,7 +259,14 @@ window.ZG = window.ZG || {};
         상세.value = 꼬리;
         상세.dispatchEvent(new Event('input', { bubbles: true }));   // 상세칸 주인(상태·사본)이 값을 받게
       }
-      주소.value = 꼬리 && !상세 ? 글 + ' ' + 꼬리 : 글 + ' ';
+      // 손님이 지번으로 썼으면 도로명을 넣되 상세 끝에 원래 지번 「(지번: 문장리 690-2)」 — 잘못 들어갔는지 사람이 볼 수 있게 (11/13 우람님 0109 답)
+      var 원지번 = d.roadAddress && !도로뽑기(원문) && /(리|동|가)\s*(산\s*)?\d/.test(원문) && 지번글(d).split(' ').slice(-2).join(' ');
+      var 지꼬 = 원지번 ? ' (지번: ' + 원지번 + ')' : '';
+      if (지꼬 && 상세 && 상세.value.indexOf('(지번:') < 0) {
+        상세.value = (상세.value.trim() + 지꼬).trim();
+        상세.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      주소.value = (꼬리 && !상세 ? 글 + ' ' + 꼬리 : 글 + ' ') + (지꼬 && !상세 ? 지꼬.trim() : '');
       주소.focus();
       주소.setSelectionRange(주소.value.length, 주소.value.length);   // 이어서 동·호수를 적는다
     }
