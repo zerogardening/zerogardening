@@ -292,7 +292,7 @@ window.ZG = window.ZG || {};
     참조.글칸들 = [칸.받는분, 칸.메모, 칸.배송메시지].concat(칸.곳.칸들);
     return 칸;
   }
-  function 붙단추(사람) { return ZG.문자붙여넣기.단추({ 이름: 사람.받는분, 전화: 사람.전화, 곳: 사람.곳 }); }
+  function 붙단추(사람) { return ZG.문자붙여넣기.단추({ 이름: 사람.받는분, 전화: 사람.전화, 메시지: 사람.배송메시지, 곳: 사람.곳 }); }
   function 보내기단추(폰) {
     참조.저장 = 만들기('button', { class: 폰 ? 'btn 저장만' : 'btn', type: 'button', text: '저장' });
     참조.문자 = 만들기('button', { class: 폰 ? 'ph-save' : 'btn main', type: 'button', text: '문자' });
