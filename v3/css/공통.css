@@ -21,13 +21,13 @@ html.pc보기{ touch-action: auto; }
 
   /* ── 색 · 바탕 ── */
   --color-canvas:  #CBCDD4;
-  --color-bg:      #FAF8F4;   /* 2판 종이색 (11/12) */
-  --color-surface: #FFFEFB;
-  --color-sidebar: rgba(244,241,235,.86);
-  --color-titlebar:rgba(250,248,244,.9);
-  --color-seg-bg:  #F0ECE1;
-  --color-ios-bg:  #FAF8F4;
-  --color-ios-bar: rgba(250,248,244,.94);
+  --color-bg:      #FFFFFF;   /* 11/12 16:3x 우람님: 노란 종이색 → 흰색 */
+  --color-surface: #FFFFFF;
+  --color-sidebar: rgba(246,246,247,.86);
+  --color-titlebar:rgba(255,255,255,.9);
+  --color-seg-bg:  #F1F1F3;
+  --color-ios-bg:  #FFFFFF;
+  --color-ios-bar: rgba(255,255,255,.94);
 
   /* ── 색 · 글자 ── */
   --color-text:       #1C1D1A;
@@ -50,10 +50,10 @@ html.pc보기{ touch-action: auto; }
 
   /* ── 색 · 선 ── */
   --color-border:       #E4DFD5;
-  --color-border-faint: #F4F1EB;
+  --color-border-faint: #EFEFF2;
   --color-border-line:  #ECE8E0;   /* 카드 테두리 */
-  --color-btn-bg:       #FFFEFB;
-  --color-btn-bg-hover: #F4F1EB;
+  --color-btn-bg:       #FFFFFF;
+  --color-btn-bg-hover: #F4F4F6;
 
   /* ── 색 · 그 밖의 계열 (11/12 css 에 직접 적혀 있던 색을 모음) ── */
   --color-warn:          #8A6100;
